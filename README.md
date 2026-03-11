@@ -73,26 +73,27 @@ These skills are designed to be composed into two main research workflows:
 ┌─────────────────────────────────────────────────────────────┐
 │                  Idea Discovery                              │
 │                                                              │
-│   /research-lit              /research-review                │
-│   (find & analyze papers)    (get critical feedback)         │
-│         │                         │                          │
-│         ▼                         ▼                          │
-│   ┌──────────┐              ┌──────────┐                    │
-│   │ Search   │              │ External │                    │
-│   │ arXiv,   │──────────────▶│ LLM     │                    │
-│   │ Scholar  │  "here's the │ evaluates│                    │
-│   │ for gaps │   landscape" │ your idea│                    │
-│   └──────────┘              └──────────┘                    │
+│   /research-lit        /novelty-check    /research-review    │
+│   (find papers)        (verify novelty)  (critical feedback) │
+│         │                    │                  │            │
+│         ▼                    ▼                  ▼            │
+│   ┌──────────┐        ┌──────────┐       ┌──────────┐      │
+│   │ Search   │        │ Check if │       │ External │      │
+│   │ arXiv,   │───────▶│ idea is  │──────▶│ LLM      │      │
+│   │ Scholar  │        │ novel    │       │ evaluates│      │
+│   │ for gaps │        │          │       │ your idea│      │
+│   └──────────┘        └──────────┘       └──────────┘      │
 │                                                              │
 │   Typical flow:                                              │
 │   1. /research-lit "discrete diffusion models"               │
 │   2. Read the landscape summary, spot a gap                  │
-│   3. /research-review "my idea to fix X using Y"             │
-│   4. Iterate on the idea with critical feedback              │
+│   3. /novelty-check "my idea to fix X using Y"              │
+│   4. /research-review "my idea..." (if novel enough)         │
+│   5. Iterate on the idea with critical feedback              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Skills involved:** `research-lit` + `research-review`
+**Skills involved:** `research-lit` + `novelty-check` + `research-review`
 
 📝 **Blog post:** [Claude Code 两月 NeurIPS 指北](http://xhslink.com/o/7IvAJQ41IBA)
 

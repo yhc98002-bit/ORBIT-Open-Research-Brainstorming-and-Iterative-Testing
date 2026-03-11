@@ -55,13 +55,14 @@
 
 > "这个领域最新进展是什么？哪里有 gap？"
 
-**涉及 Skills：** `research-lit` + `research-review`
+**涉及 Skills：** `research-lit` + `novelty-check` + `research-review`
 
 ```
 1. /research-lit "discrete diffusion models"    ← 搜论文，整理全景
 2. 读完全景，发现一个 gap
-3. /research-review "我的 idea 是用 X 来解决 Y"   ← 让外部 LLM 批判你的想法
-4. 根据反馈迭代
+3. /novelty-check "我的 idea 是用 X 来解决 Y"   ← 查新：有没有人做过？
+4. /research-review "我的 idea 是用 X 来解决 Y"   ← 让外部 LLM 批判你的想法
+5. 根据反馈迭代
 ```
 
 📝 **博客：** [Claude Code 两月 NeurIPS 指北](http://xhslink.com/o/7IvAJQ41IBA)
