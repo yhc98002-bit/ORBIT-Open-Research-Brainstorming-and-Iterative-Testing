@@ -941,8 +941,9 @@ Don't have Claude / OpenAI API access? You can swap in other models — same cro
 | **Alt B** | GLM-5 (Z.ai) | MiniMax-M2.5 | No | No | [MINIMAX_MCP_GUIDE](docs/MINIMAX_MCP_GUIDE.md) |
 | **Alt C** | Any CC-compatible | Any OpenAI-compatible | No | No | [LLM_API_MIX_MATCH_GUIDE](docs/LLM_API_MIX_MATCH_GUIDE.md) |
 | **Alt D** | Kimi-K2.5 / Qwen3.5+ | GLM-5 / MiniMax-M2.5 | No | No | [ALI_CODING_PLAN_GUIDE](docs/ALI_CODING_PLAN_GUIDE.md) |
+| **Alt E** 🆓 | DeepSeek-V3.1 / Qwen3-Coder | DeepSeek-R1 / Qwen3-235B | No | No | [MODELSCOPE_GUIDE](docs/MODELSCOPE_GUIDE.md) |
 
-**Alt C** supports tested providers: GLM (Z.ai), Kimi (Moonshot), LongCat (Meituan) as executors; DeepSeek, MiniMax as reviewers. Any OpenAI-compatible API should also work via the generic [`llm-chat`](mcp-servers/llm-chat/) MCP server. **Alt D** uses [Alibaba Coding Plan](https://bailian.console.aliyun.com/) — one API key for both executor and reviewer, 4 models included (Kimi, Qwen, GLM, MiniMax).
+**Alt C** supports tested providers: GLM (Z.ai), Kimi (Moonshot), LongCat (Meituan) as executors; DeepSeek, MiniMax as reviewers. Any OpenAI-compatible API should also work via the generic [`llm-chat`](mcp-servers/llm-chat/) MCP server. **Alt D** uses [Alibaba Coding Plan](https://bailian.console.aliyun.com/) — one API key for both executor and reviewer, 4 models included (Kimi, Qwen, GLM, MiniMax). **Alt E** uses [ModelScope](https://www.modelscope.cn/) — **free** (2000 calls/day), one key, no automation restrictions.
 
 ### Alt A: GLM + GPT
 
@@ -1042,7 +1043,7 @@ claude
   - **Method diagrams** (hard): architecture/pipeline/flowchart figures → VLM understanding + image generation → iterative refinement
   - Building blocks: [PaperBanana](https://github.com/dwzhu-pku/PaperBanana) (5-agent framework: Retriever→Stylist→Visualizer→Critic, NeurIPS benchmark), [Nano Banana Pro](https://deepmind.google/models/gemini-image/pro/) (Gemini image model), [FigureLabs](https://www.figurelabs.ai/) (commercial, PDF import). An [OpenClaw version](https://clawhub.ai/skills/paperbanana) exists on ClawHub but needs rewrite for Claude Code (flagged as incomplete + security concerns)
   - Would enhance `/paper-figure` to accept `— reference: paper.pdf` for style matching
-- [ ] **ModelScope integration** — support [ModelScope](https://www.modelscope.cn/) as executor and/or reviewer provider. ModelScope hosts Chinese open-source models (Qwen, GLM, Yi, etc.) with OpenAI-compatible API endpoints. Would add as Alt E in [Alternative Model Combinations](#-alternative-model-combinations) via `llm-chat` MCP server
+- [x] **ModelScope integration** — [ModelScope guide](docs/MODELSCOPE_GUIDE.md) added as Alt E. Free (2000 calls/day), one API key, dual-protocol (Anthropic + OpenAI), no automation restrictions. DeepSeek-V3.1 + DeepSeek-R1 recommended
 
 ## 💬 Community
 

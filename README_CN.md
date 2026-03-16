@@ -838,8 +838,9 @@ Skills 就是普通的 Markdown 文件，fork 后随意改：
 | **方案 B** | GLM-5（Z.ai） | MiniMax-M2.5 | 否 | 否 | [MINIMAX_MCP_GUIDE](docs/MINIMAX_MCP_GUIDE.md) |
 | **方案 C** | 任意 CC 兼容 | 任意 OpenAI 兼容 | 否 | 否 | [LLM_API_MIX_MATCH_GUIDE](docs/LLM_API_MIX_MATCH_GUIDE.md) |
 | **方案 D** | Kimi-K2.5 / Qwen3.5+ | GLM-5 / MiniMax-M2.5 | 否 | 否 | [ALI_CODING_PLAN_GUIDE](docs/ALI_CODING_PLAN_GUIDE.md) |
+| **方案 E** 🆓 | DeepSeek-V3.1 / Qwen3-Coder | DeepSeek-R1 / Qwen3-235B | 否 | 否 | [MODELSCOPE_GUIDE](docs/MODELSCOPE_GUIDE.md) |
 
-**方案 C** 已适配的提供商：GLM（Z.ai）、Kimi（Moonshot）、LongCat（美团）作为执行器；DeepSeek、MiniMax 作为审查器。任何 OpenAI 兼容 API 理论上均可通过通用 [`llm-chat`](mcp-servers/llm-chat/) MCP 服务器接入。**方案 D** 使用[阿里百炼 Coding Plan](https://bailian.console.aliyun.com/)——一个 API Key 包含 4 款模型（Kimi、Qwen、GLM、MiniMax），双端点配置。
+**方案 C** 已适配的提供商：GLM（Z.ai）、Kimi（Moonshot）、LongCat（美团）作为执行器；DeepSeek、MiniMax 作为审查器。任何 OpenAI 兼容 API 理论上均可通过通用 [`llm-chat`](mcp-servers/llm-chat/) MCP 服务器接入。**方案 D** 使用[阿里百炼 Coding Plan](https://bailian.console.aliyun.com/)——一个 API Key 包含 4 款模型（Kimi、Qwen、GLM、MiniMax），双端点配置。**方案 E** 使用 [ModelScope（魔搭社区）](https://www.modelscope.cn/)——**免费**（2000 次/天），一个 Key，无自动化限制。
 
 ### 方案 A: GLM + GPT
 
@@ -940,7 +941,7 @@ claude
   - **方法示意图**（高难度）：架构图/流程图/pipeline 图 → VLM 理解 + 图像生成 → 迭代优化
   - 技术方案：[PaperBanana](https://github.com/dwzhu-pku/PaperBanana)（5 agent 框架：Retriever→Stylist→Visualizer→Critic，NeurIPS benchmark）、[Nano Banana Pro](https://deepmind.google/models/gemini-image/pro/)（Gemini 图像模型）、[FigureLabs](https://www.figurelabs.ai/)（商业方案，PDF 导入）。ClawHub 上有 [OpenClaw 版本](https://clawhub.ai/skills/paperbanana)可参考，但需重写为 Claude Code skill（原版文件不完整 + 安全标记）
   - 最终增强 `/paper-figure` 支持 `— reference: paper.pdf` 风格匹配
-- [ ] **ModelScope 集成** — 支持 [ModelScope（魔搭社区）](https://www.modelscope.cn/) 作为执行器和/或审查器。ModelScope 托管国产开源模型（Qwen、GLM、Yi 等），提供 OpenAI 兼容 API。将作为方案 E 加入[替代模型组合](#-替代模型组合)，通过 `llm-chat` MCP 服务器接入
+- [x] **ModelScope 集成** — [ModelScope 指南](docs/MODELSCOPE_GUIDE.md) 已加入为方案 E。免费（2000 次/天），一个 Key，双协议（Anthropic + OpenAI），无自动化限制。推荐 DeepSeek-V3.1 + DeepSeek-R1
 
 ## 💬 交流群
 
