@@ -1,287 +1,138 @@
 # Codex + Gemini 审稿人指南
 
-使用 **Codex CLI 作为执行者**，使用 **Gemini 作为本地结构化审稿人**。
+使用：
 
-[English version](CODEX_GEMINI_REVIEW_GUIDE.md)
+- **Codex** 作为主执行者
+- **Gemini** 作为审稿人
+- 本地 `gemini-review` MCP bridge 作为传输层
+- **direct Gemini API** 作为默认 reviewer backend
 
-这条路径适合你在以下场景使用：
+这份指南是对上游 `skills/skills-codex/` 的**叠加方案**，不是替换。
 
-- 让 Codex 负责具体实现和仓库修改
-- 让 Gemini 作为外部审查器给出结构化反馈
-- 想用**仓库内本地 runner**，而不是 GitHub Actions 或托管服务
-- 希望每轮审查都保存完整产物：prompt、原始响应、解析后的 JSON、markdown 摘要
+## 架构
 
-这份指南是在 ARIS 现有能力旁边补上一条本地工具链，不会替代 `skills/skills-codex/`。
+- 基础 skill 集：`skills/skills-codex/`
+- 审稿覆盖层：`skills/skills-codex-gemini-review/`
+- 审稿 bridge：`mcp-servers/gemini-review/`
 
-## 第一次使用时的推荐顺序
+安装顺序很重要：
 
-如果你之前完全没用过这条路径，建议按这个顺序来：
+1. 先安装 `skills/skills-codex/*`
+2. 再安装 `skills/skills-codex-gemini-review/*`
+3. 最后注册 `gemini-review` MCP
 
-1. 先安装并登录 **Codex CLI**
-   - `codex --help` 应该能正常工作
-   - 如果还没登录，先运行 `codex login`
-2. 再配置 **Gemini 审稿能力**
-   - 对大多数用户，推荐直接配置 `GEMINI_API_KEY`
-   - 如果走 API 路径，不需要额外安装 Gemini CLI
-3. 先跑一次**单次 review smoke test**
-   - 确认 review 可以正常回传 JSON，再去跑多轮 loop
+## 安装
 
-需要注意的范围是：
+```bash
+git clone https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep.git
+cd Auto-claude-code-research-in-sleep
 
-- `tools/run_gemini_review.py` 本身只要求 Gemini 可用
-- 但这条“**Codex 执行，Gemini 审稿**”的完整工作流，应该在开始前把 Codex CLI 和 Gemini 都配置好
+mkdir -p ~/.codex/skills
+cp -a skills/skills-codex/* ~/.codex/skills/
+cp -a skills/skills-codex-gemini-review/* ~/.codex/skills/
 
-## 为什么值得加这条路径
+mkdir -p ~/.codex/mcp-servers/gemini-review
+cp mcp-servers/gemini-review/server.py ~/.codex/mcp-servers/gemini-review/server.py
+cp mcp-servers/gemini-review/README.md ~/.codex/mcp-servers/gemini-review/README.md
+codex mcp add gemini-review --env GEMINI_REVIEW_BACKEND=api -- python3 ~/.codex/mcp-servers/gemini-review/server.py
+```
 
-- 对很多用户来说，Codex CLI 已经是足够低门槛的本地执行器。
-- Gemini 往往也是最容易获取的外部审稿人接口之一：在支持地区，普通 Google 账号即可从 Gemini API / AI Studio 免费层起步；如果需要，也可以再走 Gemini CLI 或付费 API。
-- 把两者配对后，依然保留“执行者 / 审查者”分离的优点，同时显著降低 ARIS 工作流的使用成本和接入门槛。
-
-接入边界说明：
-
-- Google AI Studio / Gemini API 在支持地区提供免费层；这**不要求**你先订阅 Gemini Advanced / Google One AI Premium。
-- 免费层可用模型、速率限制和配额会随时间变化，不应把某个固定额度写成长期承诺。
-- 免费层下的 prompt / response 处理条款与付费层不同；如果涉及敏感数据，不能把这条路径按“免费且可直接上生产”来宣传，必须先核对当期官方条款。
-- 官方入口与定价说明：
-  - API key / AI Studio：<https://aistudio.google.com/apikey>
-  - Gemini API 定价与免费层：<https://ai.google.dev/gemini-api/docs/pricing>
-
-## 新增了什么
-
-新增两个本地入口：
-
-- `tools/run_gemini_review.py`
-  - 对 git diff + 指定文件执行一次结构化 Gemini 审查
-- `tools/run_agent_review_loop.py`
-  - 多轮执行者 / 审稿循环
-  - 每一轮都会：
-    1. 运行执行命令
-    2. 收集新的仓库状态
-    3. 让 Gemini 给出严格的结构化审查
-    4. 在 `accept` 时停止，否则继续下一轮
-
-两个工具都只依赖 Python 标准库，以及你本地已有的 Gemini 访问方式。
-
-## 审查模式
-
-reviewer 支持三种 profile：
-
-- `code`
-- `research`
-- `generic`
-
-所有 profile 都会强制 Gemini 返回严格 JSON 对象，包含：
-
-- `score`
-- `decision`
-- `summary`
-- `strengths`
-- `critical_issues`
-- `open_questions`
-- `next_actions`
-
-## 依赖要求
-
-对第一次使用的人，推荐的最短路径是：
-
-- **Codex CLI + Gemini API**
-  - 安装并登录 `codex`
-  - 设置 `GEMINI_API_KEY`
-  - 先运行下面的单次 review smoke test
-
-可选的 reviewer backend：
-
-1. **Gemini API**
-   - 设置 `GEMINI_API_KEY`
-   - 不需要安装 Gemini CLI
-   - 不需要先购买 Gemini 面向消费者的订阅；但仍需自行核对 AI Studio 的当前可用地区、免费层和限速政策
-2. **Gemini CLI**
-   - 本地安装 `gemini`
-   - 已完成 CLI 登录，或 CLI 已配置 API key
-
-工具按以下顺序选择 reviewer backend：
-
-- `--backend auto`
-  - 如果存在 `GEMINI_API_KEY`，优先用 API
-  - 否则退回到 CLI
-- `--backend api`
-- `--backend cli`
-
-## 可选的本地配置
-
-推荐的凭证文件：
+推荐凭证文件：
 
 ```bash
 mkdir -p ~/.gemini
 cat > ~/.gemini/.env <<'EOF'
 GEMINI_API_KEY="your-key"
 EOF
+chmod 600 ~/.gemini/.env
 ```
 
-如果存在，runner 会自动加载 `~/.gemini/.env`。
+如果存在，bridge 会自动加载 `~/.gemini/.env`。
 
-如果这个文件存在，那么即使你没有安装 Gemini CLI，`--backend auto` 也会优先走 Gemini API。
+## 为什么默认走 direct API
 
-如果你想在仓库内本地安装 Gemini CLI：
+- 这条路径的目标是：**最大化复用原始 ARIS 的 review-heavy skills，同时最少改 skill**。
+- `gemini-review` bridge 保留了与 Claude-review overlay 相同的 `review` / `review_reply` / `review_start` / `review_reply_start` / `review_status` 契约。
+- 直接走 Gemini API 可以去掉本地 CLI 这一跳，让 reviewer 路径更接近 ARIS 里已有的 API 型集成方式。
+
+## 接入边界说明
+
+- Google AI Studio / Gemini API 在支持地区提供免费层；这**不要求**你先订阅 Gemini Advanced / Google One AI Premium。
+- 免费层可用模型、速率限制和配额会变化，不应把某个固定额度写成长期承诺。
+- 免费层下的 prompt / response 处理条款与付费层不同；如果涉及敏感数据，必须先核对官方当前条款。
+- 官方入口与定价说明：
+  - API key / AI Studio：<https://aistudio.google.com/apikey>
+  - Gemini API 定价与免费层：<https://ai.google.dev/gemini-api/docs/pricing>
+
+## 可选 CLI fallback
+
+这份指南的预期路径是 direct API。  
+如果你明确想切到 Gemini CLI，可改成：
 
 ```bash
-mkdir -p .local-tools/gemini-cli
-cd .local-tools/gemini-cli
-npm install @google/gemini-cli
+codex mcp remove gemini-review
+codex mcp add gemini-review --env GEMINI_REVIEW_BACKEND=cli -- python3 ~/.codex/mcp-servers/gemini-review/server.py
 ```
 
-runner 按以下顺序查找 Gemini 可执行文件：
+但这不是本指南的主路径。
 
-1. `--gemini-bin`
-2. `.local-tools/gemini-cli/node_modules/.bin/gemini`
-3. `PATH`
+## 验证
 
-## 第一次运行时建议先执行
-
-如果你是第一次配置，先跑下面这条最小命令：
+1. 检查 MCP 是否注册成功：
 
 ```bash
-codex --help
-
-python3 tools/run_gemini_review.py \
-  --backend api \
-  --profile code \
-  --task "Smoke test: confirm the Gemini reviewer returns a valid structured review JSON for this repository." \
-  --git-diff-mode none \
-  --include-file README.md
+codex mcp list
 ```
 
-如果命令顺利结束，并且产出了 `review.json` 和 `review.md`，说明 Gemini 审稿链路已经通了。
-
-## 单次审查
-
-把当前 worktree 当成工程代码做严格审查：
+2. 检查本地 Gemini 凭证文件是否存在：
 
 ```bash
-python3 tools/run_gemini_review.py \
-  --profile code \
-  --task "Review the current changes as a skeptical senior engineer." \
-  --git-diff-mode worktree \
-  --include-file README.md
+test -f ~/.gemini/.env && echo "Gemini env file found"
 ```
 
-审查一次研究进展：
+3. 在你的项目里启动 Codex：
 
 ```bash
-python3 tools/run_gemini_review.py \
-  --profile research \
-  --task-file /path/to/review_task.md \
-  --git-diff-mode base \
-  --git-base-ref origin/main
+codex -C /path/to/your/project
 ```
 
-默认输出目录：
+## 会覆盖哪些 skill
 
-```text
-outputs/gemini_review_<timestamp>/
-```
+这个 overlay 只替换 review-heavy skills：
 
-产物包括：
+- `research-review`
+- `novelty-check`
+- `research-refine`
+- `auto-review-loop`
+- `paper-plan`
+- `paper-figure`
+- `paper-write`
+- `auto-paper-improvement-loop`
 
-- `review_bundle.json`
-- `prompt.md`
-- `gemini_stdout.txt`
-- `gemini_stderr.txt`
-- `gemini_cli_payload.json`
-- `response_text.txt`
-- `review.json`
-- `review.md`
-- `run_metadata.json`
+其它能力仍然来自上游 `skills/skills-codex/`。
 
-## 多轮 Executor + Review 循环
+## 异步 reviewer 流程
 
-这个 loop runner 适合“实现 -> 审查 -> 再迭代”。
+对于长论文 / 长项目审稿，使用：
 
-最小示例：
+- `review_start`
+- `review_reply_start`
+- `review_status`
 
-```bash
-python3 tools/run_agent_review_loop.py \
-  --profile code \
-  --task "Fix the highest-priority issues in the current repository." \
-  --executor-cmd 'pytest -q || true' \
-  --review-backend auto \
-  --max-rounds 3
-```
+原因：即便走 direct API，超长同步 reviewer 调用仍然可能撞上宿主侧的 MCP timeout。保留异步 `review*` 流程，才能在**不改原有 review-heavy skill 行为**的前提下继续复用它们。
 
-更接近 Codex 工作方式的示例：
+## 项目配置
 
-```bash
-python3 tools/run_agent_review_loop.py \
-  --profile research \
-  --task "Address the reviewer-critical issues with the minimum useful repository changes." \
-  --executor-cmd 'printf "%s\n" "Use Codex in this round, then save notes into $AGENT_REVIEW_EXECUTOR_DIR/notes.txt"' \
-  --include-file README.md \
-  --max-rounds 2
-```
+这条路径不需要额外的项目配置文件。
 
-loop 输出目录：
+- 继续使用你现有的 `CLAUDE.md`
+- 保持现有项目布局
+- 只切换安装的 Codex skill 文件和 MCP 注册
 
-```text
-outputs/agent_review_loop_<timestamp>/
-```
+## 维护原则
 
-每一轮会得到：
+让这条路径保持足够窄：
 
-- `executor/`
-- `review/`
-- `round_summary.json`
-
-loop 根目录还会保存：
-
-- `loop_config.json`
-- `loop_summary.json`
-- `loop_summary.md`
-
-## 对执行命令有用的环境变量
-
-每轮执行时，loop 会导出：
-
-- `AGENT_REVIEW_LOOP_DIR`
-- `AGENT_REVIEW_ROUND_DIR`
-- `AGENT_REVIEW_ROUND_INDEX`
-- `AGENT_REVIEW_EXECUTOR_DIR`
-- `AGENT_REVIEW_DIR`
-- `AGENT_REVIEW_EXECUTOR_TASK_FILE`
-- `AGENT_REVIEW_EXECUTOR_CONTEXT_FILE`
-- `AGENT_REVIEW_PREVIOUS_JSON`
-- `AGENT_REVIEW_PREVIOUS_MD`
-
-这样你的执行命令就可以读取上一轮审查结果，并在当前轮目录下写产物，而不需要硬编码路径。
-
-## 离线 Smoke Test
-
-如果你想不调用真实 Gemini 先验证整条链路，可以使用 mock JSON：
-
-```bash
-python3 tools/run_gemini_review.py \
-  --task "Smoke test the local review pipeline." \
-  --mock-response-file /path/to/mock_review.json
-```
-
-mock 文件可以是以下任一种：
-
-- 原始 review JSON 对象
-- 带 `response` 字段的 CLI 风格 JSON，字段内是 review JSON 文本
-
-## 什么时候适合用这条路径
-
-如果你想要：
-
-- Codex 在本地执行
-- Gemini 在本地审查
-- 不依赖 Claude 审稿 API
-- 不依赖 OpenAI 审稿 API
-- 用一个轻量、仓库级别的 review loop 代替 MCP 基础设施
-
-就选这条路径。
-
-如果你明确想要下面这种组合，请改看 [`docs/CODEX_CLAUDE_REVIEW_GUIDE_CN.md`](CODEX_CLAUDE_REVIEW_GUIDE_CN.md)：
-
-- Codex 作为执行者
-- Claude Code CLI 作为审稿人
-- 通过 MCP bridge 暴露 reviewer
+- 基础能力继续复用 `skills/skills-codex/*`
+- 只在 `skills/skills-codex-gemini-review/*` 里覆盖 review-heavy skills
+- 让 `mcp-servers/gemini-review/server.py` 只聚焦 `review*` 兼容契约

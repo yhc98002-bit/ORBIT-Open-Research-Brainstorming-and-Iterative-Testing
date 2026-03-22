@@ -1,112 +1,41 @@
 # Codex + Gemini Reviewer Guide
 
-Use **Codex CLI as the executor** and **Gemini as a structured local reviewer**.
+Run ARIS with:
 
-[中文版本](CODEX_GEMINI_REVIEW_GUIDE_CN.md)
+- **Codex** as the main executor
+- **Gemini** as the reviewer
+- the local `gemini-review` MCP bridge as the transport layer
+- the direct **Gemini API** as the default reviewer backend
 
-This path is useful when you want:
+This guide is **additive** to the upstream Codex-native path. It does not replace `skills/skills-codex/`.
 
-- Codex to do the implementation work
-- Gemini to act as an external reviewer
-- a **repo-local** review runner instead of GitHub Actions or a hosted service
-- saved artifacts for every review round: prompt, raw response, parsed JSON, markdown summary
+## Architecture
 
-This guide adds a local toolchain alongside ARIS. It does **not** replace `skills/skills-codex/`.
+- Base skill set: `skills/skills-codex/`
+- Reviewer override layer: `skills/skills-codex-gemini-review/`
+- Reviewer bridge: `mcp-servers/gemini-review/`
 
-## First-Time Setup
+The install order matters:
 
-If you are new to this path, use this order:
+1. install `skills/skills-codex/*`
+2. install `skills/skills-codex-gemini-review/*`
+3. register `gemini-review` MCP
 
-1. Install and authenticate **Codex CLI**.
-   - `codex --help` should work.
-   - If needed, run `codex login`.
-2. Configure **Gemini reviewer access**.
-   - Recommended for most users: `GEMINI_API_KEY`.
-   - Gemini CLI is optional, not required for the API path.
-3. Run a **single review smoke test** before the multi-round loop.
+## Install
 
-Important scope note:
+```bash
+git clone https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep.git
+cd Auto-claude-code-research-in-sleep
 
-- `tools/run_gemini_review.py` only needs Gemini access.
-- The intended **Codex executes, Gemini reviews** workflow needs both Codex CLI and Gemini configured before you start the loop.
+mkdir -p ~/.codex/skills
+cp -a skills/skills-codex/* ~/.codex/skills/
+cp -a skills/skills-codex-gemini-review/* ~/.codex/skills/
 
-## Why This Path
-
-- Codex CLI is a practical low-friction local executor for many users.
-- Gemini is often one of the easiest external reviewers to reach: you can start with a normal Google account plus the Gemini API free tier in eligible regions, or use Gemini CLI / paid API access if needed.
-- Pairing the two keeps the executor/reviewer split while lowering both cost and setup friction for ARIS-style workflows.
-
-Access note:
-
-- Google AI Studio / Gemini API has a free tier in eligible countries; this does **not** require a Gemini Advanced / Google One AI Premium subscription.
-- Free-tier model availability and rate limits change over time, so do not treat any single quota number as permanent.
-- On the free tier, prompts and responses may be used to improve Google's products; do not position this path as suitable for sensitive data unless the user has reviewed the current paid-tier terms.
-- Official references:
-  - API key / AI Studio entry: <https://aistudio.google.com/apikey>
-  - Gemini API pricing and free tier: <https://ai.google.dev/gemini-api/docs/pricing>
-
-## What This Adds
-
-Two local entrypoints:
-
-- `tools/run_gemini_review.py`
-  - single structured Gemini review over a git diff + selected files
-- `tools/run_agent_review_loop.py`
-  - multi-round executor/reviewer loop
-  - each round:
-    1. run an executor command
-    2. collect the new repo state
-    3. ask Gemini for a strict structured review
-    4. stop on `accept` or continue
-
-Both tools use only Python standard library plus your local Gemini access.
-
-## Review Modes
-
-The reviewer supports three profiles:
-
-- `code`
-- `research`
-- `generic`
-
-All profiles force Gemini to return a strict JSON object with:
-
-- `score`
-- `decision`
-- `summary`
-- `strengths`
-- `critical_issues`
-- `open_questions`
-- `next_actions`
-
-## Requirements
-
-Recommended beginner path:
-
-- **Codex CLI + Gemini API**
-  - install and authenticate `codex`
-  - set `GEMINI_API_KEY`
-  - run the single-review smoke test below
-
-Alternative reviewer backend:
-
-1. **Gemini API**
-   - set `GEMINI_API_KEY`
-   - no Gemini CLI install required
-   - a paid Gemini consumer subscription is **not** required just to obtain an API key; check current AI Studio availability, rate limits, and pricing
-2. **Gemini CLI**
-   - install `gemini` locally
-   - authenticated CLI session or API-key-backed CLI config
-
-The tools choose reviewer backend like this:
-
-- `--backend auto`
-  - prefer API when `GEMINI_API_KEY` exists
-  - otherwise fall back to CLI
-- `--backend api`
-- `--backend cli`
-
-## Optional Local Setup
+mkdir -p ~/.codex/mcp-servers/gemini-review
+cp mcp-servers/gemini-review/server.py ~/.codex/mcp-servers/gemini-review/server.py
+cp mcp-servers/gemini-review/README.md ~/.codex/mcp-servers/gemini-review/README.md
+codex mcp add gemini-review --env GEMINI_REVIEW_BACKEND=api -- python3 ~/.codex/mcp-servers/gemini-review/server.py
+```
 
 Recommended credential file:
 
@@ -115,170 +44,94 @@ mkdir -p ~/.gemini
 cat > ~/.gemini/.env <<'EOF'
 GEMINI_API_KEY="your-key"
 EOF
+chmod 600 ~/.gemini/.env
 ```
 
-The runners auto-load `~/.gemini/.env` if present.
+The bridge auto-loads `~/.gemini/.env` if present.
 
-If that file exists, `--backend auto` resolves to the Gemini API path even when Gemini CLI is not installed.
+## Why direct API is the default
 
-If you want a repo-local Gemini CLI install:
+- This path is designed to maximize reuse of the original ARIS review-heavy skills while minimizing skill changes.
+- The `gemini-review` bridge preserves the same `review` / `review_reply` / `review_start` / `review_reply_start` / `review_status` contract used by the existing Claude-review overlay.
+- Using the direct Gemini API removes the extra local CLI hop and keeps the reviewer path closer to the API-backed integrations already used elsewhere in ARIS.
+
+## Access Notes
+
+- Google AI Studio / Gemini API has a free tier in eligible countries; this does **not** require a Gemini Advanced / Google One AI Premium subscription.
+- Free-tier model availability and rate limits change over time, so do not treat any single quota number as permanent.
+- On the free tier, prompts and responses may be used to improve Google's products; do not position this path as suitable for sensitive data unless the user has reviewed the current official terms.
+- Official references:
+  - API key / AI Studio entry: <https://aistudio.google.com/apikey>
+  - Gemini API pricing and free tier: <https://ai.google.dev/gemini-api/docs/pricing>
+
+## Optional CLI fallback
+
+The intended path is direct API. If you explicitly need Gemini CLI instead:
 
 ```bash
-mkdir -p .local-tools/gemini-cli
-cd .local-tools/gemini-cli
-npm install @google/gemini-cli
+codex mcp remove gemini-review
+codex mcp add gemini-review --env GEMINI_REVIEW_BACKEND=cli -- python3 ~/.codex/mcp-servers/gemini-review/server.py
 ```
 
-The runner resolves the Gemini binary in this order:
+That fallback is available, but it is not the primary path for this guide.
 
-1. `--gemini-bin`
-2. `.local-tools/gemini-cli/node_modules/.bin/gemini`
-3. `PATH`
+## Verify
 
-## Recommended First Run
-
-If you are setting this up for the first time, start here:
+1. Check MCP registration:
 
 ```bash
-codex --help
-
-python3 tools/run_gemini_review.py \
-  --backend api \
-  --profile code \
-  --task "Smoke test: confirm the Gemini reviewer returns a valid structured review JSON for this repository." \
-  --git-diff-mode none \
-  --include-file README.md
+codex mcp list
 ```
 
-If this command finishes and writes `review.json` plus `review.md`, your Gemini reviewer path is working.
-
-## Single Review
-
-Review the current worktree as a strict engineering reviewer:
+2. Check that your Gemini API key file exists:
 
 ```bash
-python3 tools/run_gemini_review.py \
-  --profile code \
-  --task "Review the current changes as a skeptical senior engineer." \
-  --git-diff-mode worktree \
-  --include-file README.md
+test -f ~/.gemini/.env && echo "Gemini env file found"
 ```
 
-Review a research update:
+3. Start Codex in your project:
 
 ```bash
-python3 tools/run_gemini_review.py \
-  --profile research \
-  --task-file /path/to/review_task.md \
-  --git-diff-mode base \
-  --git-base-ref origin/main
+codex -C /path/to/your/project
 ```
 
-Default output:
+## What gets overridden
 
-```text
-outputs/gemini_review_<timestamp>/
-```
+The overlay only replaces review-heavy skills:
 
-Artifacts include:
+- `research-review`
+- `novelty-check`
+- `research-refine`
+- `auto-review-loop`
+- `paper-plan`
+- `paper-figure`
+- `paper-write`
+- `auto-paper-improvement-loop`
 
-- `review_bundle.json`
-- `prompt.md`
-- `gemini_stdout.txt`
-- `gemini_stderr.txt`
-- `gemini_cli_payload.json`
-- `response_text.txt`
-- `review.json`
-- `review.md`
-- `run_metadata.json`
+Everything else still comes from the upstream `skills/skills-codex/` package.
 
-## Multi-Round Executor + Review Loop
+## Async reviewer flow
 
-The loop runner is for “implement, then review, then iterate”.
+For long paper or project reviews, use:
 
-Minimal example:
+- `review_start`
+- `review_reply_start`
+- `review_status`
 
-```bash
-python3 tools/run_agent_review_loop.py \
-  --profile code \
-  --task "Fix the highest-priority issues in the current repository." \
-  --executor-cmd 'pytest -q || true' \
-  --review-backend auto \
-  --max-rounds 3
-```
+Why: even on the direct API path, long synchronous reviewer calls can still hit host-side MCP tool timeouts. The async `review*` flow keeps the original review-heavy skills usable without changing their behavior.
 
-Practical Codex-style example:
+## Project config
 
-```bash
-python3 tools/run_agent_review_loop.py \
-  --profile research \
-  --task "Address the reviewer-critical issues with the minimum useful repository changes." \
-  --executor-cmd 'printf "%s\n" "Use Codex in this round, then save notes into $AGENT_REVIEW_EXECUTOR_DIR/notes.txt"' \
-  --include-file README.md \
-  --max-rounds 2
-```
+No special project config file is required for this path.
 
-Loop output:
+- keep using your existing `CLAUDE.md`
+- keep your current project layout
+- only switch the installed Codex skill files and MCP registration
 
-```text
-outputs/agent_review_loop_<timestamp>/
-```
+## Maintenance
 
-Each round gets:
+Keep this path intentionally narrow:
 
-- `executor/`
-- `review/`
-- `round_summary.json`
-
-The loop root also stores:
-
-- `loop_config.json`
-- `loop_summary.json`
-- `loop_summary.md`
-
-## Useful Executor Environment Variables
-
-During each executor round, the loop exports:
-
-- `AGENT_REVIEW_LOOP_DIR`
-- `AGENT_REVIEW_ROUND_DIR`
-- `AGENT_REVIEW_ROUND_INDEX`
-- `AGENT_REVIEW_EXECUTOR_DIR`
-- `AGENT_REVIEW_DIR`
-- `AGENT_REVIEW_EXECUTOR_TASK_FILE`
-- `AGENT_REVIEW_EXECUTOR_CONTEXT_FILE`
-- `AGENT_REVIEW_PREVIOUS_JSON`
-- `AGENT_REVIEW_PREVIOUS_MD`
-
-This lets your executor command read the previous review and write round-local artifacts without guessing paths.
-
-## Offline Smoke Testing
-
-You can validate the flow without calling real Gemini by using a mock JSON file:
-
-```bash
-python3 tools/run_gemini_review.py \
-  --task "Smoke test the local review pipeline." \
-  --mock-response-file /path/to/mock_review.json
-```
-
-The mock file should contain either:
-
-- a raw review JSON object, or
-- a CLI-style JSON payload with a `response` field containing the review JSON text
-
-## When To Use This Path
-
-Choose this guide when you want:
-
-- Codex to execute locally
-- Gemini to review locally
-- no Claude API requirement
-- no OpenAI API requirement
-- a lightweight repo-level review loop outside MCP infrastructure
-
-Choose [`docs/CODEX_CLAUDE_REVIEW_GUIDE.md`](docs/CODEX_CLAUDE_REVIEW_GUIDE.md) when you specifically want:
-
-- Codex as executor
-- Claude Code CLI as reviewer
-- reviewer access via an MCP bridge
+- reuse `skills/skills-codex/*` unchanged
+- only override review-heavy skills in `skills/skills-codex-gemini-review/*`
+- keep `mcp-servers/gemini-review/server.py` focused on the `review*` compatibility contract
