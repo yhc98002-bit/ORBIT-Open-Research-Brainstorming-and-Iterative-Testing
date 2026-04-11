@@ -1030,17 +1030,17 @@ All plugin features are **optional** — if not installed, ARIS falls back to Cl
 cd Auto-claude-code-research-in-sleep
 git pull
 
-# Option A: Full update (overwrites all skills with latest version)
-cp -r skills/* ~/.claude/skills/
+# 🧠 Smart update (recommended) — analyzes what's safe to update
+bash tools/smart_update.sh          # dry-run: shows what would change
+bash tools/smart_update.sh --apply  # apply: adds new + updates safe ones
 
-# Option B: Safe update (only add NEW skills, keep your customizations)
-cp -rn skills/* ~/.claude/skills/
-
-# Option C: Update specific skills only
-cp -r skills/experiment-bridge ~/.claude/skills/
+# Manual options (if you prefer):
+# cp -r skills/* ~/.claude/skills/       # Option A: overwrite all
+# cp -rn skills/* ~/.claude/skills/      # Option B: only add new, keep yours
+# cp -r skills/experiment-bridge ~/.claude/skills/  # Option C: specific skill
 ```
 
-> 💡 **Which option?** Use **A** if you haven't customized any skills. Use **B** if you've modified skills locally (new skills get added, your changes are preserved — but you'll miss upstream bug fixes in modified files). Use **C** to selectively update.
+> 💡 **Smart update** compares your local skills with upstream, detects personal customizations (server paths, API keys, etc.), and only updates skills that are safe to replace. Skills with your personal info are flagged for manual review.
 
 ### Usage
 
