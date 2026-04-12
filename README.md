@@ -215,6 +215,13 @@ claude
 > ```
 > Then use [`/deepxiv`](skills/deepxiv/SKILL.md) directly or opt into it from `/research-lit` with `— sources: deepxiv` or `— sources: all, deepxiv`.
 >
+> 🔎 **Optional: Exa AI-powered web search**
+> ```bash
+> pip install exa-py
+> export EXA_API_KEY=your-key-here
+> ```
+> Then use [`/exa-search`](skills/exa-search/SKILL.md) directly or opt into it from `/research-lit` with `— sources: exa` or `— sources: all, exa`. Covers blogs, docs, news, and research papers with built-in content extraction.
+>
 > 🗑️ **Uninstall:** To remove ARIS skills without affecting your own personal skills:
 > ```bash
 > cd Auto-claude-code-research-in-sleep && ls skills/ | xargs -I{} rm -rf ~/.claude/skills/{}
@@ -226,7 +233,7 @@ claude
 > |-----------|---------|-------------|
 > | `AUTO_PROCEED` | `true` | Auto-continue at idea selection gate. Set `false` to manually pick which idea to pursue before committing GPU time |
 > | `human checkpoint` | `false` | Pause after each review round so you can read the score, give custom modification instructions, skip specific fixes, or stop early |
-> | `sources` | `all` | Which literature sources to search: `zotero`, `obsidian`, `local`, `web`, `semantic-scholar`, `deepxiv`, or `all`. Note: `semantic-scholar` and `deepxiv` must be explicitly listed — not included in `all` |
+> | `sources` | `all` | Which literature sources to search: `zotero`, `obsidian`, `local`, `web`, `semantic-scholar`, `deepxiv`, `exa`, or `all`. Note: `semantic-scholar`, `deepxiv`, and `exa` must be explicitly listed — not included in `all` |
 > | `arxiv download` | `false` | Download top relevant arXiv PDFs during literature survey. When `false`, only fetches metadata (title, abstract, authors) |
 > | `DBLP_BIBTEX` | `true` | Fetch real BibTeX from [DBLP](https://dblp.org)/[CrossRef](https://www.crossref.org) instead of LLM-generated entries. Eliminates hallucinated citations. Zero install |
 > | `code review` | `true` | GPT-5.4 xhigh reviews experiment code before GPU deployment. Set `false` to skip |
@@ -245,6 +252,7 @@ claude
 > /research-pipeline "your topic" — human checkpoint: true                       # pause after each review round to give feedback
 > /research-pipeline "your topic" — sources: zotero, web                         # only search Zotero + web (skip local PDFs)
 > /research-pipeline "your topic" — sources: all, deepxiv                        # default sources plus DeepXiv progressive retrieval
+> /research-pipeline "your topic" — sources: all, exa                            # default sources plus Exa AI-powered web search
 > /research-pipeline "your topic" — arxiv download: true                         # download top arXiv PDFs during literature survey
 > /research-pipeline "your topic" — difficulty: nightmare                        # maximum adversarial review before submission
 > /research-pipeline "your topic" — effort: beast                               # all knobs to maximum — top-venue sprint
@@ -1036,6 +1044,7 @@ claude   # hooks active immediately
 | 📄 [`arxiv`](skills/arxiv/SKILL.md) | Search, download, and summarize arXiv papers. Standalone or `/research-lit` supplement | No |
 | 🔎 [`semantic-scholar`](skills/semantic-scholar/SKILL.md) | Search published venue papers (IEEE, ACM, Springer) via Semantic Scholar API. Citation counts, venue metadata, TLDR | No |
 | 📚 [`deepxiv`](skills/deepxiv/SKILL.md) | Progressive paper retrieval via DeepXiv CLI: search, brief, section map, section reads, trending, web search | Yes (`pip install deepxiv-sdk`) |
+| 🔎 [`exa-search`](skills/exa-search/SKILL.md) | AI-powered broad web search via Exa: blogs, docs, news, companies, research papers with content extraction (highlights, text, summaries) | Yes (`pip install exa-py`) |
 | 🎨 [`pixel-art`](skills/pixel-art/SKILL.md) | Generate pixel art SVG illustrations for READMEs, docs, or slides | No |
 | 📱 [`feishu-notify`](skills/feishu-notify/SKILL.md) | [Feishu/Lark](#-feishulark-integration-optional) push (webhook) or interactive (bidirectional). Off by default | No |
 
@@ -1137,6 +1146,7 @@ bash tools/smart_update.sh --apply  # apply: adds new + updates safe ones
 > /research-lit "topic"                              # just literature survey (all sources)
 > /research-lit "topic" — sources: zotero, web        # mix and match sources
 > /research-lit "topic" — sources: deepxiv            # DeepXiv-only progressive retrieval
+> /research-lit "topic" — sources: exa                # Exa AI-powered web search with content extraction
 > /research-lit "topic" — arxiv download: true         # also download top arXiv PDFs
 > /arxiv "discrete diffusion" — download               # standalone arXiv search + download
 > /idea-creator "topic"                              # just brainstorm
@@ -1545,7 +1555,7 @@ Now skills will:
 
 Skills are plain Markdown files. Fork and customize:
 
-> 💡 **Parameter pass-through**: Parameters flow down the call chain automatically. For example, `/research-pipeline "topic" — sources: zotero, arxiv download: true` passes `sources` and `arxiv download` through `idea-discovery` all the way down to `research-lit`. This also works for optional sources such as `deepxiv`: `/research-pipeline "topic" — sources: all, deepxiv`. You can set any downstream parameter at any level — just add `— key: value` to your command.
+> 💡 **Parameter pass-through**: Parameters flow down the call chain automatically. For example, `/research-pipeline "topic" — sources: zotero, arxiv download: true` passes `sources` and `arxiv download` through `idea-discovery` all the way down to `research-lit`. This also works for optional sources such as `deepxiv` and `exa`: `/research-pipeline "topic" — sources: all, deepxiv, exa`. You can set any downstream parameter at any level — just add `— key: value` to your command.
 >
 > ```
 > research-pipeline  ──→  idea-discovery      ──→  research-lit
@@ -1613,11 +1623,11 @@ Override inline: `/experiment-bridge — base repo: https://github.com/org/proje
 |----------|---------|-------------|
 | `PAPER_LIBRARY` | `papers/`, `literature/` | Local directories to scan for PDFs before searching online |
 | `MAX_LOCAL_PAPERS` | 20 | Max local PDFs to scan (first 3 pages each) |
-| `SOURCES` | `all` | Which sources to search: `zotero`, `obsidian`, `local`, `web`, `semantic-scholar`, `deepxiv`, or `all`. `semantic-scholar` and `deepxiv` must be explicitly listed |
+| `SOURCES` | `all` | Which sources to search: `zotero`, `obsidian`, `local`, `web`, `semantic-scholar`, `deepxiv`, `exa`, or `all`. `semantic-scholar`, `deepxiv`, and `exa` must be explicitly listed |
 | `ARXIV_DOWNLOAD` | false | When `true`, download top relevant arXiv PDFs to PAPER_LIBRARY after search |
 | `ARXIV_MAX_DOWNLOAD` | 5 | Maximum number of PDFs to download when `ARXIV_DOWNLOAD = true` |
 
-Override inline: `/research-lit "topic" — sources: zotero, web`, `/research-lit "topic" — sources: all, deepxiv`, `/research-lit "topic" — arxiv download: true, max download: 10`
+Override inline: `/research-lit "topic" — sources: zotero, web`, `/research-lit "topic" — sources: all, deepxiv`, `/research-lit "topic" — sources: all, exa`, `/research-lit "topic" — arxiv download: true, max download: 10`
 
 ### Paper Writing (`paper-write`)
 
