@@ -1,256 +1,270 @@
 ---
 name: research-pipeline
-description: "Full research pipeline: Workflow 1 (idea discovery) → implementation → Workflow 2 (auto review loop) → Workflow 3 (paper writing, optional). Goes from a broad research direction all the way to a polished PDF. Use when user says \"全流程\", \"full pipeline\", \"从找idea到投稿\", \"end-to-end research\", or wants the complete autonomous research lifecycle."
+description: "Claude × Codex co-evolution research pipeline with mandatory cross-agent checks at each critical stage. Small-refactor chain: Stage 0 problem framing → Stage 1 proposal/experiment consistency → Stage 2 implementation review → Stage 3 execution tracking → Stage 4 result audit → Stage 5 hypothesis refinement → Stage 6 paper writing (optional) → Stage 7 debate convergence. Use when user says 全流程/full pipeline/end-to-end research/从问题到论文 with correctness gates."
 argument-hint: [research-direction]
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, mcp__codex__codex, mcp__codex__codex-reply
 ---
 
-# Full Research Pipeline: Idea → Experiments → Submission
+# Research Pipeline (Claude × Codex Co-Evolution)
 
-End-to-end autonomous research workflow for: **$ARGUMENTS**
+End-to-end research workflow for: **$ARGUMENTS**
+
+> Design target: keep ARIS's existing strengths, but re-order the chain around **convergence gates** to prevent silent failure (plan ≠ code ≠ paper).
 
 ## Constants
 
-- **AUTO_PROCEED = true** — When `true`, Gate 1 auto-selects the top-ranked idea (highest pilot signal + novelty confirmed) and continues to implementation. When `false`, always waits for explicit user confirmation before proceeding.
-- **ARXIV_DOWNLOAD = false** — When `true`, `/research-lit` downloads the top relevant arXiv PDFs during literature survey. When `false` (default), only fetches metadata via arXiv API. Passed through to `/idea-discovery` → `/research-lit`.
-- **HUMAN_CHECKPOINT = false** — When `true`, the auto-review loops (Stage 4) pause after each round's review to let you see the score and provide custom modification instructions before fixes are implemented. When `false` (default), loops run fully autonomously. Passed through to `/auto-review-loop`.
-- **REVIEWER_DIFFICULTY = medium** — How adversarial the reviewer is. `medium` (default): standard MCP review. `hard`: adds reviewer memory + debate protocol. `nightmare`: GPT reads repo directly via `codex exec` + memory + debate. Passed through to `/auto-review-loop`.
-- **AUTO_WRITE = false** — When `true`, automatically invoke Workflow 3 (`/paper-writing`) after Stage 5. Requires `VENUE` to be set. When `false` (default), Stage 5 generates `NARRATIVE_REPORT.md` and stops — user invokes `/paper-writing` manually.
-- **VENUE = ICLR** — Target venue for paper writing (Stage 6). Only used when `AUTO_WRITE=true`. Options: `ICLR`, `NeurIPS`, `ICML`, `CVPR`, `ACL`, `AAAI`, `ACM`, `IEEE_CONF`, `IEEE_JOURNAL`.
+- **CLAUDE_EFFORT = max** — Default planning/writing depth for this convergence pipeline.
+- **CODEX_REVIEW_EFFORT = xhigh** — Mandatory reasoning depth for cross-agent verification stages.
+- **AUTO_PROCEED = true** — When `true`, Gate 0 auto-selects the top-ranked problem after presenting options. When `false`, wait for explicit user confirmation.
+- **ARXIV_DOWNLOAD = false** — Passed through to literature discovery stage (`/research-lit`).
+- **HUMAN_CHECKPOINT = false** — When `true`, pause at every major gate (Stage 1/2/4/6) for user review.
+- **REVIEWER_DIFFICULTY = medium** — Passed to review skills (`medium | hard | nightmare`).
+- **AUTO_WRITE = false** — If `true`, run paper stage automatically after Stage 5.
+- **VENUE = ICLR** — Used only when `AUTO_WRITE=true`.
 
-> 💡 Override via argument, e.g., `/research-pipeline "topic" — AUTO_PROCEED: false, human checkpoint: true, difficulty: nightmare, auto_write: true, venue: NeurIPS`.
+## Stage Map (small-refactor chain)
 
-## Overview
-
-This skill chains the entire research lifecycle into a single pipeline:
-
+```text
+Stage 0  Problem Discovery & Framing      (W1)
+Stage 1  Proposal & Experiment Design      (W1 + consistency gate)
+Stage 2  Implementation                    (W1.5 + code review gate)
+Stage 3  Execution & Tracking              (W1.5/W2 runtime)
+Stage 4  Result Analysis & Integrity Audit (W2 + audit gate)
+Stage 5  Hypothesis Refinement / Pivot     (W2 loopback)
+Stage 6  Paper Framing & Writing (optional)(W3 + claim gate)
+Stage 7  Multi-Agent Debate & Convergence  (final consensus)
 ```
-/idea-discovery → implement → /run-experiment → /auto-review-loop → /paper-writing (optional)
-├── Workflow 1 ──┤            ├────────── Workflow 2 ──────────────┤ ├── Workflow 3 ──┤
-```
 
-It orchestrates up to three major workflows plus the implementation bridge between them. Workflow 3 (paper writing) is optional and controlled by `AUTO_WRITE`.
+This keeps the original ARIS skill ecosystem (`idea-discovery`, `experiment-bridge`, `run-experiment`, `auto-review-loop`, `paper-writing`) while adding explicit cross-agent verification outputs.
 
 ## Pipeline
 
-### Stage 1: Idea Discovery (Workflow 1)
+### Stage 0 — Problem Discovery & Framing (ARIS-style)
 
-If `RESEARCH_BRIEF.md` exists in the project root, it will be automatically loaded as detailed context (replaces one-line prompt). See `templates/RESEARCH_BRIEF_TEMPLATE.md`.
+Invoke:
 
-Invoke the idea discovery pipeline:
-
-```
+```bash
 /idea-discovery "$ARGUMENTS"
 ```
 
-This internally runs: `/research-lit` → `/idea-creator` → `/novelty-check` → `/research-review`
+Use existing W1 discovery chain (`/research-lit → /idea-creator → /novelty-check → /research-review`) and distill:
 
-**Output:** `idea-stage/IDEA_REPORT.md` with ranked, validated, pilot-tested ideas.
+- `PROBLEM.md` (problem anchor, failure signals, domain motivation)
+- `HYPOTHESIS.md` (hypothesis space + assumptions)
 
-**🚦 Gate 1 — Human Checkpoint:**
+**Gate 0 (AUTO_PROCEED):**
+- If `AUTO_PROCEED=false`: wait for user choice.
+- If `AUTO_PROCEED=true`: present top choices, then auto-pick top candidate if no user response.
 
-After `idea-stage/IDEA_REPORT.md` is generated, **pause and present the top ideas to the user**:
+---
 
-```
-📋 Idea Discovery complete. Top ideas:
+### Stage 1 — Proposal & Experiment Design (mandatory Codex double-check)
 
-1. [Idea 1 title] — Pilot: POSITIVE (+X%), Novelty: CONFIRMED
-2. [Idea 2 title] — Pilot: WEAK POSITIVE (+Y%), Novelty: CONFIRMED
-3. [Idea 3 title] — Pilot: NEGATIVE, eliminated
+Create:
 
-Recommended: Idea 1. Shall I proceed with implementation?
-```
+- `FINAL_PROPOSAL.md`
+- `EXPERIMENT_PLAN.md`
 
-**If AUTO_PROCEED=false:** Wait for user confirmation before continuing. The user may:
-- **Approve an idea** → proceed to Stage 2.
-- **Pick a different idea** → proceed with their choice.
-- **Request changes** (e.g., "combine Idea 1 and 3", "focus more on X") → update the idea prompt with user feedback, re-run `/idea-discovery` with refined constraints, and present again.
-- **Reject all ideas** → collect feedback on what's missing, re-run Stage 1 with adjusted research direction. Repeat until the user commits to an idea.
-- **Stop here** → save current state to `idea-stage/IDEA_REPORT.md` for future reference.
+Then run consistency check (mandatory):
 
-**If AUTO_PROCEED=true:** Present the top ideas, wait 10 seconds for user input. If no response, auto-select the #1 ranked idea (highest pilot signal + novelty confirmed) and proceed to Stage 2. Log: `"AUTO_PROCEED: selected Idea 1 — [title]"`.
-
-> ⚠️ **This gate waits for user confirmation when AUTO_PROCEED=false.** When `true`, it auto-selects the top idea after presenting results. The rest of the pipeline (Stages 2-4) is expensive (GPU time + multiple review rounds), so set `AUTO_PROCEED=false` if you want to manually choose which idea to pursue.
-
-### Stage 2: Implementation
-
-Once the user confirms which idea to pursue:
-
-1. **Read the idea details** from `idea-stage/IDEA_REPORT.md` (hypothesis, experimental design, pilot code) *(fall back to `./IDEA_REPORT.md` if not found)*
-
-2. **Implement the full experiment**:
-   - Extend pilot code to full scale (multi-seed, full dataset, proper baselines)
-   - Add proper evaluation metrics and logging (wandb if configured)
-   - Write clean, reproducible experiment scripts
-   - Follow existing codebase conventions
-
-3. **Code review**: Before deploying, do a self-review:
-   - Are all hyperparameters configurable via argparse?
-   - Is the random seed fixed and controllable?
-   - Are results saved to JSON/CSV for later analysis?
-   - Is there proper logging for debugging?
-
-### Stage 3: Deploy Experiments (Workflow 2 — Part 1)
-
-Deploy the full-scale experiments. **Route by job count**:
-
-**Small batch (≤5 jobs)** — direct deployment:
-```
-/run-experiment [experiment command]
+```text
+Compare FINAL_PROPOSAL.md with EXPERIMENT_PLAN.md.
+Check:
+1. Are all proposed methods implemented?
+2. Are variables clearly defined?
+3. Any mismatch between description and execution?
+4. Any logic bugs in experiment flow?
+Return structured inconsistencies.
 ```
 
-**Large batch (≥10 jobs, multi-seed sweeps, teacher→student chains)** — use the queue scheduler:
-```
-/experiment-queue [grid spec or manifest]
-```
+Write:
 
-`experiment-bridge` (Workflow 1.5) auto-routes based on milestone job count. For pipeline runs with multi-seed sweeps from the start, you can override globally with `--- batch: queue` to force `/experiment-queue` for all milestones.
+- `REVIEW/CONSISTENCY_REPORT.md`
 
-**What this does:**
-- Check GPU availability on configured servers
-- Sync code to remote server
-- Launch experiments in screen sessions with proper CUDA_VISIBLE_DEVICES
-- For `/experiment-queue`: also OOM retry, stale-screen cleanup, phase dependencies, crash-safe state
-- Verify experiments started successfully
+Do not enter Stage 2 before high-severity inconsistencies are resolved.
 
-**Monitor progress:**
+---
 
-```
-/monitor-experiment [server]
+### Stage 2 — Implementation (mandatory review gate)
+
+Primary implementation can use the existing bridge path:
+
+```bash
+/experiment-bridge
 ```
 
-Wait for experiments to complete. Collect results.
+or direct implementation from `EXPERIMENT_PLAN.md` when appropriate.
 
-### Stage 4: Auto Review Loop (Workflow 2 — Part 2)
+Mandatory implementation review:
 
-Once initial results are in, start the autonomous improvement loop:
-
-```
-/auto-review-loop "$ARGUMENTS — [chosen idea title], difficulty: $REVIEWER_DIFFICULTY"
-```
-
-**What this does (up to 4 rounds):**
-1. GPT-5.4 xhigh reviews the work (score, weaknesses, minimum fixes)
-2. Claude Code implements fixes (code changes, new experiments, reframing)
-3. Deploy fixes, collect new results
-4. Re-review → repeat until score ≥ 6/10 or 4 rounds reached
-
-**Output:** `review-stage/AUTO_REVIEW.md` with full review history and final assessment.
-
-### Stage 5: Research Summary & Writing Handoff
-
-After the auto-review loop completes, prepare the handoff for paper writing.
-
-**Step 1:** Write a final research status report (same as before).
-
-**Step 2:** Generate `NARRATIVE_REPORT.md` from:
-- `IDEA_REPORT.md` (chosen idea, hypothesis, novelty justification)
-- Implementation details from the repo
-- Experiment configs and final results
-- `AUTO_REVIEW.md` (review history, weaknesses fixed, remaining limitations)
-
-The narrative report must contain:
-- Problem statement and core claim
-- Method summary
-- Key quantitative results with evidence for each claim
-- Figure/table inventory (which exist, which need manual creation)
-- Limitations and remaining follow-up items
-
-**Output:** `NARRATIVE_REPORT.md` + research pipeline report.
-
-```markdown
-# Research Pipeline Report
-
-**Direction**: $ARGUMENTS
-**Chosen Idea**: [title]
-**Date**: [start] → [end]
-**Pipeline**: idea-discovery → implement → run-experiment → auto-review-loop
-
-## Journey Summary
-- Ideas generated: X → filtered to Y → piloted Z → chose 1
-- Implementation: [brief description of what was built]
-- Experiments: [number of GPU experiments, total compute time]
-- Review rounds: N/4, final score: X/10
-
-## Writing Handoff
-- NARRATIVE_REPORT.md: ✅ generated
-- Venue: [VENUE or "not set — run /paper-writing manually"]
-- Manual figures needed: [list or "none"]
-
-## Remaining TODOs (if any)
-- [items flagged by reviewer that weren't addressed]
+```text
+Given:
+- EXPERIMENT_PLAN.md
+- CODE
+Check:
+1. Does code implement the plan exactly?
+2. Any deviation from described method?
+3. Any silent logic bugs?
+Return:
+- mismatch list
+- critical bug list
 ```
 
-### Stage 6: Paper Writing (Workflow 3 — Optional)
+Write:
 
-**Skip this stage if `AUTO_WRITE=false` (default).** Present the `/paper-writing` command for manual use:
+- `REVIEW/CODE_REVIEW.md`
 
+Only proceed after critical bugs are addressed.
+
+---
+
+### Stage 3 — Execution & Tracking
+
+Run experiments via:
+
+- `/run-experiment` for small batches
+- `/experiment-queue` for large sweeps / dependency chains
+- `/monitor-experiment` for tracking
+
+Maintain:
+
+- `LOGS/`
+- `EXPERIMENT_TRACKER.md`
+
+Tracker must include config hash, dataset split signature, seed set, and run status.
+
+---
+
+### Stage 4 — Result Analysis (mandatory integrity audit)
+
+Aggregate results and write:
+
+- `EXPERIMENT_RESULTS.md`
+- `FAILURE_ANALYSIS.md`
+
+Then run integrity audit (mandatory):
+
+```text
+Given results + evaluation code:
+Check:
+1. Any metric computation errors?
+2. Any data leakage?
+3. Any unfair comparison?
+4. Any inconsistent experiment setting?
+Return critical issues.
 ```
-📝 Research complete. To write the paper:
+
+Append findings to:
+
+- `REVIEW/CODE_REVIEW.md` (evaluation section) and/or
+- `REVIEW/CONSISTENCY_REPORT.md` (stage mismatch section)
+
+If critical audit issues exist, loop back to Stage 1 or Stage 2.
+
+---
+
+### Stage 5 — Hypothesis Refinement / Pivot
+
+Based on Stage 4 failures:
+
+- update hypotheses
+- propose next-wave plan
+
+Write:
+
+- `NEXT_PROPOSAL.md`
+
+Use `/research-refine` when the pivot needs problem re-anchoring.
+
+---
+
+### Stage 6 — Paper Framing & Writing (optional, but claim gate is mandatory when enabled)
+
+If `AUTO_WRITE=false`, stop with handoff:
+
+```bash
 /paper-writing "NARRATIVE_REPORT.md" — venue: ICLR
 ```
 
-**If `AUTO_WRITE=true`:**
+If enabled:
 
-🚦 **Gate 2 — Writing Checkpoint:**
-
-```
-📝 Research pipeline complete. Ready for Workflow 3.
-
-- Venue: [VENUE]
-- Input: NARRATIVE_REPORT.md
-- Manual figures required: [list or none]
-- Next step: /paper-writing "NARRATIVE_REPORT.md — venue: [VENUE]"
-
-Proceeding with paper writing...
-```
-
-Checks before proceeding:
-- If `VENUE` is missing → stop and ask. Do NOT silently use a default venue.
-- If manual figures are required → pause and list them. Wait for user to add them.
-
-Then invoke:
-
-```
+```bash
 /paper-writing "NARRATIVE_REPORT.md" — venue: $VENUE
 ```
 
-This delegates to Workflow 3 which handles its own phases:
-`/paper-plan → /paper-figure → /paper-write → /paper-compile → /auto-paper-improvement-loop`
+Before finalizing draft, run claim check:
 
-When Workflow 3 finishes, update the pipeline report with:
-- Paper writing completion status
-- Final PDF path (`paper/main.pdf`)
-- Improvement scores (round 0 → round N)
-- Remaining issues
+```text
+Given:
+- PAPER_DRAFT
+- EXPERIMENT_RESULTS
+Check:
+1. Are all claims supported?
+2. Any missing experiment?
+3. Any inconsistency between text and results?
+Return issues.
+```
 
-**Output:** `paper/` directory with LaTeX source, compiled PDF, and `PAPER_IMPROVEMENT_LOG.md`.
+Write:
+
+- `PAPER_DRAFT.md`
+- `REVIEW/CLAIM_CHECK.md`
+
+---
+
+### Stage 7 — Multi-Agent Debate & Convergence
+
+Run final adversarial reconciliation:
+
+- Agent A: interpretation/significance
+- Agent B: correctness/evidence sufficiency
+
+Goal: consensus, not unilateral generation.
+
+Write:
+
+- `REVIEW/FINAL_CONSENSUS.md`
+
+Pipeline ends only when key claim disputes are either resolved or explicitly deferred with rationale.
+
+## Suggested Artifact Layout
+
+```text
+project/
+├── PROBLEM.md
+├── HYPOTHESIS.md
+├── FINAL_PROPOSAL.md
+├── EXPERIMENT_PLAN.md
+├── CODE/
+├── LOGS/
+├── EXPERIMENT_TRACKER.md
+├── EXPERIMENT_RESULTS.md
+├── FAILURE_ANALYSIS.md
+├── NEXT_PROPOSAL.md
+├── PAPER_DRAFT.md
+└── REVIEW/
+    ├── CODE_REVIEW.md
+    ├── CONSISTENCY_REPORT.md
+    ├── CLAIM_CHECK.md
+    └── FINAL_CONSENSUS.md
+```
+
+## Closed-Loop Engine
+
+`Problem → Proposal → Code → Run → Analyze → Refine → Paper → Debate → Loop`
+
+Key principle: **Convergence > Generation**.
 
 ## Output Protocols
 
-> Follow these shared protocols for all output files:
-> - **[Output Versioning Protocol](../shared-references/output-versioning.md)** — write timestamped file first, then copy to fixed name
-> - **[Output Manifest Protocol](../shared-references/output-manifest.md)** — log every output to MANIFEST.md
-> - **[Output Language Protocol](../shared-references/output-language.md)** — respect the project's language setting
+> Follow shared protocols for all output files:
+> - **[Output Versioning Protocol](../shared-references/output-versioning.md)**
+> - **[Output Manifest Protocol](../shared-references/output-manifest.md)**
+> - **[Output Language Protocol](../shared-references/output-language.md)**
 
-## Key Rules
+## Guardrails
 
-- **Large file handling**: If the Write tool fails due to file size, immediately retry using Bash (`cat << 'EOF' > file`) to write in chunks. Do NOT ask the user for permission — just do it silently.
-
-- **Human checkpoint after Stage 1 is controlled by AUTO_PROCEED.** When `false`, do not proceed without user confirmation. When `true`, auto-select the top idea after presenting results.
-- **Stages 2-4 can run autonomously** once the user confirms the idea. This is the "sleep and wake up to results" part.
-- **If Stage 4 ends at round 4 without positive assessment**, stop and report remaining issues. Do not loop forever.
-- **Budget awareness**: Track total GPU-hours across the pipeline. Flag if approaching user-defined limits.
-- **Documentation**: Every stage updates its own output file. The full history should be self-contained.
-- **Fail gracefully**: If any stage fails (no good ideas, experiments crash, review loop stuck), report clearly and suggest alternatives rather than forcing forward.
-
-## Typical Timeline
-
-| Stage | Duration | Can sleep? |
-|-------|----------|------------|
-| 1. Idea Discovery | 30-60 min | Yes if AUTO_PROCEED=true |
-| 2. Implementation | 15-60 min | Yes (autonomous after Gate 1) |
-| 3. Deploy | 5 min + experiment time | Yes ✅ |
-| 4. Auto Review | 1-4 hours (depends on experiments) | Yes ✅ |
-
-**Sweet spot**: Run Stage 1-2 in the evening, launch Stage 3-4 before bed, wake up to a reviewed paper.
+- Never skip Stage 1/2/4 mandatory checks.
+- Never let the same model family self-certify integrity-critical artifacts.
+- Fail loudly on unresolved critical mismatches.
+- Preserve existing ARIS skills and strengths; this pipeline is a chain refactor, not a rewrite.

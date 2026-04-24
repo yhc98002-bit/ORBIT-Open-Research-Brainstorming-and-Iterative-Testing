@@ -266,3 +266,25 @@ After this pipeline produces a validated top idea:
 
 Or use /research-pipeline for the full end-to-end flow.
 ```
+
+## Stage-Chain Integration (Stage 0-1 Contract)
+
+When this skill is called by `/research-pipeline`, additionally emit normalized stage artifacts:
+
+- `PROBLEM.md`
+- `HYPOTHESIS.md`
+- `FINAL_PROPOSAL.md` (normalized from `refine-logs/FINAL_PROPOSAL.md`)
+- `EXPERIMENT_PLAN.md` (normalized from `refine-logs/EXPERIMENT_PLAN.md`)
+- `REVIEW/CONSISTENCY_REPORT.md`
+
+Mandatory check template:
+
+```text
+Compare FINAL_PROPOSAL.md with EXPERIMENT_PLAN.md.
+Check:
+1. Are all proposed methods implemented?
+2. Are variables clearly defined?
+3. Any mismatch between description and execution?
+4. Any logic bugs in experiment flow?
+Return structured inconsistencies.
+```

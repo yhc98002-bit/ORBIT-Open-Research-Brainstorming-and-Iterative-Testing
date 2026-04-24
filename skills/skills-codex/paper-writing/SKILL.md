@@ -293,3 +293,26 @@ then /paper-writing for the final writing step.
 | 5. Improvement | 15-30 min | Yes ✅ |
 
 **Total: ~45-90 min** for a full paper from narrative report to polished PDF.
+
+## Stage-Chain Integration (Stage 6-7 Contract)
+
+When called by `/research-pipeline`, also emit:
+
+- `PAPER_DRAFT.md`
+- `REVIEW/CLAIM_CHECK.md`
+- `REVIEW/FINAL_CONSENSUS.md`
+
+Mandatory claim check template:
+
+```text
+Given:
+- PAPER_DRAFT
+- EXPERIMENT_RESULTS
+Check:
+1. Are all claims supported?
+2. Any missing experiment?
+3. Any inconsistency between text and results?
+Return issues.
+```
+
+Do not mark submission-ready with unresolved high-severity claim inconsistencies.

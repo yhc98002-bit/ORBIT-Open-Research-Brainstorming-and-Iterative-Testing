@@ -259,3 +259,27 @@ Ready for Workflow 2:
 
 Or use /research-pipeline for the full end-to-end flow (includes this bridge).
 ```
+
+## Stage-Chain Integration (Stage 2 Contract)
+
+For convergence-first pipeline runs, maintain:
+
+- `REVIEW/CODE_REVIEW.md` (required)
+- `REVIEW/CONSISTENCY_REPORT.md` (append when plan/code drift is found)
+
+Required cross-check template:
+
+```text
+Given:
+- EXPERIMENT_PLAN.md
+- CODE
+Check:
+1. Does code implement the plan exactly?
+2. Any deviation from described method?
+3. Any silent logic bugs?
+Return:
+- mismatch list
+- critical bug list
+```
+
+Unresolved critical mismatches must block large-scale deployment.
