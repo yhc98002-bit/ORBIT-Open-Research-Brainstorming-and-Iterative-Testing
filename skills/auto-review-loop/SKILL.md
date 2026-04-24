@@ -459,3 +459,25 @@ mcp__codex__codex-reply:
 ## Review Tracing
 
 After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save the trace following `shared-references/review-tracing.md`. Use `tools/save_trace.sh` or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
+
+## Stage-Chain Integration (Stage 4-5 Contract)
+
+In convergence-first mode, each completed round should keep these stage artifacts current:
+
+- `EXPERIMENT_RESULTS.md` — normalized metrics summary for current wave
+- `FAILURE_ANALYSIS.md` — ranked failure patterns and suspected causes
+- `NEXT_PROPOSAL.md` — only when pivot/refinement is required
+
+Mandatory integrity audit lens (run before declaring a round successful):
+
+```text
+Given results + evaluation code:
+Check:
+1. Any metric computation errors?
+2. Any data leakage?
+3. Any unfair comparison?
+4. Any inconsistent experiment setting?
+Return critical issues.
+```
+
+If critical issues are detected, do not finalize the round as "ready"; route back to implementation/planning fixes.

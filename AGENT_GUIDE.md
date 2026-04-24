@@ -34,23 +34,27 @@ Workflow-specific:
 — gpu: local | remote | vast | modal         # GPU backend
 ```
 
+**Convergence pipeline recommendation:** run Claude skills with `— effort: max`; keep Codex review reasoning at `xhigh`.
+
 Parameters pass through workflow chains automatically.
 
 ## Workflow Index
 
 ### Full Pipeline
 ```
-/research-pipeline "direction" → W1 → W1.5 → W2 → W3
+/research-pipeline "direction" → Stage 0 → 1 → 2 → 3 → 4 → 5 → (6 optional) → 7
 ```
 
 ### Individual Workflows
 
 | Workflow | Invoke | Input | Output | When to use |
 |----------|--------|-------|--------|-------------|
-| W1: Idea Discovery | `/idea-discovery "direction"` | research direction | IDEA_REPORT.md, EXPERIMENT_PLAN.md | Starting new research |
-| W1.5: Experiment Bridge | `/experiment-bridge` | EXPERIMENT_PLAN.md | running code, EXPERIMENT_LOG.md | Have a plan, need to implement |
-| W2: Auto Review | `/auto-review-loop "scope"` | paper + results | improved paper | Iterative improvement |
-| W3: Paper Writing | `/paper-writing "NARRATIVE_REPORT.md"` | narrative report | paper/main.pdf | Ready to write |
+| Stage 0-1: Discovery + Design | `/idea-discovery "direction"` | research direction | PROBLEM.md, HYPOTHESIS.md, FINAL_PROPOSAL.md, EXPERIMENT_PLAN.md | Frame problem and design experiments |
+| Stage 2: Implementation Bridge | `/experiment-bridge` | EXPERIMENT_PLAN.md | running code + REVIEW/CODE_REVIEW.md | Implement with code/spec checks |
+| Stage 3: Execution | `/run-experiment` or `/experiment-queue` | experiment command or manifest | LOGS/, EXPERIMENT_TRACKER.md | Run and track experiments |
+| Stage 4-5: Analysis + Refine | `/auto-review-loop "scope"` (+ audits) | logs + results | EXPERIMENT_RESULTS.md, FAILURE_ANALYSIS.md, NEXT_PROPOSAL.md | Find failures and decide next wave |
+| Stage 6 (optional): Paper Writing | `/paper-writing "NARRATIVE_REPORT.md"` | narrative report | PAPER_DRAFT.md, REVIEW/CLAIM_CHECK.md | Draft paper with claim/evidence checks |
+| Stage 7: Convergence | (debate protocol in pipeline) | paper + review artifacts | REVIEW/FINAL_CONSENSUS.md | Multi-agent consensus before freeze |
 | W4: Rebuttal | `/rebuttal "paper/ + reviews"` | paper + reviews | PASTE_READY.txt | Reviews received |
 
 ### Standalone Skills

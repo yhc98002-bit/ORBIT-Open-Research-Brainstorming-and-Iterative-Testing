@@ -258,3 +258,25 @@ send_input:
     Please re-score and re-assess. Are the remaining concerns addressed?
     Same format: Score, Verdict, Remaining Weaknesses, Minimum Fixes.
 ```
+
+## Stage-Chain Integration (Stage 4-5 Contract)
+
+In convergence-first mode, keep these artifacts updated per round:
+
+- `EXPERIMENT_RESULTS.md`
+- `FAILURE_ANALYSIS.md`
+- `NEXT_PROPOSAL.md` (when pivoting)
+
+Mandatory integrity audit lens:
+
+```text
+Given results + evaluation code:
+Check:
+1. Any metric computation errors?
+2. Any data leakage?
+3. Any unfair comparison?
+4. Any inconsistent experiment setting?
+Return critical issues.
+```
+
+Critical audit issues should force loop-back to implementation/planning fixes.
