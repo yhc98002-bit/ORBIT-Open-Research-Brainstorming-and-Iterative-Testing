@@ -260,8 +260,15 @@ Before scale-up: `PLAN_CODE_AUDIT.md` must be `MATCHES_PLAN` or scoped `PARTIAL_
 ```
 
 Argument separator is em-dash `—`, not single `-`. ARIS chain remains intact:
-`/paper-plan`, `/paper-figure`, `/figure-spec` or `/paper-illustration`, `/paper-write`,
-`/paper-compile`, `/auto-paper-improvement-loop`, `/paper-claim-audit`, `/citation-audit`.
+`/paper-plan`, `/paper-figure`, `/figure-spec` or `/paper-illustration` or
+`/paper-illustration-image2`, `/paper-write`, `/paper-compile`,
+`/auto-paper-improvement-loop`, `/paper-claim-audit`, `/citation-audit`.
+
+Phase 2b illustration backends: `figurespec` (default, deterministic JSON→SVG) /
+`gemini` (AI via `/paper-illustration`, needs `GEMINI_API_KEY`) / `codex-image2`
+(AI via `/paper-illustration-image2` through the local Codex native image bridge —
+no external API key, uses your ChatGPT Plus/Pro quota; experimental) / `mermaid`
+(Mermaid syntax, free) / `false` (manual). Override inline with `— illustration: <name>`.
 
 BRIS additional requirement: `CLAIM_CONSTRUCTION.md` must exist before `/paper-writing`
 will start (G16 + G18).
