@@ -27,6 +27,30 @@ The goal is not to generate a giant benchmark wishlist. The goal is to turn a pr
 - **MAX_BASELINE_FAMILIES = 3** — Prefer a few strong baselines over many weak ones.
 - **DEFAULT_SEEDS = 3** — Use 3 seeds when stochastic variance matters and budget allows.
 
+## Better BRIS Diagnostic Planning Overlay
+
+When invoked by `/research-pipeline`, load:
+
+- `shared-references/research-agent-pipeline.md`
+- `shared-references/research-harness-prompts.md` sections `2` through `7`
+
+Before writing or finalizing `refine-logs/EXPERIMENT_PLAN.md`, create or update:
+
+- `bris-research/TASK_ONTOLOGY.md`
+- `bris-research/BASELINE_CEILING.md`
+- `bris-research/CONTROL_DESIGN.md`
+- `bris-research/NULL_RESULT_CONTRACT.md`
+- `bris-research/COMPONENT_LADDER.md`
+- `bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md`
+
+Hard gates:
+
+- Do not design methods before task ontology is stable.
+- Do not run the proposed method before baseline ceiling is known or explicitly estimated.
+- Do not include experiments whose null result would be uninterpretable.
+- Do not plan a full system until each major component has a control, expected signal, and rollback condition.
+- Do not plan broad grids before the minimal diagnostic experiment.
+
 ## Workflow
 
 ### Phase 0: Load the Proposal Context

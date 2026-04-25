@@ -11,7 +11,7 @@ Generate a structured, section-by-section paper outline from: **$ARGUMENTS**
 
 ## Constants
 
-- **REVIEWER_MODEL = `gpt-5.4`** — Model used via Codex MCP for outline review. Must be an OpenAI model.
+- **REVIEWER_MODEL = `gpt-5.5`** — Model used via Codex MCP for outline review. Must be an OpenAI model.
 - **TARGET_VENUE = `ICLR`** — Default venue. User can override (e.g., `/paper-plan "topic" — venue: NeurIPS`). Supported: `ICLR`, `NeurIPS`, `ICML`, `CVPR`, `ACL`, `AAAI`, `ACM`, `IEEE_JOURNAL` (IEEE Transactions / Letters), `IEEE_CONF` (IEEE conferences).
 - **MAX_PAGES** — Page limit. For ML conferences: main body to Conclusion end (excluding references, appendix). ICLR=9, NeurIPS=9, ICML=8. **For IEEE venues: references ARE included in page count.** IEEE journal Transactions ≈ 12-14 pages total, Letters ≈ 4-5 pages total; IEEE conference ≈ 5-8 pages total (including references).
 
@@ -26,6 +26,11 @@ The skill expects one or more of these in the project directory:
 5. **Compact files** (if available): `idea-stage/IDEA_CANDIDATES.md` *(fall back to `./IDEA_CANDIDATES.md` if not found)*, `findings.md`, `EXPERIMENT_LOG.md` — preferred over full files when present, saves context window
 
 If none exist, ask the user to describe the paper's contribution in 3-5 sentences.
+
+When invoked after `/research-pipeline`, treat `bris-research/CLAIM_CONSTRUCTION.md` as the
+highest-priority claim source, followed by `CLAIMS_FROM_RESULTS.md`, `NARRATIVE_REPORT.md`,
+and `STORY.md`. If `bris-research/NEGATIVE_RESULT_STRATEGY.md` exists, reflect the scoped or
+negative-result story honestly instead of forcing a positive method-win narrative.
 
 ## Orchestra-Guided Writing Overlay
 
@@ -207,11 +212,11 @@ For each section, list required citations:
 
 ### Step 6: Cross-Review with REVIEWER_MODEL
 
-Send the complete outline to GPT-5.4 xhigh for feedback:
+Send the complete outline to GPT-5.5 xhigh for feedback:
 
 ```
 mcp__codex__codex:
-  model: gpt-5.4
+  model: gpt-5.5
   config: {"model_reasoning_effort": "xhigh"}
   prompt: |
     Review this paper outline for a [VENUE] submission.

@@ -12,7 +12,7 @@ Research topic: $ARGUMENTS
 ## Constants
 
 
-- **REVIEWER_BACKEND = `codex`** — Default: Codex MCP (xhigh). Override with `— reviewer: oracle-pro` for GPT-5.4 Pro via Oracle MCP. See `shared-references/reviewer-routing.md`.
+- **REVIEWER_BACKEND = `codex`** — Default: Codex MCP (`gpt-5.5`, xhigh). Override with `— reviewer: oracle-pro` if explicitly requested. See `shared-references/reviewer-routing.md`.
 - **PAPER_LIBRARY** — Local directory containing user's paper collection (PDFs). Check these paths in order:
   1. `papers/` in the current project directory
   2. `literature/` in the current project directory
@@ -20,6 +20,30 @@ Research topic: $ARGUMENTS
 - **MAX_LOCAL_PAPERS = 20** — Maximum number of local PDFs to scan (read first 3 pages each). If more are found, prioritize by filename relevance to the topic.
 - **ARXIV_DOWNLOAD = false** — When `true`, download top 3-5 most relevant arXiv PDFs to PAPER_LIBRARY after search. When `false` (default), only fetch metadata (title, abstract, authors) via arXiv API — no files are downloaded.
 - **ARXIV_MAX_DOWNLOAD = 5** — Maximum number of PDFs to download when `ARXIV_DOWNLOAD = true`.
+
+## Better BRIS Literature Mode
+
+When this skill is invoked from `/research-pipeline`, load:
+
+- `shared-references/research-agent-pipeline.md`
+- `shared-references/research-harness-prompts.md` sections `0A` and `1`
+
+In Better BRIS mode, literature review is not a related-work summary. It must produce a
+question-driven map:
+
+- claim
+- mechanism
+- benchmark
+- strongest evidence
+- weakest assumption
+- missing control
+- likely failure regime
+- claim-evidence gap
+- follow-up question
+
+Write or update `bris-research/LITERATURE_MAP.md` when running inside the full pipeline.
+If the user only provided a broad area, first create `bris-research/SEED_FRAMING.md` and do
+not propose final methods yet.
 
 > 💡 Overrides:
 > - `/research-lit "topic" — paper library: ~/my_papers/` — custom local PDF path

@@ -1,270 +1,348 @@
 ---
 name: research-pipeline
-description: "Claude × Codex co-evolution research pipeline with mandatory cross-agent checks at each critical stage. Small-refactor chain: Stage 0 problem framing → Stage 1 proposal/experiment consistency → Stage 2 implementation review → Stage 3 execution tracking → Stage 4 result audit → Stage 5 hypothesis refinement → Stage 6 paper writing (optional) → Stage 7 debate convergence. Use when user says 全流程/full pipeline/end-to-end research/从问题到论文 with correctness gates."
-argument-hint: [research-direction]
+description: "Better BRIS end-to-end research pipeline built on the original ARIS skills. Runs the 0A-15 diagnostic research flow: seed framing, question-driven literature map, problem selection, task ontology/data audit, baseline ceiling, null-result contract, component ladder, diagnostic experiment, semantic plan-code audit, tiny-run audit, result interpretation, scale-up, claim construction, negative-result strategy, reviewer red-team, and paper writing. Use when user says 全流程/full pipeline/end-to-end research/从问题到论文/Better BRIS/自动科研流水线."
+argument-hint: [research-area-or-problem]
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, mcp__codex__codex, mcp__codex__codex-reply
 ---
 
-# Research Pipeline (Claude × Codex Co-Evolution)
+# Better BRIS Research Pipeline
 
-End-to-end research workflow for: **$ARGUMENTS**
+Run the full diagnostic research workflow for: **$ARGUMENTS**
 
-> Design target: keep ARIS's existing strengths, but re-order the chain around **convergence gates** to prevent silent failure (plan ≠ code ≠ paper).
+This is the BRIS control skill. It preserves mature ARIS infrastructure while enforcing the
+research process in `shared-references/research-agent-pipeline.md`.
+
+## Load First
+
+Before executing the pipeline, read:
+
+- `shared-references/research-agent-pipeline.md`
+- `shared-references/research-harness-prompts.md`
+- `shared-references/semantic-code-audit.md`
+- `shared-references/reviewer-independence.md`
+- `shared-references/reviewer-routing.md`
 
 ## Constants
 
-- **CLAUDE_EFFORT = max** — Default planning/writing depth for this convergence pipeline.
-- **CODEX_REVIEW_EFFORT = xhigh** — Mandatory reasoning depth for cross-agent verification stages.
-- **AUTO_PROCEED = true** — When `true`, Gate 0 auto-selects the top-ranked problem after presenting options. When `false`, wait for explicit user confirmation.
-- **ARXIV_DOWNLOAD = false** — Passed through to literature discovery stage (`/research-lit`).
-- **HUMAN_CHECKPOINT = false** — When `true`, pause at every major gate (Stage 1/2/4/6) for user review.
-- **REVIEWER_DIFFICULTY = medium** — Passed to review skills (`medium | hard | nightmare`).
-- **AUTO_WRITE = false** — If `true`, run paper stage automatically after Stage 5.
-- **VENUE = ICLR** — Used only when `AUTO_WRITE=true`.
+- **OUTPUT_ROOT = `bris-research/`** — Better BRIS stage artifacts live here unless a project already has a better convention.
+- **CODEX_REVIEW_MODEL = `gpt-5.5`** — Default Codex reviewer for BRIS.
+- **CODEX_REVIEW_EFFORT = `xhigh`** — Mandatory for all BRIS review gates.
+- **CODEX_SANDBOX = `disabled`** — Equivalent to `sandbox_mode = danger-full-access`.
+- **REVIEWER_INDEPENDENCE = on** — Pass file paths and objective, not executor summaries.
+- **MAX_DEBATE_ROUNDS = 2** — Prevent infinite Claude vs Codex debate loops.
+- **AUTO_WRITE = false** — If true, run `/paper-writing` after claim construction and red-team gates.
+- **VENUE = `ICLR`** — Used when paper writing is enabled.
+- **AUTO_PROCEED = false** for irreversible actions: expensive GPU scale-up, final paper claims, stopping a project.
 
-## Stage Map (small-refactor chain)
+## Canonical Outputs
+
+Create or update these artifacts as the project progresses:
 
 ```text
-Stage 0  Problem Discovery & Framing      (W1)
-Stage 1  Proposal & Experiment Design      (W1 + consistency gate)
-Stage 2  Implementation                    (W1.5 + code review gate)
-Stage 3  Execution & Tracking              (W1.5/W2 runtime)
-Stage 4  Result Analysis & Integrity Audit (W2 + audit gate)
-Stage 5  Hypothesis Refinement / Pivot     (W2 loopback)
-Stage 6  Paper Framing & Writing (optional)(W3 + claim gate)
-Stage 7  Multi-Agent Debate & Convergence  (final consensus)
+bris-research/SEED_FRAMING.md
+bris-research/LITERATURE_MAP.md
+bris-research/PROBLEM_SELECTION.md
+bris-research/TASK_ONTOLOGY.md
+bris-research/BASELINE_CEILING.md
+bris-research/CONTROL_DESIGN.md
+bris-research/NULL_RESULT_CONTRACT.md
+bris-research/COMPONENT_LADDER.md
+bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md
+bris-research/PLAN_CODE_AUDIT.md
+bris-research/TINY_RUN_REPORT.md
+bris-research/TINY_RUN_AUDIT.md
+bris-research/RESULT_INTERPRETATION.md
+bris-research/LITERATURE_REREAD_NOTE.md
+bris-research/SCALEUP_DECISION.md
+bris-research/CLAIM_CONSTRUCTION.md
+bris-research/NEGATIVE_RESULT_STRATEGY.md
+bris-research/RED_TEAM_REVIEW.md
+bris-research/HUMAN_DECISION_NOTE.md
 ```
 
-This keeps the original ARIS skill ecosystem (`idea-discovery`, `experiment-bridge`, `run-experiment`, `auto-review-loop`, `paper-writing`) while adding explicit cross-agent verification outputs.
+Also reuse existing ARIS outputs when present:
+
+- `idea-stage/IDEA_REPORT.md`
+- `idea-stage/IDEA_CANDIDATES.md`
+- `refine-logs/FINAL_PROPOSAL.md`
+- `refine-logs/EXPERIMENT_PLAN.md`
+- `refine-logs/EXPERIMENT_TRACKER.md`
+- `review-stage/AUTO_REVIEW.md`
+- `NARRATIVE_REPORT.md`
+- `paper/`
 
 ## Pipeline
 
-### Stage 0 — Problem Discovery & Framing (ARIS-style)
+### Stage 0A: Seed Framing
 
-Invoke:
+Use when `$ARGUMENTS` is a broad area rather than a concrete problem.
 
-```bash
-/idea-discovery "$ARGUMENTS"
-```
+Action:
 
-Use existing W1 discovery chain (`/research-lit → /idea-creator → /novelty-check → /research-review`) and distill:
+1. Use the Stage 0A harness from `research-harness-prompts.md`.
+2. Write `bris-research/SEED_FRAMING.md`.
+3. Define research area, constraints, 3-5 initial questions, search terms, subfields, adjacent areas, and paper classes.
 
-- `PROBLEM.md` (problem anchor, failure signals, domain motivation)
-- `HYPOTHESIS.md` (hypothesis space + assumptions)
+Gate:
 
-**Gate 0 (AUTO_PROCEED):**
-- If `AUTO_PROCEED=false`: wait for user choice.
-- If `AUTO_PROCEED=true`: present top choices, then auto-pick top candidate if no user response.
+- Do not propose final methods.
+- Do not commit to a benchmark.
+- Do not write an experiment plan.
 
----
+### Stage 1: Question-driven Literature Map
 
-### Stage 1 — Proposal & Experiment Design (mandatory Codex double-check)
-
-Create:
-
-- `FINAL_PROPOSAL.md`
-- `EXPERIMENT_PLAN.md`
-
-Then run consistency check (mandatory):
-
-```text
-Compare FINAL_PROPOSAL.md with EXPERIMENT_PLAN.md.
-Check:
-1. Are all proposed methods implemented?
-2. Are variables clearly defined?
-3. Any mismatch between description and execution?
-4. Any logic bugs in experiment flow?
-Return structured inconsistencies.
-```
-
-Write:
-
-- `REVIEW/CONSISTENCY_REPORT.md`
-
-Do not enter Stage 2 before high-severity inconsistencies are resolved.
-
----
-
-### Stage 2 — Implementation (mandatory review gate)
-
-Primary implementation can use the existing bridge path:
+Invoke existing ARIS literature tools:
 
 ```bash
-/experiment-bridge
+/research-lit "$ARGUMENTS"
 ```
 
-or direct implementation from `EXPERIMENT_PLAN.md` when appropriate.
+Optionally use `/arxiv`, `/semantic-scholar`, `/exa-search`, `/deepxiv`, Zotero, Obsidian, and local PDFs.
 
-Mandatory implementation review:
+Action:
+
+1. Read papers as a research scientist, not as a summarizer.
+2. Extract claim, mechanism, benchmark, evidence, weak assumption, missing control, failure regime, claim-evidence gap, and follow-up question.
+3. Synthesize field consensus, bottlenecks, overclaims, saturation risks, missing controls, underexplored regimes, and candidate problems.
+4. Write `bris-research/LITERATURE_MAP.md`.
+
+Codex debate:
+
+- Codex checks missing papers, missing baselines, overclaimed assumptions, claim-evidence gaps, and benchmark saturation.
+
+Gate:
+
+- Do not generate final methods yet. Generate candidate problems.
+
+### Stage 0B: Problem Selection
+
+Action:
+
+1. Evaluate candidate problems by importance, audience, concreteness, novelty, feasibility, benchmark availability, baseline ceiling risk, expected headroom, diagnostic clarity, and paper survivability.
+2. Run Claude vs Codex debate. Codex should attack feasibility, baseline risk, and paper value if the method ties.
+3. Write `bris-research/PROBLEM_SELECTION.md`.
+
+Required ending:
 
 ```text
-Given:
-- EXPERIMENT_PLAN.md
-- CODE
-Check:
-1. Does code implement the plan exactly?
-2. Any deviation from described method?
-3. Any silent logic bugs?
-Return:
-- mismatch list
-- critical bug list
+PROCEED / NARROW / RETHINK
 ```
 
-Write:
+Gate:
 
-- `REVIEW/CODE_REVIEW.md`
+- Do not select a problem only because it sounds novel.
 
-Only proceed after critical bugs are addressed.
+### Stage 2: Task Ontology / Data Audit
 
----
+Action:
 
-### Stage 3 — Execution & Tracking
+1. Define prediction target, inputs, labels, data units, modalities, vendors/devices, acquisition protocols, domains, splits, and confounders.
+2. Search for category errors, label/source confounds, patient leakage, shortcut features, and split pathologies.
+3. Write `bris-research/TASK_ONTOLOGY.md`.
 
-Run experiments via:
+Codex debate:
 
-- `/run-experiment` for small batches
-- `/experiment-queue` for large sweeps / dependency chains
-- `/monitor-experiment` for tracking
+- Codex acts as data/task ontology auditor and tries to find category errors or leakage.
 
-Maintain:
+Gate:
 
-- `LOGS/`
-- `EXPERIMENT_TRACKER.md`
+- Do not proceed to method design until task ontology is stable enough.
 
-Tracker must include config hash, dataset split signature, seed set, and run status.
+### Stage 3: Baseline Ceiling / Headroom Audit
 
----
+Action:
 
-### Stage 4 — Result Analysis (mandatory integrity audit)
+1. Estimate the simplest strong baseline ceiling.
+2. Consider zero-shot, few-shot, Best-of-N, confidence-rank, reranking, DINGO-style search, vanilla GRPO/PPO/RL, vanilla SFT, ERM, modality-specific, majority-domain, heuristic, and public SOTA baselines.
+3. Identify benchmark saturation risk and highest-headroom regime.
+4. Write `bris-research/BASELINE_CEILING.md`.
 
-Aggregate results and write:
+Codex debate:
 
-- `EXPERIMENT_RESULTS.md`
-- `FAILURE_ANALYSIS.md`
+- Codex argues whether the simple baseline is already too strong or whether the benchmark/claim must change.
 
-Then run integrity audit (mandatory):
+Gate:
 
-```text
-Given results + evaluation code:
-Check:
-1. Any metric computation errors?
-2. Any data leakage?
-3. Any unfair comparison?
-4. Any inconsistent experiment setting?
-Return critical issues.
-```
+- Do not run the proposed method before baseline ceiling is known or explicitly estimated.
 
-Append findings to:
+### Stages 4-7: Diagnostic Experiment Design
 
-- `REVIEW/CODE_REVIEW.md` (evaluation section) and/or
-- `REVIEW/CONSISTENCY_REPORT.md` (stage mismatch section)
-
-If critical audit issues exist, loop back to Stage 1 or Stage 2.
-
----
-
-### Stage 5 — Hypothesis Refinement / Pivot
-
-Based on Stage 4 failures:
-
-- update hypotheses
-- propose next-wave plan
-
-Write:
-
-- `NEXT_PROPOSAL.md`
-
-Use `/research-refine` when the pivot needs problem re-anchoring.
-
----
-
-### Stage 6 — Paper Framing & Writing (optional, but claim gate is mandatory when enabled)
-
-If `AUTO_WRITE=false`, stop with handoff:
+Use existing ARIS refinement and planning skills after the Better BRIS gates are explicit:
 
 ```bash
-/paper-writing "NARRATIVE_REPORT.md" — venue: ICLR
+/research-refine "$ARGUMENTS"
+/experiment-plan "refine-logs/FINAL_PROPOSAL.md"
 ```
 
-If enabled:
+Action:
+
+1. Fill the hypothesis-mechanism-benchmark-control matrix.
+2. Write `bris-research/CONTROL_DESIGN.md`.
+3. Write `bris-research/NULL_RESULT_CONTRACT.md`.
+4. Build `bris-research/COMPONENT_LADDER.md` from Component 0: simplest strong baseline.
+5. Write `bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md`.
+
+Codex debate:
+
+- Codex attacks control isolation, null-result interpretability, component attribution, rollback conditions, and algorithmic self-consistency.
+
+Gate:
+
+- Reject non-diagnostic experiments.
+- Do not run full systems before each major component is justified.
+- Do not run broad grids before the minimal diagnostic experiment.
+
+### Stage 7.5: Semantic Plan-Code Consistency Audit
+
+Use `/experiment-bridge` for implementation only after the planning gates exist:
 
 ```bash
-/paper-writing "NARRATIVE_REPORT.md" — venue: $VENUE
+/experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"
 ```
 
-Before finalizing draft, run claim check:
+Then run semantic audit using `shared-references/semantic-code-audit.md`.
+
+Action:
+
+1. Codex reads plan artifacts and implementation files directly.
+2. Codex checks whether code implements the intended baselines, controls, ablations, datasets, splits, metrics, regimes, config defaults, and outputs.
+3. Write `bris-research/PLAN_CODE_AUDIT.md`.
+
+Gate:
+
+- `CRITICAL_MISMATCH` blocks GPU scale-up.
+- Compile success is not enough.
+
+### Stages 8-8.5: Tiny Run And Tiny Run Audit
+
+Use ARIS execution infrastructure:
+
+```bash
+/run-experiment "[tiny diagnostic command]"
+/monitor-experiment "[run id or server]"
+```
+
+For many jobs, route through:
+
+```bash
+/experiment-queue "[manifest or grid]"
+```
+
+Action:
+
+1. Run the smallest sanity experiment.
+2. Write `bris-research/TINY_RUN_REPORT.md`.
+3. Codex or Claude audits outputs against the plan.
+4. Write `bris-research/TINY_RUN_AUDIT.md`.
+
+Gate:
+
+- Do not full-run unless tiny-run audit returns `PASS`.
+
+### Stages 9-11: Interpret, Re-read, Scale
+
+Use ARIS result tools:
+
+```bash
+/analyze-results "[results path]"
+/result-to-claim "[experiment description]"
+```
+
+Action:
+
+1. Write `bris-research/RESULT_INTERPRETATION.md` after every experiment.
+2. If early results change the question, write `bris-research/LITERATURE_REREAD_NOTE.md`.
+3. Before scale-up, write `bris-research/SCALEUP_DECISION.md`.
+
+Gate:
+
+- The next experiment must depend on current interpretation.
+- Do not scale because the original plan said so; scale because diagnostic evidence justifies it.
+
+### Stages 12-13: Claim Construction And Negative Strategy
+
+Action:
+
+1. Build claim -> evidence -> control -> scope -> limitation chain.
+2. Write `bris-research/CLAIM_CONSTRUCTION.md`.
+3. If the method ties or fails, write `bris-research/NEGATIVE_RESULT_STRATEGY.md`.
+4. Use `/result-to-claim` as the ARIS claim gate.
+
+Gate:
+
+- Do not generalize beyond tested benchmark, regime, or control set.
+- Do not force a positive story after tie or failure.
+
+### Stage 14: Reviewer Red-team
+
+Use existing ARIS review skills:
+
+```bash
+/auto-review-loop "$ARGUMENTS" — difficulty: hard
+/experiment-audit "[results and code]"
+/paper-claim-audit "paper/"
+/citation-audit "paper/"
+```
+
+Action:
+
+1. Codex and Claude independently attack the project.
+2. Write `bris-research/RED_TEAM_REVIEW.md`.
+3. Record top 5 rejection risks, required fixes, essential pre-submission fixes, claims to weaken, and submit-readiness.
+
+Gate:
+
+- Do not mark submission-ready while high-severity rejection risks remain unresolved.
+
+### Stage 15: Human Decision / Next Research Loop
+
+Action:
+
+1. Write `bris-research/HUMAN_DECISION_NOTE.md`.
+2. Summarize current belief, evidence, uncertainty, recommendation, and required human judgment.
+
+Required ending:
 
 ```text
-Given:
-- PAPER_DRAFT
-- EXPERIMENT_RESULTS
-Check:
-1. Are all claims supported?
-2. Any missing experiment?
-3. Any inconsistency between text and results?
-Return issues.
+PROCEED / NARROW / REDESIGN / RE-READ / CHANGE BENCHMARK / STOP / HUMAN_DECISION_REQUIRED
 ```
 
-Write:
+## Paper Writing Integration
 
-- `PAPER_DRAFT.md`
-- `REVIEW/CLAIM_CHECK.md`
+Paper writing is not replaced. It is inherited from ARIS:
 
----
+```bash
+/paper-writing "NARRATIVE_REPORT.md" — venue: $VENUE, assurance: submission
+```
 
-### Stage 7 — Multi-Agent Debate & Convergence
+Before invoking `/paper-writing`, require:
 
-Run final adversarial reconciliation:
+- `bris-research/CLAIM_CONSTRUCTION.md`
+- `bris-research/RED_TEAM_REVIEW.md`
+- supported or downgraded claims from `/result-to-claim`
 
-- Agent A: interpretation/significance
-- Agent B: correctness/evidence sufficiency
+During paper writing, keep ARIS gates:
 
-Goal: consensus, not unilateral generation.
+- `/paper-plan`
+- `/paper-figure`
+- `/figure-spec` or `/paper-illustration`
+- `/paper-write`
+- `/paper-compile`
+- `/auto-paper-improvement-loop`
+- `/paper-claim-audit`
+- `/citation-audit`
 
-Write:
+## Final Rule
 
-- `REVIEW/FINAL_CONSENSUS.md`
-
-Pipeline ends only when key claim disputes are either resolved or explicitly deferred with rationale.
-
-## Suggested Artifact Layout
+Creative Mode allows bold mechanisms. Commitment Mode requires diagnostics.
 
 ```text
-project/
-├── PROBLEM.md
-├── HYPOTHESIS.md
-├── FINAL_PROPOSAL.md
-├── EXPERIMENT_PLAN.md
-├── CODE/
-├── LOGS/
-├── EXPERIMENT_TRACKER.md
-├── EXPERIMENT_RESULTS.md
-├── FAILURE_ANALYSIS.md
-├── NEXT_PROPOSAL.md
-├── PAPER_DRAFT.md
-└── REVIEW/
-    ├── CODE_REVIEW.md
-    ├── CONSISTENCY_REPORT.md
-    ├── CLAIM_CHECK.md
-    └── FINAL_CONSENSUS.md
+Bold ideas are allowed.
+Undiagnosable experiments are not.
+
+Failure is allowed.
+Failure without interpretation is not.
+
+Runnable code is not success.
+Code that faithfully implements the experiment plan is success.
 ```
-
-## Closed-Loop Engine
-
-`Problem → Proposal → Code → Run → Analyze → Refine → Paper → Debate → Loop`
-
-Key principle: **Convergence > Generation**.
-
-## Output Protocols
-
-> Follow shared protocols for all output files:
-> - **[Output Versioning Protocol](../shared-references/output-versioning.md)**
-> - **[Output Manifest Protocol](../shared-references/output-manifest.md)**
-> - **[Output Language Protocol](../shared-references/output-language.md)**
-
-## Guardrails
-
-- Never skip Stage 1/2/4 mandatory checks.
-- Never let the same model family self-certify integrity-critical artifacts.
-- Fail loudly on unresolved critical mismatches.
-- Preserve existing ARIS skills and strengths; this pipeline is a chain refactor, not a rewrite.

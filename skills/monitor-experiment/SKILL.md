@@ -9,6 +9,19 @@ allowed-tools: Bash(ssh *), Bash(echo *), Read, Write, Edit
 
 Monitor: $ARGUMENTS
 
+## Better BRIS Monitoring Contract
+
+When monitoring a BRIS run, collect enough evidence for `RESULT_INTERPRETATION.md` and
+`TINY_RUN_AUDIT.md`, not just whether the process is alive. Always look for:
+
+- exact command/config used
+- dataset and split
+- baseline or component identity
+- metric values and ranges
+- output file paths
+- logs needed to diagnose null results
+- signs of implementation mismatch, label issues, metric bugs, or silent config drift
+
 ## Workflow
 
 ### Step 1: Check What's Running

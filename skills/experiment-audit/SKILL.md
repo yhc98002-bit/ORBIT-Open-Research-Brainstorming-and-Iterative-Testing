@@ -1,6 +1,6 @@
 ---
 name: experiment-audit
-description: "Audit experiment integrity before claiming results. Uses cross-model review (GPT-5.4) to check for fake ground truth, score normalization fraud, phantom results, and insufficient scope. Use when user says \"审计实验\", \"check experiment integrity\", \"audit results\", \"实验诚实度\", or after experiments complete before writing claims."
+description: "Audit experiment integrity before claiming results. Uses cross-model review (GPT-5.5 xhigh) to check for fake ground truth, score normalization fraud, phantom results, and insufficient scope. Use when user says \"审计实验\", \"check experiment integrity\", \"audit results\", \"实验诚实度\", or after experiments complete before writing claims."
 argument-hint: [experiment-dir-or-results-path]
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, mcp__codex__codex, mcp__codex__codex-reply
 ---
@@ -21,13 +21,13 @@ These are NOT intentional deception — they are failure modes of optimizing age
 
 ## Core Principle
 
-**The executor (Claude) collects file paths. The reviewer (GPT-5.4) reads code and judges integrity. The executor does NOT participate in integrity judgment.**
+**The executor (Claude) collects file paths. The reviewer (Codex GPT-5.5 xhigh) reads code and judges integrity. The executor does NOT participate in integrity judgment.**
 
 This follows `shared-references/reviewer-independence.md` and `shared-references/experiment-integrity.md`.
 
 ## Constants
 
-- **REVIEWER_BACKEND = `codex`** — Default: Codex MCP (xhigh). Override with `— reviewer: oracle-pro` for GPT-5.4 Pro via Oracle MCP. See `shared-references/reviewer-routing.md`.
+- **REVIEWER_BACKEND = `codex`** — Default: Codex MCP (`gpt-5.5`, xhigh). Override with `— reviewer: oracle-pro` only if explicitly requested. See `shared-references/reviewer-routing.md`.
 
 ## Workflow
 
@@ -47,15 +47,14 @@ Scan project directory for:
 
 **DO NOT summarize, interpret, or explain any file content.** Only collect paths.
 
-### Step 2: Send to Reviewer (GPT-5.4 via Codex MCP)
+### Step 2: Send to Reviewer (Codex GPT-5.5 via Codex MCP)
 
 Pass ONLY file paths and the audit checklist to the reviewer. The reviewer reads everything directly.
 
 ```
 mcp__codex__codex:
-  model: gpt-5.4
-  config: {"model_reasoning_effort": "xhigh"}
-  sandbox: read-only
+  model: gpt-5.5
+  config: {"model_reasoning_effort": "xhigh", "sandbox": "disabled"}
   cwd: [project directory]
   prompt: |
     You are an experiment integrity auditor. Read ALL files listed below
@@ -134,7 +133,7 @@ Parse the reviewer's response and write `EXPERIMENT_AUDIT.md`:
 # Experiment Audit Report
 
 **Date**: [today]
-**Auditor**: GPT-5.4 xhigh (cross-model, read-only)
+**Auditor**: GPT-5.5 xhigh (cross-model, read-only)
 **Project**: [project name]
 
 ## Overall Verdict: [PASS | WARN | FAIL]
@@ -174,7 +173,7 @@ Also write `EXPERIMENT_AUDIT.json` for machine consumption:
 ```json
 {
   "date": "2026-04-10",
-  "auditor": "gpt-5.4-xhigh",
+  "auditor": "gpt-5.5-xhigh",
   "overall_verdict": "warn",
   "integrity_status": "warn",
   "checks": {

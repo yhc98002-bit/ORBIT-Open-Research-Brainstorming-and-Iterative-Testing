@@ -9,6 +9,19 @@ allowed-tools: Bash(*), Read, Grep, Glob, Edit, Write, Agent, Skill(run-experime
 
 Orchestrate large batches of ML experiments on SSH remote GPU servers with proper state tracking, OOM retry, stale cleanup, and wave transitions.
 
+## Better BRIS Queue Gate
+
+When invoked by `/research-pipeline`, this skill is for scale-up only. Before launching a
+large grid or multi-seed sweep, verify:
+
+- `bris-research/TINY_RUN_AUDIT.md` returns `PASS`.
+- `bris-research/SCALEUP_DECISION.md` explicitly justifies scale-up.
+- `bris-research/RESULT_INTERPRETATION.md` explains why the next scaled experiment follows from prior results.
+- The manifest includes baselines, controls, ablations, seeds, metrics, and splits required by `bris-research/CONTROL_DESIGN.md`.
+
+If these are missing, stop and route back to `/experiment-plan`, `/experiment-bridge`, or
+`/run-experiment` for a tiny diagnostic run.
+
 ## When to Use This Skill
 
 Use when `/run-experiment` is insufficient:
@@ -306,7 +319,7 @@ Then user can check anytime or wait for summary report.
 
 ## Rationale / Source
 
-Identified via 2026-04-16 post-mortem analysis (Codex GPT-5.4 xhigh) of a 1.5-day
+Identified via 2026-04-16 post-mortem analysis (Codex GPT-5.5 xhigh) of a 1.5-day
 multi-seed paper experiment session:
 
 - Wall-clock sink: stale screens, OOM, wave transitions, manual parser

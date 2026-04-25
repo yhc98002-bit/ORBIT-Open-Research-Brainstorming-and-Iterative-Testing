@@ -27,13 +27,31 @@ Each phase builds on the previous one's output. The final deliverables are a val
 - **MAX_PILOT_IDEAS = 3** — Run pilots for at most 3 top ideas in parallel. Additional ideas are validated on paper only.
 - **MAX_TOTAL_GPU_HOURS = 8** — Total GPU budget across all pilots. If exceeded, skip remaining pilots and note in report.
 - **AUTO_PROCEED = true** — If user doesn't respond at a checkpoint, automatically proceed with the best option after presenting results. Set to `false` to always wait for explicit user confirmation.
-- **REVIEWER_MODEL = `gpt-5.4`** — Model used via Codex MCP. Must be an OpenAI model (e.g., `gpt-5.4`, `o3`, `gpt-4o`). Passed to sub-skills.
+- **REVIEWER_MODEL = `gpt-5.5`** — Model used via Codex MCP. BRIS default is `gpt-5.5` with xhigh reasoning. Passed to sub-skills.
 - **OUTPUT_DIR = `idea-stage/`** — All idea-stage outputs go here. Create the directory if it doesn't exist.
 - **ARXIV_DOWNLOAD = false** — When `true`, `/research-lit` downloads the top relevant arXiv PDFs during Phase 1. When `false` (default), only fetches metadata. Passed through to `/research-lit`.
 - **COMPACT = false** — When `true`, generate compact summary files for short-context models and session recovery. Writes `idea-stage/IDEA_CANDIDATES.md` (top 3-5 ideas only) at the end of this workflow. Downstream skills read this instead of the full `idea-stage/IDEA_REPORT.md`.
 - **REF_PAPER = false** — Reference paper to base ideas on. Accepts: local PDF path, arXiv URL, or any paper URL. When set, the paper is summarized first (`idea-stage/REF_PAPER_SUMMARY.md`), then idea generation uses it as context. Combine with `base repo` for "improve this paper with this codebase" workflows.
 
 > 💡 These are defaults. Override by telling the skill, e.g., `/idea-discovery "topic" — ref paper: https://arxiv.org/abs/2406.04329` or `/idea-discovery "topic" — compact: true`.
+
+## Better BRIS Problem Selection Overlay
+
+When invoked by `/research-pipeline`, load:
+
+- `shared-references/research-agent-pipeline.md`
+- `shared-references/research-harness-prompts.md` sections `0A`, `1`, and `0B`
+
+This workflow must explicitly separate three things:
+
+1. seed framing for broad areas
+2. question-driven literature mapping
+3. problem taste / problem selection
+
+Before finalizing the top idea, write `bris-research/PROBLEM_SELECTION.md` and evaluate each
+candidate by importance, audience, concreteness, novelty, feasibility, benchmark availability,
+baseline ceiling risk, expected headroom, diagnostic clarity, and paper survivability if the
+method fails or ties. End with `PROCEED`, `NARROW`, or `RETHINK`.
 
 ## Pipeline
 
@@ -146,7 +164,7 @@ Invoke `/idea-creator` with the landscape context (and `idea-stage/REF_PAPER_SUM
 
 **What this does:**
 - If `idea-stage/REF_PAPER_SUMMARY.md` exists, include it as context — ideas should build on, improve, or extend the reference paper
-- Brainstorm 8-12 concrete ideas via GPT-5.4 xhigh
+- Brainstorm 8-12 concrete ideas via GPT-5.5 xhigh
 - Filter by feasibility, compute cost, quick novelty search
 - Deep validate top ideas (full novelty check + devil's advocate)
 - Run parallel pilot experiments on available GPUs (top 2-3 ideas)
@@ -181,7 +199,7 @@ For each top idea (positive pilot signal), run a thorough novelty check:
 
 **What this does:**
 - Multi-source literature search (arXiv, Scholar, Semantic Scholar)
-- Cross-verify with GPT-5.4 xhigh
+- Cross-verify with GPT-5.5 xhigh
 - Check for concurrent work (last 3-6 months)
 - Identify closest existing work and differentiation points
 
@@ -196,7 +214,7 @@ For the surviving top idea(s), get brutal feedback:
 ```
 
 **What this does:**
-- GPT-5.4 xhigh acts as a senior reviewer (NeurIPS/ICML level)
+- GPT-5.5 xhigh acts as a senior reviewer (NeurIPS/ICML level)
 - Scores the idea, identifies weaknesses, suggests minimum viable improvements
 - Provides concrete feedback on experimental design
 
@@ -212,7 +230,7 @@ After review, refine the top idea into a concrete proposal and plan experiments:
 
 **What this does:**
 - Freeze a **Problem Anchor** to prevent scope drift
-- Iteratively refine the method via GPT-5.4 review (up to 5 rounds, until score ≥ 9)
+- Iteratively refine the method via GPT-5.5 review (up to 5 rounds, until score ≥ 9)
 - Generate a claim-driven experiment roadmap with ablations, budgets, and run order
 - Output: `refine-logs/FINAL_PROPOSAL.md`, `refine-logs/EXPERIMENT_PLAN.md`, `refine-logs/EXPERIMENT_TRACKER.md`
 

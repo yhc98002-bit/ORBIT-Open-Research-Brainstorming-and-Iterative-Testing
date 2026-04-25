@@ -9,6 +9,23 @@ allowed-tools: Bash(*), Read, Grep, Glob, Write, Edit, Agent
 
 Analyze: $ARGUMENTS
 
+## Better BRIS Result Interpretation Overlay
+
+When invoked by `/research-pipeline`, load `shared-references/research-agent-pipeline.md`.
+Do not stop at comparison tables. Write or update `bris-research/RESULT_INTERPRETATION.md`
+with:
+
+- expected vs observed result
+- whether the expected signal appeared
+- supported and weakened hypotheses
+- most likely explanation and alternatives
+- whether the issue is mechanism, benchmark, baseline ceiling, implementation, evaluation,
+  task ontology, hyperparameters, or missing control
+- the next diagnostic experiment
+- decision: continue, narrow, redesign, re-read literature, change benchmark, change control, or stop
+
+The next experiment must depend on this interpretation.
+
 ## Workflow
 
 ### Step 1: Locate Results

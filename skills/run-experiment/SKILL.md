@@ -9,6 +9,22 @@ allowed-tools: Bash(*), Read, Grep, Glob, Edit, Write, Agent, Skill(serverless-m
 
 Deploy and run ML experiment: $ARGUMENTS
 
+## Better BRIS Run Gates
+
+When invoked by `/research-pipeline`, load:
+
+- `shared-references/research-agent-pipeline.md`
+- `shared-references/semantic-code-audit.md`
+
+Before launching anything broader than a tiny diagnostic run, verify:
+
+- `bris-research/PLAN_CODE_AUDIT.md` exists and does not contain `CRITICAL_MISMATCH`.
+- `bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md` names the exact tiny run.
+- The first run is a sanity/tiny run unless the user explicitly overrides.
+
+After the tiny run, write or update `bris-research/TINY_RUN_REPORT.md`. Do not proceed to
+full runs until `bris-research/TINY_RUN_AUDIT.md` returns `PASS`.
+
 ## Workflow
 
 ### Step 1: Detect Environment

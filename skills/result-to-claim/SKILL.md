@@ -11,6 +11,24 @@ Experiments produce numbers; this gate decides what those numbers *mean*. Collec
 
 ## Context: $ARGUMENTS
 
+## Better BRIS Claim Construction Overlay
+
+When invoked by `/research-pipeline`, load:
+
+- `shared-references/research-agent-pipeline.md`
+- `shared-references/research-harness-prompts.md` sections `12` and `13`
+- `shared-references/reviewer-independence.md`
+
+Before paper writing, write or update:
+
+- `bris-research/CLAIM_CONSTRUCTION.md`
+- `bris-research/NEGATIVE_RESULT_STRATEGY.md` if the method ties, fails, or only partially supports the intended claim
+
+Use the claim -> evidence -> control -> scope -> limitation chain. Downgrade claims when
+evidence is partial. If the result is negative, evaluate whether the contribution can become
+benchmark diagnosis, baseline ceiling analysis, failure taxonomy, negative result, regime map,
+evaluation protocol, task ontology contribution, or controlled reproduction.
+
 ## When to Use
 
 - After a set of experiments completes (main results, not just sanity checks)
@@ -41,7 +59,8 @@ Send the collected results to Codex for objective evaluation:
 
 ```
 mcp__codex__codex:
-  config: {"model_reasoning_effort": "xhigh"}
+  model: gpt-5.5
+  config: {"model_reasoning_effort": "xhigh", "sandbox": "disabled"}
   prompt: |
     RESULT-TO-CLAIM EVALUATION
 
@@ -72,6 +91,7 @@ mcp__codex__codex:
 
     Be honest. Do not inflate claims beyond what the data supports.
     A single positive result on one dataset does not support a general claim.
+    If the method ties or fails, do not force a positive story. Identify whether a negative-result contribution remains.
 ```
 
 ### Step 3: Parse and Normalize

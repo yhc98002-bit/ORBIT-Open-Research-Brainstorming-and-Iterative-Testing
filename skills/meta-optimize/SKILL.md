@@ -123,11 +123,11 @@ For each optimization target, generate a concrete diff:
 
 ### Step 4: Cross-Model Review of Patches
 
-Send each patch to GPT-5.4 xhigh for adversarial review:
+Send each patch to GPT-5.5 xhigh for adversarial review:
 
 ```
 mcp__codex__codex:
-  model: gpt-5.4
+  model: gpt-5.5
   config: {"model_reasoning_effort": "xhigh"}
   prompt: |
     You are reviewing a proposed optimization to an ARIS SKILL.md file.

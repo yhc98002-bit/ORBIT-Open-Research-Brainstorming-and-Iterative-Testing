@@ -16,8 +16,8 @@ Autonomously iterate: review → implement fixes → re-review, until the extern
 - MAX_ROUNDS = 4
 - POSITIVE_THRESHOLD: score >= 6/10, or verdict contains "accept", "sufficient", "ready for submission"
 - REVIEW_DOC: `review-stage/AUTO_REVIEW.md` (cumulative log) *(fall back to `./AUTO_REVIEW.md` for legacy projects)*
-- REVIEWER_MODEL = `gpt-5.4` — Model used via Codex MCP. Must be an OpenAI model (e.g., `gpt-5.4`, `o3`, `gpt-4o`)
-- **REVIEWER_BACKEND = `codex`** — Default: Codex MCP (xhigh). Override with `— reviewer: oracle-pro` for GPT-5.4 Pro via Oracle MCP. See `shared-references/reviewer-routing.md`.
+- REVIEWER_MODEL = `gpt-5.5` — Model used via Codex MCP for BRIS review gates.
+- **REVIEWER_BACKEND = `codex`** — Default: Codex MCP (`gpt-5.5`, xhigh). Override with `— reviewer: oracle-pro` only if explicitly requested. See `shared-references/reviewer-routing.md`.
 - **OUTPUT_DIR = `review-stage/`** — All review-stage outputs go here. Create the directory if it doesn't exist.
 - **HUMAN_CHECKPOINT = false** — When `true`, pause after each round's review (Phase B) and present the score + weaknesses to the user. Wait for user input before proceeding to Phase C. The user can: approve the suggested fixes, provide custom modification instructions, skip specific fixes, or stop the loop early. When `false` (default), the loop runs fully autonomously.
 - **COMPACT = false** — When `true`, (1) read `EXPERIMENT_LOG.md` and `findings.md` instead of parsing full logs on session recovery, (2) append key findings to `findings.md` after each round.
@@ -27,6 +27,21 @@ Autonomously iterate: review → implement fixes → re-review, until the extern
   - `nightmare`: Everything in `hard` + **GPT reads the repo directly** via `codex exec` (Claude cannot filter what GPT sees) + **Adversarial Verification** (GPT independently checks if code matches claims).
 
 > 💡 Override: `/auto-review-loop "topic" — compact: true, human checkpoint: true, difficulty: hard`
+
+## Better BRIS Red-team Overlay
+
+When invoked by `/research-pipeline`, load:
+
+- `shared-references/research-agent-pipeline.md`
+- `shared-references/research-harness-prompts.md` section `14`
+- `shared-references/reviewer-independence.md`
+
+For BRIS, `/auto-review-loop` is also the final reviewer red-team. It must attack problem
+importance, novelty, task definition, benchmark validity, baselines, controls, null-result
+interpretation, evidence, overclaiming, reproducibility, and limitations.
+
+Write or update `bris-research/RED_TEAM_REVIEW.md` with top rejection risks, essential fixes,
+claims to weaken, and submit-readiness.
 
 ## State Persistence (Compact Recovery)
 

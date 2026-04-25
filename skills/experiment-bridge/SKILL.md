@@ -15,19 +15,40 @@ This skill bridges Workflow 1 (idea discovery + method refinement) and Workflow 
 
 ```
 Workflow 1 output:                    This skill:                                    Workflow 2 input:
-refine-logs/EXPERIMENT_PLAN.md   →   implement → GPT-5.4 review → deploy → collect → initial results ready
+refine-logs/EXPERIMENT_PLAN.md   →   implement → GPT-5.5 review → deploy → collect → initial results ready
 refine-logs/EXPERIMENT_TRACKER.md     code        (cross-model)    /run-experiment     for /auto-review-loop
 refine-logs/FINAL_PROPOSAL.md
 ```
 
 ## Constants
 
-- **CODE_REVIEW = true** — GPT-5.4 xhigh reviews experiment code before deployment. Catches logic bugs before wasting GPU hours. Set `false` to skip.
+- **CODE_REVIEW = true** — Codex `gpt-5.5` xhigh reviews experiment code before deployment. Catches semantic plan-code mismatches before wasting GPU hours. Set `false` only with explicit user approval.
 - **AUTO_DEPLOY = true** — Automatically deploy experiments after implementation + review. Set `false` to manually inspect code before deploying.
 - **SANITY_FIRST = true** — Run the sanity-stage experiment first (smallest, fastest) before launching the rest. Catches setup bugs early.
 - **MAX_PARALLEL_RUNS = 4** — Maximum number of experiments to deploy in parallel (limited by available GPUs).
 - **BASE_REPO = false** — GitHub repo URL to use as base codebase. When set, clone the repo first and implement experiments on top of it. When `false` (default), write code from scratch or reuse existing project files.
 - **COMPACT = false** — When `true`, (1) read `idea-stage/IDEA_CANDIDATES.md` instead of full `idea-stage/IDEA_REPORT.md` if available, (2) append experiment results to `EXPERIMENT_LOG.md` after collection.
+
+## Better BRIS Semantic Audit Overlay
+
+When invoked by `/research-pipeline`, load:
+
+- `shared-references/research-agent-pipeline.md`
+- `shared-references/semantic-code-audit.md`
+- `shared-references/reviewer-independence.md`
+
+Before deployment, verify these Better BRIS artifacts exist or are explicitly marked
+`NOT_APPLICABLE` with rationale:
+
+- `bris-research/BASELINE_CEILING.md`
+- `bris-research/CONTROL_DESIGN.md`
+- `bris-research/NULL_RESULT_CONTRACT.md`
+- `bris-research/COMPONENT_LADDER.md`
+- `bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md`
+
+The implementation review is semantic. It must check whether the code implements the intended
+algorithm, baselines, controls, ablations, datasets, splits, metrics, regimes, and config
+defaults. Compiling and running is not enough.
 
 > Override: `/experiment-bridge "EXPERIMENT_PLAN.md" — compact: true, base repo: https://github.com/org/project`
 
@@ -106,37 +127,44 @@ For each milestone (in order), write the experiment scripts:
 
 **Skip this step if `CODE_REVIEW` is `false`.**
 
-Before deploying, send the experiment code to GPT-5.4 xhigh for review:
+Before deploying, send the experiment code to Codex `gpt-5.5` xhigh for semantic review:
 
 ```
 mcp__codex__codex:
   config: {"model_reasoning_effort": "xhigh"}
   prompt: |
-    Review the following experiment implementation for correctness.
+    Review the following experiment implementation for semantic plan-code fidelity.
 
-    ## Experiment Plan:
-    [paste key sections from EXPERIMENT_PLAN.md]
-
-    ## Method Description:
-    [paste from FINAL_PROPOSAL.md]
-
-    ## Implementation:
-    [paste the experiment scripts]
+    Read these files directly when available:
+    - refine-logs/FINAL_PROPOSAL.md
+    - refine-logs/EXPERIMENT_PLAN.md
+    - bris-research/BASELINE_CEILING.md
+    - bris-research/CONTROL_DESIGN.md
+    - bris-research/NULL_RESULT_CONTRACT.md
+    - bris-research/COMPONENT_LADDER.md
+    - bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md
+    - [training scripts]
+    - [evaluation scripts]
+    - [config files]
+    - [launch scripts]
 
     Check for:
-    1. Does the code correctly implement the method described in the proposal?
-    2. Are all hyperparameters from the plan reflected in the code?
-    3. Are there any logic bugs (wrong loss function, incorrect data split, missing eval)?
-    4. Is the evaluation metric computed correctly?
-    5. **CRITICAL: Does evaluation use the dataset's actual ground truth labels — NOT another model's output as ground truth?** This is a common and severe bug.
-    6. Any potential issues (OOM risk, numerical instability, missing seeds)?
+    1. Are the correct baselines implemented?
+    2. Are required controls implemented?
+    3. Are ablations implemented as specified?
+    4. Do datasets, splits, metrics, regimes, seeds, and config defaults match the plan?
+    5. Does the code test the claimed mechanism?
+    6. Are any components missing, silently changed, or merged together?
+    7. Are outputs sufficient to interpret positive, negative, tied, and noisy results?
+    8. **CRITICAL: Does evaluation use the dataset's actual ground truth labels — NOT another model's output as ground truth?**
 
-    For each issue found, specify: CRITICAL / MAJOR / MINOR and the exact fix.
+    Return MATCHES_PLAN / PARTIAL_MISMATCH / CRITICAL_MISMATCH plus a traceability matrix:
+    Experiment Plan Item | Expected Implementation | Actual Code | Status | Fix
 ```
 
 **On review results:**
 - **No CRITICAL issues** → proceed to Phase 3
-- **CRITICAL issues found** → fix them, then re-submit for review (max 2 rounds)
+- **CRITICAL issues found** → fix them, write/update `bris-research/PLAN_CODE_AUDIT.md`, then re-submit for review (max 2 rounds)
 - **Codex MCP unavailable** → skip silently, proceed to Phase 3 (graceful degradation)
 
 ### Phase 3: Sanity Check (if SANITY_FIRST = true)
