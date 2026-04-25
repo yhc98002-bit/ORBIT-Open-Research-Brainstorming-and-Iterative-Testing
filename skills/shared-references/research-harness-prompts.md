@@ -277,7 +277,8 @@ Do not only report compile errors.
 Report semantic mismatches between plan and implementation.
 
 Return:
-1. MATCHES_PLAN / PARTIAL_MISMATCH / CRITICAL_MISMATCH
+1. Verdict on its own line, exactly one of `MATCHES_PLAN | PARTIAL_MISMATCH | CRITICAL_MISMATCH | ERROR`
+   (use `ERROR` only if the audit could not be completed, with a reason code)
 2. Missing experiments
 3. Missing controls
 4. Incorrect defaults
@@ -399,8 +400,12 @@ Before scaling, confirm:
 4. The core mechanism has shown a diagnostic signal.
 5. Controls isolate the mechanism.
 6. Null-result interpretation is clear.
-7. Implementation sanity checks passed.
-8. Plan-code consistency audit passed.
+7. `TINY_RUN_AUDIT.md` verdict line is `PASS`. `FIX_BEFORE_GPU` and `REDESIGN_EXPERIMENT`
+   block; do not scale.
+8. `PLAN_CODE_AUDIT.md` verdict line is `MATCHES_PLAN` or a scoped `PARTIAL_MISMATCH`
+   whose missing pieces are irrelevant to this scale-up wave. `CRITICAL_MISMATCH` blocks
+   unconditionally. `ERROR` (audit could not complete) blocks scale-up pending explicit
+   human acknowledgement; do not auto-launch.
 9. The next scaled experiment supports a specific paper claim.
 
 Then expand carefully:

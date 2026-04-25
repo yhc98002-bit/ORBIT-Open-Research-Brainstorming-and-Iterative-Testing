@@ -102,7 +102,9 @@ Do not only report compile errors.
 Report semantic mismatches between plan and implementation.
 
 Return:
-1. MATCHES_PLAN / PARTIAL_MISMATCH / CRITICAL_MISMATCH
+1. Verdict on its own line, exactly one of `MATCHES_PLAN | PARTIAL_MISMATCH | CRITICAL_MISMATCH | ERROR`
+   (`ERROR` is reserved for cases where the audit could not be completed, e.g.
+   Codex MCP unavailable; include a reason code)
 2. Missing experiments
 3. Missing controls
 4. Incorrect defaults

@@ -74,7 +74,9 @@ For each bib entry, invoke `mcp__codex__codex` (NOT `codex-reply` — fresh thre
 ```
 mcp__codex__codex:
   model: gpt-5.5
-  config: {"model_reasoning_effort": "xhigh", "sandbox": "disabled"}
+  config: {"model_reasoning_effort": "xhigh"}
+  # Sandbox is set globally in ~/.codex/config.toml as sandbox_mode = "danger-full-access".
+  # Codex MCP per-call config does not accept a sandbox key.
   prompt: |
     You are auditing a bibliographic entry. Use web/DBLP/arXiv search.
 

@@ -21,14 +21,14 @@ Research topic: $ARGUMENTS
 - **ARXIV_DOWNLOAD = false** — When `true`, download top 3-5 most relevant arXiv PDFs to PAPER_LIBRARY after search. When `false` (default), only fetch metadata (title, abstract, authors) via arXiv API — no files are downloaded.
 - **ARXIV_MAX_DOWNLOAD = 5** — Maximum number of PDFs to download when `ARXIV_DOWNLOAD = true`.
 
-## Better BRIS Literature Mode
+## BRIS Literature Mode
 
-When this skill is invoked from `/research-pipeline`, load:
+This mode is always-on. Before scanning, load:
 
 - `shared-references/research-agent-pipeline.md`
 - `shared-references/research-harness-prompts.md` sections `0A` and `1`
 
-In Better BRIS mode, literature review is not a related-work summary. It must produce a
+In BRIS mode, literature review is not a related-work summary. It must produce a
 question-driven map:
 
 - claim
@@ -41,9 +41,9 @@ question-driven map:
 - claim-evidence gap
 - follow-up question
 
-Write or update `bris-research/LITERATURE_MAP.md` when running inside the full pipeline.
-If the user only provided a broad area, first create `bris-research/SEED_FRAMING.md` and do
-not propose final methods yet.
+Run `mkdir -p bris-research/`, then write or update `bris-research/LITERATURE_MAP.md`. If
+the user only provided a broad area, first create `bris-research/SEED_FRAMING.md` and do not
+propose final methods yet.
 
 > 💡 Overrides:
 > - `/research-lit "topic" — paper library: ~/my_papers/` — custom local PDF path

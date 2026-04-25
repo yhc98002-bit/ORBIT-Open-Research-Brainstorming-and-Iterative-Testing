@@ -9,18 +9,28 @@ allowed-tools: Bash(*), Read, Grep, Glob, Edit, Write, Agent, Skill(run-experime
 
 Orchestrate large batches of ML experiments on SSH remote GPU servers with proper state tracking, OOM retry, stale cleanup, and wave transitions.
 
-## Better BRIS Queue Gate
+## BRIS Queue Gate
 
-When invoked by `/research-pipeline`, this skill is for scale-up only. Before launching a
-large grid or multi-seed sweep, verify:
+This gate is always-on. This skill is for scale-up only. Before launching a large grid or
+multi-seed sweep, run `mkdir -p bris-research/` (if missing) and verify each of the
+following. Parse the verdict line of each audit, not just file presence:
 
-- `bris-research/TINY_RUN_AUDIT.md` returns `PASS`.
+- `bris-research/PLAN_CODE_AUDIT.md` verdict line is `MATCHES_PLAN` or a scoped
+  `PARTIAL_MISMATCH` whose missing pieces are irrelevant to this scale-up wave.
+  `CRITICAL_MISMATCH` blocks unconditionally. `ERROR` (Codex unavailable, audit
+  could not complete) is a non-semantic failure: do **not** scale up automatically;
+  surface the reason code and require an explicit human acknowledgement before launch.
+- `bris-research/TINY_RUN_AUDIT.md` verdict line is `PASS`. `FIX_BEFORE_GPU` and
+  `REDESIGN_EXPERIMENT` block.
 - `bris-research/SCALEUP_DECISION.md` explicitly justifies scale-up.
-- `bris-research/RESULT_INTERPRETATION.md` explains why the next scaled experiment follows from prior results.
-- The manifest includes baselines, controls, ablations, seeds, metrics, and splits required by `bris-research/CONTROL_DESIGN.md`.
+- `bris-research/RESULT_INTERPRETATION.md` explains why the next scaled experiment follows
+  from prior results.
+- The manifest includes baselines, controls, ablations, seeds, metrics, and splits required
+  by `bris-research/CONTROL_DESIGN.md`.
 
-If these are missing, stop and route back to `/experiment-plan`, `/experiment-bridge`, or
-`/run-experiment` for a tiny diagnostic run.
+If any verdict is missing or blocking, stop and route back to `/experiment-bridge`
+(re-audit code), `/run-experiment` (re-run tiny diagnostic), or `/result-to-claim`
+(re-interpret) — whichever produced the failing artifact.
 
 ## When to Use This Skill
 

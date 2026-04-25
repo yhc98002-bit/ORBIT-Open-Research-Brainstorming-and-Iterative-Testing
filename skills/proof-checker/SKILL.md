@@ -412,9 +412,9 @@ Write `PROOF_CHECK_STATE.json`:
 ## Submission Artifact Emission
 
 This skill **always** writes `PROOF_AUDIT.json` at the paper directory
-root (i.e. `paper/PROOF_AUDIT.json` when invoked from `/paper-writing`
-with paper-dir `paper/`; `<your-paper-dir>/PROOF_AUDIT.json` when invoked
-standalone), regardless of caller or whether the paper contains theorems.
+root, regardless of caller or whether the paper contains theorems. The
+paper directory is the first positional argument (e.g. `paper/` →
+`paper/PROOF_AUDIT.json`). Behavior does not branch on caller.
 A paper with no `\begin{theorem}` / `\begin{lemma}` / `\begin{proof}` emits
 verdict `NOT_APPLICABLE`; silent skip is forbidden. `paper-writing`
 Phase 6 and `tools/verify_paper_audits.sh` both rely on this artifact

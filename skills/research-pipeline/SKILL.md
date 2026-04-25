@@ -27,7 +27,9 @@ Before executing the pipeline, read:
 - **OUTPUT_ROOT = `bris-research/`** — Better BRIS stage artifacts live here unless a project already has a better convention.
 - **CODEX_REVIEW_MODEL = `gpt-5.5`** — Default Codex reviewer for BRIS.
 - **CODEX_REVIEW_EFFORT = `xhigh`** — Mandatory for all BRIS review gates.
-- **CODEX_SANDBOX = `disabled`** — Equivalent to `sandbox_mode = danger-full-access`.
+- **CODEX_SANDBOX_MODE = `danger-full-access`** — Set globally in `~/.codex/config.toml`,
+  not per call. Codex MCP `config` only accepts `model_reasoning_effort`; do not try to
+  pass `sandbox` per call.
 - **REVIEWER_INDEPENDENCE = on** — Pass file paths and objective, not executor summaries.
 - **MAX_DEBATE_ROUNDS = 2** — Prevent infinite Claude vs Codex debate loops.
 - **AUTO_WRITE = false** — If true, run `/paper-writing` after claim construction and red-team gates.
@@ -72,6 +74,17 @@ Also reuse existing ARIS outputs when present:
 - `paper/`
 
 ## Pipeline
+
+### Stage 00: Initialize Workspace
+
+Before any other stage, run:
+
+```bash
+mkdir -p bris-research/
+```
+
+This is idempotent. Every downstream skill assumes `bris-research/` exists; create it once
+at the controller level so artifact writes never silently fail on a fresh project.
 
 ### Stage 0A: Seed Framing
 
@@ -206,11 +219,18 @@ Action:
 
 1. Codex reads plan artifacts and implementation files directly.
 2. Codex checks whether code implements the intended baselines, controls, ablations, datasets, splits, metrics, regimes, config defaults, and outputs.
-3. Write `bris-research/PLAN_CODE_AUDIT.md`.
+3. Always write `bris-research/PLAN_CODE_AUDIT.md` with the verdict line on its own line:
+   one of `MATCHES_PLAN | PARTIAL_MISMATCH | CRITICAL_MISMATCH | ERROR`.
 
 Gate:
 
-- `CRITICAL_MISMATCH` blocks GPU scale-up.
+- `MATCHES_PLAN` proceeds.
+- `PARTIAL_MISMATCH` proceeds only if the missing pieces are irrelevant to the next run.
+- `CRITICAL_MISMATCH` blocks GPU scale-up; fix and re-audit.
+- `ERROR` (Codex unavailable, audit could not complete) is **advisory at the tiny /
+  sanity run stage** (proceed, but surface the reason code) and **blocks at scale-up
+  pending explicit human acknowledgement** (scale-up is irreversible; do not launch
+  without a person on the loop).
 - Compile success is not enough.
 
 ### Stages 8-8.5: Tiny Run And Tiny Run Audit
@@ -317,9 +337,15 @@ Paper writing is not replaced. It is inherited from ARIS:
 
 Before invoking `/paper-writing`, require:
 
-- `bris-research/CLAIM_CONSTRUCTION.md`
-- `bris-research/RED_TEAM_REVIEW.md`
+- `bris-research/CLAIM_CONSTRUCTION.md` (written by `/result-to-claim`)
+- `bris-research/HUMAN_DECISION_NOTE.md` (written by `/result-to-claim` and Stage 15 of
+  this pipeline)
+- `bris-research/RED_TEAM_REVIEW.md` (written by `/auto-review-loop`)
+- `bris-research/NEGATIVE_RESULT_STRATEGY.md` if `result-to-claim` returned `partial` or `no`
 - supported or downgraded claims from `/result-to-claim`
+
+These match the hard preconditions in `skills/paper-writing/SKILL.md`. If any are missing,
+do not invoke `/paper-writing`; route the user back to the producing skill.
 
 During paper writing, keep ARIS gates:
 

@@ -34,24 +34,28 @@ In this hybrid pack, the pipeline itself is unchanged, but `paper-plan` and `pap
 > Override inline: `/paper-writing "NARRATIVE_REPORT.md" — venue: NeurIPS, illustration: gemini, human checkpoint: true`
 > IEEE example: `/paper-writing "NARRATIVE_REPORT.md" — venue: IEEE_JOURNAL`
 
-## Better BRIS Paper Preconditions
+## BRIS Paper Preconditions
 
-When invoked by `/research-pipeline`, load:
+These preconditions are always-on. Before any phase below, load:
 
 - `shared-references/research-agent-pipeline.md`
 - `shared-references/research-harness-prompts.md` sections `12`, `13`, and `14`
 
-Before writing a paper, verify these BRIS artifacts exist:
+Run `mkdir -p bris-research/`. Verify these BRIS artifacts exist before drafting:
 
 - `bris-research/CLAIM_CONSTRUCTION.md`
 - `bris-research/RED_TEAM_REVIEW.md`
 - `bris-research/HUMAN_DECISION_NOTE.md`
 
+If any of these is missing, stop and route the user back to `/result-to-claim` (writes
+`CLAIM_CONSTRUCTION.md` and `HUMAN_DECISION_NOTE.md`) and `/auto-review-loop` (writes
+`RED_TEAM_REVIEW.md`). Do not begin Phase 0 until they exist.
+
 If the method tied, failed, or produced mixed results, also require
 `bris-research/NEGATIVE_RESULT_STRATEGY.md`. Do not write a success-story paper if the claim
 construction says only a scoped, diagnostic, or negative-result contribution is supported.
 
-Paper writing remains the mature ARIS Workflow 3: `/paper-plan -> /paper-figure ->
+Paper writing remains the inherited Workflow 3: `/paper-plan -> /paper-figure ->
 /paper-write -> /paper-compile -> /auto-paper-improvement-loop -> /paper-claim-audit ->
 /citation-audit`.
 
@@ -458,15 +462,19 @@ skipping audits while claiming to have run them.
    [ ] 1. /proof-checker        → paper/PROOF_AUDIT.json
    [ ] 2. /paper-claim-audit    → paper/PAPER_CLAIM_AUDIT.json
    [ ] 3. /citation-audit       → paper/CITATION_AUDIT.json
-   [ ] 4. bash <ARIS_REPO>/tools/verify_paper_audits.sh paper/ --assurance submission
+   [ ] 4. bash "$BRIS_REPO/tools/verify_paper_audits.sh" paper/ --assurance submission
    [ ] 5. Block Final Report iff verifier exit code != 0
 ```
 
-> `<ARIS_REPO>` placeholder — replace with the absolute path to your ARIS
-> clone (e.g. `~/Desktop/Auto-claude-code-research-in-sleep` or the path
-> returned by `dirname $(readlink ~/.claude/skills/paper-writing/SKILL.md)/../..`).
-> The path is stable across runs; store it in a shell variable if you
-> prefer (`export ARIS_REPO=~/…` and use `"$ARIS_REPO"` in the command).
+> `$BRIS_REPO` resolution: the skill resolves it in this order and uses the first match —
+> 1. `$BRIS_REPO` env var if set;
+> 2. `$ARIS_REPO` env var if set (legacy fallback for projects migrated from ARIS);
+> 3. `dirname $(readlink ~/.claude/skills/paper-writing/SKILL.md)/../..` if the install used
+>    project-local symlinks via `tools/install_aris.sh`.
+>
+> Default: `~/research/BRIS-Better-Research-in-Sleep`. Store it in your shell rc with
+> `export BRIS_REPO=~/research/BRIS-Better-Research-in-Sleep` so the command is
+> copy-pasteable across sessions.
 
 #### Invoking the three audits
 
@@ -492,7 +500,7 @@ Order:
 #### Running the verifier
 
 ```bash
-bash <ARIS_REPO>/tools/verify_paper_audits.sh paper/ --assurance submission
+bash "$BRIS_REPO/tools/verify_paper_audits.sh" paper/ --assurance submission
 ```
 
 - **Exit 0** — All mandatory audits present, JSON schema-valid, hashes fresh,
@@ -519,7 +527,7 @@ in `~/.claude/settings.json`:
 {
   "hooks": {
     "Stop": [
-      {"command": "bash <ARIS_REPO>/tools/verify_paper_audits.sh paper/ --assurance submission"}
+      {"command": "bash \"$BRIS_REPO/tools/verify_paper_audits.sh\" paper/ --assurance submission"}
     ]
   }
 }
@@ -630,7 +638,7 @@ then /paper-writing for the final writing step.
 
 ## Stage-Chain Integration (Stage 6-7 Contract)
 
-When invoked from `/research-pipeline`, this workflow must additionally emit:
+This workflow must additionally emit (always, not only under `/research-pipeline`):
 
 - `PAPER_DRAFT.md` — claim-oriented draft summary (in addition to `paper/` LaTeX sources)
 - `REVIEW/CLAIM_CHECK.md` — mandatory claim-to-evidence consistency report

@@ -9,11 +9,11 @@ allowed-tools: Bash(*), Read, Grep, Glob, Write, Edit, Agent
 
 Analyze: $ARGUMENTS
 
-## Better BRIS Result Interpretation Overlay
+## BRIS Result Interpretation Gate
 
-When invoked by `/research-pipeline`, load `shared-references/research-agent-pipeline.md`.
-Do not stop at comparison tables. Write or update `bris-research/RESULT_INTERPRETATION.md`
-with:
+This gate is always-on. Load `shared-references/research-agent-pipeline.md` before analysis.
+Do not stop at comparison tables. Run `mkdir -p bris-research/`, then write or update
+`bris-research/RESULT_INTERPRETATION.md` with:
 
 - expected vs observed result
 - whether the expected signal appeared

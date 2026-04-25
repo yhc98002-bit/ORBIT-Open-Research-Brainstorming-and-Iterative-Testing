@@ -11,18 +11,22 @@ Experiments produce numbers; this gate decides what those numbers *mean*. Collec
 
 ## Context: $ARGUMENTS
 
-## Better BRIS Claim Construction Overlay
+## BRIS Claim Construction Gate
 
-When invoked by `/research-pipeline`, load:
+This gate is always-on. Before paper writing, load:
 
 - `shared-references/research-agent-pipeline.md`
-- `shared-references/research-harness-prompts.md` sections `12` and `13`
+- `shared-references/research-harness-prompts.md` sections `12`, `13`, and `15`
 - `shared-references/reviewer-independence.md`
 
-Before paper writing, write or update:
+Run `mkdir -p bris-research/`. Always write or update:
 
 - `bris-research/CLAIM_CONSTRUCTION.md`
-- `bris-research/NEGATIVE_RESULT_STRATEGY.md` if the method ties, fails, or only partially supports the intended claim
+- `bris-research/HUMAN_DECISION_NOTE.md` — short note summarizing what is believed, what
+  evidence supports it, what remains uncertain, agent's recommendation, and ending with one
+  of `PROCEED / NARROW / REDESIGN / RE-READ / CHANGE BENCHMARK / STOP / HUMAN_DECISION_REQUIRED`
+- `bris-research/NEGATIVE_RESULT_STRATEGY.md` if the method ties, fails, or only partially
+  supports the intended claim
 
 Use the claim -> evidence -> control -> scope -> limitation chain. Downgrade claims when
 evidence is partial. If the result is negative, evaluate whether the contribution can become
@@ -60,7 +64,9 @@ Send the collected results to Codex for objective evaluation:
 ```
 mcp__codex__codex:
   model: gpt-5.5
-  config: {"model_reasoning_effort": "xhigh", "sandbox": "disabled"}
+  config: {"model_reasoning_effort": "xhigh"}
+  # Sandbox is set globally in ~/.codex/config.toml as sandbox_mode = "danger-full-access".
+  # Codex MCP per-call config does not accept a sandbox key — see shared-references/reviewer-routing.md.
   prompt: |
     RESULT-TO-CLAIM EVALUATION
 

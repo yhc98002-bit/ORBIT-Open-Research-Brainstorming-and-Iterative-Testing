@@ -25,7 +25,8 @@ Draft a LaTeX paper based on: **$ARGUMENTS**
 4. **LaTeX includes** — `figures/latex_includes.tex` (from `/paper-figure`)
 5. **Bibliography** — existing `.bib` file, or will create one
 
-When writing from `/research-pipeline`, also read:
+If `bris-research/` exists, also read these BRIS artifacts before drafting (always, not
+only under `/research-pipeline`):
 
 - `bris-research/CLAIM_CONSTRUCTION.md`
 - `bris-research/NEGATIVE_RESULT_STRATEGY.md` if present

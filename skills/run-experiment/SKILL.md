@@ -9,21 +9,28 @@ allowed-tools: Bash(*), Read, Grep, Glob, Edit, Write, Agent, Skill(serverless-m
 
 Deploy and run ML experiment: $ARGUMENTS
 
-## Better BRIS Run Gates
+## BRIS Run Gates
 
-When invoked by `/research-pipeline`, load:
+These gates are always-on. Load:
 
 - `shared-references/research-agent-pipeline.md`
 - `shared-references/semantic-code-audit.md`
 
-Before launching anything broader than a tiny diagnostic run, verify:
+Run `mkdir -p bris-research/`. Before launching anything broader than a tiny diagnostic
+run, verify:
 
-- `bris-research/PLAN_CODE_AUDIT.md` exists and does not contain `CRITICAL_MISMATCH`.
+- `bris-research/PLAN_CODE_AUDIT.md` exists and its verdict line is `MATCHES_PLAN` or a
+  scoped `PARTIAL_MISMATCH` whose missing pieces are irrelevant to this run.
+  `CRITICAL_MISMATCH` blocks. `ERROR` (Codex unavailable, audit could not complete) is
+  **advisory at the tiny / sanity run stage**: surface the reason but proceed, because
+  the tiny run is cheap. Scale-up via `/experiment-queue` will re-check and require
+  explicit human acknowledgement before launching expensive runs.
 - `bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md` names the exact tiny run.
 - The first run is a sanity/tiny run unless the user explicitly overrides.
 
-After the tiny run, write or update `bris-research/TINY_RUN_REPORT.md`. Do not proceed to
-full runs until `bris-research/TINY_RUN_AUDIT.md` returns `PASS`.
+After the tiny run, write or update `bris-research/TINY_RUN_REPORT.md`. Always write
+`bris-research/TINY_RUN_AUDIT.md` with the verdict line `PASS`, `FIX_BEFORE_GPU`, or
+`REDESIGN_EXPERIMENT`. Do not proceed to full runs until the verdict is `PASS`.
 
 ## Workflow
 

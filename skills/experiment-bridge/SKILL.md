@@ -29,16 +29,16 @@ refine-logs/FINAL_PROPOSAL.md
 - **BASE_REPO = false** — GitHub repo URL to use as base codebase. When set, clone the repo first and implement experiments on top of it. When `false` (default), write code from scratch or reuse existing project files.
 - **COMPACT = false** — When `true`, (1) read `idea-stage/IDEA_CANDIDATES.md` instead of full `idea-stage/IDEA_REPORT.md` if available, (2) append experiment results to `EXPERIMENT_LOG.md` after collection.
 
-## Better BRIS Semantic Audit Overlay
+## BRIS Semantic Audit Gate
 
-When invoked by `/research-pipeline`, load:
+This gate is always-on. Before deployment, load:
 
 - `shared-references/research-agent-pipeline.md`
 - `shared-references/semantic-code-audit.md`
 - `shared-references/reviewer-independence.md`
 
-Before deployment, verify these Better BRIS artifacts exist or are explicitly marked
-`NOT_APPLICABLE` with rationale:
+Run `mkdir -p bris-research/`. Verify these BRIS plan artifacts exist or are explicitly
+marked `NOT_APPLICABLE` with rationale:
 
 - `bris-research/BASELINE_CEILING.md`
 - `bris-research/CONTROL_DESIGN.md`
@@ -49,6 +49,12 @@ Before deployment, verify these Better BRIS artifacts exist or are explicitly ma
 The implementation review is semantic. It must check whether the code implements the intended
 algorithm, baselines, controls, ablations, datasets, splits, metrics, regimes, and config
 defaults. Compiling and running is not enough.
+
+After every Codex semantic review, **always** write `bris-research/PLAN_CODE_AUDIT.md` with
+the verdict (one of `MATCHES_PLAN | PARTIAL_MISMATCH | CRITICAL_MISMATCH | ERROR`) and the
+traceability matrix from `shared-references/semantic-code-audit.md`. Downstream gates read
+the verdict line, not file presence — a clean `MATCHES_PLAN` audit must still emit the
+artifact, and an unreachable Codex MCP must still emit `ERROR` with a reason code.
 
 > Override: `/experiment-bridge "EXPERIMENT_PLAN.md" — compact: true, base repo: https://github.com/org/project`
 
@@ -158,14 +164,27 @@ mcp__codex__codex:
     7. Are outputs sufficient to interpret positive, negative, tied, and noisy results?
     8. **CRITICAL: Does evaluation use the dataset's actual ground truth labels — NOT another model's output as ground truth?**
 
-    Return MATCHES_PLAN / PARTIAL_MISMATCH / CRITICAL_MISMATCH plus a traceability matrix:
+    Return one of MATCHES_PLAN / PARTIAL_MISMATCH / CRITICAL_MISMATCH on its own line
+    (use ERROR only if you cannot complete the audit), plus a traceability matrix:
     Experiment Plan Item | Expected Implementation | Actual Code | Status | Fix
 ```
 
+**Always write `bris-research/PLAN_CODE_AUDIT.md`** with the verdict line
+(`MATCHES_PLAN`, `PARTIAL_MISMATCH`, `CRITICAL_MISMATCH`, or `ERROR`) and the traceability
+matrix, regardless of outcome. Downstream BRIS gates parse the verdict, not file presence.
+
 **On review results:**
-- **No CRITICAL issues** → proceed to Phase 3
-- **CRITICAL issues found** → fix them, write/update `bris-research/PLAN_CODE_AUDIT.md`, then re-submit for review (max 2 rounds)
-- **Codex MCP unavailable** → skip silently, proceed to Phase 3 (graceful degradation)
+- **`MATCHES_PLAN`** → write the audit artifact with verdict `MATCHES_PLAN`, proceed to Phase 3.
+- **`PARTIAL_MISMATCH`** → write the audit artifact, fix the partial gaps if they affect the planned tiny run, proceed only when residual mismatches are irrelevant to the upcoming experiment.
+- **`CRITICAL_MISMATCH`** → write the audit artifact, fix the issues, then re-submit for review (max 2 rounds). Do not proceed to GPU until the next audit returns `MATCHES_PLAN` or scoped `PARTIAL_MISMATCH`.
+- **Codex MCP unavailable** → write the audit artifact with verdict `ERROR` and a reason
+  code (e.g. `codex_mcp_unavailable`), then proceed to Phase 3 only if the next planned
+  step is a tiny / sanity run. Downstream behavior is split:
+    - tiny / sanity run (`/run-experiment`) treats `ERROR` as **advisory** — surface the
+      reason but do not block.
+    - scale-up (`/experiment-queue`, large `/run-experiment`) treats `ERROR` as
+      **blocking pending explicit human acknowledgement** — scale-up is the expensive
+      irreversible step, so a missing audit cannot be silently ignored.
 
 ### Phase 3: Sanity Check (if SANITY_FIRST = true)
 
@@ -244,7 +263,7 @@ As experiments complete:
 2. **Training quality check** — if W&B data is available (CLAUDE.md has `wandb: true` and `wandb_project`), invoke `/training-check` to detect NaN, loss divergence, plateaus, or overfitting. If W&B is not configured, skip silently.
 3. **Update `refine-logs/EXPERIMENT_TRACKER.md`** — fill in Status and Notes columns
 4. **Check success criteria** from EXPERIMENT_PLAN.md — did each experiment meet its bar?
-4. **Write initial results summary:**
+5. **Write initial results summary:**
 
 ```markdown
 # Initial Experiment Results

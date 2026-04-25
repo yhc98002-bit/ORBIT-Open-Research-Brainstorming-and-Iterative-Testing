@@ -83,7 +83,9 @@ Any .md file that is an executor-written summary
 ```
 mcp__codex__codex:
   model: gpt-5.5
-  config: {"model_reasoning_effort": "xhigh", "sandbox": "disabled"}
+  config: {"model_reasoning_effort": "xhigh"}
+  # Sandbox is set globally in ~/.codex/config.toml as sandbox_mode = "danger-full-access".
+  # Codex MCP per-call config does not accept a sandbox key.
   prompt: |
     You are a paper-to-evidence auditor. You have ZERO prior context about
     this research. You will receive only paper source files and raw result

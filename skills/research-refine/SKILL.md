@@ -42,11 +42,11 @@ User input (PROBLEM + vague APPROACH)
 - **MAX_PRIMARY_CLAIMS = 2** — Soft cap for paper-level claims. Prefer one dominant claim plus one supporting claim.
 - **MAX_NEW_TRAINABLE_COMPONENTS = 2** — Soft cap for genuinely new trainable pieces. Exceed only if the paper breaks otherwise.
 
-## Better BRIS Refinement Gates
+## BRIS Refinement Gates
 
-When invoked by `/research-pipeline`, load `shared-references/research-agent-pipeline.md`.
-Do not refine directly from idea to method unless the following artifacts exist or are created
-inside this run:
+These gates are always-on. Load `shared-references/research-agent-pipeline.md` before
+refining. Run `mkdir -p bris-research/`. Do not refine directly from idea to method unless
+the following artifacts exist or are created inside this run:
 
 - `bris-research/TASK_ONTOLOGY.md`
 - `bris-research/BASELINE_CEILING.md`

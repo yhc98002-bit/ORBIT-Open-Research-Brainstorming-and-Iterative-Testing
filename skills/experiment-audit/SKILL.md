@@ -54,7 +54,9 @@ Pass ONLY file paths and the audit checklist to the reviewer. The reviewer reads
 ```
 mcp__codex__codex:
   model: gpt-5.5
-  config: {"model_reasoning_effort": "xhigh", "sandbox": "disabled"}
+  config: {"model_reasoning_effort": "xhigh"}
+  # Sandbox is set globally in ~/.codex/config.toml as sandbox_mode = "danger-full-access".
+  # Codex MCP per-call config does not accept a sandbox key.
   cwd: [project directory]
   prompt: |
     You are an experiment integrity auditor. Read ALL files listed below

@@ -219,16 +219,28 @@ Required ending: `PROCEED`, `NARROW`, `REDESIGN`, `RE-READ`, `CHANGE BENCHMARK`,
 
 ## Hard Gates
 
-- No method design before `TASK_ONTOLOGY.md`.
-- No proposed method run before `BASELINE_CEILING.md`.
-- No experiment without interpretable `NULL_RESULT_CONTRACT.md`.
-- No full system before `COMPONENT_LADDER.md`.
-- No GPU scale-up before `PLAN_CODE_AUDIT.md`.
-- No full run before `TINY_RUN_AUDIT.md` returns `PASS`.
+Each artifact below is a verdict-bearing file. Downstream skills parse its verdict line
+and enforce the gate; mere file existence is not enough.
+
+- No method design before `TASK_ONTOLOGY.md` exists and stabilizes.
+- No proposed method run before `BASELINE_CEILING.md` exists and lists the simplest strong
+  baselines and headroom regime.
+- No experiment without an interpretable `NULL_RESULT_CONTRACT.md`.
+- No full system before `COMPONENT_LADDER.md` exists and justifies the proposed component
+  order.
+- No GPU scale-up unless `PLAN_CODE_AUDIT.md` verdict line is `MATCHES_PLAN` or a scoped
+  `PARTIAL_MISMATCH` whose missing pieces are irrelevant to this scale-up wave.
+  `CRITICAL_MISMATCH` blocks unconditionally. `ERROR` (Codex unavailable, audit could not
+  complete) is **advisory at tiny / sanity run** (proceed, surface the reason) and
+  **blocks at scale-up pending explicit human acknowledgement** (scale-up is the
+  expensive irreversible step; never launch without a person on the loop).
+- No full run unless `TINY_RUN_AUDIT.md` verdict line is `PASS`.
+  `FIX_BEFORE_GPU` and `REDESIGN_EXPERIMENT` block.
 - No blind continuation after results; update `RESULT_INTERPRETATION.md`.
 - No paper claim before `CLAIM_CONSTRUCTION.md`.
 - No positive story after tie/failure before `NEGATIVE_RESULT_STRATEGY.md`.
-- No submission-ready label before reviewer red-team and paper audits pass.
+- No `submission-ready` label before reviewer red-team (`RED_TEAM_REVIEW.md`) and paper
+  audits (`PAPER_CLAIM_AUDIT.json`, `CITATION_AUDIT.json`) all pass.
 
 ## Claude + Codex Debate Nodes
 

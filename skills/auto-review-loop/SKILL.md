@@ -28,20 +28,20 @@ Autonomously iterate: review → implement fixes → re-review, until the extern
 
 > 💡 Override: `/auto-review-loop "topic" — compact: true, human checkpoint: true, difficulty: hard`
 
-## Better BRIS Red-team Overlay
+## BRIS Red-team Gate
 
-When invoked by `/research-pipeline`, load:
+This gate is always-on. Before starting any review round, load:
 
 - `shared-references/research-agent-pipeline.md`
 - `shared-references/research-harness-prompts.md` section `14`
 - `shared-references/reviewer-independence.md`
 
-For BRIS, `/auto-review-loop` is also the final reviewer red-team. It must attack problem
+`/auto-review-loop` is also the BRIS final reviewer red-team. It must attack problem
 importance, novelty, task definition, benchmark validity, baselines, controls, null-result
 interpretation, evidence, overclaiming, reproducibility, and limitations.
 
-Write or update `bris-research/RED_TEAM_REVIEW.md` with top rejection risks, essential fixes,
-claims to weaken, and submit-readiness.
+Run `mkdir -p bris-research/`, then write or update `bris-research/RED_TEAM_REVIEW.md` with
+top rejection risks, essential fixes, claims to weaken, and submit-readiness.
 
 ## State Persistence (Compact Recovery)
 

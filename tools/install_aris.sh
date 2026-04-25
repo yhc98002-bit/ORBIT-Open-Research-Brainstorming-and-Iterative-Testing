@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
-# install_aris.sh — Project-local ARIS skill installation (flat per-skill symlinks).
+# install_aris.sh — Project-local BRIS / ARIS skill installation (flat per-skill symlinks).
 #
-# Each ARIS skill is symlinked into `<project>/.claude/skills/<skill-name>` so
+# Each skill is symlinked into `<project>/.claude/skills/<skill-name>` so
 # Claude Code's slash-command discovery (which only scans one level deep) finds it.
 # A versioned manifest at `<project>/.aris/installed-skills.txt` tracks every
 # entry this installer created — uninstall and reconcile read from the manifest
 # and never touch user-owned skills with the same name.
+#
+# This script is shared by ARIS and BRIS. The env var `BRIS_REPO` takes precedence
+# over `ARIS_REPO`; the manifest dir is `.aris/` for backward compatibility with
+# existing installs.
 #
 # Usage:
 #   bash tools/install_aris.sh [project_path] [options]
@@ -57,8 +61,11 @@ ARIS_DIR_NAME=".aris"
 LOCK_DIR_NAME=".install.lock.d"
 SKILLS_REL=".claude/skills"
 DOC_FILE_NAME="CLAUDE.md"
-BLOCK_BEGIN="<!-- ARIS:BEGIN -->"
-BLOCK_END="<!-- ARIS:END -->"
+BLOCK_BEGIN="<!-- BRIS:BEGIN -->"
+BLOCK_END="<!-- BRIS:END -->"
+# Legacy markers for projects originally installed under ARIS — read but never write.
+LEGACY_BLOCK_BEGIN="<!-- ARIS:BEGIN -->"
+LEGACY_BLOCK_END="<!-- ARIS:END -->"
 SAFE_NAME_REGEX='^[A-Za-z0-9][A-Za-z0-9._-]*$'
 SUPPORT_NAMES=("shared-references")
 EXCLUDE_TOP_NAMES=("skills-codex" "skills-codex.bak")  # not skills, not symlinked
@@ -153,12 +160,22 @@ resolve_aris_repo() {
         [[ -d "$p/skills" ]] || die "--aris-repo has no skills/ subdir: $p"
         echo "$p"; return
     fi
+    # Resolution order (first match wins):
+    #   1. --aris-repo flag (handled above)
+    #   2. BRIS_REPO env var
+    #   3. ARIS_REPO env var (backward compat)
+    #   4. Script's own parent dir (i.e., the repo this script lives inside)
+    #   5. Curated guess list
+    if [[ -n "${BRIS_REPO:-}" && -d "$BRIS_REPO/skills" ]]; then abs_path "$BRIS_REPO"; return; fi
+    if [[ -n "${ARIS_REPO:-}" && -d "$ARIS_REPO/skills" ]]; then abs_path "$ARIS_REPO"; return; fi
     local script_dir parent
     script_dir="$(cd "$(dirname "$0")" && pwd)"
     parent="$(cd "$script_dir/.." && pwd)"
     if [[ -d "$parent/skills" ]]; then echo "$parent"; return; fi
-    if [[ -n "${ARIS_REPO:-}" && -d "$ARIS_REPO/skills" ]]; then abs_path "$ARIS_REPO"; return; fi
     for guess in \
+        "$HOME/research/BRIS-Better-Research-in-Sleep" \
+        "$HOME/Desktop/BRIS-Better-Research-in-Sleep" \
+        "$HOME/.bris" \
         "$HOME/Desktop/aris_repo" \
         "$HOME/aris_repo" \
         "$HOME/.aris" \
@@ -167,7 +184,7 @@ resolve_aris_repo() {
         "$HOME/.claude/Auto-claude-code-research-in-sleep" ; do
         [[ -d "$guess/skills" ]] && { abs_path "$guess"; return; }
     done
-    die "cannot find ARIS repo. Use --aris-repo PATH or set ARIS_REPO env var."
+    die "cannot find BRIS or ARIS repo. Use --aris-repo PATH or set BRIS_REPO / ARIS_REPO env var."
 }
 
 # Build the upstream inventory: array of "kind|name" entries
@@ -548,26 +565,40 @@ update_claude_doc() {
     original="$(cat "$DOC_FILE")"
     # Build new block
     local count; count="$(wc -l < "$installed_names_file" | tr -d ' ')"
+    # Detect repo flavor (BRIS vs ARIS) by repo dir name; defaults to BRIS in this fork.
+    local FLAVOR="BRIS"
+    case "$(basename "$ARIS_REPO")" in
+        *Auto-claude-code-research-in-sleep*|aris_repo|.aris) FLAVOR="ARIS" ;;
+    esac
     new_block="$BLOCK_BEGIN
-## ARIS Skill Scope
-ARIS skills installed in this project: $count entries.
-Manifest: \`$ARIS_DIR_NAME/$MANIFEST_NAME\` (lists every skill ARIS installed and its upstream target).
-For ARIS workflows, prefer the project-local skills under \`$SKILLS_REL/\` over global skills.
+## $FLAVOR Skill Scope
+$FLAVOR skills installed in this project: $count entries.
+Manifest: \`$ARIS_DIR_NAME/$MANIFEST_NAME\` (lists every skill the installer added and its upstream target).
+For $FLAVOR workflows, prefer the project-local skills under \`$SKILLS_REL/\` over global skills.
 Do not modify or delete files inside any skill that is a symlink (symlinks point into \`$ARIS_REPO\`).
 Update with: \`bash $ARIS_REPO/tools/install_aris.sh\`  (re-runnable; reconciles new/removed skills).
 $BLOCK_END"
 
-    # Compute new content
-    local new_content
+    # Compute new content. Recognize both the current marker and the legacy ARIS marker so a
+    # repo that was first installed under ARIS gets its block upgraded in place rather than
+    # double-stamped.
+    local new_content active_begin active_end
     if printf '%s' "$original" | grep -qF "$BLOCK_BEGIN"; then
-        new_content="$(python3 - "$DOC_FILE" "$BLOCK_BEGIN" "$BLOCK_END" "$new_block" <<'PYEOF'
+        active_begin="$BLOCK_BEGIN"; active_end="$BLOCK_END"
+    elif printf '%s' "$original" | grep -qF "$LEGACY_BLOCK_BEGIN"; then
+        active_begin="$LEGACY_BLOCK_BEGIN"; active_end="$LEGACY_BLOCK_END"
+    else
+        active_begin=""; active_end=""
+    fi
+    if [[ -n "$active_begin" ]]; then
+        new_content="$(python3 - "$DOC_FILE" "$active_begin" "$active_end" "$new_block" <<'PYEOF'
 import re, sys, pathlib
 path, begin, end, body = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 text = pathlib.Path(path).read_text()
 pattern = re.compile(re.escape(begin) + r".*?" + re.escape(end), re.DOTALL)
 matches = pattern.findall(text)
 if len(matches) > 1:
-    sys.stderr.write("ARIS:WARN multiple ARIS blocks found in CLAUDE.md; skipping update\n")
+    sys.stderr.write("INSTALLER:WARN multiple managed blocks found in CLAUDE.md; skipping update\n")
     sys.stdout.write(text)
 else:
     sys.stdout.write(pattern.sub(body, text))
@@ -580,7 +611,7 @@ PYEOF
     fi
 
     # Compare-and-swap: re-read file, only commit if unchanged from snapshot
-    if $DRY_RUN; then log "  (dry-run) would update CLAUDE.md ARIS block"; return 0; fi
+    if $DRY_RUN; then log "  (dry-run) would update CLAUDE.md $FLAVOR block"; return 0; fi
     tmp="$DOC_FILE.aris-tmp.$$"
     printf '%s' "$new_content" > "$tmp"
     local current; current="$(cat "$DOC_FILE")"
@@ -633,10 +664,17 @@ do_uninstall() {
 }
 
 # ─── Main flow ────────────────────────────────────────────────────────────────
+# Detect repo flavor for the install banner so BRIS users see "BRIS Project Install"
+# and ARIS users still see the legacy banner.
+case "$(basename "$ARIS_REPO")" in
+    *Auto-claude-code-research-in-sleep*|aris_repo|.aris) INSTALL_FLAVOR="ARIS" ;;
+    *) INSTALL_FLAVOR="BRIS" ;;
+esac
+
 log ""
-log "ARIS Project Install"
+log "$INSTALL_FLAVOR Project Install"
 log "  Project:    $PROJECT_PATH"
-log "  ARIS repo:  $ARIS_REPO"
+log "  Repo:       $ARIS_REPO"
 log "  Action:     $ACTION$($DRY_RUN && echo ' (dry-run)')"
 log ""
 

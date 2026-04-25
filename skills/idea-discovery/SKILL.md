@@ -35,9 +35,9 @@ Each phase builds on the previous one's output. The final deliverables are a val
 
 > 💡 These are defaults. Override by telling the skill, e.g., `/idea-discovery "topic" — ref paper: https://arxiv.org/abs/2406.04329` or `/idea-discovery "topic" — compact: true`.
 
-## Better BRIS Problem Selection Overlay
+## BRIS Problem Selection Gate
 
-When invoked by `/research-pipeline`, load:
+This gate is always-on. Before brainstorming, load:
 
 - `shared-references/research-agent-pipeline.md`
 - `shared-references/research-harness-prompts.md` sections `0A`, `1`, and `0B`
@@ -48,10 +48,11 @@ This workflow must explicitly separate three things:
 2. question-driven literature mapping
 3. problem taste / problem selection
 
-Before finalizing the top idea, write `bris-research/PROBLEM_SELECTION.md` and evaluate each
-candidate by importance, audience, concreteness, novelty, feasibility, benchmark availability,
-baseline ceiling risk, expected headroom, diagnostic clarity, and paper survivability if the
-method fails or ties. End with `PROCEED`, `NARROW`, or `RETHINK`.
+Run `mkdir -p bris-research/`. Before finalizing the top idea, write
+`bris-research/PROBLEM_SELECTION.md` and evaluate each candidate by importance, audience,
+concreteness, novelty, feasibility, benchmark availability, baseline ceiling risk, expected
+headroom, diagnostic clarity, and paper survivability if the method fails or ties. End with
+`PROCEED`, `NARROW`, or `RETHINK`.
 
 ## Pipeline
 
@@ -350,7 +351,10 @@ Or use /research-pipeline for the full end-to-end flow.
 
 ## Stage-Chain Integration (Stage 0-1 Contract)
 
-When this skill is called by `/research-pipeline`, you must additionally emit normalized stage artifacts:
+This integration is always-on (no longer conditional on `/research-pipeline` invocation).
+Always emit these normalized stage artifacts so downstream skills (experiment-bridge,
+result-to-claim, paper-writing) can pick them up regardless of how the user enters the
+pipeline:
 
 - `PROBLEM.md` — distilled from idea-stage findings + refined problem anchor
 - `HYPOTHESIS.md` — hypothesis space, assumptions, and failure signals
