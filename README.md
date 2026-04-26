@@ -279,6 +279,26 @@ based on phase progress, artifact presence, and 24h staleness.
 Pauses at Phase 5 with FINAL_PROPOSAL.md + Discovery/Grounding/Innovation artifacts. Run
 `/experiment-plan` separately when ready.
 
+### STOP A revision — proposal or experiment plan needs targeted fixes
+
+```text
+/proposal-revise "refine-logs/FINAL_PROPOSAL.md" \
+  — critiques: "ALGORITHM_TOURNAMENT picks S2 but S5 has stronger falsifiability;
+                also assumption A2 about iid data is wrong, we have temporal correlation"
+```
+
+After STOP A, if the user is dissatisfied with specific points, `/proposal-revise` accepts
+user-authored critique, classifies each point by which v1.3 stage owns the underlying
+decision, re-runs only the affected stages, then re-integrates via `/research-refine` (for
+proposal targets) or `/experiment-plan` (for plan targets). Anchor + simplicity checks
+catch revisions that drift from the original problem or add unnecessary complexity. Stops
+at `awaiting_human_continue` with a diff report. Run multiple rounds until satisfied;
+use `— fresh: true` to clear and start a different revision direction.
+
+Pass `"both"` as the target to revise both FINAL_PROPOSAL.md and EXPERIMENT_PLAN.md.
+Use `— scope: <list>` to skip auto-classification when you already know which stages need
+revisiting.
+
 ### Already have proposal, want experiment plan only
 
 ```text
@@ -359,6 +379,7 @@ Full degradation contract: each skill's "ARIS / Sub-skill Unavailability" sectio
 
 - `skills/research-pipeline/SKILL.md` — v1.3 routing orchestrator
 - `skills/idea-to-proposal/SKILL.md` — STOP A: from area/idea to proposal + experiment plan (no GPU)
+- `skills/proposal-revise/SKILL.md` — STOP A revision loop: targeted edits driven by user critique
 - `skills/diagnostic-to-review/SKILL.md` — STOP C: chains run → analyze → claim → review
 - `skills/shared-references/research-agent-pipeline.md` — canonical 0–25 stage map + 19 hard gates
 - `skills/shared-references/research-harness-prompts.md` — per-stage canonical prompts
