@@ -1,9 +1,13 @@
-# BRIS — Better Research in Sleep（中文入口）
+<p align="center">
+  <img src="assets/ORBIT.png" alt="ORBIT — Open Research Brainstorming and Iterative Testing" width="640">
+</p>
+
+# ORBIT — Open Research Brainstorming and Iterative Testing（中文入口）
 
 **v1.3 — 科研方法论路由 harness（research-methodology routing harness）**。
-BRIS 不是僵硬的 0A–15 实验流水线，而是一个根据用户输入形态、模式（探索/创新/承诺）和风险等级
+ORBIT 不是僵硬的 0A–15 实验流水线，而是一个根据用户输入形态、模式（探索/创新/承诺）和风险等级
 路由的科研方法论 harness。它在探索期跑得快，在高风险承诺前慢下来，鼓励发散式机制创造，
-仅在不可逆的高风险转折点强制硬门禁。BRIS 复用 ARIS 成熟执行链路，**不重写**它们。
+仅在不可逆的高风险转折点强制硬门禁。ORBIT 复用 ARIS 成熟执行链路，**不重写**它们。
 
 > 完整契约见英文 [README.md](./README.md) 与 `skills/shared-references/` 下的合约文件——
 > README.md 与 shared-references 是 canonical 合约源。本文件是**简明中文入口**，
@@ -31,7 +35,7 @@ v1.3 在承诺时保留诊断纪律，并增加：
 
 ## 四脉络框架（Four Spines）
 
-BRIS 把 26 个阶段组织成四条脉络。这**不是严格线性**——orchestrator 按模式和风险路由；
+ORBIT 把 26 个阶段组织成四条脉络。这**不是严格线性**——orchestrator 按模式和风险路由；
 许多阶段是循环；某些阶段在 EXPLORATION 模式下被跳过，仅在 COMMITMENT 前触发。
 
 | 脉络 | 阶段 | 用途 |
@@ -71,7 +75,7 @@ orchestrator 的第一步是分类用户输入并写入 `MODE_ROUTING.md`。
 4. **artifact 触发审计** — 数据/benchmark/simulator 不存在时不要做审计；存在了再审计（G4）。
 5. **Codex 创新协作 + 承诺对抗** — 创造时 Codex 只增补不否决；承诺时切换为独立语义审计员。
 6. **复用 ARIS 成熟链路** — `/auto-review-loop`、`/paper-writing`、`/experiment-bridge` 等
-   不要重写，BRIS 调用它们。
+   不要重写，ORBIT 调用它们。
 7. **claim → evidence → control → scope → limitation** — 论文 claim 永远证据绑定，
    部分证据降级 claim 措辞（G14、G17）。
 8. **高风险转折保留人类判断** — scale-up、论文写作、公开发布前必须有
@@ -90,7 +94,7 @@ orchestrator 的第一步是分类用户输入并写入 `MODE_ROUTING.md`。
 /research-pipeline "Discrete Diffusion VLA post-training"
 ```
 
-BRIS 走 Discovery 路由：seed framing → literature map → problem reframing → problem selection。
+ORBIT 走 Discovery 路由：seed framing → literature map → problem reframing → problem selection。
 不承诺方法、不跑实验。
 
 **已有 idea 想验证（INNOVATION 模式）：**
@@ -98,7 +102,7 @@ BRIS 走 Discovery 路由：seed framing → literature map → problem reframin
 /research-pipeline "problem | rough method idea"
 ```
 
-BRIS 走 Grounding（assumption ledger、abstract task、baseline ceiling）+ Innovation Spine
+ORBIT 走 Grounding（assumption ledger、abstract task、baseline ceiling）+ Innovation Spine
 （mechanism invention、analogy transfer、algorithm sketch tournament）。
 
 **已有结果想写论文（COMMITMENT 模式）：**
@@ -203,7 +207,7 @@ codex setup
 claude mcp add codex -s user -- codex mcp-server
 ```
 
-BRIS 默认 Codex reviewer 配置：
+ORBIT 默认 Codex reviewer 配置：
 
 ```toml
 model = "gpt-5.5"
@@ -258,5 +262,20 @@ v1.0 别名将在 v2.0 中移除。
 复用 ARIS 执行链路，不要重写。
 高风险不可逆转折点保留人类判断。
 ```
+
+## 从 BRIS（本项目旧名）迁移
+
+本项目原名 **BRIS — Better Research in Sleep**，已 rebrand 为 **ORBIT — Open Research
+Brainstorming and Iterative Testing**。已经在使用 `bris-research/` 目录的项目应该改名：
+
+```bash
+# 在你的项目根目录
+git mv bris-research orbit-research
+```
+
+（不用 git 的话改成 `mv bris-research orbit-research`。）`install_aris.sh` 在一个主版本
+内仍接受旧的 `BRIS_REPO` 环境变量和 `<!-- BRIS:BEGIN -->` / `<!-- BRIS:END -->`
+CLAUDE.md 标记，所以已安装的项目无需修改也能继续用；下次运行 install 时这些标记会被
+自动升级为 `<!-- ORBIT:BEGIN -->` / `<!-- ORBIT:END -->`。
 
 → 完整英文文档与 canonical 合约：[README.md](./README.md)

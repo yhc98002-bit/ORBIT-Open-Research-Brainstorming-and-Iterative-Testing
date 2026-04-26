@@ -1,14 +1,14 @@
-# BRIS Agent Guide
+# ORBIT Agent Guide
 
 > **For AI agents reading this repo.** If you are a human, see [README.md](README.md).
 
-BRIS (Better Research in Sleep) v1.3 is a research-methodology routing harness built on
+ORBIT (Open Research Brainstorming and Iterative Testing) v1.3 is a research-methodology routing harness built on
 ARIS execution skills. It routes through 26 stages organised into four spines (Discovery /
 Grounding / Innovation / Validation) by mode (EXPLORATION / INNOVATION / COMMITMENT) and
 risk score (1–5). Canonical contracts live in
 `skills/shared-references/research-agent-pipeline.md`.
 
-The job of a BRIS agent is not "run experiments and write a paper". It is to behave like a
+The job of an ORBIT agent is not "run experiments and write a paper". It is to behave like a
 careful research scientist: classify the user's input shape, route through the minimum
 stages needed, expand the candidate space during innovation (Codex collaborative), pin
 down assumptions / abstract task / baseline ceiling during grounding, enforce verdict-line
@@ -45,7 +45,7 @@ The argument separator is em-dash `—`, not single `-`.
 Codex review reasoning is always `xhigh`. Codex sandbox mode is set in `~/.codex/config.toml`
 as `sandbox_mode = "danger-full-access"`; it is not overridable per call.
 
-## The BRIS v1.3 Pipeline
+## The ORBIT v1.3 Pipeline
 
 ```text
 Discovery   → 0   Mode & Risk Routing
@@ -203,44 +203,44 @@ stages. Sub-skills enforce their own v1.3 gates even when invoked directly.
 | `/analyze-results` | Statistics + comparison |
 | `/ablation-planner` | Reviewer-perspective ablations |
 
-## BRIS v1.3 Artifact Contracts
+## ORBIT v1.3 Artifact Contracts
 
-Skills communicate through plain-text files under `bris-research/` (BRIS-specific) and
+Skills communicate through plain-text files under `orbit-research/` (ORBIT-specific) and
 `refine-logs/` / `paper/` / `review-stage/` (inherited from ARIS). v1.3 producers emit
 v1.3 names; consumers accept the v1.0 alias for one major version (preferring v1.3 if
 both exist).
 
 | v1.3 Artifact | v1.0 alias | Created by | Consumed by |
 |---|---|---|---|
-| `bris-research/MODE_ROUTING.md` | — | research-pipeline (Stage 0) | all downstream stages |
-| `bris-research/SEED_FRAMING.md` | (was 0A) | research-pipeline / research-lit | research-refine, experiment-plan |
-| `bris-research/LITERATURE_MAP.md` | — | research-lit, research-pipeline | idea-discovery, research-refine, Stage 19 re-read |
-| `bris-research/PROBLEM_REFRAMING.md` | — | research-pipeline (Stage 2.5) | research-pipeline (Stage 3) |
-| `bris-research/PROBLEM_SELECTION.md` | — | idea-discovery, research-pipeline | research-refine, experiment-plan |
-| `bris-research/ASSUMPTION_LEDGER.md` | — | research-pipeline (Stage 4) | downstream claim wording (G2), semantic-code-audit |
-| `bris-research/ABSTRACT_TASK_MECHANISM.md` | (part of TASK_ONTOLOGY split) | research-pipeline (Stage 5) | innovation loops, experiment-bridge, semantic-code-audit |
-| `bris-research/ARTIFACT_AUDIT.md` | (was TASK_ONTOLOGY's data block) | research-pipeline (Stage 6) | experiment-bridge, run-experiment |
-| `bris-research/BASELINE_CEILING.md` | — | research-refine, experiment-plan | experiment-bridge, result-to-claim |
-| `bris-research/MECHANISM_IDEATION.md` | — | research-pipeline (Stage 8, Codex collaborative) | Stages 9, 10, 11, 18.5 |
-| `bris-research/ANALOGY_TRANSFER.md` | — | research-pipeline (Stage 9) | Stages 10, 11 |
-| `bris-research/ALGORITHM_TOURNAMENT.md` | — | research-pipeline (Stage 10) | Stages 11, 14, 18.5 |
-| `bris-research/CONTROL_DESIGN.md` | — | research-refine, experiment-plan | experiment-bridge, experiment-queue |
-| `bris-research/NULL_RESULT_CONTRACT.md` | — | research-refine, experiment-plan | experiment-bridge, run-experiment |
-| `bris-research/COMPONENT_BUNDLE_LADDER.md` | `COMPONENT_LADDER.md` | research-refine, experiment-plan | experiment-bridge, run-experiment |
-| `bris-research/ALGORITHMIC_FORMALIZATION.md` | — | research-pipeline (Stage 14) | semantic-code-audit, experiment-bridge |
-| `bris-research/PLAN_CODE_AUDIT.md` (verdict line) | — | experiment-bridge (always) | run-experiment, experiment-queue |
-| `bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md` | `TINY_RUN_PLAN.md` | experiment-plan | experiment-bridge, run-experiment |
-| `bris-research/DIAGNOSTIC_RUN_REPORT.md` | `TINY_RUN_REPORT.md` | run-experiment | diagnostic-run audit |
-| `bris-research/DIAGNOSTIC_RUN_AUDIT.md` (verdict line) | `TINY_RUN_AUDIT.md` | run-experiment / monitor-experiment | experiment-queue, research-pipeline |
-| `bris-research/RESULT_INTERPRETATION.md` | — | analyze-results, monitor-experiment | result-to-claim, Stage 18.5 |
-| `bris-research/FAILURE_TO_INNOVATION.md` | — | research-pipeline (Stage 18.5) | Stages 19, 20 |
-| `bris-research/LITERATURE_REREAD_NOTE.md` | — | research-lit (Stage 19 loop) | research-pipeline |
-| `bris-research/SCALEUP_DECISION.md` (verdict line) | — | research-pipeline | experiment-queue |
-| `bris-research/CLAIM_CONSTRUCTION.md` | — | result-to-claim | paper-plan, paper-write, paper-writing (G16, G18) |
-| `bris-research/NEGATIVE_RESULT_STRATEGY.md` | — | result-to-claim | paper-plan, paper-write |
-| `bris-research/RED_TEAM_REVIEW.md` | — | auto-review-loop | paper-writing |
-| `bris-research/PAPER_IMPROVEMENT_LOG.md` | — | paper-writing chain | (audit log) |
-| `bris-research/HUMAN_DECISION_NOTE.md` (verdict line) | — | result-to-claim, research-pipeline | paper-writing, scale-up gate (G15, G19) |
+| `orbit-research/MODE_ROUTING.md` | — | research-pipeline (Stage 0) | all downstream stages |
+| `orbit-research/SEED_FRAMING.md` | (was 0A) | research-pipeline / research-lit | research-refine, experiment-plan |
+| `orbit-research/LITERATURE_MAP.md` | — | research-lit, research-pipeline | idea-discovery, research-refine, Stage 19 re-read |
+| `orbit-research/PROBLEM_REFRAMING.md` | — | research-pipeline (Stage 2.5) | research-pipeline (Stage 3) |
+| `orbit-research/PROBLEM_SELECTION.md` | — | idea-discovery, research-pipeline | research-refine, experiment-plan |
+| `orbit-research/ASSUMPTION_LEDGER.md` | — | research-pipeline (Stage 4) | downstream claim wording (G2), semantic-code-audit |
+| `orbit-research/ABSTRACT_TASK_MECHANISM.md` | (part of TASK_ONTOLOGY split) | research-pipeline (Stage 5) | innovation loops, experiment-bridge, semantic-code-audit |
+| `orbit-research/ARTIFACT_AUDIT.md` | (was TASK_ONTOLOGY's data block) | research-pipeline (Stage 6) | experiment-bridge, run-experiment |
+| `orbit-research/BASELINE_CEILING.md` | — | research-refine, experiment-plan | experiment-bridge, result-to-claim |
+| `orbit-research/MECHANISM_IDEATION.md` | — | research-pipeline (Stage 8, Codex collaborative) | Stages 9, 10, 11, 18.5 |
+| `orbit-research/ANALOGY_TRANSFER.md` | — | research-pipeline (Stage 9) | Stages 10, 11 |
+| `orbit-research/ALGORITHM_TOURNAMENT.md` | — | research-pipeline (Stage 10) | Stages 11, 14, 18.5 |
+| `orbit-research/CONTROL_DESIGN.md` | — | research-refine, experiment-plan | experiment-bridge, experiment-queue |
+| `orbit-research/NULL_RESULT_CONTRACT.md` | — | research-refine, experiment-plan | experiment-bridge, run-experiment |
+| `orbit-research/COMPONENT_BUNDLE_LADDER.md` | `COMPONENT_LADDER.md` | research-refine, experiment-plan | experiment-bridge, run-experiment |
+| `orbit-research/ALGORITHMIC_FORMALIZATION.md` | — | research-pipeline (Stage 14) | semantic-code-audit, experiment-bridge |
+| `orbit-research/PLAN_CODE_AUDIT.md` (verdict line) | — | experiment-bridge (always) | run-experiment, experiment-queue |
+| `orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md` | `TINY_RUN_PLAN.md` | experiment-plan | experiment-bridge, run-experiment |
+| `orbit-research/DIAGNOSTIC_RUN_REPORT.md` | `TINY_RUN_REPORT.md` | run-experiment | diagnostic-run audit |
+| `orbit-research/DIAGNOSTIC_RUN_AUDIT.md` (verdict line) | `TINY_RUN_AUDIT.md` | run-experiment / monitor-experiment | experiment-queue, research-pipeline |
+| `orbit-research/RESULT_INTERPRETATION.md` | — | analyze-results, monitor-experiment | result-to-claim, Stage 18.5 |
+| `orbit-research/FAILURE_TO_INNOVATION.md` | — | research-pipeline (Stage 18.5) | Stages 19, 20 |
+| `orbit-research/LITERATURE_REREAD_NOTE.md` | — | research-lit (Stage 19 loop) | research-pipeline |
+| `orbit-research/SCALEUP_DECISION.md` (verdict line) | — | research-pipeline | experiment-queue |
+| `orbit-research/CLAIM_CONSTRUCTION.md` | — | result-to-claim | paper-plan, paper-write, paper-writing (G16, G18) |
+| `orbit-research/NEGATIVE_RESULT_STRATEGY.md` | — | result-to-claim | paper-plan, paper-write |
+| `orbit-research/RED_TEAM_REVIEW.md` | — | auto-review-loop | paper-writing |
+| `orbit-research/PAPER_IMPROVEMENT_LOG.md` | — | paper-writing chain | (audit log) |
+| `orbit-research/HUMAN_DECISION_NOTE.md` (verdict line) | — | result-to-claim, research-pipeline | paper-writing, scale-up gate (G15, G19) |
 | `EXPERIMENT_AUDIT.{md,json}` | — | experiment-audit | result-to-claim |
 | `PAPER_CLAIM_AUDIT.{md,json}` | — | paper-claim-audit | paper-writing Phase 5.5 gate |
 | `CITATION_AUDIT.{md,json}` | — | citation-audit | paper-writing Phase 5.8 gate |
@@ -362,5 +362,5 @@ Codex reasoning is always `xhigh` regardless of effort.
 ## Source of Truth
 
 - Each skill's behavior: read its `skills/<name>/SKILL.md`.
-- BRIS-wide rules: read `skills/shared-references/*.md`.
+- ORBIT-wide rules: read `skills/shared-references/*.md`.
 - This guide is a routing index, not the specification.

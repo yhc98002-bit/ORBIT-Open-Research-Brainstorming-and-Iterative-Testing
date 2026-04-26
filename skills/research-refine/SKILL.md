@@ -4,8 +4,8 @@ description: 'Turn a vague research direction into a problem-anchored, elegant, 
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, mcp__codex__codex, mcp__codex__codex-reply
 ---
 
-> **BRIS v1.3 compatibility note:** This skill may contain legacy v1.0 artifact names
-> (e.g. `TASK_ONTOLOGY.md`, `COMPONENT_LADDER.md`, `TINY_RUN_AUDIT.md`). In BRIS v1.3,
+> **ORBIT v1.3 compatibility note:** This skill may contain legacy v1.0 artifact names
+> (e.g. `TASK_ONTOLOGY.md`, `COMPONENT_LADDER.md`, `TINY_RUN_AUDIT.md`). In ORBIT v1.3,
 > canonical artifacts are defined in
 > [`skills/shared-references/research-agent-pipeline.md`](../shared-references/research-agent-pipeline.md);
 > the legacy names are aliases only and consumers parse either form. Full v1.3 vocabulary
@@ -49,17 +49,17 @@ User input (PROBLEM + vague APPROACH)
 - **MAX_PRIMARY_CLAIMS = 2** — Soft cap for paper-level claims. Prefer one dominant claim plus one supporting claim.
 - **MAX_NEW_TRAINABLE_COMPONENTS = 2** — Soft cap for genuinely new trainable pieces. Exceed only if the paper breaks otherwise.
 
-## BRIS Refinement Gates
+## ORBIT Refinement Gates
 
 These gates are always-on. Load `shared-references/research-agent-pipeline.md` before
-refining. Run `mkdir -p bris-research/`. Do not refine directly from idea to method unless
+refining. Run `mkdir -p orbit-research/`. Do not refine directly from idea to method unless
 the following artifacts exist or are created inside this run:
 
-- `bris-research/TASK_ONTOLOGY.md`
-- `bris-research/BASELINE_CEILING.md`
-- `bris-research/CONTROL_DESIGN.md`
-- `bris-research/NULL_RESULT_CONTRACT.md`
-- `bris-research/COMPONENT_LADDER.md`
+- `orbit-research/TASK_ONTOLOGY.md`
+- `orbit-research/BASELINE_CEILING.md`
+- `orbit-research/CONTROL_DESIGN.md`
+- `orbit-research/NULL_RESULT_CONTRACT.md`
+- `orbit-research/COMPONENT_LADDER.md`
 
 The method proposal must identify the simplest strong baseline, the highest-headroom regime,
 the intended mechanism, controls that isolate that mechanism, and the null-result meaning.

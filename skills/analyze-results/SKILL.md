@@ -9,11 +9,11 @@ allowed-tools: Bash(*), Read, Grep, Glob, Write, Edit, Agent
 
 Analyze: $ARGUMENTS
 
-## BRIS Result Interpretation Gate
+## ORBIT Result Interpretation Gate
 
 This gate is always-on. Load `shared-references/research-agent-pipeline.md` before analysis.
-Do not stop at comparison tables. Run `mkdir -p bris-research/`, then write or update
-`bris-research/RESULT_INTERPRETATION.md` with:
+Do not stop at comparison tables. Run `mkdir -p orbit-research/`, then write or update
+`orbit-research/RESULT_INTERPRETATION.md` with:
 
 - expected vs observed result
 - whether the expected signal appeared

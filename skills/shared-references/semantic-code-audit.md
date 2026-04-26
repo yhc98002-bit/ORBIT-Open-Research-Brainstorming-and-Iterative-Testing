@@ -1,6 +1,6 @@
 # Semantic Plan-Code Audit — v1.3
 
-This reference defines the BRIS code review gate. It is stricter than ordinary code review.
+This reference defines the ORBIT code review gate. It is stricter than ordinary code review.
 The reviewer checks whether the implementation reflects the v1.3 scientific contract — not
 just the proposal, but the full set of v1.3 artifacts (assumptions, abstract task,
 mechanism, formalization, controls, null-result contract, component bundle).
@@ -33,14 +33,14 @@ Good prompt shape:
 You are an independent semantic implementation auditor.
 
 Read these files directly:
-- bris-research/ASSUMPTION_LEDGER.md
-- bris-research/ABSTRACT_TASK_MECHANISM.md
-- bris-research/ALGORITHM_TOURNAMENT.md           (which sketch is being implemented?)
-- bris-research/COMPONENT_BUNDLE_LADDER.md        (or COMPONENT_LADDER.md if v1.0)
-- bris-research/ALGORITHMIC_FORMALIZATION.md
-- bris-research/CONTROL_DESIGN.md
-- bris-research/NULL_RESULT_CONTRACT.md
-- bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md     (or TINY_RUN_PLAN.md if v1.0)
+- orbit-research/ASSUMPTION_LEDGER.md
+- orbit-research/ABSTRACT_TASK_MECHANISM.md
+- orbit-research/ALGORITHM_TOURNAMENT.md           (which sketch is being implemented?)
+- orbit-research/COMPONENT_BUNDLE_LADDER.md        (or COMPONENT_LADDER.md if v1.0)
+- orbit-research/ALGORITHMIC_FORMALIZATION.md
+- orbit-research/CONTROL_DESIGN.md
+- orbit-research/NULL_RESULT_CONTRACT.md
+- orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md     (or TINY_RUN_PLAN.md if v1.0)
 - refine-logs/FINAL_PROPOSAL.md
 - refine-logs/EXPERIMENT_PLAN.md
 - src/train.py
@@ -102,7 +102,7 @@ You are not reviewing this code for syntax or style.
 
 You are reviewing whether the implementation faithfully matches the v1.3 research contract.
 
-Compare the code against (every artifact that exists below — the BRIS v1.3 contract set):
+Compare the code against (every artifact that exists below — the ORBIT v1.3 contract set):
 1. ASSUMPTION_LEDGER.md          — what working assumptions does the code rely on; are they
                                    surfaced or silently broken?
 2. ABSTRACT_TASK_MECHANISM.md    — does the implementation realise the abstract task and

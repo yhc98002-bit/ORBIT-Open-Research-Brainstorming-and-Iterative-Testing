@@ -5,8 +5,8 @@ argument-hint: [server-alias or screen-name]
 allowed-tools: Bash(ssh *), Bash(echo *), Read, Write, Edit
 ---
 
-> **BRIS v1.3 compatibility note:** This skill may contain legacy v1.0 artifact names
-> (e.g. `TASK_ONTOLOGY.md`, `COMPONENT_LADDER.md`, `TINY_RUN_AUDIT.md`). In BRIS v1.3,
+> **ORBIT v1.3 compatibility note:** This skill may contain legacy v1.0 artifact names
+> (e.g. `TASK_ONTOLOGY.md`, `COMPONENT_LADDER.md`, `TINY_RUN_AUDIT.md`). In ORBIT v1.3,
 > canonical artifacts are defined in
 > [`skills/shared-references/research-agent-pipeline.md`](../shared-references/research-agent-pipeline.md);
 > the legacy names are aliases only and consumers parse either form. Full v1.3 vocabulary
@@ -16,9 +16,9 @@ allowed-tools: Bash(ssh *), Bash(echo *), Read, Write, Edit
 
 Monitor: $ARGUMENTS
 
-## Better BRIS Monitoring Contract
+## ORBIT Monitoring Contract
 
-When monitoring a BRIS run, collect enough evidence for `RESULT_INTERPRETATION.md` and
+When monitoring an ORBIT run, collect enough evidence for `RESULT_INTERPRETATION.md` and
 `TINY_RUN_AUDIT.md`, not just whether the process is alive. Always look for:
 
 - exact command/config used

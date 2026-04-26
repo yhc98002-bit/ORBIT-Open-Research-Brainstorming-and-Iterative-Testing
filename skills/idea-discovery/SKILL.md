@@ -27,7 +27,7 @@ Each phase builds on the previous one's output. The final deliverables are a val
 - **MAX_PILOT_IDEAS = 3** — Run pilots for at most 3 top ideas in parallel. Additional ideas are validated on paper only.
 - **MAX_TOTAL_GPU_HOURS = 8** — Total GPU budget across all pilots. If exceeded, skip remaining pilots and note in report.
 - **AUTO_PROCEED = true** — If user doesn't respond at a checkpoint, automatically proceed with the best option after presenting results. Set to `false` to always wait for explicit user confirmation.
-- **REVIEWER_MODEL = `gpt-5.5`** — Model used via Codex MCP. BRIS default is `gpt-5.5` with xhigh reasoning. Passed to sub-skills.
+- **REVIEWER_MODEL = `gpt-5.5`** — Model used via Codex MCP. ORBIT default is `gpt-5.5` with xhigh reasoning. Passed to sub-skills.
 - **OUTPUT_DIR = `idea-stage/`** — All idea-stage outputs go here. Create the directory if it doesn't exist.
 - **ARXIV_DOWNLOAD = false** — When `true`, `/research-lit` downloads the top relevant arXiv PDFs during Phase 1. When `false` (default), only fetches metadata. Passed through to `/research-lit`.
 - **COMPACT = false** — When `true`, generate compact summary files for short-context models and session recovery. Writes `idea-stage/IDEA_CANDIDATES.md` (top 3-5 ideas only) at the end of this workflow. Downstream skills read this instead of the full `idea-stage/IDEA_REPORT.md`.
@@ -35,7 +35,7 @@ Each phase builds on the previous one's output. The final deliverables are a val
 
 > 💡 These are defaults. Override by telling the skill, e.g., `/idea-discovery "topic" — ref paper: https://arxiv.org/abs/2406.04329` or `/idea-discovery "topic" — compact: true`.
 
-## BRIS Problem Selection Gate
+## ORBIT Problem Selection Gate
 
 This gate is always-on. Before brainstorming, load:
 
@@ -48,8 +48,8 @@ This workflow must explicitly separate three things:
 2. question-driven literature mapping
 3. problem taste / problem selection
 
-Run `mkdir -p bris-research/`. Before finalizing the top idea, write
-`bris-research/PROBLEM_SELECTION.md` and evaluate each candidate by importance, audience,
+Run `mkdir -p orbit-research/`. Before finalizing the top idea, write
+`orbit-research/PROBLEM_SELECTION.md` and evaluate each candidate by importance, audience,
 concreteness, novelty, feasibility, benchmark availability, baseline ceiling risk, expected
 headroom, diagnostic clarity, and paper survivability if the method fails or ties. End with
 `PROCEED`, `NARROW`, or `RETHINK`.

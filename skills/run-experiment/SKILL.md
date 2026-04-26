@@ -9,28 +9,28 @@ allowed-tools: Bash(*), Read, Grep, Glob, Edit, Write, Agent, Skill(serverless-m
 
 Deploy and run ML experiment: $ARGUMENTS
 
-## BRIS v1.3 Run Gates
+## ORBIT v1.3 Run Gates
 
 These gates are always-on. Load:
 
 - `shared-references/research-agent-pipeline.md` — v1.3 stage map and hard gates G0–G19
 - `shared-references/semantic-code-audit.md` — Stage 17 diagnostic-run audit + G12 regime check
 
-Run `mkdir -p bris-research/`. Before launching anything broader than a diagnostic /
+Run `mkdir -p orbit-research/`. Before launching anything broader than a diagnostic /
 sanity run, verify:
 
-- `bris-research/PLAN_CODE_AUDIT.md` exists and its verdict line is `MATCHES_PLAN` or a
+- `orbit-research/PLAN_CODE_AUDIT.md` exists and its verdict line is `MATCHES_PLAN` or a
   scoped `PARTIAL_MISMATCH` whose missing pieces are irrelevant to this run (G11).
   `CRITICAL_MISMATCH` blocks. `ERROR` (Codex unavailable, audit could not complete) is
   **advisory at the diagnostic / sanity run stage**: surface the reason but proceed,
   because the diagnostic run is cheap. Scale-up via `/experiment-queue` will re-check and
   require explicit human acknowledgement before launching expensive runs.
-- `bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md` (v1.0 alias accepted: `TINY_RUN_PLAN.md`)
+- `orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md` (v1.0 alias accepted: `TINY_RUN_PLAN.md`)
   names the exact diagnostic run.
 - The first run is a diagnostic / sanity run unless the user explicitly overrides.
 
-After the diagnostic run, write or update `bris-research/DIAGNOSTIC_RUN_REPORT.md`
-(v1.0 alias on read: `TINY_RUN_REPORT.md`). Always write `bris-research/DIAGNOSTIC_RUN_AUDIT.md`
+After the diagnostic run, write or update `orbit-research/DIAGNOSTIC_RUN_REPORT.md`
+(v1.0 alias on read: `TINY_RUN_REPORT.md`). Always write `orbit-research/DIAGNOSTIC_RUN_AUDIT.md`
 (v1.0 alias on read: `TINY_RUN_AUDIT.md`) with the verdict line `PASS`, `FIX_BEFORE_GPU`,
 or `REDESIGN_EXPERIMENT`. Do not proceed to full runs until the verdict is `PASS`.
 

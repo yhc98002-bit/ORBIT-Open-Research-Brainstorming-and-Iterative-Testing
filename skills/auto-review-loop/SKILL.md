@@ -16,7 +16,7 @@ Autonomously iterate: review → implement fixes → re-review, until the extern
 - MAX_ROUNDS = 4
 - POSITIVE_THRESHOLD: score >= 6/10, or verdict contains "accept", "sufficient", "ready for submission"
 - REVIEW_DOC: `review-stage/AUTO_REVIEW.md` (cumulative log) *(fall back to `./AUTO_REVIEW.md` for legacy projects)*
-- REVIEWER_MODEL = `gpt-5.5` — Model used via Codex MCP for BRIS review gates.
+- REVIEWER_MODEL = `gpt-5.5` — Model used via Codex MCP for ORBIT review gates.
 - **REVIEWER_BACKEND = `codex`** — Default: Codex MCP (`gpt-5.5`, xhigh). Override with `— reviewer: oracle-pro` only if explicitly requested. See `shared-references/reviewer-routing.md`.
 - **OUTPUT_DIR = `review-stage/`** — All review-stage outputs go here. Create the directory if it doesn't exist.
 - **HUMAN_CHECKPOINT = false** — When `true`, pause after each round's review (Phase B) and present the score + weaknesses to the user. Wait for user input before proceeding to Phase C. The user can: approve the suggested fixes, provide custom modification instructions, skip specific fixes, or stop the loop early. When `false` (default), the loop runs fully autonomously.
@@ -28,7 +28,7 @@ Autonomously iterate: review → implement fixes → re-review, until the extern
 
 > 💡 Override: `/auto-review-loop "topic" — compact: true, human checkpoint: true, difficulty: hard`
 
-## BRIS Red-team Gate
+## ORBIT Red-team Gate
 
 This gate is always-on. Before starting any review round, load:
 
@@ -38,11 +38,11 @@ This gate is always-on. Before starting any review round, load:
   (v1.3 numbering; this is the v1.0 §14 prompt as renumbered + loop semantics added)
 - `shared-references/reviewer-independence.md`
 
-`/auto-review-loop` is also the BRIS final reviewer red-team. It must attack problem
+`/auto-review-loop` is also the ORBIT final reviewer red-team. It must attack problem
 importance, novelty, task definition, benchmark validity, baselines, controls, null-result
 interpretation, evidence, overclaiming, reproducibility, and limitations.
 
-Run `mkdir -p bris-research/`, then write or update `bris-research/RED_TEAM_REVIEW.md` with
+Run `mkdir -p orbit-research/`, then write or update `orbit-research/RED_TEAM_REVIEW.md` with
 top rejection risks, essential fixes, claims to weaken, and submit-readiness.
 
 ## State Persistence (Compact Recovery)
@@ -477,13 +477,13 @@ mcp__codex__codex-reply:
 
 After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save the trace following `shared-references/review-tracing.md`. Use `tools/save_trace.sh` or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
 
-## Stage-Chain Integration (BRIS v1.3 Stage 23 — Reviewer Red-team Loop)
+## Stage-Chain Integration (ORBIT v1.3 Stage 23 — Reviewer Red-team Loop)
 
-This skill implements BRIS v1.3 Stage 23 (Reviewer Red-team Loop). It is an **explicit
+This skill implements ORBIT v1.3 Stage 23 (Reviewer Red-team Loop). It is an **explicit
 loop**: review → fix → re-review until issues are addressed or explicitly accepted as
 residual risk. (See `shared-references/research-agent-pipeline.md` Stage 23 and
 `shared-references/research-harness-prompts.md` §23.) The loop output is
-`bris-research/RED_TEAM_REVIEW.md`.
+`orbit-research/RED_TEAM_REVIEW.md`.
 
 In convergence-first mode, each completed round should keep these stage artifacts current:
 

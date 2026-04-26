@@ -21,14 +21,14 @@ Research topic: $ARGUMENTS
 - **ARXIV_DOWNLOAD = false** — When `true`, download top 3-5 most relevant arXiv PDFs to PAPER_LIBRARY after search. When `false` (default), only fetch metadata (title, abstract, authors) via arXiv API — no files are downloaded.
 - **ARXIV_MAX_DOWNLOAD = 5** — Maximum number of PDFs to download when `ARXIV_DOWNLOAD = true`.
 
-## BRIS Literature Mode
+## ORBIT Literature Mode
 
 This mode is always-on. Before scanning, load:
 
 - `shared-references/research-agent-pipeline.md`
 - `shared-references/research-harness-prompts.md` sections `0A` and `1`
 
-In BRIS mode, literature review is not a related-work summary. It must produce a
+In ORBIT mode, literature review is not a related-work summary. It must produce a
 question-driven map:
 
 - claim
@@ -41,8 +41,8 @@ question-driven map:
 - claim-evidence gap
 - follow-up question
 
-Run `mkdir -p bris-research/`, then write or update `bris-research/LITERATURE_MAP.md`. If
-the user only provided a broad area, first create `bris-research/SEED_FRAMING.md` and do not
+Run `mkdir -p orbit-research/`, then write or update `orbit-research/LITERATURE_MAP.md`. If
+the user only provided a broad area, first create `orbit-research/SEED_FRAMING.md` and do not
 propose final methods yet.
 
 > 💡 Overrides:

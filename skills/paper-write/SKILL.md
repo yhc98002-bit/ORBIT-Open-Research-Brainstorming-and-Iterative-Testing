@@ -25,12 +25,12 @@ Draft a LaTeX paper based on: **$ARGUMENTS**
 4. **LaTeX includes** — `figures/latex_includes.tex` (from `/paper-figure`)
 5. **Bibliography** — existing `.bib` file, or will create one
 
-If `bris-research/` exists, also read these BRIS artifacts before drafting (always, not
+If `orbit-research/` exists, also read these ORBIT artifacts before drafting (always, not
 only under `/research-pipeline`):
 
-- `bris-research/CLAIM_CONSTRUCTION.md`
-- `bris-research/NEGATIVE_RESULT_STRATEGY.md` if present
-- `bris-research/RED_TEAM_REVIEW.md`
+- `orbit-research/CLAIM_CONSTRUCTION.md`
+- `orbit-research/NEGATIVE_RESULT_STRATEGY.md` if present
+- `orbit-research/RED_TEAM_REVIEW.md`
 
 Claims in the Introduction, Abstract, and Conclusion must not exceed the scoped claims in
 `CLAIM_CONSTRUCTION.md`.

@@ -1,11 +1,15 @@
-# BRIS — Better Research in Sleep
+<p align="center">
+  <img src="assets/ORBIT.png" alt="ORBIT — Open Research Brainstorming and Iterative Testing" width="640">
+</p>
 
-**v1.3 — research-methodology routing harness.** BRIS routes you through 26 stages organised
+# ORBIT — Open Research Brainstorming and Iterative Testing
+
+**v1.3 — research-methodology routing harness.** ORBIT routes you through 26 stages organised
 into four spines (Discovery / Grounding / Innovation / Validation) by mode (EXPLORATION /
 INNOVATION / COMMITMENT) and risk score. It moves fast in exploration, slows down before
 commitment, encourages divergent mechanism invention before converging, and only enforces
 heavy gates before high-risk irreversible transitions. Built on ARIS execution skills —
-BRIS reuses them rather than reimplementing.
+ORBIT reuses them rather than reimplementing.
 
 > 中文版 README 见 [README_CN.md](./README_CN.md)（v1.3 简明中文入口）。
 
@@ -34,7 +38,7 @@ v1.3 keeps the diagnostic discipline at commitment time and adds:
 
 ## Four Spines
 
-BRIS organises the 26 stages into four spines. They are **not strictly sequential** — the
+ORBIT organises the 26 stages into four spines. They are **not strictly sequential** — the
 orchestrator routes by mode and risk; many stages are loops; some stages skip in
 EXPLORATION mode and only fire before COMMITMENT.
 
@@ -78,7 +82,7 @@ In Claude Code (or another supported client):
 /research-pipeline "Discrete Diffusion VLA post-training"
 ```
 
-BRIS routes through Discovery: seed framing → literature map → problem reframing → problem
+ORBIT routes through Discovery: seed framing → literature map → problem reframing → problem
 selection. No methods committed, no experiments run.
 
 **Concrete idea (INNOVATION mode):**
@@ -86,7 +90,7 @@ selection. No methods committed, no experiments run.
 /research-pipeline "problem | rough method idea"
 ```
 
-BRIS routes through Grounding (assumption ledger, abstract task, baseline ceiling) and
+ORBIT routes through Grounding (assumption ledger, abstract task, baseline ceiling) and
 into Innovation Spine (mechanism invention, analogy transfer, algorithm sketch tournament).
 
 **Implementing official experiments (COMMITMENT mode):**
@@ -94,7 +98,7 @@ into Innovation Spine (mechanism invention, analogy transfer, algorithm sketch t
 /research-pipeline "refine-logs/EXPERIMENT_PLAN.md"
 ```
 
-BRIS routes through Validation Spine: HMBC matrix, null-result contract, component bundle,
+ORBIT routes through Validation Spine: HMBC matrix, null-result contract, component bundle,
 formalization, plan-code audit, cheapest valid diagnostic.
 
 **From results to paper:**
@@ -129,7 +133,7 @@ codex setup
 claude mcp add codex -s user -- codex mcp-server
 ```
 
-BRIS default Codex reviewer config:
+ORBIT default Codex reviewer config:
 
 ```toml
 model = "gpt-5.5"
@@ -270,7 +274,7 @@ Phase 2b illustration backends: `figurespec` (default, deterministic JSON→SVG)
 no external API key, uses your ChatGPT Plus/Pro quota; experimental) / `mermaid`
 (Mermaid syntax, free) / `false` (manual). Override inline with `— illustration: <name>`.
 
-BRIS additional requirement: `CLAIM_CONSTRUCTION.md` must exist before `/paper-writing`
+ORBIT additional requirement: `CLAIM_CONSTRUCTION.md` must exist before `/paper-writing`
 will start (G16 + G18).
 
 ## Important Files
@@ -318,6 +322,22 @@ be split manually:
 Full migration appendix: `skills/shared-references/research-agent-pipeline.md` (v1.0 → v1.3).
 
 Removal of v1.0 aliases is deferred to v2.0.
+
+## Migration from BRIS (the previous name of this project)
+
+ORBIT was previously named **BRIS — Better Research in Sleep**. Existing projects that
+created artifacts under `bris-research/` should rename the directory:
+
+```bash
+# in your project root
+git mv bris-research orbit-research
+```
+
+(Or `mv bris-research orbit-research` if not using git.) The `install_aris.sh` script
+also accepts the legacy `BRIS_REPO` environment variable and `<!-- BRIS:BEGIN -->` /
+`<!-- BRIS:END -->` markers in `CLAUDE.md` for one major version, so existing project
+installs continue to work without changes; the next install run will upgrade the markers
+to `<!-- ORBIT:BEGIN -->` / `<!-- ORBIT:END -->` automatically.
 
 ## License
 

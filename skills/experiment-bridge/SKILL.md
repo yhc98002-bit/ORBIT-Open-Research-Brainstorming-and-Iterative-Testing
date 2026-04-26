@@ -29,7 +29,7 @@ refine-logs/FINAL_PROPOSAL.md
 - **BASE_REPO = false** — GitHub repo URL to use as base codebase. When set, clone the repo first and implement experiments on top of it. When `false` (default), write code from scratch or reuse existing project files.
 - **COMPACT = false** — When `true`, (1) read `idea-stage/IDEA_CANDIDATES.md` instead of full `idea-stage/IDEA_REPORT.md` if available, (2) append experiment results to `EXPERIMENT_LOG.md` after collection.
 
-## BRIS Semantic Audit Gate
+## ORBIT Semantic Audit Gate
 
 This gate is always-on. Before deployment, load:
 
@@ -37,25 +37,25 @@ This gate is always-on. Before deployment, load:
 - `shared-references/semantic-code-audit.md`
 - `shared-references/reviewer-independence.md`
 
-Run `mkdir -p bris-research/`. Verify these BRIS v1.3 plan artifacts exist or are
+Run `mkdir -p orbit-research/`. Verify these ORBIT v1.3 plan artifacts exist or are
 explicitly marked `NOT_APPLICABLE` with rationale (consumers accept v1.0 alias names for
 one major version, preferring v1.3 if both exist — see footer):
 
-- `bris-research/ASSUMPTION_LEDGER.md`            *(v1.3, no alias)*
-- `bris-research/ABSTRACT_TASK_MECHANISM.md`      *(v1.3, no alias)*
-- `bris-research/ALGORITHM_TOURNAMENT.md`         *(v1.3 — which sketch / WINNER_ID is being implemented?)*
-- `bris-research/BASELINE_CEILING.md`
-- `bris-research/CONTROL_DESIGN.md`
-- `bris-research/NULL_RESULT_CONTRACT.md`
-- `bris-research/COMPONENT_BUNDLE_LADDER.md`      *(v1.0 alias accepted: `COMPONENT_LADDER.md`)*
-- `bris-research/ALGORITHMIC_FORMALIZATION.md`    *(v1.3, no alias)*
-- `bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md`   *(v1.0 alias accepted: `TINY_RUN_PLAN.md`)*
+- `orbit-research/ASSUMPTION_LEDGER.md`            *(v1.3, no alias)*
+- `orbit-research/ABSTRACT_TASK_MECHANISM.md`      *(v1.3, no alias)*
+- `orbit-research/ALGORITHM_TOURNAMENT.md`         *(v1.3 — which sketch / WINNER_ID is being implemented?)*
+- `orbit-research/BASELINE_CEILING.md`
+- `orbit-research/CONTROL_DESIGN.md`
+- `orbit-research/NULL_RESULT_CONTRACT.md`
+- `orbit-research/COMPONENT_BUNDLE_LADDER.md`      *(v1.0 alias accepted: `COMPONENT_LADDER.md`)*
+- `orbit-research/ALGORITHMIC_FORMALIZATION.md`    *(v1.3, no alias)*
+- `orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md`   *(v1.0 alias accepted: `TINY_RUN_PLAN.md`)*
 
 The implementation review is semantic. It must check whether the code implements the intended
 algorithm, baselines, controls, ablations, datasets, splits, metrics, regimes, and config
 defaults. Compiling and running is not enough.
 
-After every Codex semantic review, **always** write `bris-research/PLAN_CODE_AUDIT.md` with
+After every Codex semantic review, **always** write `orbit-research/PLAN_CODE_AUDIT.md` with
 the verdict (one of `MATCHES_PLAN | PARTIAL_MISMATCH | CRITICAL_MISMATCH | ERROR`) and the
 traceability matrix from `shared-references/semantic-code-audit.md`. Downstream gates read
 the verdict line, not file presence — a clean `MATCHES_PLAN` audit must still emit the
@@ -149,15 +149,15 @@ mcp__codex__codex:
     Read these files directly when available (v1.3 contract; consumers accept v1.0 alias):
     - refine-logs/FINAL_PROPOSAL.md
     - refine-logs/EXPERIMENT_PLAN.md
-    - bris-research/ASSUMPTION_LEDGER.md
-    - bris-research/ABSTRACT_TASK_MECHANISM.md
-    - bris-research/ALGORITHM_TOURNAMENT.md           (which sketch is being implemented?)
-    - bris-research/BASELINE_CEILING.md
-    - bris-research/CONTROL_DESIGN.md
-    - bris-research/NULL_RESULT_CONTRACT.md
-    - bris-research/COMPONENT_BUNDLE_LADDER.md        (or COMPONENT_LADDER.md if v1.0 project)
-    - bris-research/ALGORITHMIC_FORMALIZATION.md
-    - bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md     (or TINY_RUN_PLAN.md if v1.0 project)
+    - orbit-research/ASSUMPTION_LEDGER.md
+    - orbit-research/ABSTRACT_TASK_MECHANISM.md
+    - orbit-research/ALGORITHM_TOURNAMENT.md           (which sketch is being implemented?)
+    - orbit-research/BASELINE_CEILING.md
+    - orbit-research/CONTROL_DESIGN.md
+    - orbit-research/NULL_RESULT_CONTRACT.md
+    - orbit-research/COMPONENT_BUNDLE_LADDER.md        (or COMPONENT_LADDER.md if v1.0 project)
+    - orbit-research/ALGORITHMIC_FORMALIZATION.md
+    - orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md     (or TINY_RUN_PLAN.md if v1.0 project)
     - [training scripts]
     - [evaluation scripts]
     - [config files]
@@ -180,9 +180,9 @@ mcp__codex__codex:
     Experiment Plan Item | Expected Implementation | Actual Code | Status | Fix
 ```
 
-**Always write `bris-research/PLAN_CODE_AUDIT.md`** with the verdict line
+**Always write `orbit-research/PLAN_CODE_AUDIT.md`** with the verdict line
 (`MATCHES_PLAN`, `PARTIAL_MISMATCH`, `CRITICAL_MISMATCH`, or `ERROR`) and the traceability
-matrix, regardless of outcome. Downstream BRIS gates parse the verdict, not file presence.
+matrix, regardless of outcome. Downstream ORBIT gates parse the verdict, not file presence.
 
 **On review results:**
 - **`MATCHES_PLAN`** → write the audit artifact with verdict `MATCHES_PLAN`, proceed to Phase 3.
@@ -386,16 +386,16 @@ Ready for Workflow 2:
 Or use /research-pipeline for the full end-to-end flow (includes this bridge).
 ```
 
-## Stage-Chain Integration (BRIS v1.3 Stage 15 Contract)
+## Stage-Chain Integration (ORBIT v1.3 Stage 15 Contract)
 
-This skill implements BRIS v1.3 Stage 15 (Plan-Code Consistency Loop). It is an **explicit
+This skill implements ORBIT v1.3 Stage 15 (Plan-Code Consistency Loop). It is an **explicit
 loop**: audit → fix → re-audit until verdict is `MATCHES_PLAN` or scoped `PARTIAL_MISMATCH`
 with documented justification. (See `shared-references/research-agent-pipeline.md` Stage 15
 and `shared-references/semantic-code-audit.md`.)
 
 For convergence-first pipeline runs, this skill must produce and maintain:
 
-- `bris-research/PLAN_CODE_AUDIT.md` (required, with verdict line on its own line:
+- `orbit-research/PLAN_CODE_AUDIT.md` (required, with verdict line on its own line:
   `MATCHES_PLAN | PARTIAL_MISMATCH | CRITICAL_MISMATCH | ERROR`)
 - `REVIEW/CODE_REVIEW.md` (legacy convergence-first artifact, optional)
 - update/append `REVIEW/CONSISTENCY_REPORT.md` when implementation-plan drift is found

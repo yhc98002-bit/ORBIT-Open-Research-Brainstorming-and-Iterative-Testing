@@ -34,7 +34,7 @@ In this hybrid pack, the pipeline itself is unchanged, but `paper-plan` and `pap
 > Override inline: `/paper-writing "NARRATIVE_REPORT.md" — venue: NeurIPS, illustration: gemini, human checkpoint: true`
 > IEEE example: `/paper-writing "NARRATIVE_REPORT.md" — venue: IEEE_JOURNAL`
 
-## BRIS Paper Preconditions
+## ORBIT Paper Preconditions
 
 These preconditions are always-on. Before any phase below, load:
 
@@ -43,17 +43,17 @@ These preconditions are always-on. Before any phase below, load:
   numbering; old v1.0 sections `12`, `13`, `14` are mapped via the appendix at the end of
   that file)
 
-Run `mkdir -p bris-research/`. Verify these BRIS v1.3 artifacts exist before drafting:
+Run `mkdir -p orbit-research/`. Verify these ORBIT v1.3 artifacts exist before drafting:
 
-- `bris-research/CLAIM_CONSTRUCTION.md`  *(required by G16 + G18 — refuse start if absent)*
-- `bris-research/RED_TEAM_REVIEW.md`
-- `bris-research/HUMAN_DECISION_NOTE.md`  *(required by G19 — paper writing is a high-risk transition)*
+- `orbit-research/CLAIM_CONSTRUCTION.md`  *(required by G16 + G18 — refuse start if absent)*
+- `orbit-research/RED_TEAM_REVIEW.md`
+- `orbit-research/HUMAN_DECISION_NOTE.md`  *(required by G19 — paper writing is a high-risk transition)*
 
-**G16 + G18 inline guard (mandatory):** if `bris-research/CLAIM_CONSTRUCTION.md` is
+**G16 + G18 inline guard (mandatory):** if `orbit-research/CLAIM_CONSTRUCTION.md` is
 absent, **refuse to start** Phase 0. Print:
 
 ```
-ERROR: G16/G18 violation — bris-research/CLAIM_CONSTRUCTION.md is required before
+ERROR: G16/G18 violation — orbit-research/CLAIM_CONSTRUCTION.md is required before
 /paper-writing will start. Route to /result-to-claim first.
 ```
 
@@ -66,7 +66,7 @@ stop and route the user back to `/result-to-claim` (writes `CLAIM_CONSTRUCTION.m
 begin Phase 0 until they exist.
 
 If the method tied, failed, or produced mixed results, also require
-`bris-research/NEGATIVE_RESULT_STRATEGY.md`. Do not write a success-story paper if the
+`orbit-research/NEGATIVE_RESULT_STRATEGY.md`. Do not write a success-story paper if the
 claim construction says only a scoped, diagnostic, or negative-result contribution is
 supported (G14, G17).
 
@@ -488,18 +488,18 @@ skipping audits while claiming to have run them.
    [ ] 1. /proof-checker        → paper/PROOF_AUDIT.json
    [ ] 2. /paper-claim-audit    → paper/PAPER_CLAIM_AUDIT.json
    [ ] 3. /citation-audit       → paper/CITATION_AUDIT.json
-   [ ] 4. bash "$BRIS_REPO/tools/verify_paper_audits.sh" paper/ --assurance submission
+   [ ] 4. bash "$ORBIT_REPO/tools/verify_paper_audits.sh" paper/ --assurance submission
    [ ] 5. Block Final Report iff verifier exit code != 0
 ```
 
-> `$BRIS_REPO` resolution: the skill resolves it in this order and uses the first match —
-> 1. `$BRIS_REPO` env var if set;
+> `$ORBIT_REPO` resolution: the skill resolves it in this order and uses the first match —
+> 1. `$ORBIT_REPO` env var if set;
 > 2. `$ARIS_REPO` env var if set (legacy fallback for projects migrated from ARIS);
 > 3. `dirname $(readlink ~/.claude/skills/paper-writing/SKILL.md)/../..` if the install used
 >    project-local symlinks via `tools/install_aris.sh`.
 >
-> Default: `~/research/BRIS-Better-Research-in-Sleep`. Store it in your shell rc with
-> `export BRIS_REPO=~/research/BRIS-Better-Research-in-Sleep` so the command is
+> Default: `~/research/ORBIT-Better-Research-in-Sleep`. Store it in your shell rc with
+> `export ORBIT_REPO=~/research/ORBIT-Better-Research-in-Sleep` so the command is
 > copy-pasteable across sessions.
 
 #### Invoking the three audits
@@ -526,7 +526,7 @@ Order:
 #### Running the verifier
 
 ```bash
-bash "$BRIS_REPO/tools/verify_paper_audits.sh" paper/ --assurance submission
+bash "$ORBIT_REPO/tools/verify_paper_audits.sh" paper/ --assurance submission
 ```
 
 - **Exit 0** — All mandatory audits present, JSON schema-valid, hashes fresh,
@@ -553,7 +553,7 @@ in `~/.claude/settings.json`:
 {
   "hooks": {
     "Stop": [
-      {"command": "bash \"$BRIS_REPO/tools/verify_paper_audits.sh\" paper/ --assurance submission"}
+      {"command": "bash \"$ORBIT_REPO/tools/verify_paper_audits.sh\" paper/ --assurance submission"}
     ]
   }
 }
@@ -662,16 +662,16 @@ then /paper-writing for the final writing step.
 
 **Total: ~45-90 min** for a full paper from narrative report to polished PDF.
 
-## Stage-Chain Integration (BRIS v1.3 Stage 24 — Paper Writing / Improvement Loop)
+## Stage-Chain Integration (ORBIT v1.3 Stage 24 — Paper Writing / Improvement Loop)
 
-This skill implements BRIS v1.3 Stage 24. It is delegated by the orchestrator
+This skill implements ORBIT v1.3 Stage 24. It is delegated by the orchestrator
 (`skills/research-pipeline/SKILL.md` Stage 24) and transitively invokes `/paper-plan`,
 `/paper-figure`, `/figure-spec` or `/paper-illustration`, `/paper-write`, `/paper-compile`,
 `/auto-paper-improvement-loop`, `/paper-claim-audit`, `/citation-audit`.
 
 This workflow must additionally emit (always, not only under `/research-pipeline`):
 
-- `bris-research/PAPER_IMPROVEMENT_LOG.md` — track all improvement-loop iterations
+- `orbit-research/PAPER_IMPROVEMENT_LOG.md` — track all improvement-loop iterations
   (round number, reviewer feedback, fix applied, audit verdicts)
 - `PAPER_DRAFT.md` — claim-oriented draft summary (in addition to `paper/` LaTeX sources)
 - `REVIEW/CLAIM_CHECK.md` — mandatory claim-to-evidence consistency report
@@ -683,9 +683,9 @@ Mandatory claim check template (incorporates v1.3 G14, G17 enforcement):
 Given:
 - PAPER_DRAFT
 - EXPERIMENT_RESULTS
-- bris-research/CLAIM_CONSTRUCTION.md
-- bris-research/NULL_RESULT_CONTRACT.md (if exists)
-- bris-research/NEGATIVE_RESULT_STRATEGY.md (if exists)
+- orbit-research/CLAIM_CONSTRUCTION.md
+- orbit-research/NULL_RESULT_CONTRACT.md (if exists)
+- orbit-research/NEGATIVE_RESULT_STRATEGY.md (if exists)
 Check:
 1. Are all claims supported by evidence cited in CLAIM_CONSTRUCTION (claim → evidence
    → control → scope → limitation chain)?

@@ -27,9 +27,9 @@ The skill expects one or more of these in the project directory:
 
 If none exist, ask the user to describe the paper's contribution in 3-5 sentences.
 
-If `bris-research/CLAIM_CONSTRUCTION.md` exists, treat it as the highest-priority claim
+If `orbit-research/CLAIM_CONSTRUCTION.md` exists, treat it as the highest-priority claim
 source, followed by `CLAIMS_FROM_RESULTS.md`, `NARRATIVE_REPORT.md`, and `STORY.md`. If
-`bris-research/NEGATIVE_RESULT_STRATEGY.md` exists, reflect the scoped or negative-result
+`orbit-research/NEGATIVE_RESULT_STRATEGY.md` exists, reflect the scoped or negative-result
 story honestly instead of forcing a positive method-win narrative. This priority order
 applies in every invocation, not only under `/research-pipeline`.
 

@@ -1,4 +1,4 @@
-# Better BRIS Harness Prompts — v1.3
+# ORBIT Harness Prompts — v1.3
 
 > **v1.3 — supersedes v1.0 (0A–15).** Use these prompts as canonical stage harnesses.
 > Skills may add file paths, output paths, and project-local constraints, but should
@@ -17,7 +17,7 @@ MODE_ROUTING.md before running anything else.
 Inputs to read:
 - The user's request (a slash-command argument, a research direction, an artifact path,
   or a description of an in-flight project).
-- Whatever artifacts already exist under bris-research/ — they constrain the routing.
+- Whatever artifacts already exist under orbit-research/ — they constrain the routing.
 - Any explicit `— mode:` or `— risk:` flag passed inline.
 
 Decide:

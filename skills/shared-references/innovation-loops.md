@@ -1,12 +1,12 @@
-# BRIS Innovation Loops
+# ORBIT Innovation Loops
 
-> Five named loops that drive divergent mechanism invention before BRIS commits to an
+> Five named loops that drive divergent mechanism invention before ORBIT commits to an
 > experiment, plus the Collaborative Claude-Codex Innovation Mode that powers them.
 > Stages 8, 9, 10, 18.5, and 19 each delegate their procedure here.
 
 ## §1. Introduction
 
-BRIS v1.3's premise: research worth doing usually does not come from the first method that
+ORBIT v1.3's premise: research worth doing usually does not come from the first method that
 fits the proposal. It comes from a **divergent search** that produces several plausible
 mechanisms, then a **commitment process** that picks the one most worth running.
 
@@ -320,7 +320,7 @@ failure mode known?", "has this regime been characterised?").
 
 ## §7. Collaborative Claude-Codex Innovation Mode
 
-The default Codex mode in BRIS is **adversarial**: Codex is the independent semantic auditor
+The default Codex mode in ORBIT is **adversarial**: Codex is the independent semantic auditor
 defined in `semantic-code-audit.md`. That mode is right for commitment, plan-code audit,
 red-team, and result-to-claim — gates where the executor must not judge its own work.
 

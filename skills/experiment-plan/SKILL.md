@@ -4,8 +4,8 @@ description: 'Turn a refined research proposal or method idea into a detailed, c
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent
 ---
 
-> **BRIS v1.3 compatibility note:** This skill may contain legacy v1.0 artifact names
-> (e.g. `TASK_ONTOLOGY.md`, `COMPONENT_LADDER.md`, `TINY_RUN_AUDIT.md`). In BRIS v1.3,
+> **ORBIT v1.3 compatibility note:** This skill may contain legacy v1.0 artifact names
+> (e.g. `TASK_ONTOLOGY.md`, `COMPONENT_LADDER.md`, `TINY_RUN_AUDIT.md`). In ORBIT v1.3,
 > canonical artifacts are defined in
 > [`skills/shared-references/research-agent-pipeline.md`](../shared-references/research-agent-pipeline.md);
 > the legacy names are aliases only and consumers parse either form. Full v1.3 vocabulary
@@ -34,22 +34,22 @@ The goal is not to generate a giant benchmark wishlist. The goal is to turn a pr
 - **MAX_BASELINE_FAMILIES = 3** — Prefer a few strong baselines over many weak ones.
 - **DEFAULT_SEEDS = 3** — Use 3 seeds when stochastic variance matters and budget allows.
 
-## BRIS Diagnostic Planning Gate
+## ORBIT Diagnostic Planning Gate
 
 This gate is always-on. Before any planning work, load:
 
 - `shared-references/research-agent-pipeline.md`
 - `shared-references/research-harness-prompts.md` sections `2` through `7`
 
-Run `mkdir -p bris-research/`. Before writing or finalizing
+Run `mkdir -p orbit-research/`. Before writing or finalizing
 `refine-logs/EXPERIMENT_PLAN.md`, create or update:
 
-- `bris-research/TASK_ONTOLOGY.md`
-- `bris-research/BASELINE_CEILING.md`
-- `bris-research/CONTROL_DESIGN.md`
-- `bris-research/NULL_RESULT_CONTRACT.md`
-- `bris-research/COMPONENT_LADDER.md`
-- `bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md`
+- `orbit-research/TASK_ONTOLOGY.md`
+- `orbit-research/BASELINE_CEILING.md`
+- `orbit-research/CONTROL_DESIGN.md`
+- `orbit-research/NULL_RESULT_CONTRACT.md`
+- `orbit-research/COMPONENT_LADDER.md`
+- `orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md`
 
 Hard gates:
 

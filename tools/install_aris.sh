@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install_aris.sh — Project-local BRIS / ARIS skill installation (flat per-skill symlinks).
+# install_aris.sh — Project-local ORBIT / ARIS skill installation (flat per-skill symlinks).
 #
 # Each skill is symlinked into `<project>/.claude/skills/<skill-name>` so
 # Claude Code's slash-command discovery (which only scans one level deep) finds it.
@@ -7,9 +7,9 @@
 # entry this installer created — uninstall and reconcile read from the manifest
 # and never touch user-owned skills with the same name.
 #
-# This script is shared by ARIS and BRIS. The env var `BRIS_REPO` takes precedence
-# over `ARIS_REPO`; the manifest dir is `.aris/` for backward compatibility with
-# existing installs.
+# This script is shared by ARIS, BRIS (legacy), and ORBIT. The env var `ORBIT_REPO`
+# takes precedence over `BRIS_REPO` (legacy) and `ARIS_REPO`; the manifest dir is
+# `.aris/` for backward compatibility with existing installs.
 #
 # Usage:
 #   bash tools/install_aris.sh [project_path] [options]
@@ -61,9 +61,11 @@ ARIS_DIR_NAME=".aris"
 LOCK_DIR_NAME=".install.lock.d"
 SKILLS_REL=".claude/skills"
 DOC_FILE_NAME="CLAUDE.md"
-BLOCK_BEGIN="<!-- BRIS:BEGIN -->"
-BLOCK_END="<!-- BRIS:END -->"
-# Legacy markers for projects originally installed under ARIS — read but never write.
+BLOCK_BEGIN="<!-- ORBIT:BEGIN -->"
+BLOCK_END="<!-- ORBIT:END -->"
+# Legacy markers for projects originally installed under BRIS or ARIS — read but never write.
+LEGACY_BLOCK_BEGIN_BRIS="<!-- BRIS:BEGIN -->"
+LEGACY_BLOCK_END_BRIS="<!-- BRIS:END -->"
 LEGACY_BLOCK_BEGIN="<!-- ARIS:BEGIN -->"
 LEGACY_BLOCK_END="<!-- ARIS:END -->"
 SAFE_NAME_REGEX='^[A-Za-z0-9][A-Za-z0-9._-]*$'
@@ -162,10 +164,12 @@ resolve_aris_repo() {
     fi
     # Resolution order (first match wins):
     #   1. --aris-repo flag (handled above)
-    #   2. BRIS_REPO env var
-    #   3. ARIS_REPO env var (backward compat)
-    #   4. Script's own parent dir (i.e., the repo this script lives inside)
-    #   5. Curated guess list
+    #   2. ORBIT_REPO env var
+    #   3. BRIS_REPO env var (legacy backward compat)
+    #   4. ARIS_REPO env var (older backward compat)
+    #   5. Script's own parent dir (i.e., the repo this script lives inside)
+    #   6. Curated guess list
+    if [[ -n "${ORBIT_REPO:-}" && -d "$ORBIT_REPO/skills" ]]; then abs_path "$ORBIT_REPO"; return; fi
     if [[ -n "${BRIS_REPO:-}" && -d "$BRIS_REPO/skills" ]]; then abs_path "$BRIS_REPO"; return; fi
     if [[ -n "${ARIS_REPO:-}" && -d "$ARIS_REPO/skills" ]]; then abs_path "$ARIS_REPO"; return; fi
     local script_dir parent
@@ -173,8 +177,8 @@ resolve_aris_repo() {
     parent="$(cd "$script_dir/.." && pwd)"
     if [[ -d "$parent/skills" ]]; then echo "$parent"; return; fi
     for guess in \
-        "$HOME/research/BRIS-Better-Research-in-Sleep" \
-        "$HOME/Desktop/BRIS-Better-Research-in-Sleep" \
+        "$HOME/research/ORBIT-Better-Research-in-Sleep" \
+        "$HOME/Desktop/ORBIT-Better-Research-in-Sleep" \
         "$HOME/.bris" \
         "$HOME/Desktop/aris_repo" \
         "$HOME/aris_repo" \
@@ -184,7 +188,7 @@ resolve_aris_repo() {
         "$HOME/.claude/Auto-claude-code-research-in-sleep" ; do
         [[ -d "$guess/skills" ]] && { abs_path "$guess"; return; }
     done
-    die "cannot find BRIS or ARIS repo. Use --aris-repo PATH or set BRIS_REPO / ARIS_REPO env var."
+    die "cannot find ORBIT, BRIS, or ARIS repo. Use --aris-repo PATH or set ORBIT_REPO / BRIS_REPO / ARIS_REPO env var."
 }
 
 # Build the upstream inventory: array of "kind|name" entries
@@ -565,8 +569,8 @@ update_claude_doc() {
     original="$(cat "$DOC_FILE")"
     # Build new block
     local count; count="$(wc -l < "$installed_names_file" | tr -d ' ')"
-    # Detect repo flavor (BRIS vs ARIS) by repo dir name; defaults to BRIS in this fork.
-    local FLAVOR="BRIS"
+    # Detect repo flavor (ORBIT vs ARIS) by repo dir name; defaults to ORBIT in this fork.
+    local FLAVOR="ORBIT"
     case "$(basename "$ARIS_REPO")" in
         *Auto-claude-code-research-in-sleep*|aris_repo|.aris) FLAVOR="ARIS" ;;
     esac
@@ -585,7 +589,11 @@ $BLOCK_END"
     local new_content active_begin active_end
     if printf '%s' "$original" | grep -qF "$BLOCK_BEGIN"; then
         active_begin="$BLOCK_BEGIN"; active_end="$BLOCK_END"
+    elif printf '%s' "$original" | grep -qF "$LEGACY_BLOCK_BEGIN_BRIS"; then
+        # Project originally installed under BRIS — upgrade in place to ORBIT marker
+        active_begin="$LEGACY_BLOCK_BEGIN_BRIS"; active_end="$LEGACY_BLOCK_END_BRIS"
     elif printf '%s' "$original" | grep -qF "$LEGACY_BLOCK_BEGIN"; then
+        # Project originally installed under ARIS — upgrade in place to ORBIT marker
         active_begin="$LEGACY_BLOCK_BEGIN"; active_end="$LEGACY_BLOCK_END"
     else
         active_begin=""; active_end=""
@@ -664,11 +672,11 @@ do_uninstall() {
 }
 
 # ─── Main flow ────────────────────────────────────────────────────────────────
-# Detect repo flavor for the install banner so BRIS users see "BRIS Project Install"
+# Detect repo flavor for the install banner so ORBIT users see "ORBIT Project Install"
 # and ARIS users still see the legacy banner.
 case "$(basename "$ARIS_REPO")" in
     *Auto-claude-code-research-in-sleep*|aris_repo|.aris) INSTALL_FLAVOR="ARIS" ;;
-    *) INSTALL_FLAVOR="BRIS" ;;
+    *) INSTALL_FLAVOR="ORBIT" ;;
 esac
 
 log ""

@@ -2,7 +2,7 @@
 
 ## Default (NEVER changes without explicit user request)
 
-All BRIS review calls use **Codex MCP** (`mcp__codex__codex`) with `model: gpt-5.5` and `reasoning_effort: xhigh`.
+All ORBIT review calls use **Codex MCP** (`mcp__codex__codex`) with `model: gpt-5.5` and `reasoning_effort: xhigh`.
 
 This is the default for ALL skills. No parameter, no config, no effort level changes this.
 

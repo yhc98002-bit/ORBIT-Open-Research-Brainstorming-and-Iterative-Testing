@@ -1,14 +1,14 @@
-# Better BRIS Research Agent Pipeline — v1.3 Canonical
+# ORBIT Research Agent Pipeline — v1.3 Canonical
 
 > **v1.3 — supersedes v1.0 (0A–15).** This shared reference is the load-bearing research
-> contract for BRIS. v1.3 replaces the rigid 0A–15 diagnostic harness with a research-methodology
+> contract for ORBIT. v1.3 replaces the rigid 0A–15 diagnostic harness with a research-methodology
 > routing harness organised around four spines, mode & risk routing, innovation loops, and
 > artifact-triggered audits. Old v1.0 artifact names are still parsed by consumers via
 > accept-either logic — see the migration appendix at the end.
 
 ## Design Target
 
-BRIS guides research **judgment**, not just execution. The default behaviour is:
+ORBIT guides research **judgment**, not just execution. The default behaviour is:
 
 - move fast in exploration, slow down before high-risk commitment
 - separate exploration / innovation / commitment modes; route by user intent and risk
@@ -33,7 +33,7 @@ BRIS guides research **judgment**, not just execution. The default behaviour is:
 
 ## Four-Spine Framing
 
-BRIS organises the 26 stages into four spines. They are **not strictly sequential** — the
+ORBIT organises the 26 stages into four spines. They are **not strictly sequential** — the
 orchestrator routes by mode/risk; many stages are loops; some stages skip in EXPLORATION mode
 and only fire before COMMITMENT.
 
@@ -560,7 +560,7 @@ At most two rounds. End with exactly one:
 
 ## Reviewer Defaults
 
-For BRIS, Codex review defaults are:
+For ORBIT, Codex review defaults are:
 
 - `model = gpt-5.5`
 - `reasoning_effort = xhigh`
