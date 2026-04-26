@@ -1,13 +1,125 @@
 ---
 name: run-experiment
-description: Deploy and run ML experiments on local, remote, Vast.ai, or Modal serverless GPU. Use when user says "run experiment", "deploy to server", "跑实验", or needs to launch training jobs.
-argument-hint: [experiment-description]
-allowed-tools: Bash(*), Read, Grep, Glob, Edit, Write, Agent, Skill(serverless-modal)
+description: Deploy and run ML experiments on local, remote, Vast.ai, or Modal serverless GPU. Auto-routes to /experiment-queue for batches of ≥10 jobs. Resumes interrupted single runs by attaching to a still-alive screen or replaying from the last log offset. Use when user says "run experiment", "deploy to server", "跑实验", or needs to launch training jobs.
+argument-hint: [experiment-description-or-manifest-path]
+allowed-tools: Bash(*), Read, Grep, Glob, Edit, Write, Agent, Skill(serverless-modal), Skill(experiment-queue)
 ---
 
 # Run Experiment
 
 Deploy and run ML experiment: $ARGUMENTS
+
+## Auto-routing (Step 0 — runs before everything else)
+
+This skill is the single entry point for "run an experiment", regardless of size. It
+auto-routes between inline single-run execution and `/experiment-queue` batch orchestration
+based on input shape.
+
+**Constants:**
+
+- `SOLO_THRESHOLD = 5` — jobs ≤ this run inline (this skill).
+- `QUEUE_THRESHOLD = 10` — jobs ≥ this auto-delegate to `/experiment-queue`.
+- Gray zone (6 ≤ jobs ≤ 9) → default inline parallel; user may force with `— queue: true`.
+- Override: `— queue: true` forces `/experiment-queue` regardless of count;
+  `— solo: true` forces inline regardless of count.
+
+**Detection rules** (in order — first match wins):
+
+| `$ARGUMENTS` shape | Detection | Routing |
+|---|---|---|
+| Path ending in `.yaml` / `.yml` / `.json` AND parses as a manifest | `yq` / `jq` count `jobs[]` array length | by count |
+| Grid spec string with `×` or `N=[...]` patterns | Expand the Cartesian product, count | by count |
+| Natural-language batch description (e.g., "21 seeds × 12 cells") | Claude estimates count | by count |
+| Single command (contains `python ` / `bash ` / `torchrun ` / etc., no batch markers) | count = 1 | inline (SOLO) |
+| Anything else | count = 1 | inline (SOLO) |
+
+**Decision:**
+
+```text
+if user passed `— queue: true` → delegate to /experiment-queue
+elif user passed `— solo: true` → run inline
+elif count >= QUEUE_THRESHOLD → delegate to /experiment-queue
+elif count <= SOLO_THRESHOLD → run inline (sequential or parallel up to MAX_PARALLEL_RUNS)
+else (gray zone 6-9) → run inline parallel; log "moderate batch, /experiment-queue available via — queue: true"
+```
+
+**Delegation:**
+
+```bash
+/experiment-queue "$ARGUMENTS"
+```
+
+When delegating, this skill writes a routing breadcrumb to
+`orbit-research/RUN_EXPERIMENT_STATE.json` (status = `completed`, `next_action = "delegated-to-experiment-queue"`,
+`next_skill_hint = "/experiment-queue"`) so the orchestrator and downstream skills can
+trace what happened. The actual job state is then owned by `queue_state.json`.
+
+**The orchestrator (`/research-pipeline` Stage 17) only ever calls `/run-experiment`** —
+it does not need to decide between solo and queue. This skill handles routing. Same when
+a user invokes manually.
+
+## State Persistence (Continuation Contract)
+
+This skill follows `shared-references/continuation-contract.md`.
+
+**STATE file:** `orbit-research/RUN_EXPERIMENT_STATE.json`
+
+Schema:
+
+```jsonc
+{
+  "skill": "run-experiment",
+  "phase": "step-5-launched" | "step-6-monitoring" | "step-7-completed",
+  "status": "in_progress" | "awaiting_human_continue" | "completed",
+  "run_id": "exp_<timestamp>_<short-hash-of-cmd>",
+  "command": "<verbatim command sent to the GPU>",
+  "server": "<ssh alias OR local OR vast:<id> OR modal:<app>>",
+  "screen_name": "<screen session name on the remote>",
+  "log_path": "<absolute path on the remote where stdout/stderr is tee'd>",
+  "log_offset": 12345,                       // last byte we read; replay from here on resume
+  "wandb_run_id": "<optional>",
+  "next_action": "monitor | delegated-to-experiment-queue | done",
+  "next_skill_hint": "/monitor-experiment OR /experiment-queue",
+  "timestamp": "<ISO 8601 UTC>",
+  "artifact_inventory": [
+    "orbit-research/DIAGNOSTIC_RUN_REPORT.md",
+    "orbit-research/DIAGNOSTIC_RUN_AUDIT.md"
+  ]
+}
+```
+
+### On entry — resume decision tree
+
+1. Read STATE if it exists.
+2. If `status = "completed"` AND user did not pass `— resume:` / `— fresh:` → ask "previous
+   run completed; new run with same command, or fresh?" Default fresh under AUTO_PROCEED.
+3. If `status = "in_progress"`:
+   - `timestamp ≥ 24h` → stale; warn; default fresh start.
+   - `timestamp < 24h` → **resume**, with this attach algorithm:
+     ```text
+     a. SSH to STATE.server, run: screen -ls | grep STATE.screen_name
+        - If screen alive AND attached to a python process → log "resuming attached to live screen <name>"; tail STATE.log_path from STATE.log_offset; do not relaunch.
+        - If screen exists but python died → log "screen orphaned, python exited"; tail log to capture exit reason; mark STATE.status = "completed" with notes; ask user whether to restart.
+        - If screen gone, log file present → log "screen gone, log preserved"; tail log from STATE.log_offset to capture trailing output; ask user whether to relaunch with same command.
+        - If screen gone AND log gone → log "no trace; safe to relaunch"; replay STATE.command (after user confirms unless AUTO_PROCEED).
+     b. After attach/replay, continue from Step 6 (Monitor) below.
+     ```
+4. If `status = "awaiting_human_continue"` → re-invocation = approval; transition to in_progress and continue from `next_action`.
+
+### Override flags
+
+- `— resume: true` — force resume even if STATE looks ambiguous.
+- `— fresh: true` — delete STATE; start fresh.
+- `— queue: true` — force route to `/experiment-queue` regardless of detected job count.
+- `— solo: true` — force inline run regardless of detected job count.
+
+### Phase artifact map (for idempotent skip)
+
+| Phase | Expected artifact |
+|---|---|
+| step-5-launched | `orbit-research/RUN_EXPERIMENT_STATE.json` with `screen_name` set |
+| step-6-monitoring | `orbit-research/DIAGNOSTIC_RUN_REPORT.md` (interim updates) |
+| step-7-completed | `orbit-research/DIAGNOSTIC_RUN_REPORT.md` finalised + `DIAGNOSTIC_RUN_AUDIT.md` written |
 
 ## ORBIT v1.3 Run Gates
 
@@ -15,6 +127,7 @@ These gates are always-on. Load:
 
 - `shared-references/research-agent-pipeline.md` — v1.3 stage map and hard gates G0–G19
 - `shared-references/semantic-code-audit.md` — Stage 17 diagnostic-run audit + G12 regime check
+- `shared-references/continuation-contract.md` — STATE.json schema and resume rules (used by Step 0 + State Persistence above)
 
 Run `mkdir -p orbit-research/`. Before launching anything broader than a diagnostic /
 sanity run, verify:

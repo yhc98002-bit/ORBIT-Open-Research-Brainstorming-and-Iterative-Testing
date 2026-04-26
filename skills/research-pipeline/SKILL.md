@@ -399,19 +399,22 @@ central claim** — not necessarily a tiny run.
 **Sub-skill invocation:**
 
 ```bash
-/run-experiment "[diagnostic command]"
+/run-experiment "[diagnostic command OR manifest OR grid]"
 /monitor-experiment "[run id or server]"
 ```
 
-For many jobs, route through:
+`/run-experiment` auto-routes by input shape:
+- single command / ≤5 jobs → runs inline (with STATE-based resume if interrupted)
+- ≥10 jobs / multi-seed sweep / wave dependencies → auto-delegates to `/experiment-queue`
+- 6–9 jobs (gray zone) → inline parallel; user can force `— queue: true`
 
-```bash
-/experiment-queue "[manifest or grid]"
-```
+The orchestrator does not need to choose between `/run-experiment` and `/experiment-queue`.
+Pass the diagnostic spec to `/run-experiment` and it handles routing. Override flags:
+`— queue: true` / `— solo: true` if the user wants to force a path.
 
 **Action:**
 
-1. Run the cheapest valid diagnostic.
+1. Run the cheapest valid diagnostic via `/run-experiment` (it routes if needed).
 2. Write `orbit-research/DIAGNOSTIC_RUN_REPORT.md` (consumers also read v1.0 alias
    `TINY_RUN_REPORT.md`).
 3. Codex audits outputs against the plan with **G12 regime check**: if the run failed,
