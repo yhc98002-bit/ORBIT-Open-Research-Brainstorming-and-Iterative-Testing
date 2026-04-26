@@ -91,9 +91,10 @@ preconditions:
   - type: checkpoint_exists
     path: checkpoints/transformer/pcc_softmax_L96_K500_N{N}_wikitext103.pt
 
-gpus: [0, 1, 2, 3, 4, 5, 6, 7]
-max_parallel: 8
-gpu_free_threshold_mib: 500  # optional, default 500; raise for shared servers, lower for tight packing
+gpus: [0, 1, 2, 3, 4, 5, 6, 7]    # optional; if absent, auto-detect via nvidia-smi
+max_parallel: auto                # NEW default. Resolution rule below.
+                                  # Set to integer N to override.
+gpu_free_threshold_mib: 500       # optional, default 500; raise for shared servers, lower for tight packing
 oom_retry:
   delay: 120
   max_attempts: 3
@@ -140,9 +141,67 @@ Save the built manifest to `<project>/experiment_queue/<timestamp>/manifest.json
 - Check conda env exists on remote
 - Check `cwd` exists on remote
 - Check all preconditions (checkpoints, input files)
+- **Auto-resolve `max_parallel: auto`** (see below)
 - Check GPU availability (at least `max_parallel` free GPUs)
 
 If any precondition fails, show user which jobs are blocked and why.
+
+#### Step 2.5: Auto-parallel resolution (when `max_parallel: auto`)
+
+Default behaviour: detect whether the user has the GPU server **exclusively** or is
+**sharing** with other users, then pick `max_parallel` accordingly. The user's manifest
+can always pin an integer to override.
+
+```bash
+# On the remote, per GPU, list non-self processes:
+ssh <server> 'nvidia-smi --query-compute-apps=gpu_uuid,pid,used_memory --format=csv,noheader'
+ssh <server> 'who | wc -l'  # rough other-user signal
+# For each GPU, check if any compute PID belongs to a UID other than the current user:
+ssh <server> 'for pid in $(nvidia-smi --query-compute-apps=pid --format=csv,noheader); do
+  ps -o user= -p $pid; done | sort -u'
+```
+
+**Resolution rule:**
+
+```text
+gpus_visible       = number of GPUs nvidia-smi reports
+gpus_truly_idle    = GPUs whose memory.used < gpu_free_threshold_mib
+                     AND have no compute PIDs owned by another user
+gpus_other_user    = GPUs with at least one compute PID owned by another user
+
+mode = exclusive       if gpus_other_user == 0
+     = mostly-idle     if gpus_truly_idle >= 0.5 * gpus_visible AND gpus_other_user > 0
+     = crowded         otherwise
+
+if mode == exclusive:
+    max_parallel = min(num_jobs, gpus_visible)
+    # Use everything; user owns the box.
+elif mode == mostly-idle:
+    max_parallel = gpus_truly_idle
+    # Use only the empty ones; don't risk OOM-ing other users.
+else:  # crowded
+    max_parallel = max(1, gpus_truly_idle)
+    # Conservative; surface the situation.
+    log "shared GPU detected (other-user PIDs on N GPUs), max_parallel limited to M"
+```
+
+**Surface the resolved value** in the launch banner:
+
+```
+🚀 Queue launching:
+   - Manifest: 36 jobs
+   - GPUs visible: 8
+   - GPUs truly idle: 8
+   - Mode: exclusive
+   - max_parallel resolved: auto → 8
+```
+
+**Override:** any integer in the manifest (`max_parallel: 4`) wins over auto. Pass
+`— max-parallel: <N>` inline to override at invocation time.
+
+**Conservative fallback:** if the GPU detection itself fails (no nvidia-smi access, SSH
+hiccup, etc.), default to `max_parallel = 1` and warn user. Better one slow run than an
+OOM cascade.
 
 ### Step 3: Launch Scheduler
 

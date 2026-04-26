@@ -1,32 +1,39 @@
 ---
 name: idea-to-proposal
-description: "ORBIT v1.3 thin pipeline from a research-area keyword OR a draft idea .md file to a full v1.3 proposal artifact set. Chains existing /idea-discovery (for keywords) or /research-refine (for .md), then runs Stage 4/5/7 (Grounding) + Stage 8/9/10 (Innovation, Codex collaborative) + a final /research-refine pass that integrates the tentative sketch winner. Outputs FINAL_PROPOSAL.md plus the seven Discovery/Grounding/Innovation artifacts. Does NOT trigger Validation (no experiments, no scale-up, no paper). Use when user says \"领域到proposal\", \"出proposal\", \"想法到方案\", \"idea-to-proposal\", \"proposal pipeline\", \"从领域跑到方案\", or wants a v1.3-complete proposal package without committing to runs yet."
+description: "ORBIT v1.3 thin pipeline from a research-area keyword OR a draft idea .md file all the way to a v1.3-complete proposal AND experiment plan — everything you need before touching GPU. Chains existing /idea-discovery (for keywords) or /research-refine (for .md), then runs Stage 4/5/7 (Grounding) + Stage 8/9/10 (Innovation, Codex collaborative) + a final /research-refine pass that integrates the tentative sketch winner + /experiment-plan to produce EXPERIMENT_PLAN + Validation prereqs. Outputs FINAL_PROPOSAL.md, EXPERIMENT_PLAN.md, plus the v1.3 Discovery/Grounding/Innovation artifact set. Does NOT touch GPU. Use when user says \"领域到proposal\", \"出proposal\", \"想法到方案\", \"idea-to-proposal\", \"proposal pipeline\", \"从领域跑到方案\", or wants the full pre-implementation package in one call."
 argument-hint: [research-area-keyword OR path/to/draft-idea.md]
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, mcp__codex__codex, mcp__codex__codex-reply
 ---
 
-# /idea-to-proposal — v1.3 Discovery → Grounding → Innovation → Proposal
+# /idea-to-proposal — v1.3 Discovery → Grounding → Innovation → Proposal → Experiment Plan
 
-Run a v1.3-complete proposal pipeline for: **$ARGUMENTS**
+Run a v1.3-complete pre-implementation pipeline for: **$ARGUMENTS**
 
 ## Overview
 
-This skill chains existing skills + the v1.3 Grounding and Innovation Spines into one
-non-Validation pipeline. It produces a problem-anchored proposal **plus** the v1.3
-artifact set that distinguishes ORBIT from earlier versions: assumption ledger, abstract
-task / mechanism framing, baseline ceiling, mechanism ideation, analogy transfer, and
-algorithm sketch tournament.
+This skill chains existing skills + the v1.3 Grounding, Innovation, and Validation-prereq
+phases into one pipeline. It produces:
+- a problem-anchored proposal (FINAL_PROPOSAL.md)
+- the v1.3 artifact set: assumption ledger, abstract task / mechanism, baseline ceiling,
+  mechanism ideation, analogy transfer, algorithm sketch tournament
+- a claim-driven experiment plan (EXPERIMENT_PLAN.md) with control design, null-result
+  contract, component bundle ladder, algorithmic formalization, diagnostic experiment plan
 
-**Scope boundary** — this skill stops *before* the Validation Spine. It does not write
-`CONTROL_DESIGN.md`, `NULL_RESULT_CONTRACT.md`, `COMPONENT_BUNDLE_LADDER.md`,
-`ALGORITHMIC_FORMALIZATION.md`, `PLAN_CODE_AUDIT.md`, or run any experiment. To take the
-proposal further, hand off to `/research-pipeline` Stage 11+ or `/experiment-plan`.
+**Scope boundary** — this skill stops *before* GPU. It produces every artifact required
+for `/experiment-bridge` to start writing code, but does not write code itself, does not
+run any experiment, does not write a paper. To take the plan further, hand off to
+`/experiment-bridge` (Stage 15) or `/research-pipeline` from Stage 15 onward.
 
 ```
-Input:                     Phase 1                Phase 2 (Grounding)        Phase 3 (Innovation, Codex collab)        Phase 4              Phase 5
+Input:        Phase 1 (Discovery)    Phase 2 (Grounding)   Phase 3 (Innovation, Codex collab)   Phase 4               Phase 5      Phase 6
 keyword ────► /idea-discovery ──┐
-.md file ───► /research-refine ─┴►  Stage 4 → 5 → 7  ──────────────►  Stage 8 → 9 → 10  ──────────────►  /research-refine final pass ────► PIPELINE_SUMMARY.md
-                                    (assumption    abstract  baseline)    (mechanism   analogy   sketch)    (integrates winner sketch)
+.md file ───► /research-refine ─┴► Stage 4 → 5 → 7 ─────► Stage 8 → 9 → 10 ─────────────────► /research-refine ──► PIPELINE_   ──► /experiment-plan
+                                  (assumption,            (mechanism, analogy,                 final pass            SUMMARY        Stage 11/12/13/14/16
+                                   abstract, baseline)     sketch tournament)                  (winner integrated)                  prereqs
+                                                                                                                                    │
+                                                                                                                                    ▼
+                                                                                                                          ⏸ STOP awaiting_human_continue
+                                                                                                                          (or earlier with --stop-at-proposal)
 ```
 
 ## Constants
@@ -40,6 +47,12 @@ keyword ────► /idea-discovery ──┐
   `— human checkpoint: true`.
 - **STOP_AT_GROUNDING = false** — if `true`, skip Phase 3 and Phase 4 (produce only the
   Grounding artifacts on top of Phase 1 output).
+- **STOP_AT_PROPOSAL = false** — if `true`, skip Phase 6 (do NOT invoke `/experiment-plan`).
+  Stops at Phase 5 with `awaiting_human_continue` after producing FINAL_PROPOSAL +
+  v1.3 Discovery/Grounding/Innovation artifacts only. Conservative users who want to review
+  the proposal before committing to an experiment plan use this. Default is to chain
+  through Phase 6 because the experiment plan still costs no GPU and gives the user one
+  combined STOP point with everything pre-implementation in hand.
 
 ## Load First
 
@@ -68,7 +81,8 @@ Written at every phase boundary with overwrite semantics. Schema:
   "phase": "phase-3-innovation",         // last completed phase (one of:
                                           //   phase-0-intake, phase-1-discovery,
                                           //   phase-2-grounding, phase-3-innovation,
-                                          //   phase-4-final-refinement, phase-5-summary)
+                                          //   phase-4-final-refinement, phase-5-summary,
+                                          //   phase-6-experiment-plan)
   "input_mode": "keyword" | "idea",      // detected at Phase 0
   "input_value": "$ARGUMENTS",           // verbatim
   "status": "in_progress" | "awaiting_human_continue" | "completed",
@@ -124,6 +138,7 @@ the STATE entry says this phase completed. If both hold, skip the phase and log
 | phase-3-innovation | `orbit-research/MECHANISM_IDEATION.md` + `ANALOGY_TRANSFER.md` + `ALGORITHM_TOURNAMENT.md` |
 | phase-4-final-refinement | `refine-logs/FINAL_PROPOSAL.md` updated (mtime > Phase 1's write) |
 | phase-5-summary | `orbit-research/PIPELINE_SUMMARY.md` |
+| phase-6-experiment-plan | `refine-logs/EXPERIMENT_PLAN.md` + `orbit-research/CONTROL_DESIGN.md` + `NULL_RESULT_CONTRACT.md` + `COMPONENT_BUNDLE_LADDER.md` + `ALGORITHMIC_FORMALIZATION.md` + `DIAGNOSTIC_EXPERIMENT_PLAN.md` |
 
 If artifact present but STATE entry missing/older, replay phase with a "refreshing
 inconsistent state" warning.
@@ -136,8 +151,9 @@ inconsistent state" warning.
 | `— fresh: true` | Delete STATE first; ignore existing artifacts; run from Phase 0 |
 | `— from-phase: <N>` | Force start from the specified phase (1–5) |
 | `— human checkpoint: true` | Pause at every phase boundary (write `awaiting_human_continue` after each), not just at Phase 5 |
-| `— no-checkpoint: true` | Skip the Phase 5 `awaiting_human_continue` exit; transition straight to `completed` |
-| `STOP_AT_GROUNDING: true` | Skip Phase 3 + Phase 4 (Grounding only); Phase 5 still writes `awaiting_human_continue` |
+| `— no-checkpoint: true` | Skip the Phase 6 `awaiting_human_continue` exit; transition straight to `completed` |
+| `STOP_AT_GROUNDING: true` | Skip Phase 3 + Phase 4 + Phase 6; produce only Grounding artifacts; awaiting_human_continue at Phase 5 |
+| `STOP_AT_PROPOSAL: true` | Skip Phase 6; produce proposal + Discovery/Grounding/Innovation artifacts only; awaiting_human_continue at Phase 5 |
 
 ## Workflow
 
@@ -406,39 +422,100 @@ Write `orbit-research/PIPELINE_SUMMARY.md`:
 - orbit-research/ANALOGY_TRANSFER.md       — cross-domain analogies
 - orbit-research/ALGORITHM_TOURNAMENT.md   — tentative preferred sketch + alternates
 
-## Next steps (NOT run by this skill)
+### Validation Prereqs (Phase 6 — pre-implementation, no GPU)
+- refine-logs/EXPERIMENT_PLAN.md           — claim-driven experiment roadmap (v1.3-aware)
+- orbit-research/CONTROL_DESIGN.md         — required controls
+- orbit-research/NULL_RESULT_CONTRACT.md   — what null/tie/fail means
+- orbit-research/COMPONENT_BUNDLE_LADDER.md — progressive component / bundle order
+- orbit-research/ALGORITHMIC_FORMALIZATION.md — pseudocode + loss + update rule
+- orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md — cheapest valid diagnostic spec
 
-To take the proposal toward implementation:
+(Skipped if --stop-at-proposal: true.)
 
-1. /experiment-plan "refine-logs/FINAL_PROPOSAL.md"
-   → produces CONTROL_DESIGN.md, NULL_RESULT_CONTRACT.md,
-     COMPONENT_BUNDLE_LADDER.md, ALGORITHMIC_FORMALIZATION.md,
-     DIAGNOSTIC_EXPERIMENT_PLAN.md (Stages 11–16, Validation Spine prerequisites)
+## Next steps (NOT run by this skill — first GPU touch begins here)
 
-2. /experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"
+1. /experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"
    → implements code + writes PLAN_CODE_AUDIT.md (Stage 15 loop)
+   → STOP B in the 4-stop HITL flow: review PLAN_CODE_AUDIT verdict before GPU
 
-3. /run-experiment "[diagnostic command]"
-   → Stage 17 — first time GPU is touched in the v1.3 pipeline
+2. /diagnostic-to-review "[diagnostic command OR manifest]"
+   → chains run-experiment → analyze-results → result-to-claim → auto-review-loop
+   → auto-routes single command vs queue-batch
+   → STOP C: any abort condition (verdict != PASS, claim_supported = no, etc.)
+              surfaces as awaiting_human_continue with clear next_action
 
-4. /research-pipeline can also continue from here; pass the existing artifact paths
-   so it skips re-doing Discovery/Grounding/Innovation. (Stage 0 routing reads
-   IDEA_TO_PROPOSAL_STATE.json and treats `awaiting_human_continue` as the
-   user's signal to advance to Stage 11+.)
+3. /paper-writing "NARRATIVE_REPORT.md" — venue: ICLR
+   → final paper writing (G16/G18 enforced — needs CLAIM_CONSTRUCTION.md)
+
+4. Or use /research-pipeline — Stage 0 reads IDEA_TO_PROPOSAL_STATE.json
+   awaiting_human_continue + artifact_inventory and routes directly to
+   Stage 15 (plan-code audit), skipping all the work this skill already did.
 ```
 
-**Write final STATE** at end of Phase 5 with **`awaiting_human_continue`** (this is the
-designed human checkpoint of this skill):
+**Write STATE** at end of Phase 5:
+
+If `STOP_AT_GROUNDING = true` OR `STOP_AT_PROPOSAL = true`:
+
+```jsonc
+{
+  "phase": "phase-5-summary",
+  "status": "awaiting_human_continue",     // designed checkpoint when STOP_AT_PROPOSAL set
+  "next_action": "human-must-confirm-then-call-/experiment-plan-or-/research-pipeline",
+  "next_skill_hint": "/experiment-plan OR /research-pipeline",
+  "timestamp": "<now>",
+  "artifact_inventory": [/* prior 9 v1.3 artifacts + PIPELINE_SUMMARY.md */]
+}
+```
+
+Otherwise (default — chain to Phase 6):
+
+```jsonc
+{
+  "phase": "phase-5-summary",
+  "status": "in_progress",
+  "next_action": "phase-6-experiment-plan",
+  "timestamp": "<now>",
+  "artifact_inventory": [/* prior + PIPELINE_SUMMARY.md */]
+}
+```
+
+### Phase 6: Validation Prereqs — invoke `/experiment-plan`
+
+**Skip this phase if `STOP_AT_PROPOSAL = true` or `STOP_AT_GROUNDING = true`.** Otherwise
+chain to `/experiment-plan` to produce the EXPERIMENT_PLAN.md and Stage 11/12/13/14/16
+prerequisites. This still costs **zero GPU**; it is the final pre-implementation step.
+
+```bash
+/experiment-plan "refine-logs/FINAL_PROPOSAL.md"
+```
+
+`/experiment-plan` (T4-upgraded) reads the v1.3 grounding/innovation artifacts produced in
+Phases 2–4 (ASSUMPTION_LEDGER, ABSTRACT_TASK_MECHANISM, ALGORITHM_TOURNAMENT) and writes a
+v1.3-aware `refine-logs/EXPERIMENT_PLAN.md` plus:
+
+- `orbit-research/CONTROL_DESIGN.md`
+- `orbit-research/NULL_RESULT_CONTRACT.md`
+- `orbit-research/COMPONENT_BUNDLE_LADDER.md`
+- `orbit-research/ALGORITHMIC_FORMALIZATION.md`
+- `orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md`
+
+If `/experiment-plan` returns an unrecoverable error (proposal too vague, claim map
+unfillable, etc.), surface to user and write Phase 6 STATE with `status = "in_progress"` +
+`next_action = "experiment-plan-failed:<reason>"` so the user can fix and re-invoke.
+
+**Write final STATE** at end of Phase 6 with **`awaiting_human_continue`** (this is now
+the designed human checkpoint of this skill — combined STOP A: proposal + experiment plan
+reviewed together):
 
 ```jsonc
 {
   "skill": "idea-to-proposal",
-  "phase": "phase-5-summary",
+  "phase": "phase-6-experiment-plan",
   "input_mode": "keyword | idea",
   "input_value": "$ARGUMENTS",
   "status": "awaiting_human_continue",
-  "next_action": "human-must-confirm-then-call-/research-pipeline-or-/experiment-plan",
-  "next_skill_hint": "/research-pipeline OR /experiment-plan",
+  "next_action": "human-must-confirm-then-call-/experiment-bridge-or-/research-pipeline",
+  "next_skill_hint": "/experiment-bridge OR /research-pipeline",
   "timestamp": "<now>",
   "artifact_inventory": [
     "orbit-research/PIPELINE_INTAKE.md",
@@ -449,29 +526,48 @@ designed human checkpoint of this skill):
     "orbit-research/MECHANISM_IDEATION.md",
     "orbit-research/ANALOGY_TRANSFER.md",
     "orbit-research/ALGORITHM_TOURNAMENT.md",
+    "orbit-research/CONTROL_DESIGN.md",
+    "orbit-research/NULL_RESULT_CONTRACT.md",
+    "orbit-research/COMPONENT_BUNDLE_LADDER.md",
+    "orbit-research/ALGORITHMIC_FORMALIZATION.md",
+    "orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md",
     "orbit-research/PIPELINE_SUMMARY.md",
-    "refine-logs/FINAL_PROPOSAL.md"
+    "refine-logs/FINAL_PROPOSAL.md",
+    "refine-logs/EXPERIMENT_PLAN.md"
     // + idea-stage/IDEA_REPORT.md if keyword-mode
   ]
 }
 ```
 
 `awaiting_human_continue` is the **deliberate** terminal state for this skill. The user
-inspects the artifacts (especially `FINAL_PROPOSAL.md`) and decides:
+inspects the artifacts (especially `FINAL_PROPOSAL.md` + `EXPERIMENT_PLAN.md` together —
+the combined "is this worth GPU?" decision point) and decides:
 
-- **Continue forward** — invoke `/research-pipeline` or `/experiment-plan`. The downstream
-  skill reads `IDEA_TO_PROPOSAL_STATE.json`, sees `awaiting_human_continue`, and treats
-  the act of invocation as the human's "approve continue" signal — it routes directly to
-  the relevant downstream stages without redoing Discovery/Grounding/Innovation.
+- **Continue to implementation** — invoke `/experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"`.
+  The next skill reads `IDEA_TO_PROPOSAL_STATE.json`, sees `awaiting_human_continue`, and
+  treats invocation as the human's "approve continue" signal.
 
-- **Iterate / change something** — invoke `/idea-to-proposal` again with a modified
-  argument. With no flag → asks "previous run paused at Phase 5 — continue past
-  checkpoint?" With `— fresh: true` → discards prior state and reruns from Phase 0.
+- **Continue via orchestrator** — invoke `/research-pipeline`. Stage 0 detects this STATE
+  and routes directly to Stage 15 (plan-code audit) skipping Discovery/Grounding/Innovation/
+  validation-prereqs, all of which are already done.
 
-- **Abandon** — leave it. The STATE stays at `awaiting_human_continue` indefinitely
-  (until `— fresh: true` clears it).
+- **Iterate experiment plan** — invoke `/experiment-plan "refine-logs/FINAL_PROPOSAL.md" — fresh: true`
+  to regenerate Phase 6 outputs only.
+
+- **Iterate proposal** — invoke `/idea-to-proposal "..." — fresh: true` (full rerun) or
+  manual edit `FINAL_PROPOSAL.md` then `/idea-to-proposal "..." — from-phase: 6` to
+  re-invoke just the experiment-plan phase on the edited proposal.
+
+- **Abandon** — leave it. STATE stays `awaiting_human_continue` indefinitely.
 
 To skip this checkpoint and run straight through to `completed`, pass `— no-checkpoint: true`.
+
+### Conservative variant (early STOP at proposal)
+
+If you want to review the proposal *before* generating the experiment plan (the original
+5-stop flow), pass `— stop-at-proposal: true`. This gives you Phase 1–5 only; Phase 6 is
+not invoked. After your review, manually run `/experiment-plan` to get the validation
+prereqs.
 
 ## ARIS / Sub-skill Unavailability
 

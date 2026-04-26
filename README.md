@@ -219,42 +219,106 @@ Plus the **Collaborative Claude-Codex Innovation Mode** spec: during innovation 
 Codex switches to no-veto, add-only mode (so it expands the candidate space rather than
 prunes it). Codex switches back to adversarial mode at commitment gates.
 
-## Common Workflows
+## Standard HITL Flow — 4 Stops
 
-### From a domain word
+ORBIT v1.3 is built around **human-in-the-loop at 4 designed checkpoints**, not full
+automation. Within each segment the agent runs continuously; between segments it pauses
+(`status = awaiting_human_continue` per the [continuation contract](skills/shared-references/continuation-contract.md))
+so a human can review the milestone artifact and decide whether to continue, revise, or
+abandon.
 
-```text
-/research-pipeline "Discrete Diffusion VLA post-training"
+```
+1. /idea-to-proposal "<keyword OR draft-idea.md>"
+   Discovery → Grounding → Innovation → final refinement → experiment plan
+   ⏸ STOP A: review FINAL_PROPOSAL.md + EXPERIMENT_PLAN.md + claim map together
+              (single combined "is this worth GPU?" decision)
+
+2. /experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"
+   Implementation + plan-code consistency loop (Stage 15)
+   ⏸ STOP B: review PLAN_CODE_AUDIT.md verdict — last gate before GPU spending
+
+3. /diagnostic-to-review "<diagnostic command OR manifest>"
+   /run-experiment (auto-routes single vs queue-batch) → /analyze-results →
+   /result-to-claim → /auto-review-loop
+   Aborts cleanly on any verdict-line bottleneck (FIX_BEFORE_GPU, claim_supported=no,
+   irrecoverable review score, G14/G17 violations) — abort is awaiting_human_continue
+   with clear next_action, never a silent failure
+   ⏸ STOP C: review CLAIM_CONSTRUCTION + RED_TEAM_REVIEW + HUMAN_DECISION_NOTE jointly
+
+4. /paper-writing "NARRATIVE_REPORT.md" — venue: ICLR, assurance: submission
+   Paper writing chain (G16+G18 enforced — needs CLAIM_CONSTRUCTION.md from STOP C)
+   ⏸ STOP D (implicit): submission-readiness review before push to Overleaf / arXiv
 ```
 
-Discovery routes only. No methods, no experiments.
+**Within-segment behavior:** AUTO_PROCEED = true by default. Pass `— human checkpoint: true`
+to any skill to pause at every internal phase. Pass `— no-checkpoint: true` to skip the
+designed `awaiting_human_continue` exit (only sane in dev / demo).
 
-### From a refined idea to an experiment plan
+**Resume behavior:** every skill in this flow follows the
+[continuation contract](skills/shared-references/continuation-contract.md). If a skill
+crashes mid-execution, just re-invoke it — STATE.json on disk decides resume vs fresh
+based on phase progress, artifact presence, and 24h staleness.
+
+## Common Workflows
+
+### Standard 4-stop end-to-end (recommended)
 
 ```text
-/research-refine "problem | rough method"
+/idea-to-proposal "Discrete Diffusion VLA post-training"   # STOP A: review proposal + experiment plan
+/experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"        # STOP B: review PLAN_CODE_AUDIT
+/diagnostic-to-review "[diagnostic command]"               # STOP C: review claim + red-team
+/paper-writing "NARRATIVE_REPORT.md" — venue: ICLR         # STOP D: ship paper
+```
+
+### Just want a proposal (no experiment plan yet)
+
+```text
+/idea-to-proposal "..." — stop-at-proposal: true
+```
+
+Pauses at Phase 5 with FINAL_PROPOSAL.md + Discovery/Grounding/Innovation artifacts. Run
+`/experiment-plan` separately when ready.
+
+### Already have proposal, want experiment plan only
+
+```text
 /experiment-plan "refine-logs/FINAL_PROPOSAL.md"
 ```
 
-`/experiment-plan` (in v1.3 mode) writes assumption ledger, abstract task, baseline
-ceiling, control design, null-result contract, component bundle, and diagnostic plan.
+This will read v1.3 grounding/innovation artifacts (assumption ledger, abstract task,
+algorithm tournament) when present and write a v1.3-aware EXPERIMENT_PLAN.md.
 
-### From plan to running diagnostic
+### From plan to running diagnostic (auto-routes solo vs queue)
 
 ```text
 /experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"
-/run-experiment "diagnostic command"
-/monitor-experiment "run id or server"
+/run-experiment "[command OR manifest path OR grid spec]"
+/monitor-experiment "[run id or server]"
 ```
 
-Before scale-up: `PLAN_CODE_AUDIT.md` must be `MATCHES_PLAN` or scoped `PARTIAL_MISMATCH`,
+`/run-experiment` auto-routes: ≤5 jobs runs inline, ≥10 jobs auto-delegates to
+`/experiment-queue`. Override with `— queue: true` / `— solo: true`. `/experiment-queue`
+itself defaults `max_parallel: auto` — when running on an exclusive 8-GPU box it parallels
+across all 8; on a shared box it conservatively uses only the truly idle GPUs.
+
+Before scale-up: `PLAN_CODE_AUDIT.md` must be `MATCHES_PLAN` or scoped `PARTIAL_MISMATCH`;
 `DIAGNOSTIC_RUN_AUDIT.md` must be `PASS` (or `TINY_RUN_AUDIT.md` if v1.0 alias).
 
-### From results to claims
+### From results to claims (chained)
+
+```text
+/diagnostic-to-review "[diagnostic command OR manifest]"
+```
+
+Runs run-experiment → analyze-results → result-to-claim → auto-review-loop as one chain;
+aborts cleanly with awaiting_human_continue + next_action on any bottleneck.
+
+Or invoke each individually:
 
 ```text
 /analyze-results "results/"
 /result-to-claim "main result on benchmark X with method Y"
+/auto-review-loop "<scope>" — difficulty: hard
 ```
 
 ### Paper writing (delegates to ARIS chain)
@@ -277,13 +341,30 @@ no external API key, uses your ChatGPT Plus/Pro quota; experimental) / `mermaid`
 ORBIT additional requirement: `CLAIM_CONSTRUCTION.md` must exist before `/paper-writing`
 will start (G16 + G18).
 
+## Codex availability — degradation, not silent skip
+
+Codex (gpt-5.5 xhigh) is the cross-model reviewer everywhere in ORBIT. When unavailable
+(MCP unreachable, sandbox issue, etc.), **the system reports the degradation explicitly
+in three tiers**, never skips silently:
+
+| Tier | Behavior | Where it shows up |
+|---|---|---|
+| **Advisory** (proceed) | Innovation loops (Stages 8/9/10/18.5) collaborative additions; Stage 15 PLAN_CODE_AUDIT at diagnostic stage; `/idea-to-proposal` Phase 4 final review | Footer of the relevant artifact: `Codex collaborative additions: NOT_AVAILABLE (codex_mcp_unreachable)` or `Phase X review: SKIPPED (codex_mcp_unreachable)` |
+| **Block pending human ack** | Stage 15 PLAN_CODE_AUDIT at scale-up (G11 ERROR rule); Stage 17 G12 regime check unanswerable | DIAGNOSTIC_RUN_AUDIT.verdict = ERROR with reason; orchestrator surfaces "human-must-acknowledge-codex-down" |
+| **Load-bearing degradation** | `/auto-review-loop` (Stage 23) → single-model review only; `/paper-writing` Phase 5.5/5.8 audits → BLOCKED | RED_TEAM_REVIEW.md header `⚠️ degraded: codex_mcp_unreachable, single-model review only`; PAPER_CLAIM_AUDIT / CITATION_AUDIT verdict = BLOCKED |
+
+Full degradation contract: each skill's "ARIS / Sub-skill Unavailability" section.
+
 ## Important Files
 
 - `skills/research-pipeline/SKILL.md` — v1.3 routing orchestrator
+- `skills/idea-to-proposal/SKILL.md` — STOP A: from area/idea to proposal + experiment plan (no GPU)
+- `skills/diagnostic-to-review/SKILL.md` — STOP C: chains run → analyze → claim → review
 - `skills/shared-references/research-agent-pipeline.md` — canonical 0–25 stage map + 19 hard gates
 - `skills/shared-references/research-harness-prompts.md` — per-stage canonical prompts
 - `skills/shared-references/innovation-loops.md` — Stages 8/9/10/18.5 procedures + Codex collaborative mode
 - `skills/shared-references/semantic-code-audit.md` — Stage 15 plan-code audit + Stage 17 diagnostic-run audit
+- `skills/shared-references/continuation-contract.md` — STATE.json schema, three-state enum, cross-skill resume
 - `skills/shared-references/reviewer-routing.md` — Codex / Oracle reviewer defaults
 - `AGENT_GUIDE.md` — agent-facing routing index
 
