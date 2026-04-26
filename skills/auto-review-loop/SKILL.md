@@ -64,7 +64,22 @@ Long-running loops may hit the context window limit, triggering automatic compac
 
 **Write this file at the end of every Phase E** (after documenting the round). Overwrite each time — only the latest state matters.
 
-**On completion** (positive assessment or max rounds), set `"status": "completed"` so future invocations don't accidentally resume a finished loop.
+**Three-state status enum** (per `shared-references/continuation-contract.md`):
+- `"in_progress"` — default during loop execution.
+- `"awaiting_human_continue"` — set when `HUMAN_CHECKPOINT = true` and the loop pauses
+  for the user to review the round's score / weaknesses before authorising the next
+  round. Include `next_action` (`"resume-round-N+1"`) and optionally `next_skill_hint`.
+  Next invocation (same skill or downstream `/paper-writing` etc.) reads this and treats
+  the act of invocation as the human's approve-continue signal per cross-skill resume
+  rules.
+- `"completed"` — set on positive assessment or max rounds reached. Future invocations
+  without `— resume:` or `— fresh:` ask the user before overwriting.
+
+Old STATE files with only `in_progress` / `completed` still parse — `awaiting_human_continue`
+is additive.
+
+Recommended optional fields: `next_action`, `next_skill_hint`, `artifact_inventory`
+(list of `RED_TEAM_REVIEW.md`, `AUTO_REVIEW.md`, etc. produced so far).
 
 ## Output Protocols
 

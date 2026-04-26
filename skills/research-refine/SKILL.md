@@ -91,12 +91,25 @@ Long-running refinement sessions may fail mid-way (e.g., API timeout, context co
 | `threadId` | string or null | Reviewer thread ID for `codex-reply` continuity |
 | `last_score` | number or null | Most recent overall score from reviewer |
 | `last_verdict` | string or null | Most recent verdict (READY / REVISE / RETHINK) |
-| `status` | `"in_progress"` / `"completed"` | Loop status |
+| `status` | `"in_progress"` / `"awaiting_human_continue"` / `"completed"` | Loop status — three-state enum per `shared-references/continuation-contract.md` |
 | `timestamp` | ISO 8601 | When state was last written |
+| `next_action` | string (optional) | Free-text hint for resume |
+| `next_skill_hint` | string (optional) | Downstream skill the user should call next (e.g. `/experiment-plan`) |
+| `artifact_inventory` | array (optional) | Output artifacts produced so far |
 
 **Write rules:**
 - **Write after each phase completes** (not before). Overwrite each time — only the latest state matters.
-- **On completion** (Phase 5 finished), set `"status": "completed"`.
+- **Default state during execution:** `"in_progress"`.
+- **On user-paused checkpoint** (when `— human checkpoint: true` is set, or after the
+  proposal stabilises if the user wants to inspect before downstream consumption): set
+  `"status": "awaiting_human_continue"` and include `next_skill_hint`. The next caller
+  (same skill or downstream) reads this and treats invocation as approval per the
+  cross-skill resume rules in `continuation-contract.md`.
+- **On completion** (Phase 5 finished AND user did not request the human checkpoint):
+  set `"status": "completed"`.
+
+This is the v1.3 canonical contract; old STATE files with only `in_progress` / `completed`
+still parse — `awaiting_human_continue` is an additive third state.
 
 ## Output Structure
 

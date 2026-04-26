@@ -22,6 +22,7 @@ Before executing the pipeline, read:
 - `shared-references/research-harness-prompts.md` — per-stage canonical prompt
 - `shared-references/innovation-loops.md` — Stages 8/9/10/18.5 procedures + Codex collaborative mode
 - `shared-references/semantic-code-audit.md` — Stage 15 plan-code audit + Stage 17 diagnostic-run audit
+- `shared-references/continuation-contract.md` — STATE.json schema, three-state enum, cross-skill resume rules (used by Stage 0 routing)
 - `shared-references/reviewer-independence.md`
 - `shared-references/reviewer-routing.md`
 
@@ -109,7 +110,55 @@ controller level so artifact writes never silently fail on a fresh project.
 
 The orchestrator's first action — before anything else.
 
-**Routing categories** (classify `$ARGUMENTS` into one):
+### Step 0a: Cross-skill continuation check (NEW — runs before input classification)
+
+Per the canonical contract in `shared-references/continuation-contract.md`, look for any
+upstream `*_STATE.json` produced by a prior skill that may want this orchestrator to
+continue from a known point. Glob:
+
+```bash
+ls orbit-research/*_STATE.json refine-logs/*_STATE.json review-stage/*_STATE.json paper/.aris/*_STATE.json 2>/dev/null
+```
+
+For each STATE file found, read it and apply the cross-skill resume rules:
+
+| Upstream STATE | Action |
+|---|---|
+| `status = "awaiting_human_continue"` AND user invoked `/research-pipeline` (downstream of this skill) | **Treat as approval to continue.** Load `artifact_inventory`. Use the artifact-presence routing path below to skip already-completed stages. Note this in `MODE_ROUTING.md` as "Continuing from <skill> output (artifacts loaded)." |
+| `status = "in_progress"` AND `timestamp < 24h` | Warn user the upstream skill was mid-execution. Ask: "resume `<upstream skill>` first?" If yes, exit and direct user to that skill. If no, proceed with fresh routing on `$ARGUMENTS`. |
+| `status = "in_progress"` AND `timestamp ≥ 24h` | Stale; ignore (or offer cleanup). Proceed with fresh routing. |
+| `status = "completed"` | Treat as historical context only. Proceed with fresh routing on `$ARGUMENTS` unless `— resume: true` is passed. |
+
+### Step 0b: Artifact-presence routing (works even without STATE files)
+
+Glob `orbit-research/*.md` to enumerate v1.3 artifacts already on disk. Map artifact
+presence → suggested first stage:
+
+| Artifacts present | Inferred starting stage | Suggested mode |
+|---|---|---|
+| `PROBLEM_SELECTION.md` + `ASSUMPTION_LEDGER.md` + `ABSTRACT_TASK_MECHANISM.md` + `ALGORITHM_TOURNAMENT.md` (all present) | **Stage 11** (commitment) — Discovery + Grounding + Innovation already done by upstream | COMMITMENT (risk 4) |
+| `PROBLEM_SELECTION.md` + `ASSUMPTION_LEDGER.md` + `ABSTRACT_TASK_MECHANISM.md` only (no Innovation artifacts) | **Stage 8** (Innovation entry) — Grounding done, Innovation needed | INNOVATION (risk 2–3) |
+| `PROBLEM_SELECTION.md` only | **Stage 4** (Grounding entry) | INNOVATION (risk 2) |
+| `MODE_ROUTING.md` + `SEED_FRAMING.md` only | **Stage 2** (Literature Map continuation) | EXPLORATION (risk 1–2) |
+| `PLAN_CODE_AUDIT.md` verdict = `MATCHES_PLAN` + `DIAGNOSTIC_RUN_AUDIT.md` absent | **Stage 16/17** (run diagnostic) | COMMITMENT (risk 3–4) |
+| `DIAGNOSTIC_RUN_AUDIT.md` verdict = `PASS` + `SCALEUP_DECISION.md` absent | **Stage 20** (scale-up decision) | COMMITMENT (risk 4) |
+| `CLAIM_CONSTRUCTION.md` + `RED_TEAM_REVIEW.md` + `HUMAN_DECISION_NOTE.md` all present | **Stage 24** (paper writing) | COMMITMENT (risk 4–5) |
+| (none of the above) | Fall through to Step 0c input-shape classification | (decide below) |
+
+When this routing applies, **bypass** the input-shape table and write `MODE_ROUTING.md`
+with both the inferred routing AND the trigger artifacts:
+
+```
+EXPLORATION | INNOVATION | COMMITMENT + risk: <N>
+trigger: artifact-presence (loaded: <comma-separated artifact basenames>)
+upstream-state: <SKILL>_STATE.json: <status>
+first-stage: <stage number>
+```
+
+### Step 0c: Input-shape classification (fallback when no continuation applies)
+
+If neither Step 0a nor Step 0b matched a continuation, classify `$ARGUMENTS` into one of
+these categories:
 
 | Category | Trigger | Suggested mode | Initial risk | First stages to run |
 |---|---|---|---|---|
@@ -124,20 +173,23 @@ The orchestrator's first action — before anything else.
 **Action:**
 
 1. Use the Stage 0 harness from `research-harness-prompts.md`.
-2. Classify input shape; pick mode + risk; decide which stages to run next.
+2. Apply Step 0a (continuation check) → Step 0b (artifact-presence routing) →
+   Step 0c (input-shape classification), in order. The first one that matches wins.
 3. Write `orbit-research/MODE_ROUTING.md` ending with one canonical line:
    `EXPLORATION | INNOVATION | COMMITMENT + risk: <1-5>`.
 4. **Auto-stub for low-risk single-stage commands:** when this orchestrator is invoked
    with no `MODE_ROUTING.md` and the requested action is low-risk single-stage work
    (no scale-up, no paper writing), default to `EXPLORATION + risk: 1` and write a stub.
    Continue without blocking.
+5. **Honour `— from-stage: N` override:** if the user passes an explicit stage number
+   inline, that wins over Step 0a/b/c. Still write MODE_ROUTING.md noting the override.
 
 **Gate G0:** for high-risk transitions (scale-up, paper writing, public release, official
-experiment planning), if mode/risk cannot be inferred from prior artifacts or an inline
-`— mode:` flag, block; require explicit Stage 0 routing.
+experiment planning), if mode/risk cannot be inferred from upstream STATE, prior artifacts,
+or an inline `— mode:` flag, block; require explicit Stage 0 routing.
 
-**After Stage 0,** run only the stages relevant to the user's input shape. Do not force a
-linear walk through 0–25.
+**After Stage 0,** run only the stages relevant to the user's input shape OR the inferred
+continuation point. Do not force a linear walk through 0–25.
 
 ## Per-stage orchestration blocks
 

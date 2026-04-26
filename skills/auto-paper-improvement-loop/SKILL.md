@@ -44,9 +44,11 @@ If the context window fills up mid-loop, Claude Code auto-compacts. To recover, 
 }
 ```
 
-**On startup**: if `PAPER_IMPROVEMENT_STATE.json` exists with `"status": "in_progress"` AND `timestamp` is within 24 hours, read it + `PAPER_IMPROVEMENT_LOG.md` to recover context, then resume from the next round. Otherwise (file absent, `"status": "completed"`, or older than 24 hours), start fresh.
+**On startup**: if `PAPER_IMPROVEMENT_STATE.json` exists with `"status": "in_progress"` AND `timestamp` is within 24 hours, read it + `PAPER_IMPROVEMENT_LOG.md` to recover context, then resume from the next round. If `"status": "awaiting_human_continue"`, treat re-invocation as human approval to continue per `shared-references/continuation-contract.md` cross-skill resume rules. Otherwise (file absent, `"status": "completed"`, or older than 24 hours), start fresh.
 
-**After each round**: overwrite the state file. **On completion**: set `"status": "completed"`.
+**After each round**: overwrite the state file. **On completion**: set `"status": "completed"`. **On user-paused checkpoint** (e.g. user wants to inspect mid-loop quality before authorising more rounds): set `"status": "awaiting_human_continue"` with `next_action: "resume-round-N+1"`.
+
+Three-state status enum (`in_progress` / `awaiting_human_continue` / `completed`) is canonical per `shared-references/continuation-contract.md` v1.3. Old STATE files with only `in_progress` / `completed` still parse — `awaiting_human_continue` is additive. Recommended optional fields: `next_action`, `next_skill_hint`, `artifact_inventory`.
 
 ## Reviewer Independence Protocol
 

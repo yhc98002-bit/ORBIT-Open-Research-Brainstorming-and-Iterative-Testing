@@ -49,13 +49,105 @@ keyword ────► /idea-discovery ──┐
   (the canonical prompt body for each stage this skill triggers)
 - `shared-references/innovation-loops.md` — Loop A/B/C procedures (sections §2/§3/§4) +
   Codex collaborative-mode prompt template (§7.1)
+- `shared-references/continuation-contract.md` — STATE.json schema, three-state enum,
+  resume/idempotency rules, override flags
 - `shared-references/reviewer-independence.md`
+
+## State Persistence (Continuation Contract)
+
+This skill follows the ORBIT v1.3 continuation contract — read
+`shared-references/continuation-contract.md` for the canonical schema.
+
+**STATE file:** `orbit-research/IDEA_TO_PROPOSAL_STATE.json`
+
+Written at every phase boundary with overwrite semantics. Schema:
+
+```jsonc
+{
+  "skill": "idea-to-proposal",
+  "phase": "phase-3-innovation",         // last completed phase (one of:
+                                          //   phase-0-intake, phase-1-discovery,
+                                          //   phase-2-grounding, phase-3-innovation,
+                                          //   phase-4-final-refinement, phase-5-summary)
+  "input_mode": "keyword" | "idea",      // detected at Phase 0
+  "input_value": "$ARGUMENTS",           // verbatim
+  "status": "in_progress" | "awaiting_human_continue" | "completed",
+  "next_action": "phase-4-final-refinement",        // for same-skill resume
+  "next_skill_hint": "/research-pipeline OR /experiment-plan",  // for downstream after Phase 5
+  "timestamp": "<ISO 8601 UTC>",
+  "artifact_inventory": [               // every output produced so far
+    "orbit-research/PROBLEM_SELECTION.md",
+    "orbit-research/ASSUMPTION_LEDGER.md",
+    "orbit-research/ABSTRACT_TASK_MECHANISM.md",
+    "orbit-research/BASELINE_CEILING.md",
+    "orbit-research/MECHANISM_IDEATION.md",
+    "orbit-research/ANALOGY_TRANSFER.md",
+    "orbit-research/ALGORITHM_TOURNAMENT.md",
+    "refine-logs/FINAL_PROPOSAL.md"
+  ],
+  "notes": "Optional — e.g. mode-detection rationale, Codex unavailability events"
+}
+```
+
+### On entry — resume decision tree
+
+Apply the canonical decision tree from `continuation-contract.md`:
+
+1. Read `orbit-research/IDEA_TO_PROPOSAL_STATE.json` (if exists) and `STATE.phase`,
+   `STATE.status`, `STATE.timestamp`.
+2. If absent → fresh start (Phase 0).
+3. If `status = "completed"`:
+   - Without `— resume:` flag → ask user "previous run completed; overwrite artifacts?"
+     Default to fresh start under AUTO_PROCEED. With `— fresh: true` → delete STATE,
+     fresh start.
+   - With `— resume: true` → no-op exit (everything already done).
+4. If `status = "in_progress"`:
+   - `timestamp ≥ 24h` → stale; warn user; default fresh start (delete STATE first).
+   - `timestamp < 24h` → resume from `STATE.phase + 1`. For each phase ≤ STATE.phase,
+     apply the artifact-presence skip rule (next section).
+5. If `status = "awaiting_human_continue"`:
+   - Same skill being re-invoked (this case) → ask "continue past human checkpoint?"
+     Default yes under AUTO_PROCEED. On yes, transition to `in_progress` and resume.
+   - (Downstream skill case is handled by `/research-pipeline` Stage 0.)
+
+### Idempotent phase skip
+
+Before running each phase, check whether its expected output artifact already exists AND
+the STATE entry says this phase completed. If both hold, skip the phase and log
+"skipped (already done)". Phase artifact map:
+
+| Phase | Expected artifact(s) |
+|---|---|
+| phase-0-intake | `orbit-research/PIPELINE_INTAKE.md` |
+| phase-1-discovery | `refine-logs/FINAL_PROPOSAL.md` + `orbit-research/PROBLEM_SELECTION.md` |
+| phase-2-grounding | `orbit-research/ASSUMPTION_LEDGER.md` + `ABSTRACT_TASK_MECHANISM.md` + `BASELINE_CEILING.md` |
+| phase-3-innovation | `orbit-research/MECHANISM_IDEATION.md` + `ANALOGY_TRANSFER.md` + `ALGORITHM_TOURNAMENT.md` |
+| phase-4-final-refinement | `refine-logs/FINAL_PROPOSAL.md` updated (mtime > Phase 1's write) |
+| phase-5-summary | `orbit-research/PIPELINE_SUMMARY.md` |
+
+If artifact present but STATE entry missing/older, replay phase with a "refreshing
+inconsistent state" warning.
+
+### Override flags
+
+| Flag | Effect |
+|---|---|
+| `— resume: true` | Force resume even if STATE looks ambiguous |
+| `— fresh: true` | Delete STATE first; ignore existing artifacts; run from Phase 0 |
+| `— from-phase: <N>` | Force start from the specified phase (1–5) |
+| `— human checkpoint: true` | Pause at every phase boundary (write `awaiting_human_continue` after each), not just at Phase 5 |
+| `— no-checkpoint: true` | Skip the Phase 5 `awaiting_human_continue` exit; transition straight to `completed` |
+| `STOP_AT_GROUNDING: true` | Skip Phase 3 + Phase 4 (Grounding only); Phase 5 still writes `awaiting_human_continue` |
 
 ## Workflow
 
 ### Phase 0: Detect Input Type and Initialise
 
-Inspect `$ARGUMENTS`:
+**Resume check first.** Apply the entry decision tree above. If resuming, skip to the
+phase indicated by `STATE.phase + 1` and continue from there (each downstream phase
+applies its own idempotent-skip check).
+
+Otherwise (fresh start), inspect `$ARGUMENTS`:
 
 - If it is a **path to an existing file** ending in `.md` → **idea-mode**.
 - Otherwise → **keyword-mode** (research area, topic phrase).
@@ -72,6 +164,21 @@ Write a one-line classifier note to `orbit-research/PIPELINE_INTAKE.md`:
 - Mode: keyword | idea
 - Started: <ISO timestamp>
 - Stops at: proposal (Validation Spine NOT triggered)
+```
+
+**Write STATE** at end of Phase 0:
+
+```jsonc
+{
+  "skill": "idea-to-proposal",
+  "phase": "phase-0-intake",
+  "input_mode": "keyword | idea",
+  "input_value": "$ARGUMENTS",
+  "status": "in_progress",
+  "next_action": "phase-1-discovery",
+  "timestamp": "<now>",
+  "artifact_inventory": ["orbit-research/PIPELINE_INTAKE.md"]
+}
 ```
 
 ### Phase 1: Discovery — produce a baseline proposal + problem selection
@@ -108,6 +215,26 @@ manually by extracting the Problem Anchor from `FINAL_PROPOSAL.md` and writing a
 selection rationale (importance / audience / feasibility / headroom / paper survivability)
 ending with `PROCEED | NARROW | RETHINK`. If `RETHINK`, stop here and surface the issue.
 
+**Write STATE** at end of Phase 1 (both modes):
+
+```jsonc
+{
+  "phase": "phase-1-discovery",
+  "status": "in_progress",
+  "next_action": "phase-2-grounding",
+  "timestamp": "<now>",
+  "artifact_inventory": [
+    "orbit-research/PIPELINE_INTAKE.md",
+    "refine-logs/FINAL_PROPOSAL.md",
+    "orbit-research/PROBLEM_SELECTION.md"
+    // + idea-stage/IDEA_REPORT.md if keyword-mode
+  ]
+}
+```
+
+If `— human checkpoint: true` is set, write `status: "awaiting_human_continue"` here too
+and stop; resume on next invocation.
+
 ### Phase 2: Grounding — Stages 4 → 5 → 7
 
 For each stage below, use the exact harness prompt from
@@ -143,6 +270,20 @@ Write `orbit-research/BASELINE_CEILING.md`.
 
 **Note:** headroom is a *reference*, not a veto. A low ceiling does not block the
 pipeline; it calibrates how loud Phase 4's claim wording can be.
+
+**Write STATE** at end of Phase 2:
+
+```jsonc
+{
+  "phase": "phase-2-grounding",
+  "status": "in_progress",
+  "next_action": "phase-3-innovation",  // or "phase-5-summary" if STOP_AT_GROUNDING
+  "timestamp": "<now>",
+  "artifact_inventory": [/* prior + ASSUMPTION_LEDGER.md, ABSTRACT_TASK_MECHANISM.md, BASELINE_CEILING.md */]
+}
+```
+
+If `— human checkpoint: true`, write `awaiting_human_continue` and stop; resume on next call.
 
 **Stop here if `STOP_AT_GROUNDING = true`.** Skip to Phase 5.
 
@@ -191,6 +332,18 @@ NOT_FINAL_NOTE: Stage 10 selects candidates for Stage 11 HMBC review (not run by
 skill). The tentative pick is not a method commitment.
 ```
 
+**Write STATE** at end of Phase 3:
+
+```jsonc
+{
+  "phase": "phase-3-innovation",
+  "status": "in_progress",
+  "next_action": "phase-4-final-refinement",
+  "timestamp": "<now>",
+  "artifact_inventory": [/* prior + MECHANISM_IDEATION, ANALOGY_TRANSFER, ALGORITHM_TOURNAMENT */]
+}
+```
+
 ### Phase 4: Integrated Final Refinement (Codex ADVERSARIAL)
 
 Codex switches **back to adversarial mode**.
@@ -211,6 +364,18 @@ an alternate from `ALGORITHM_TOURNAMENT.md` instead — record this in the propo
 `## Method Selection Rationale` section.
 
 The output is a **v1.3-aware FINAL_PROPOSAL.md**, not a brand-new file.
+
+**Write STATE** at end of Phase 4:
+
+```jsonc
+{
+  "phase": "phase-4-final-refinement",
+  "status": "in_progress",
+  "next_action": "phase-5-summary",
+  "timestamp": "<now>",
+  "artifact_inventory": [/* prior + refine-logs/FINAL_PROPOSAL.md (regenerated, v1.3-aware) */]
+}
+```
 
 ### Phase 5: Pipeline Summary
 
@@ -257,8 +422,56 @@ To take the proposal toward implementation:
    → Stage 17 — first time GPU is touched in the v1.3 pipeline
 
 4. /research-pipeline can also continue from here; pass the existing artifact paths
-   so it skips re-doing Discovery/Grounding/Innovation.
+   so it skips re-doing Discovery/Grounding/Innovation. (Stage 0 routing reads
+   IDEA_TO_PROPOSAL_STATE.json and treats `awaiting_human_continue` as the
+   user's signal to advance to Stage 11+.)
 ```
+
+**Write final STATE** at end of Phase 5 with **`awaiting_human_continue`** (this is the
+designed human checkpoint of this skill):
+
+```jsonc
+{
+  "skill": "idea-to-proposal",
+  "phase": "phase-5-summary",
+  "input_mode": "keyword | idea",
+  "input_value": "$ARGUMENTS",
+  "status": "awaiting_human_continue",
+  "next_action": "human-must-confirm-then-call-/research-pipeline-or-/experiment-plan",
+  "next_skill_hint": "/research-pipeline OR /experiment-plan",
+  "timestamp": "<now>",
+  "artifact_inventory": [
+    "orbit-research/PIPELINE_INTAKE.md",
+    "orbit-research/PROBLEM_SELECTION.md",
+    "orbit-research/ASSUMPTION_LEDGER.md",
+    "orbit-research/ABSTRACT_TASK_MECHANISM.md",
+    "orbit-research/BASELINE_CEILING.md",
+    "orbit-research/MECHANISM_IDEATION.md",
+    "orbit-research/ANALOGY_TRANSFER.md",
+    "orbit-research/ALGORITHM_TOURNAMENT.md",
+    "orbit-research/PIPELINE_SUMMARY.md",
+    "refine-logs/FINAL_PROPOSAL.md"
+    // + idea-stage/IDEA_REPORT.md if keyword-mode
+  ]
+}
+```
+
+`awaiting_human_continue` is the **deliberate** terminal state for this skill. The user
+inspects the artifacts (especially `FINAL_PROPOSAL.md`) and decides:
+
+- **Continue forward** — invoke `/research-pipeline` or `/experiment-plan`. The downstream
+  skill reads `IDEA_TO_PROPOSAL_STATE.json`, sees `awaiting_human_continue`, and treats
+  the act of invocation as the human's "approve continue" signal — it routes directly to
+  the relevant downstream stages without redoing Discovery/Grounding/Innovation.
+
+- **Iterate / change something** — invoke `/idea-to-proposal` again with a modified
+  argument. With no flag → asks "previous run paused at Phase 5 — continue past
+  checkpoint?" With `— fresh: true` → discards prior state and reruns from Phase 0.
+
+- **Abandon** — leave it. The STATE stays at `awaiting_human_continue` indefinitely
+  (until `— fresh: true` clears it).
+
+To skip this checkpoint and run straight through to `completed`, pass `— no-checkpoint: true`.
 
 ## ARIS / Sub-skill Unavailability
 
