@@ -1,65 +1,86 @@
 ---
 name: research-pipeline
-description: "Better BRIS end-to-end research pipeline built on the original ARIS skills. Runs the 0A-15 diagnostic research flow: seed framing, question-driven literature map, problem selection, task ontology/data audit, baseline ceiling, null-result contract, component ladder, diagnostic experiment, semantic plan-code audit, tiny-run audit, result interpretation, scale-up, claim construction, negative-result strategy, reviewer red-team, and paper writing. Use when user says 全流程/full pipeline/end-to-end research/从问题到论文/Better BRIS/自动科研流水线."
-argument-hint: [research-area-or-problem]
+description: "BRIS v1.3 research-methodology routing harness built on ARIS skills. Routes by mode (EXPLORATION/INNOVATION/COMMITMENT) and risk (1-5) through 26 stages organised into four spines (Discovery/Grounding/Innovation/Validation). Innovation loops for divergent mechanism invention; artifact-triggered audits; cheapest valid diagnostic; verdict-line gates only at high-risk transitions. Reuses mature ARIS execution skills (/auto-review-loop, /paper-writing, /experiment-bridge, etc.) instead of reimplementing them. Use when user says 全流程/full pipeline/end-to-end research/从问题到论文/Better BRIS/自动科研流水线/BRIS v1.3."
+argument-hint: [research-area-or-problem-or-artifact-path]
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, mcp__codex__codex, mcp__codex__codex-reply
 ---
 
-# Better BRIS Research Pipeline
+# BRIS Research Pipeline — v1.3 Routing Orchestrator
 
-Run the full diagnostic research workflow for: **$ARGUMENTS**
+Run the v1.3 research-methodology workflow for: **$ARGUMENTS**
 
-This is the BRIS control skill. It preserves mature ARIS infrastructure while enforcing the
-research process in `shared-references/research-agent-pipeline.md`.
+This is the BRIS control skill. It does **not** force every stage on every request. It
+routes by user input shape, mode, and risk, and only enforces hard gates before high-risk
+irreversible transitions. It preserves and reuses mature ARIS execution skills (do not
+reimplement them).
 
 ## Load First
 
 Before executing the pipeline, read:
 
-- `shared-references/research-agent-pipeline.md`
-- `shared-references/research-harness-prompts.md`
-- `shared-references/semantic-code-audit.md`
+- `shared-references/research-agent-pipeline.md` — v1.3 canonical stage map, hard gates G0–G19
+- `shared-references/research-harness-prompts.md` — per-stage canonical prompt
+- `shared-references/innovation-loops.md` — Stages 8/9/10/18.5 procedures + Codex collaborative mode
+- `shared-references/semantic-code-audit.md` — Stage 15 plan-code audit + Stage 17 diagnostic-run audit
 - `shared-references/reviewer-independence.md`
 - `shared-references/reviewer-routing.md`
 
 ## Constants
 
-- **OUTPUT_ROOT = `bris-research/`** — Better BRIS stage artifacts live here unless a project already has a better convention.
+- **OUTPUT_ROOT = `bris-research/`** — v1.3 artifacts live here unless the project already
+  has a better convention.
 - **CODEX_REVIEW_MODEL = `gpt-5.5`** — Default Codex reviewer for BRIS.
 - **CODEX_REVIEW_EFFORT = `xhigh`** — Mandatory for all BRIS review gates.
 - **CODEX_SANDBOX_MODE = `danger-full-access`** — Set globally in `~/.codex/config.toml`,
   not per call. Codex MCP `config` only accepts `model_reasoning_effort`; do not try to
   pass `sandbox` per call.
 - **REVIEWER_INDEPENDENCE = on** — Pass file paths and objective, not executor summaries.
+- **CODEX_INNOVATION_MODE** — `COLLABORATIVE` at Stages 8, 9, 10, 18.5 (use template in
+  `innovation-loops.md` §7.1); `ADVERSARIAL` everywhere else (use templates in
+  `semantic-code-audit.md` and `research-harness-prompts.md`).
 - **MAX_DEBATE_ROUNDS = 2** — Prevent infinite Claude vs Codex debate loops.
-- **AUTO_WRITE = false** — If true, run `/paper-writing` after claim construction and red-team gates.
+- **AUTO_WRITE = false** — If true, run `/paper-writing` after CLAIM_CONSTRUCTION and
+  RED_TEAM_REVIEW gates pass.
 - **VENUE = `ICLR`** — Used when paper writing is enabled.
-- **AUTO_PROCEED = false** for irreversible actions: expensive GPU scale-up, final paper claims, stopping a project.
+- **AUTO_PROCEED = false** for irreversible actions: GPU scale-up, final paper claims,
+  stopping a project.
 
-## Canonical Outputs
+## Canonical Outputs (v1.3)
 
-Create or update these artifacts as the project progresses:
+Create or update these artifacts as the project progresses. Producers emit v1.3 names
+only; consumers (this orchestrator, experiment-queue, semantic audit) accept v1.0 aliases
+where noted, preferring v1.3 if both exist.
 
 ```text
+bris-research/MODE_ROUTING.md
 bris-research/SEED_FRAMING.md
 bris-research/LITERATURE_MAP.md
+bris-research/PROBLEM_REFRAMING.md           (when triggered)
 bris-research/PROBLEM_SELECTION.md
-bris-research/TASK_ONTOLOGY.md
+bris-research/ASSUMPTION_LEDGER.md
+bris-research/ABSTRACT_TASK_MECHANISM.md
+bris-research/ARTIFACT_AUDIT.md              (when an artifact actually exists)
 bris-research/BASELINE_CEILING.md
+bris-research/MECHANISM_IDEATION.md          (innovation: Codex collaborative)
+bris-research/ANALOGY_TRANSFER.md            (innovation: Codex collaborative)
+bris-research/ALGORITHM_TOURNAMENT.md        (innovation: Codex collaborative)
 bris-research/CONTROL_DESIGN.md
 bris-research/NULL_RESULT_CONTRACT.md
-bris-research/COMPONENT_LADDER.md
-bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md
-bris-research/PLAN_CODE_AUDIT.md
-bris-research/TINY_RUN_REPORT.md
-bris-research/TINY_RUN_AUDIT.md
+bris-research/COMPONENT_BUNDLE_LADDER.md     (v1.0 alias: COMPONENT_LADDER.md)
+bris-research/ALGORITHMIC_FORMALIZATION.md
+bris-research/PLAN_CODE_AUDIT.md             (verdict line: MATCHES_PLAN | PARTIAL_MISMATCH | CRITICAL_MISMATCH | ERROR)
+bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md  (v1.0 alias: TINY_RUN_PLAN.md)
+bris-research/DIAGNOSTIC_RUN_REPORT.md       (v1.0 alias: TINY_RUN_REPORT.md)
+bris-research/DIAGNOSTIC_RUN_AUDIT.md        (v1.0 alias: TINY_RUN_AUDIT.md; verdict: PASS | FIX_BEFORE_GPU | REDESIGN_EXPERIMENT)
 bris-research/RESULT_INTERPRETATION.md
+bris-research/FAILURE_TO_INNOVATION.md       (when triggered, innovation: Codex collaborative)
 bris-research/LITERATURE_REREAD_NOTE.md
-bris-research/SCALEUP_DECISION.md
+bris-research/SCALEUP_DECISION.md            (verdict line: PROCEED | HOLD | REDESIGN | HUMAN_DECISION_REQUIRED)
 bris-research/CLAIM_CONSTRUCTION.md
-bris-research/NEGATIVE_RESULT_STRATEGY.md
-bris-research/RED_TEAM_REVIEW.md
-bris-research/HUMAN_DECISION_NOTE.md
+bris-research/NEGATIVE_RESULT_STRATEGY.md    (when tie/failure)
+bris-research/RED_TEAM_REVIEW.md             (loop output from /auto-review-loop)
+bris-research/PAPER_IMPROVEMENT_LOG.md       (loop output from /paper-writing chain)
+bris-research/HUMAN_DECISION_NOTE.md         (verdict line: PROCEED | NARROW | REDESIGN | RE-READ | CHANGE BENCHMARK | STOP | HUMAN_DECISION_REQUIRED)
 ```
 
 Also reuse existing ARIS outputs when present:
@@ -73,172 +94,260 @@ Also reuse existing ARIS outputs when present:
 - `NARRATIVE_REPORT.md`
 - `paper/`
 
-## Pipeline
+## Stage 00: Initialize Workspace
 
-### Stage 00: Initialize Workspace
-
-Before any other stage, run:
+Before any other stage:
 
 ```bash
 mkdir -p bris-research/
 ```
 
-This is idempotent. Every downstream skill assumes `bris-research/` exists; create it once
-at the controller level so artifact writes never silently fail on a fresh project.
+Idempotent. Every downstream skill assumes `bris-research/` exists; create it once at the
+controller level so artifact writes never silently fail on a fresh project.
 
-### Stage 0A: Seed Framing
+## Stage 0: Mode & Risk Routing (FIRST ACTION)
 
-Use when `$ARGUMENTS` is a broad area rather than a concrete problem.
+The orchestrator's first action — before anything else.
 
-Action:
+**Routing categories** (classify `$ARGUMENTS` into one):
 
-1. Use the Stage 0A harness from `research-harness-prompts.md`.
+| Category | Trigger | Suggested mode | Initial risk | First stages to run |
+|---|---|---|---|---|
+| Broad area | `$ARGUMENTS` is a research domain | EXPLORATION | 1–2 | 1 → 2 → 2.5 → 3 |
+| Concrete idea, no artifact | `$ARGUMENTS` is a problem statement, no data/code yet | INNOVATION | 2–3 | 4 → 5 → 7 → 8/9/10 |
+| Concrete data / benchmark / sim / reward in hand | `$ARGUMENTS` references an artifact path | INNOVATION/COMMITMENT | 2–4 | 6 (artifact-triggered audit) → 7 → 11+ |
+| Designing new method | user explicitly wants ideation | INNOVATION | 2–3 | 4 → 5 → 8 → 9 → 10 |
+| Implementing official experiments | proposal + plan exist | COMMITMENT | 4 | 11 → 12 → 13 → 14 → 15 → 16 |
+| Running experiments | implementation exists | COMMITMENT | 3–4 | 16 → 17 → 18 |
+| Results failed / surprised | result interpretation says tie or failure | INNOVATION | 2–3 | 18 → 18.5 → 19 → (back to 8 or 11) |
+
+**Action:**
+
+1. Use the Stage 0 harness from `research-harness-prompts.md`.
+2. Classify input shape; pick mode + risk; decide which stages to run next.
+3. Write `bris-research/MODE_ROUTING.md` ending with one canonical line:
+   `EXPLORATION | INNOVATION | COMMITMENT + risk: <1-5>`.
+4. **Auto-stub for low-risk single-stage commands:** when this orchestrator is invoked
+   with no `MODE_ROUTING.md` and the requested action is low-risk single-stage work
+   (no scale-up, no paper writing), default to `EXPLORATION + risk: 1` and write a stub.
+   Continue without blocking.
+
+**Gate G0:** for high-risk transitions (scale-up, paper writing, public release, official
+experiment planning), if mode/risk cannot be inferred from prior artifacts or an inline
+`— mode:` flag, block; require explicit Stage 0 routing.
+
+**After Stage 0,** run only the stages relevant to the user's input shape. Do not force a
+linear walk through 0–25.
+
+## Per-stage orchestration blocks
+
+Each block: when to run, which sub-skill to invoke, required input artifacts, output
+artifact + verdict expected, gate(s) checked. Inline accept-either parsing reads the v1.3
+name first, falls back to v1.0 alias.
+
+### Stage 1: Seed Framing
+
+**When:** category = broad area, or `SEED_FRAMING.md` is missing and the user's input is
+a domain rather than a concrete problem.
+
+**Action:**
+
+1. Use the Stage 1 harness from `research-harness-prompts.md`.
 2. Write `bris-research/SEED_FRAMING.md`.
-3. Define research area, constraints, 3-5 initial questions, search terms, subfields, adjacent areas, and paper classes.
 
-Gate:
+### Stage 2: Question-driven Literature Map (loop)
 
-- Do not propose final methods.
-- Do not commit to a benchmark.
-- Do not write an experiment plan.
+**When:** category = broad area, or before problem selection. Re-fires at Stage 19 after
+early results.
 
-### Stage 1: Question-driven Literature Map
-
-Invoke existing ARIS literature tools:
+**Sub-skill invocation:**
 
 ```bash
 /research-lit "$ARGUMENTS"
 ```
 
-Optionally use `/arxiv`, `/semantic-scholar`, `/exa-search`, `/deepxiv`, Zotero, Obsidian, and local PDFs.
+Optionally use `/arxiv`, `/semantic-scholar`, `/exa-search`, `/deepxiv`, Zotero, Obsidian,
+local PDFs.
 
-Action:
+**Action:** write `bris-research/LITERATURE_MAP.md`.
 
-1. Read papers as a research scientist, not as a summarizer.
-2. Extract claim, mechanism, benchmark, evidence, weak assumption, missing control, failure regime, claim-evidence gap, and follow-up question.
-3. Synthesize field consensus, bottlenecks, overclaims, saturation risks, missing controls, underexplored regimes, and candidate problems.
-4. Write `bris-research/LITERATURE_MAP.md`.
+**Codex (adversarial):** checks missing papers, missing baselines, overclaimed assumptions,
+claim-evidence gaps, benchmark saturation.
 
-Codex debate:
+### Stage 2.5: Problem Reframing Loop
 
-- Codex checks missing papers, missing baselines, overclaimed assumptions, claim-evidence gaps, and benchmark saturation.
+**When:** literature map suggests the problem-as-stated is the wrong cut.
 
-Gate:
+**Action:** use the Stage 2.5 harness from `research-harness-prompts.md`. Write
+`bris-research/PROBLEM_REFRAMING.md` ending with `KEEP | REFRAME | SPLIT`.
 
-- Do not generate final methods yet. Generate candidate problems.
+### Stage 3: Problem Taste / Problem Selection
 
-### Stage 0B: Problem Selection
+**When:** before any commitment. Required by **G1** for method commitment, official
+experiment planning, or GPU run (unless mode = EXPLORATION/INNOVATION and outputs are
+clearly marked as candidates).
 
-Action:
+**Action:**
 
-1. Evaluate candidate problems by importance, audience, concreteness, novelty, feasibility, benchmark availability, baseline ceiling risk, expected headroom, diagnostic clarity, and paper survivability.
-2. Run Claude vs Codex debate. Codex should attack feasibility, baseline risk, and paper value if the method ties.
-3. Write `bris-research/PROBLEM_SELECTION.md`.
+1. Run Claude vs Codex debate (adversarial). Codex attacks feasibility, baseline risk,
+   paper value if the method ties.
+2. Write `bris-research/PROBLEM_SELECTION.md` ending with `PROCEED | NARROW | RETHINK`.
 
-Required ending:
+### Stage 4: Assumption Ledger
 
-```text
-PROCEED / NARROW / RETHINK
-```
+**When:** before mechanism invention OR before any committed experiment. Required by
+**G2** (downstream "is/will/always" claims must trace to a ledger entry).
 
-Gate:
+**Action:** use the Stage 4 harness. Write `bris-research/ASSUMPTION_LEDGER.md` with rows
+tagged `factual` (citable) or `working` (must be tested).
 
-- Do not select a problem only because it sounds novel.
+### Stage 5: Abstract Task / Mechanism Framing
 
-### Stage 2: Task Ontology / Data Audit
+**When:** before mechanism invention (Stage 8). Required by **G3** at commitment time
+(Stage 11+); not strictly required at Stage 8/9/10 in EXPLORATION/INNOVATION mode.
 
-Action:
+**Action:** use the Stage 5 harness. Write `bris-research/ABSTRACT_TASK_MECHANISM.md`.
 
-1. Define prediction target, inputs, labels, data units, modalities, vendors/devices, acquisition protocols, domains, splits, and confounders.
-2. Search for category errors, label/source confounds, patient leakage, shortcut features, and split pathologies.
-3. Write `bris-research/TASK_ONTOLOGY.md`.
+### Stage 6: Artifact-triggered Data / Env / Benchmark Audit
 
-Codex debate:
+**When:** **only when** a concrete data set, environment, simulator, reward function,
+evaluator, or split actually exists or has been fetched. **Gate G4:** do NOT force this
+audit before such an artifact exists. Re-emit whenever the audited artifact changes.
 
-- Codex acts as data/task ontology auditor and tries to find category errors or leakage.
+**Action:** use the Stage 6 harness. Write `bris-research/ARTIFACT_AUDIT.md`.
 
-Gate:
+**Codex (adversarial):** acts as data/task ontology auditor; tries to find category errors
+or leakage.
 
-- Do not proceed to method design until task ontology is stable enough.
+### Stage 7: Baseline Ceiling / Headroom Audit
 
-### Stage 3: Baseline Ceiling / Headroom Audit
+**When:** before any "outperforms / beats / improves over" claim (G5), unless mode =
+EXPLORATION AND no paper claim is being made.
 
-Action:
+**Action:** use the Stage 7 harness. Write `bris-research/BASELINE_CEILING.md`.
 
-1. Estimate the simplest strong baseline ceiling.
-2. Consider zero-shot, few-shot, Best-of-N, confidence-rank, reranking, DINGO-style search, vanilla GRPO/PPO/RL, vanilla SFT, ERM, modality-specific, majority-domain, heuristic, and public SOTA baselines.
-3. Identify benchmark saturation risk and highest-headroom regime.
-4. Write `bris-research/BASELINE_CEILING.md`.
+**Codex (adversarial):** argues whether the simple baseline is already too strong or
+whether the benchmark/claim must change. Headroom is a reference, not a veto.
 
-Codex debate:
+### Stage 8: Mechanism Invention Loop  *(Codex COLLABORATIVE)*
 
-- Codex argues whether the simple baseline is already too strong or whether the benchmark/claim must change.
+**When:** category = designing new method, OR before commitment in INNOVATION mode.
 
-Gate:
+**Codex mode switch:** `CODEX_INNOVATION_MODE = COLLABORATIVE`. Use template in
+`innovation-loops.md` §7.1. Codex appends candidates; does NOT veto.
 
-- Do not run the proposed method before baseline ceiling is known or explicitly estimated.
+**Action:** use the Stage 8 harness. See `innovation-loops.md` §2 for the full procedure.
+Write `bris-research/MECHANISM_IDEATION.md` with all candidates visible (none pruned),
+top-3 marked for Stage 9, and a "Codex collaborative additions" section.
 
-### Stages 4-7: Diagnostic Experiment Design
+### Stage 9: Analogy / Cross-pollination Loop  *(Codex COLLABORATIVE)*
 
-Use existing ARIS refinement and planning skills after the Better BRIS gates are explicit:
+**When:** after `MECHANISM_IDEATION.md` exists.
+
+**Codex mode:** COLLABORATIVE.
+
+**Action:** use the Stage 9 harness. See `innovation-loops.md` §3. Write
+`bris-research/ANALOGY_TRANSFER.md`.
+
+### Stage 10: Algorithm Sketch Tournament  *(Codex COLLABORATIVE on sketch / ADVERSARIAL on adjudication)*
+
+**When:** after `MECHANISM_IDEATION.md` and `ANALOGY_TRANSFER.md` exist.
+
+**Codex mode:** COLLABORATIVE on sketch quality; ADVERSARIAL on tournament adjudication.
+
+**Action:** use the Stage 10 harness. See `innovation-loops.md` §4. Write
+`bris-research/ALGORITHM_TOURNAMENT.md` ending with
+`TENTATIVE_PREFERRED_SKETCH_ID + ALTERNATES + ABSTAIN_REASONS`. The tentative pick is
+**not** a method commitment — Stage 11 (HMBC matrix) reviews it and may switch to an
+alternate or send the project back to Stage 8.
+
+### Stage 11: Hypothesis-Mechanism-Benchmark-Control Matrix  *(Codex switches BACK to ADVERSARIAL)*
+
+**When:** committing to an experiment plan. Required by **G6** (≥1 of MECHANISM_IDEATION
+/ ANALOGY_TRANSFER / ALGORITHM_TOURNAMENT must exist before commitment).
+
+**Sub-skill invocation:**
 
 ```bash
 /research-refine "$ARGUMENTS"
 /experiment-plan "refine-logs/FINAL_PROPOSAL.md"
 ```
 
-Action:
+**Action:** use the Stage 11 harness. Write `bris-research/CONTROL_DESIGN.md`.
 
-1. Fill the hypothesis-mechanism-benchmark-control matrix.
-2. Write `bris-research/CONTROL_DESIGN.md`.
-3. Write `bris-research/NULL_RESULT_CONTRACT.md`.
-4. Build `bris-research/COMPONENT_LADDER.md` from Component 0: simplest strong baseline.
-5. Write `bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md`.
+**Codex (adversarial):** attacks control isolation, null-result interpretability, component
+attribution, rollback conditions, algorithmic self-consistency.
 
-Codex debate:
+### Stage 12: Null-result Contract
 
-- Codex attacks control isolation, null-result interpretability, component attribution, rollback conditions, and algorithmic self-consistency.
+**When:** before any diagnostic/confirmatory experiment. Required by **G8** unless run is
+explicitly marked "exploratory probe" (no paper claim allowed).
 
-Gate:
+**Action:** use the Stage 12 harness. Write `bris-research/NULL_RESULT_CONTRACT.md`.
 
-- Reject non-diagnostic experiments.
-- Do not run full systems before each major component is justified.
-- Do not run broad grids before the minimal diagnostic experiment.
+### Stage 13: Progressive Component / Minimal Mechanism Bundle
 
-### Stage 7.5: Semantic Plan-Code Consistency Audit
+**When:** before any official (full-system) run with a new composed method. Required by
+**G9** unless run is a baseline reproduction or single-component run.
 
-Use `/experiment-bridge` for implementation only after the planning gates exist:
+**Action:** use the Stage 13 harness. Write `bris-research/COMPONENT_BUNDLE_LADDER.md`
+(consumers also read v1.0 alias `COMPONENT_LADDER.md`). Bundle entries must include
+indivisibility justification.
+
+### Stage 14: Algorithmic Formalization
+
+**When:** before official experiments. Required by **G10** unless mode = EXPLORATION AND
+no scale-up requested.
+
+**Action:** use the Stage 14 harness. Write `bris-research/ALGORITHMIC_FORMALIZATION.md`.
+
+### Stage 15: Plan-Code Consistency Loop
+
+**When:** after implementation lands; loops audit → fix → re-audit until verdict is
+`MATCHES_PLAN` or scoped `PARTIAL_MISMATCH`.
+
+**Sub-skill invocation:**
 
 ```bash
 /experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"
 ```
 
-Then run semantic audit using `shared-references/semantic-code-audit.md`.
+Then run semantic audit per `shared-references/semantic-code-audit.md`.
 
-Action:
+**Action:**
 
-1. Codex reads plan artifacts and implementation files directly.
-2. Codex checks whether code implements the intended baselines, controls, ablations, datasets, splits, metrics, regimes, config defaults, and outputs.
-3. Always write `bris-research/PLAN_CODE_AUDIT.md` with the verdict line on its own line:
+1. Codex reads v1.3 plan artifacts (ASSUMPTION_LEDGER, ABSTRACT_TASK_MECHANISM,
+   ALGORITHM_TOURNAMENT TENTATIVE_PREFERRED_SKETCH_ID, ALGORITHMIC_FORMALIZATION, COMPONENT_BUNDLE_LADDER,
+   CONTROL_DESIGN, NULL_RESULT_CONTRACT, DIAGNOSTIC_EXPERIMENT_PLAN, FINAL_PROPOSAL,
+   EXPERIMENT_PLAN) and implementation files directly.
+2. Always write `bris-research/PLAN_CODE_AUDIT.md` with the verdict line on its own line:
    one of `MATCHES_PLAN | PARTIAL_MISMATCH | CRITICAL_MISMATCH | ERROR`.
 
-Gate:
+**Gate G11:**
 
 - `MATCHES_PLAN` proceeds.
 - `PARTIAL_MISMATCH` proceeds only if the missing pieces are irrelevant to the next run.
-- `CRITICAL_MISMATCH` blocks GPU scale-up; fix and re-audit.
-- `ERROR` (Codex unavailable, audit could not complete) is **advisory at the tiny /
-  sanity run stage** (proceed, but surface the reason code) and **blocks at scale-up
-  pending explicit human acknowledgement** (scale-up is irreversible; do not launch
-  without a person on the loop).
+- `CRITICAL_MISMATCH` blocks scale-up unconditionally; loop fix → re-audit.
+- `ERROR` (Codex unavailable, audit could not complete) is **advisory at the diagnostic /
+  sanity run stage** (proceed, surface the reason code) and **blocks at scale-up pending
+  explicit human acknowledgement** (scale-up is irreversible; do not launch without a
+  person on the loop).
 - Compile success is not enough.
 
-### Stages 8-8.5: Tiny Run And Tiny Run Audit
+### Stage 16: Cheapest Valid Diagnostic
 
-Use ARIS execution infrastructure:
+**When:** before scale-up. Designed to be the cheapest run that could **falsify the
+central claim** — not necessarily a tiny run.
+
+**Action:** use the Stage 16 harness. Write `bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md`
+(consumers also read v1.0 alias `TINY_RUN_PLAN.md`).
+
+### Stage 17: Diagnostic Run Audit
+
+**Sub-skill invocation:**
 
 ```bash
-/run-experiment "[tiny diagnostic command]"
+/run-experiment "[diagnostic command]"
 /monitor-experiment "[run id or server]"
 ```
 
@@ -248,106 +357,263 @@ For many jobs, route through:
 /experiment-queue "[manifest or grid]"
 ```
 
-Action:
+**Action:**
 
-1. Run the smallest sanity experiment.
-2. Write `bris-research/TINY_RUN_REPORT.md`.
-3. Codex or Claude audits outputs against the plan.
-4. Write `bris-research/TINY_RUN_AUDIT.md`.
+1. Run the cheapest valid diagnostic.
+2. Write `bris-research/DIAGNOSTIC_RUN_REPORT.md` (consumers also read v1.0 alias
+   `TINY_RUN_REPORT.md`).
+3. Codex audits outputs against the plan with **G12 regime check**: if the run failed,
+   did the failure regime preserve the mechanism's necessary preconditions? If not,
+   recommend redesign rather than reject the mechanism.
+4. Write `bris-research/DIAGNOSTIC_RUN_AUDIT.md` (consumers also read v1.0 alias
+   `TINY_RUN_AUDIT.md`) with verdict line: `PASS | FIX_BEFORE_GPU | REDESIGN_EXPERIMENT`.
 
-Gate:
+**Gate:** do not full-run unless `DIAGNOSTIC_RUN_AUDIT.md` (or `TINY_RUN_AUDIT.md`) verdict
+is `PASS`. `FIX_BEFORE_GPU` and `REDESIGN_EXPERIMENT` block.
 
-- Do not full-run unless tiny-run audit returns `PASS`.
+### Stage 18: Result Interpretation Loop
 
-### Stages 9-11: Interpret, Re-read, Scale
-
-Use ARIS result tools:
+**Sub-skill invocation:**
 
 ```bash
 /analyze-results "[results path]"
+```
+
+**Action:** write `bris-research/RESULT_INTERPRETATION.md` after every experiment.
+
+**Gate G14:** if NULL_RESULT_CONTRACT triggered tie/failure, frame the result honestly —
+do not write positive narrative. Route to Stage 22 if writing a paper from a tie/failure.
+
+### Stage 18.5: Failure-to-Innovation Loop  *(Codex COLLABORATIVE)*
+
+**When:** RESULT_INTERPRETATION shows tie or failure, OR Stage 17 returned
+`REDESIGN_EXPERIMENT` (with a regime that preserved mechanism preconditions — otherwise
+G12 routes back to Stage 16, not here).
+
+**Codex mode:** COLLABORATIVE.
+
+**Action:** use the Stage 18.5 harness. See `innovation-loops.md` §5. Write
+`bris-research/FAILURE_TO_INNOVATION.md`.
+
+### Stage 19: Re-read Literature Loop
+
+**When:** RESULT_INTERPRETATION or FAILURE_TO_INNOVATION raises a question literature
+might answer.
+
+**Sub-skill invocation:** targeted `/research-lit` calls per question.
+
+**Action:** see `innovation-loops.md` §6. Write `bris-research/LITERATURE_REREAD_NOTE.md`.
+
+### Stage 20: Scale-up Decision
+
+**Sub-skill invocation:**
+
+```bash
 /result-to-claim "[experiment description]"
 ```
 
-Action:
+**Action:**
 
-1. Write `bris-research/RESULT_INTERPRETATION.md` after every experiment.
-2. If early results change the question, write `bris-research/LITERATURE_REREAD_NOTE.md`.
-3. Before scale-up, write `bris-research/SCALEUP_DECISION.md`.
+1. Verify Stage 20 preconditions (per harness §20): ARTIFACT_AUDIT (when applicable),
+   BASELINE_CEILING, CONTROL_DESIGN, NULL_RESULT_CONTRACT, DIAGNOSTIC_RUN_AUDIT verdict,
+   PLAN_CODE_AUDIT verdict, ALGORITHMIC_FORMALIZATION (if scaling official),
+   COMPONENT_BUNDLE_LADDER (if new composed method).
+2. **Gate G15:** if mode = COMMITMENT or risk_score ≥ 4, require `HUMAN_DECISION_NOTE.md`
+   before SCALEUP_DECISION = PROCEED.
+3. **Gate G19:** scale-up is a "high-risk transition" — `HUMAN_DECISION_NOTE.md` required.
+4. Write `bris-research/SCALEUP_DECISION.md` ending with
+   `PROCEED | HOLD | REDESIGN | HUMAN_DECISION_REQUIRED`.
 
-Gate:
+### Stage 21: Result-to-Claim Construction
 
-- The next experiment must depend on current interpretation.
-- Do not scale because the original plan said so; scale because diagnostic evidence justifies it.
+**Sub-skill invocation:** `/result-to-claim` (already invoked at Stage 20 — reuse output).
 
-### Stages 12-13: Claim Construction And Negative Strategy
+**Action:**
 
-Action:
+1. Build claim → evidence → control → scope → limitation chain.
+2. **Gate G17:** label exploratory findings explicitly as "exploratory finding, not
+   pre-planned hypothesis." Do not present post-hoc reframings as pre-planned hypotheses.
+3. Write `bris-research/CLAIM_CONSTRUCTION.md`.
 
-1. Build claim -> evidence -> control -> scope -> limitation chain.
-2. Write `bris-research/CLAIM_CONSTRUCTION.md`.
-3. If the method ties or fails, write `bris-research/NEGATIVE_RESULT_STRATEGY.md`.
-4. Use `/result-to-claim` as the ARIS claim gate.
+**Gate G16:** Stage 24 (paper writing) refuses to start without `CLAIM_CONSTRUCTION.md`.
 
-Gate:
+### Stage 22: Tie / Negative Result / Reframing Strategy
 
-- Do not generalize beyond tested benchmark, regime, or control set.
-- Do not force a positive story after tie or failure.
+**When:** result ties or fails.
 
-### Stage 14: Reviewer Red-team
+**Action:** use the Stage 22 harness. Write `bris-research/NEGATIVE_RESULT_STRATEGY.md`.
+Apply G17 anti-post-hoc check.
 
-Use existing ARIS review skills:
+### Stage 23: Reviewer Red-team Loop
+
+**Sub-skill invocation:**
 
 ```bash
 /auto-review-loop "$ARGUMENTS" — difficulty: hard
 /experiment-audit "[results and code]"
-/paper-claim-audit "paper/"
-/citation-audit "paper/"
 ```
 
-Action:
+**Action:** review → fix → re-review iterations managed by `/auto-review-loop`. Output
+rolls up into `bris-research/RED_TEAM_REVIEW.md` (the ARIS skill writes here directly per
+its inline gate; this orchestrator does not duplicate the writing).
 
-1. Codex and Claude independently attack the project.
-2. Write `bris-research/RED_TEAM_REVIEW.md`.
-3. Record top 5 rejection risks, required fixes, essential pre-submission fixes, claims to weaken, and submit-readiness.
+### Stage 24: Paper Writing / Paper Improvement Loop
 
-Gate:
+**Gate G16 + G18:** refuse start if `CLAIM_CONSTRUCTION.md` is absent (also enforced
+inline in `paper-writing/SKILL.md`).
 
-- Do not mark submission-ready while high-severity rejection risks remain unresolved.
-
-### Stage 15: Human Decision / Next Research Loop
-
-Action:
-
-1. Write `bris-research/HUMAN_DECISION_NOTE.md`.
-2. Summarize current belief, evidence, uncertainty, recommendation, and required human judgment.
-
-Required ending:
-
-```text
-PROCEED / NARROW / REDESIGN / RE-READ / CHANGE BENCHMARK / STOP / HUMAN_DECISION_REQUIRED
-```
-
-## Paper Writing Integration
-
-Paper writing is not replaced. It is inherited from ARIS:
+**Sub-skill invocation chain (delegated to ARIS):**
 
 ```bash
 /paper-writing "NARRATIVE_REPORT.md" — venue: $VENUE, assurance: submission
 ```
 
-Before invoking `/paper-writing`, require:
+`/paper-writing` transitively invokes: `/paper-plan`, `/paper-figure`, `/figure-spec` or
+`/paper-illustration`, `/paper-write`, `/paper-compile`, `/auto-paper-improvement-loop`,
+`/paper-claim-audit`, `/citation-audit`.
 
-- `bris-research/CLAIM_CONSTRUCTION.md` (written by `/result-to-claim`)
-- `bris-research/HUMAN_DECISION_NOTE.md` (written by `/result-to-claim` and Stage 15 of
+**Action:** track all improvement-loop iterations in
+`bris-research/PAPER_IMPROVEMENT_LOG.md`. Each entry: round number, reviewer feedback,
+fix applied, audit verdicts (`PAPER_CLAIM_AUDIT`, `CITATION_AUDIT`).
+
+**ARIS unavailability handling** — for any ARIS slash invocation in this stage:
+
+```text
+For each ARIS skill call (/paper-writing, /paper-plan, /paper-figure, /paper-write,
+/paper-compile, /auto-paper-improvement-loop, /paper-claim-audit, /citation-audit):
+  - Try slash invocation.
+  - If skill not registered: print
+        "ARIS skill <name> unavailable. Stage 24 degraded: <fallback action or
+         HUMAN_DECISION_REQUIRED>."
+    Continue gracefully.
+  - If the missing skill was load-bearing for a hard gate (e.g. /paper-claim-audit for
+    submission readiness): escalate to HUMAN_DECISION_REQUIRED.
+```
+
+### Stage 25: Human Decision / Next Loop
+
+**Action:**
+
+1. Write `bris-research/HUMAN_DECISION_NOTE.md` ending with one of
+   `PROCEED | NARROW | REDESIGN | RE-READ | CHANGE BENCHMARK | STOP | HUMAN_DECISION_REQUIRED`.
+2. **Gate G19:** required at all "high-risk transitions" (scale-up, paper writing, public
+   release).
+
+## Innovation Loop Dispatch
+
+Stages 8, 9, 10, 18.5 are **innovation loops**. Different from the rest of the pipeline:
+
+- `CODEX_INNOVATION_MODE = COLLABORATIVE` for these stages. Use prompt template in
+  `innovation-loops.md` §7.1 — no veto, only adds candidates / blind spots / alternatives.
+- Convergence is **forbidden** inside the loop. Output keeps all candidates visible.
+- Codex switches back to `ADVERSARIAL` at Stages 11, 14, 15, 17, 21, 23.
+
+Mode-switching rule (orchestrator-side):
+
+```
+IF current_stage IN {8, 9, 10, 18.5}:
+    codex_mode = COLLABORATIVE
+    use prompt template innovation-loops.md §7.1
+ELSE IF current_stage IN {11, 14, 15, 17, 21, 23}:
+    codex_mode = ADVERSARIAL
+    use semantic-code-audit.md template (audit gates) or research-harness-prompts.md
+    template (debate gates)
+ELSE:
+    codex is not invoked at this stage
+```
+
+## Hard Gates Enforcement (G0–G19)
+
+The orchestrator enforces every gate at the point the next stage would otherwise begin.
+Each gate parses verdict lines, not file presence. Inline accept-either logic reads v1.3
+artifact name first; falls back to v1.0 alias.
+
+```text
+G0  Mode & Risk Routing required. Auto-stub for low-risk single-stage; block at high-risk
+    transitions when mode/risk cannot be inferred.
+
+G1  Method commitment, official experiment planning, or GPU run requires
+    PROBLEM_SELECTION.md. Mechanism brainstorming (Stages 8/9/10) allowed in
+    EXPLORATION/INNOVATION before final selection if outputs marked as candidates and
+    assumptions go to ASSUMPTION_LEDGER.md.
+
+G2  Downstream "is/will/always" claims must trace to ASSUMPTION_LEDGER.md row, OR demote
+    to "assume/hypothesise", OR cite external evidence.
+
+G3  Stage 11+ (commitment) requires ABSTRACT_TASK_MECHANISM.md. Stage 8/9/10 mechanism
+    invention may run without it in EXPLORATION/INNOVATION mode if candidates marked as
+    such and assumptions go to ledger.
+
+G4  ARTIFACT_AUDIT.md only required after the data/env/benchmark/evaluator artifact
+    actually exists. Do NOT force the audit before then.
+
+G5  "outperforms / beats / improves over" claims require BASELINE_CEILING.md, unless mode
+    = EXPLORATION AND no paper claim is being made.
+
+G6  Method commitment (Stage 11+) requires ≥1 of {MECHANISM_IDEATION, ANALOGY_TRANSFER,
+    ALGORITHM_TOURNAMENT}. Exception: explicit single-method confirmatory mode.
+
+G7  Result feeding paper claims requires CONTROL_DESIGN.md. No exception.
+
+G8  Diagnostic/confirmatory experiments require NULL_RESULT_CONTRACT.md, unless run is
+    explicitly marked "exploratory probe" (no paper claim allowed).
+
+G9  Official (full-system) run with a new composed method requires
+    COMPONENT_BUNDLE_LADDER.md (a single justified rung is acceptable). Exception:
+    baseline reproduction or single-component runs with no new composed mechanism.
+
+G10 Scale-up to official experiments requires ALGORITHMIC_FORMALIZATION.md, unless mode
+    = EXPLORATION AND no scale-up requested.
+
+G11 PLAN_CODE_AUDIT.md verdict = CRITICAL_MISMATCH blocks scale-up unconditionally. Loop
+    fix → re-audit until MATCHES_PLAN or scoped PARTIAL_MISMATCH. ERROR: advisory at
+    diagnostic stage; blocks at scale-up pending human acknowledgement.
+
+G12 If a tiny / diagnostic run failed in a regime that violated the mechanism's necessary
+    preconditions, do NOT reject the mechanism — require diagnostic redesign to a regime
+    where the mechanism could in principle manifest. Replaces v1.0 "tiny-run failure →
+    kill idea."
+
+G13 Test set isolation: experiments using test set anywhere in tuning/selection are blocked.
+    No exception.
+
+G14 NULL_RESULT_CONTRACT-triggered tie/failure cannot have positive framing in
+    RESULT_INTERPRETATION/CLAIM_CONSTRUCTION. No exception.
+
+G15 Scale-up in mode = COMMITMENT OR risk ≥ 4 requires HUMAN_DECISION_NOTE.md before
+    SCALEUP_DECISION = PROCEED. No exception.
+
+G16 Stage 24 (paper writing) requires CLAIM_CONSTRUCTION.md. No exception.
+
+G17 Post-hoc result framings must be labelled "exploratory finding, not pre-planned
+    hypothesis" in CLAIM_CONSTRUCTION.md and the paper. No exception.
+
+G18 /paper-writing inline guard: refuse start if CLAIM_CONSTRUCTION.md absent. No exception.
+
+G19 Scale-up (Stage 20), paper writing (Stage 24), and any public-release transition
+    require HUMAN_DECISION_NOTE.md. No exception.
+```
+
+## Paper Writing Integration
+
+Paper writing is **not** reimplemented. It is delegated to ARIS via Stage 24 (above):
+
+```bash
+/paper-writing "NARRATIVE_REPORT.md" — venue: $VENUE, assurance: submission
+```
+
+Before invoking, this orchestrator verifies the v1.3 hard preconditions (G16, G18, G19):
+
+- `bris-research/CLAIM_CONSTRUCTION.md` (written by `/result-to-claim` at Stage 21)
+- `bris-research/HUMAN_DECISION_NOTE.md` (written by `/result-to-claim` and Stage 25 of
   this pipeline)
-- `bris-research/RED_TEAM_REVIEW.md` (written by `/auto-review-loop`)
+- `bris-research/RED_TEAM_REVIEW.md` (written by `/auto-review-loop` at Stage 23)
 - `bris-research/NEGATIVE_RESULT_STRATEGY.md` if `result-to-claim` returned `partial` or `no`
-- supported or downgraded claims from `/result-to-claim`
 
 These match the hard preconditions in `skills/paper-writing/SKILL.md`. If any are missing,
 do not invoke `/paper-writing`; route the user back to the producing skill.
 
-During paper writing, keep ARIS gates:
+During paper writing, the ARIS chain runs (do not duplicate):
 
 - `/paper-plan`
 - `/paper-figure`
@@ -358,17 +624,16 @@ During paper writing, keep ARIS gates:
 - `/paper-claim-audit`
 - `/citation-audit`
 
+Track the iteration log in `bris-research/PAPER_IMPROVEMENT_LOG.md`.
+
 ## Final Rule
 
-Creative Mode allows bold mechanisms. Commitment Mode requires diagnostics.
-
 ```text
-Bold ideas are allowed.
-Undiagnosable experiments are not.
-
-Failure is allowed.
-Failure without interpretation is not.
-
-Runnable code is not success.
-Code that faithfully implements the experiment plan is success.
+Move fast in exploration. Slow down before commitment.
+Bold ideas are allowed. Undiagnosable experiments are not.
+Failure is allowed. Failure without interpretation is not.
+Runnable code is not success. Code that faithfully implements the v1.3 contract is.
+Innovation loops produce candidates. Commitment gates pick what runs.
+Reuse ARIS execution skills. Do not reimplement them.
+Preserve human judgment at high-risk irreversible transitions.
 ```

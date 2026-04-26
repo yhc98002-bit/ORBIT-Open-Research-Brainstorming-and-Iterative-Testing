@@ -2,16 +2,17 @@
 
 > **For AI agents reading this repo.** If you are a human, see [README.md](README.md).
 
-BRIS (Better Research in Sleep) is a research harness built on the original ARIS skills.
-It keeps ARIS's mature infrastructure — literature search, idea discovery, experiment
-deployment, auto review, paper writing, claim and citation audits — but the control flow is
-the diagnostic 0A–15 pipeline defined in
+BRIS (Better Research in Sleep) v1.3 is a research-methodology routing harness built on
+ARIS execution skills. It routes through 26 stages organised into four spines (Discovery /
+Grounding / Innovation / Validation) by mode (EXPLORATION / INNOVATION / COMMITMENT) and
+risk score (1–5). Canonical contracts live in
 `skills/shared-references/research-agent-pipeline.md`.
 
 The job of a BRIS agent is not "run experiments and write a paper". It is to behave like a
-careful junior research scientist: define the problem, audit the data, measure baseline
-ceilings, build a diagnosable experiment, audit the code against the plan, and only then
-turn results into scoped claims.
+careful research scientist: classify the user's input shape, route through the minimum
+stages needed, expand the candidate space during innovation (Codex collaborative), pin
+down assumptions / abstract task / baseline ceiling during grounding, enforce verdict-line
+gates at commitment, and only then turn results into scoped, evidence-bound claims.
 
 ## How to Invoke Skills
 
@@ -44,85 +45,139 @@ The argument separator is em-dash `—`, not single `-`.
 Codex review reasoning is always `xhigh`. Codex sandbox mode is set in `~/.codex/config.toml`
 as `sandbox_mode = "danger-full-access"`; it is not overridable per call.
 
-## The BRIS Pipeline
+## The BRIS v1.3 Pipeline
 
 ```text
-0A. Seed Framing
-1.  Question-driven Literature Map
-0B. Problem Selection
-2.  Task Ontology / Data Audit
-3.  Baseline Ceiling / Headroom Audit
-4.  Hypothesis-Mechanism-Benchmark-Control Matrix
-5.  Null-result Contract
-6.  Progressive Component Ladder
-7.  Minimal Diagnostic Experiment Design
-7.5 Plan-Code Consistency Audit
-8.  Tiny Run / Sanity Run
-8.5 Tiny Run Audit
-9.  Result Interpretation Loop
-10. Re-read Literature After Early Results
-11. Scale-up Experiment
-12. Result-to-Claim Construction
-13. Tie / Negative Result Strategy
-14. Reviewer Red-team
-15. Human Decision / Next Research Loop
+Discovery   → 0   Mode & Risk Routing
+              1   Seed Framing
+              2   Question-driven Literature Map        (loop)
+              2.5 Problem Reframing Loop
+              3   Problem Taste / Selection
+
+Grounding   → 4   Assumption Ledger
+              5   Abstract Task / Mechanism Framing
+              6   Artifact-triggered Audit              (only when artifact exists)
+              7   Baseline Ceiling / Headroom Audit
+
+Innovation  → 8   Mechanism Invention Loop              (Codex collaborative)
+              9   Analogy / Cross-pollination Loop      (Codex collaborative)
+              10  Algorithm Sketch Tournament           (Codex collaborative; adversarial on adjudication)
+              18.5 Failure-to-Innovation Loop           (Codex collaborative)
+
+Validation  → 11  Hypothesis-Mechanism-Benchmark-Control Matrix
+              12  Null-result Contract
+              13  Progressive Component / Minimal Mechanism Bundle
+              14  Algorithmic Formalization
+              15  Plan-Code Consistency Loop            (audit → fix → re-audit)
+              16  Cheapest Valid Diagnostic
+              17  Diagnostic Run Audit
+              18  Result Interpretation Loop
+              19  Re-read Literature Loop
+              20  Scale-up Decision
+              21  Result-to-Claim Construction
+              22  Tie / Negative Result / Reframing Strategy
+              23  Reviewer Red-team Loop                (review → fix → re-review)
+              24  Paper Writing / Improvement Loop      (delegates to ARIS chain)
+              25  Human Decision / Next Loop
 ```
 
-Read `skills/shared-references/research-agent-pipeline.md` for stage responsibilities and
-hard gates. Read `skills/shared-references/research-harness-prompts.md` for the canonical
-per-stage prompt. Read `skills/shared-references/semantic-code-audit.md` before any
-plan-code review.
+Grounding (4–7) is *diagnostic support* for Innovation, not innovation itself. Innovation
+loops produce candidates; commitment gates pick what runs.
 
-## Hard Gates (always-on)
+Read `skills/shared-references/research-agent-pipeline.md` for stage responsibilities,
+four-spine framing, mode & risk routing rules, and hard gates G0–G19. Read
+`skills/shared-references/research-harness-prompts.md` for the canonical per-stage prompt.
+Read `skills/shared-references/innovation-loops.md` before invoking Stages 8/9/10/18.5.
+Read `skills/shared-references/semantic-code-audit.md` before any plan-code review (Stage
+15) or diagnostic-run audit (Stage 17).
+
+## Hard Gates (always-on, v1.3)
 
 These are enforced inside the skill bodies; they are not conditional on being called by
 `/research-pipeline`. A user invoking a skill standalone gets the same gates.
 
-Each gate parses the artifact's verdict line, not just file presence.
+Each gate parses the artifact's verdict line, not just file presence. Producers emit v1.3
+artifact names; consumers accept either v1.3 or v1.0 alias names (preferring v1.3).
 
-- No method design before `bris-research/TASK_ONTOLOGY.md`.
-- No proposed method run before `bris-research/BASELINE_CEILING.md`.
-- No experiment without an interpretable `bris-research/NULL_RESULT_CONTRACT.md`.
-- No full system before `bris-research/COMPONENT_LADDER.md`.
-- No GPU scale-up unless `bris-research/PLAN_CODE_AUDIT.md` verdict line is `MATCHES_PLAN`
-  or a scoped `PARTIAL_MISMATCH` whose missing pieces are irrelevant to this wave.
-  `CRITICAL_MISMATCH` blocks unconditionally. `ERROR` (Codex unavailable, audit could not
-  complete) is advisory at tiny / sanity run (proceed, surface reason) and blocks at
-  scale-up pending explicit human acknowledgement.
-- No full run unless `bris-research/TINY_RUN_AUDIT.md` verdict line is `PASS`.
-  `FIX_BEFORE_GPU` and `REDESIGN_EXPERIMENT` block — fix code or redesign and rerun
-  the tiny run before launching the full sweep.
-- After every experiment, update `bris-research/RESULT_INTERPRETATION.md`.
-- After tie or failure, write `bris-research/NEGATIVE_RESULT_STRATEGY.md`.
-- No paper claim before `bris-research/CLAIM_CONSTRUCTION.md`.
-- No "submission-ready" label until reviewer red-team
-  (`bris-research/RED_TEAM_REVIEW.md`), `bris-research/HUMAN_DECISION_NOTE.md`, and the
-  paper-writing audit verifier (`tools/verify_paper_audits.sh`) are all green.
+- **G0** — Mode & Risk Routing required at high-risk transitions; auto-stub for low-risk.
+- **G1** — Method commitment / official planning / GPU run requires `PROBLEM_SELECTION.md`.
+  Stages 8/9/10 brainstorming allowed in EXPLORATION/INNOVATION with candidates marked.
+- **G2** — Downstream "is/will/always" claims must trace to `ASSUMPTION_LEDGER.md` row, OR
+  demote to "assume/hypothesise", OR cite external evidence.
+- **G3** — Stage 11+ (commitment) requires `ABSTRACT_TASK_MECHANISM.md`.
+- **G4** — `ARTIFACT_AUDIT.md` only required after the data/env/benchmark/evaluator artifact
+  actually exists. Do NOT force the audit before then.
+- **G5** — "outperforms / beats / improves over" claims require `BASELINE_CEILING.md`,
+  unless mode = EXPLORATION AND no paper claim is being made.
+- **G6** — Method commitment requires ≥1 of `MECHANISM_IDEATION` / `ANALOGY_TRANSFER` /
+  `ALGORITHM_TOURNAMENT`. Exception: explicit single-method confirmatory mode.
+- **G7** — Result feeding paper claims requires `CONTROL_DESIGN.md`. No exception.
+- **G8** — Diagnostic / confirmatory experiments require `NULL_RESULT_CONTRACT.md`, unless
+  run is explicitly marked "exploratory probe" (no paper claim allowed).
+- **G9** — Official (full-system) run with new composed method requires
+  `COMPONENT_BUNDLE_LADDER.md` (single justified rung acceptable). Exception: baseline
+  reproduction or single-component runs with no new composed mechanism.
+- **G10** — Scale-up to official experiments requires `ALGORITHMIC_FORMALIZATION.md`,
+  unless mode = EXPLORATION AND no scale-up requested.
+- **G11** — `PLAN_CODE_AUDIT.md` verdict `CRITICAL_MISMATCH` blocks scale-up unconditionally.
+  Loop fix → re-audit until `MATCHES_PLAN` or scoped `PARTIAL_MISMATCH`. `ERROR` advisory
+  at diagnostic stage, blocks at scale-up pending human acknowledgement.
+- **G12** — Diagnostic run failure that violated mechanism preconditions does NOT kill the
+  mechanism; require diagnostic redesign to a regime where the mechanism could manifest.
+- **G13** — Test set isolation: no tuning / selection on test set. No exception.
+- **G14** — `NULL_RESULT_CONTRACT`-triggered tie/failure cannot have positive framing in
+  `RESULT_INTERPRETATION` / `CLAIM_CONSTRUCTION`. No exception.
+- **G15** — Scale-up in mode = COMMITMENT OR risk ≥ 4 requires `HUMAN_DECISION_NOTE.md`
+  before `SCALEUP_DECISION = PROCEED`. No exception.
+- **G16** — Stage 24 (paper writing) requires `CLAIM_CONSTRUCTION.md`. No exception.
+- **G17** — Post-hoc reframings must be labelled "exploratory finding, not pre-planned
+  hypothesis" in `CLAIM_CONSTRUCTION.md` and the paper. No exception.
+- **G18** — `/paper-writing` inline guard: refuse without `CLAIM_CONSTRUCTION.md`. No exception.
+- **G19** — Scale-up (Stage 20), paper writing (Stage 24), and any public-release transition
+  require `HUMAN_DECISION_NOTE.md`. No exception.
+
+Full canonical text in `skills/shared-references/research-agent-pipeline.md` §6. v1.0
+gates "tiny run before scale-up always" and "data audit before any other stage" are
+intentionally **removed** in v1.3, replaced by G11/G12 (regime-aware) and G4 (artifact-triggered).
 
 ## Workflow Index
 
 ### Full Pipeline
 
 ```
-/research-pipeline "direction" → 0A → 1 → 0B → 2 → 3 → 4–7 → 7.5 → 8–8.5 → 9–11 → 12–13 → 14 → 15
+/research-pipeline "input" → Stage 0 routing → minimum stages needed for the inferred mode/risk
 ```
 
-`/research-pipeline` initializes `bris-research/` and walks every stage. It calls into
-ARIS-derived sub-skills, each of which enforces its own BRIS gate even when invoked
-directly.
+`/research-pipeline` first classifies the user's input shape into one of 7 routing
+categories (broad area / concrete idea / concrete data / new method / official experiments
+/ running / results-failed) and writes `MODE_ROUTING.md`. It then routes through only the
+stages relevant to that input shape — it does **not** force a linear walk through all 26
+stages. Sub-skills enforce their own v1.3 gates even when invoked directly.
+
+### 7 routing categories (Stage 0 input classification)
+
+| Input shape | Suggested mode | Initial risk | First stages |
+|---|---|---|---|
+| Broad area | EXPLORATION | 1–2 | 1 → 2 → 2.5 → 3 |
+| Concrete idea, no artifact | INNOVATION | 2–3 | 4 → 5 → 7 → 8/9/10 |
+| Concrete data / env / sim / reward in hand | INNOVATION/COMMITMENT | 2–4 | 6 → 7 → 11+ |
+| Designing new method | INNOVATION | 2–3 | 4 → 5 → 8 → 9 → 10 |
+| Implementing official experiments | COMMITMENT | 4 | 11 → 12 → 13 → 14 → 15 → 16 |
+| Running experiments | COMMITMENT | 3–4 | 16 → 17 → 18 |
+| Results failed / surprised | INNOVATION | 2–3 | 18 → 18.5 → 19 → (back to 8 or 11) |
 
 ### Individual Workflows
 
 | Workflow | Invoke | Input | Output | When to use |
 |----------|--------|-------|--------|-------------|
-| Stages 0A–0B: Discovery | `/idea-discovery "direction"` | research direction | SEED_FRAMING.md, LITERATURE_MAP.md, PROBLEM_SELECTION.md, IDEA_REPORT.md | Frame problem and pick candidate |
-| Stages 2–7: Plan | `/research-refine` then `/experiment-plan` | problem + rough method | TASK_ONTOLOGY, BASELINE_CEILING, CONTROL_DESIGN, NULL_RESULT_CONTRACT, COMPONENT_LADDER, DIAGNOSTIC_EXPERIMENT_PLAN, FINAL_PROPOSAL.md, EXPERIMENT_PLAN.md | Turn idea into a diagnosable experiment design |
-| Stage 7.5: Plan-Code Audit | `/experiment-bridge` | EXPERIMENT_PLAN.md | running code + PLAN_CODE_AUDIT.md (verdict line) | Implement and verify code matches plan |
-| Stages 8–8.5: Tiny + Audit | `/run-experiment "tiny diagnostic"` | sanity command | TINY_RUN_REPORT.md, TINY_RUN_AUDIT.md (verdict line) | Tiny run before scaling |
-| Stage 11: Scale | `/experiment-queue` or `/run-experiment` | manifest | LOGS/, EXPERIMENT_TRACKER.md | Full sweep after tiny run passes |
-| Stages 9, 12–13: Interpret + Claim | `/analyze-results` then `/result-to-claim` | logs + results | RESULT_INTERPRETATION.md, CLAIM_CONSTRUCTION.md, NEGATIVE_RESULT_STRATEGY.md, HUMAN_DECISION_NOTE.md | Decide what claim the data supports |
-| Stage 14: Red-team | `/auto-review-loop` | project state | RED_TEAM_REVIEW.md, AUTO_REVIEW.md | Final adversarial review before paper |
-| Paper writing | `/paper-writing "NARRATIVE_REPORT.md"` | narrative report | paper/, PAPER_CLAIM_AUDIT, CITATION_AUDIT | Draft paper after CLAIM_CONSTRUCTION + RED_TEAM_REVIEW exist |
+| Stages 1–3: Discovery | `/idea-discovery "direction"` | research direction | SEED_FRAMING.md, LITERATURE_MAP.md, PROBLEM_REFRAMING.md, PROBLEM_SELECTION.md | Frame problem and pick candidate |
+| Stages 4–7 + 8–10: Grounding + Innovation | `/research-refine` then `/experiment-plan` | problem + rough method | ASSUMPTION_LEDGER, ABSTRACT_TASK_MECHANISM, BASELINE_CEILING, MECHANISM_IDEATION, ANALOGY_TRANSFER, ALGORITHM_TOURNAMENT, FINAL_PROPOSAL.md, EXPERIMENT_PLAN.md | Turn idea into diagnosable design with innovation candidates |
+| Stages 11–15: Validation prerequisites | continued in `/experiment-plan` + `/experiment-bridge` | proposal + plan | CONTROL_DESIGN, NULL_RESULT_CONTRACT, COMPONENT_BUNDLE_LADDER, ALGORITHMIC_FORMALIZATION, PLAN_CODE_AUDIT.md (verdict line) | Implement and verify code matches v1.3 contract |
+| Stages 16–17: Diagnostic + Audit | `/run-experiment "diagnostic command"` | diagnostic command | DIAGNOSTIC_EXPERIMENT_PLAN, DIAGNOSTIC_RUN_REPORT, DIAGNOSTIC_RUN_AUDIT.md (verdict line) | Cheapest valid diagnostic before scale-up |
+| Stage 20: Scale | `/experiment-queue` or `/run-experiment` | manifest | LOGS/, EXPERIMENT_TRACKER.md, SCALEUP_DECISION.md | Full sweep after diagnostic passes + HUMAN_DECISION_NOTE |
+| Stages 18, 21–22: Interpret + Claim | `/analyze-results` then `/result-to-claim` | logs + results | RESULT_INTERPRETATION.md, CLAIM_CONSTRUCTION.md, NEGATIVE_RESULT_STRATEGY.md, HUMAN_DECISION_NOTE.md | Decide what claim the data supports |
+| Stage 23: Red-team Loop | `/auto-review-loop` | project state | RED_TEAM_REVIEW.md, AUTO_REVIEW.md | Iterative adversarial review before paper |
+| Stage 24: Paper writing | `/paper-writing "NARRATIVE_REPORT.md"` | narrative report | paper/, PAPER_IMPROVEMENT_LOG.md, PAPER_CLAIM_AUDIT, CITATION_AUDIT | Draft paper after CLAIM_CONSTRUCTION + RED_TEAM_REVIEW exist (G16, G18) |
 | Rebuttal (W4) | `/rebuttal "paper/ + reviews"` | paper + reviews | PASTE_READY.txt | Reviews received |
 
 ### Standalone Skills
@@ -148,40 +203,64 @@ directly.
 | `/analyze-results` | Statistics + comparison |
 | `/ablation-planner` | Reviewer-perspective ablations |
 
-## BRIS Artifact Contracts
+## BRIS v1.3 Artifact Contracts
 
 Skills communicate through plain-text files under `bris-research/` (BRIS-specific) and
-`refine-logs/` / `paper/` / `review-stage/` (inherited from ARIS).
+`refine-logs/` / `paper/` / `review-stage/` (inherited from ARIS). v1.3 producers emit
+v1.3 names; consumers accept the v1.0 alias for one major version (preferring v1.3 if
+both exist).
 
-| Artifact | Created by | Consumed by |
-|----------|-----------|-------------|
-| `bris-research/SEED_FRAMING.md` | research-pipeline / research-lit | idea-discovery, research-refine |
-| `bris-research/LITERATURE_MAP.md` | research-lit, research-pipeline | idea-discovery, research-refine |
-| `bris-research/PROBLEM_SELECTION.md` | idea-discovery, research-pipeline | research-refine, experiment-plan |
-| `bris-research/TASK_ONTOLOGY.md` | research-refine, experiment-plan | experiment-bridge, run-experiment |
-| `bris-research/BASELINE_CEILING.md` | research-refine, experiment-plan | experiment-bridge, result-to-claim |
-| `bris-research/CONTROL_DESIGN.md` | research-refine, experiment-plan | experiment-bridge, experiment-queue |
-| `bris-research/NULL_RESULT_CONTRACT.md` | research-refine, experiment-plan | experiment-bridge, run-experiment |
-| `bris-research/COMPONENT_LADDER.md` | research-refine, experiment-plan | experiment-bridge, run-experiment |
-| `bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md` | experiment-plan | experiment-bridge, run-experiment |
-| `bris-research/PLAN_CODE_AUDIT.md` | experiment-bridge (always) | run-experiment, experiment-queue |
-| `bris-research/TINY_RUN_REPORT.md` | run-experiment | tiny-run audit |
-| `bris-research/TINY_RUN_AUDIT.md` | run-experiment / monitor-experiment | experiment-queue |
-| `bris-research/RESULT_INTERPRETATION.md` | analyze-results, monitor-experiment | result-to-claim |
-| `bris-research/SCALEUP_DECISION.md` | research-pipeline | experiment-queue |
-| `bris-research/CLAIM_CONSTRUCTION.md` | result-to-claim | paper-plan, paper-write, paper-writing |
-| `bris-research/NEGATIVE_RESULT_STRATEGY.md` | result-to-claim | paper-plan, paper-write |
-| `bris-research/RED_TEAM_REVIEW.md` | auto-review-loop | paper-writing |
-| `bris-research/HUMAN_DECISION_NOTE.md` | result-to-claim, research-pipeline | paper-writing |
-| `EXPERIMENT_AUDIT.{md,json}` | experiment-audit | result-to-claim |
-| `PAPER_CLAIM_AUDIT.{md,json}` | paper-claim-audit | paper-writing Phase 5.5 gate |
-| `CITATION_AUDIT.{md,json}` | citation-audit | paper-writing Phase 5.8 gate |
-| `research-wiki/` | research-wiki | idea-creator, research-lit, result-to-claim |
+| v1.3 Artifact | v1.0 alias | Created by | Consumed by |
+|---|---|---|---|
+| `bris-research/MODE_ROUTING.md` | — | research-pipeline (Stage 0) | all downstream stages |
+| `bris-research/SEED_FRAMING.md` | (was 0A) | research-pipeline / research-lit | research-refine, experiment-plan |
+| `bris-research/LITERATURE_MAP.md` | — | research-lit, research-pipeline | idea-discovery, research-refine, Stage 19 re-read |
+| `bris-research/PROBLEM_REFRAMING.md` | — | research-pipeline (Stage 2.5) | research-pipeline (Stage 3) |
+| `bris-research/PROBLEM_SELECTION.md` | — | idea-discovery, research-pipeline | research-refine, experiment-plan |
+| `bris-research/ASSUMPTION_LEDGER.md` | — | research-pipeline (Stage 4) | downstream claim wording (G2), semantic-code-audit |
+| `bris-research/ABSTRACT_TASK_MECHANISM.md` | (part of TASK_ONTOLOGY split) | research-pipeline (Stage 5) | innovation loops, experiment-bridge, semantic-code-audit |
+| `bris-research/ARTIFACT_AUDIT.md` | (was TASK_ONTOLOGY's data block) | research-pipeline (Stage 6) | experiment-bridge, run-experiment |
+| `bris-research/BASELINE_CEILING.md` | — | research-refine, experiment-plan | experiment-bridge, result-to-claim |
+| `bris-research/MECHANISM_IDEATION.md` | — | research-pipeline (Stage 8, Codex collaborative) | Stages 9, 10, 11, 18.5 |
+| `bris-research/ANALOGY_TRANSFER.md` | — | research-pipeline (Stage 9) | Stages 10, 11 |
+| `bris-research/ALGORITHM_TOURNAMENT.md` | — | research-pipeline (Stage 10) | Stages 11, 14, 18.5 |
+| `bris-research/CONTROL_DESIGN.md` | — | research-refine, experiment-plan | experiment-bridge, experiment-queue |
+| `bris-research/NULL_RESULT_CONTRACT.md` | — | research-refine, experiment-plan | experiment-bridge, run-experiment |
+| `bris-research/COMPONENT_BUNDLE_LADDER.md` | `COMPONENT_LADDER.md` | research-refine, experiment-plan | experiment-bridge, run-experiment |
+| `bris-research/ALGORITHMIC_FORMALIZATION.md` | — | research-pipeline (Stage 14) | semantic-code-audit, experiment-bridge |
+| `bris-research/PLAN_CODE_AUDIT.md` (verdict line) | — | experiment-bridge (always) | run-experiment, experiment-queue |
+| `bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md` | `TINY_RUN_PLAN.md` | experiment-plan | experiment-bridge, run-experiment |
+| `bris-research/DIAGNOSTIC_RUN_REPORT.md` | `TINY_RUN_REPORT.md` | run-experiment | diagnostic-run audit |
+| `bris-research/DIAGNOSTIC_RUN_AUDIT.md` (verdict line) | `TINY_RUN_AUDIT.md` | run-experiment / monitor-experiment | experiment-queue, research-pipeline |
+| `bris-research/RESULT_INTERPRETATION.md` | — | analyze-results, monitor-experiment | result-to-claim, Stage 18.5 |
+| `bris-research/FAILURE_TO_INNOVATION.md` | — | research-pipeline (Stage 18.5) | Stages 19, 20 |
+| `bris-research/LITERATURE_REREAD_NOTE.md` | — | research-lit (Stage 19 loop) | research-pipeline |
+| `bris-research/SCALEUP_DECISION.md` (verdict line) | — | research-pipeline | experiment-queue |
+| `bris-research/CLAIM_CONSTRUCTION.md` | — | result-to-claim | paper-plan, paper-write, paper-writing (G16, G18) |
+| `bris-research/NEGATIVE_RESULT_STRATEGY.md` | — | result-to-claim | paper-plan, paper-write |
+| `bris-research/RED_TEAM_REVIEW.md` | — | auto-review-loop | paper-writing |
+| `bris-research/PAPER_IMPROVEMENT_LOG.md` | — | paper-writing chain | (audit log) |
+| `bris-research/HUMAN_DECISION_NOTE.md` (verdict line) | — | result-to-claim, research-pipeline | paper-writing, scale-up gate (G15, G19) |
+| `EXPERIMENT_AUDIT.{md,json}` | — | experiment-audit | result-to-claim |
+| `PAPER_CLAIM_AUDIT.{md,json}` | — | paper-claim-audit | paper-writing Phase 5.5 gate |
+| `CITATION_AUDIT.{md,json}` | — | citation-audit | paper-writing Phase 5.8 gate |
+| `research-wiki/` | — | research-wiki | idea-creator, research-lit, result-to-claim |
 
-Every audit verdict (`PLAN_CODE_AUDIT`, `TINY_RUN_AUDIT`, `result-to-claim` output) is a
-single canonical token on its own line — `MATCHES_PLAN | PARTIAL_MISMATCH | CRITICAL_MISMATCH | ERROR`,
-`PASS | FIX_BEFORE_GPU | REDESIGN_EXPERIMENT`, or `yes | partial | no`. Downstream skills
-parse the verdict, not the artifact's presence.
+Every audit verdict (`PLAN_CODE_AUDIT`, `DIAGNOSTIC_RUN_AUDIT`, `SCALEUP_DECISION`,
+`HUMAN_DECISION_NOTE`, `result-to-claim` output) is a single canonical token on its own
+line:
+
+- `PLAN_CODE_AUDIT.md`: `MATCHES_PLAN | PARTIAL_MISMATCH | CRITICAL_MISMATCH | ERROR`
+- `DIAGNOSTIC_RUN_AUDIT.md`: `PASS | FIX_BEFORE_GPU | REDESIGN_EXPERIMENT`
+- `SCALEUP_DECISION.md`: `PROCEED | HOLD | REDESIGN | HUMAN_DECISION_REQUIRED`
+- `HUMAN_DECISION_NOTE.md`: `PROCEED | NARROW | REDESIGN | RE-READ | CHANGE BENCHMARK | STOP | HUMAN_DECISION_REQUIRED`
+- `result-to-claim` output: `yes | partial | no`
+
+Downstream skills parse the verdict, not the artifact's presence.
+
+`TASK_ONTOLOGY.md` (v1.0) has no alias — its content maps to four v1.3 artifacts (Stages
+0/1/4/5) and must be split manually. See `skills/shared-references/research-agent-pipeline.md`
+migration appendix.
 
 ## Cross-Model Protocol
 
@@ -196,16 +275,38 @@ parse the verdict, not the artifact's presence.
 
 ## Claude vs Codex Debate Nodes
 
-The pipeline runs adversarial debate at:
+In v1.3, Codex switches mode based on stage. Innovation stages use **collaborative**
+mode (no veto, only adds candidates — see `skills/shared-references/innovation-loops.md`
+§7). Commitment / validation stages use **adversarial** mode.
+
+**Innovation nodes (Codex collaborative — no debate, additive contribution):**
 
 ```
-Problem Selection · Literature Map · Task Ontology · Baseline Ceiling ·
-Hypothesis-Mechanism-Benchmark-Control · Null-result Contract ·
-Component Ladder · Algorithm Design · Plan-Code Audit · Tiny Run Audit ·
-Result-to-Claim · Reviewer Red-team
+Stage 2.5  Problem Reframing Loop
+Stage 8    Mechanism Invention Loop
+Stage 9    Analogy / Cross-pollination Loop
+Stage 10   Algorithm Sketch Tournament  (collaborative on sketch quality;
+                                         adversarial only on tournament adjudication)
+Stage 18.5 Failure-to-Innovation Loop
 ```
 
-Protocol:
+**Adversarial debate nodes (Codex challenges; Claude defends or revises):**
+
+```
+Stage 3   Problem Taste / Selection
+Stage 6   Artifact-triggered Data / Environment / Benchmark Audit
+Stage 7   Baseline Ceiling / Headroom Audit
+Stage 11  Hypothesis-Mechanism-Benchmark-Control Matrix
+Stage 12  Null-result Contract
+Stage 13  Progressive Component / Minimal Mechanism Bundle
+Stage 14  Algorithmic Formalization
+Stage 15  Plan-Code Consistency Loop
+Stage 17  Diagnostic Run Audit / Cheapest Valid Diagnostic
+Stage 21  Result-to-Claim Construction
+Stage 23  Reviewer Red-team Loop
+```
+
+Protocol (adversarial mode only):
 
 ```
 Claude: propose → Codex: critique → Claude: revise → Codex: final objections →
@@ -214,13 +315,19 @@ Claude: consensus decision → Human: approve / redirect
 
 Cap at two rounds. End with one of `CONSENSUS | DISAGREEMENT | HUMAN_DECISION_REQUIRED`.
 
+Innovation mode follows a different protocol (see `innovation-loops.md` §7.1):
+Codex appends candidates / blind spots / alternative framings to Claude's output. No
+veto. Convergence is gated to Stage 11 (HMBC), Stage 14 (Formalization), and Stage 15
+(Plan-Code Audit) — never inside an innovation loop.
+
 ## Shared References
 
 Read these before invoking review-related skills:
 
-- `skills/shared-references/research-agent-pipeline.md` — 0A–15 stage map and hard gates
-- `skills/shared-references/research-harness-prompts.md` — per-stage canonical prompt
-- `skills/shared-references/semantic-code-audit.md` — Codex semantic audit protocol
+- `skills/shared-references/research-agent-pipeline.md` — v1.3 canonical 0–25 stage map, four-spine framing, mode & risk routing rules, 19 hard gates G0–G19, v1.0 → v1.3 migration appendix
+- `skills/shared-references/research-harness-prompts.md` — per-stage canonical prompt (v1.3 stages 0–25)
+- `skills/shared-references/innovation-loops.md` — Stages 8/9/10/18.5 procedures + Collaborative Claude-Codex Innovation Mode
+- `skills/shared-references/semantic-code-audit.md` — Stage 15 Codex plan-code audit + Stage 17 diagnostic-run audit (v1.3 contract artifact set)
 - `skills/shared-references/reviewer-independence.md` — cross-model review rules
 - `skills/shared-references/reviewer-routing.md` — Codex / Oracle routing
 - `skills/shared-references/experiment-integrity.md` — prohibited fraud patterns

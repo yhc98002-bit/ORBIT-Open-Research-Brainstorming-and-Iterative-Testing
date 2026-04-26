@@ -4,6 +4,13 @@ description: 'Turn a vague research direction into a problem-anchored, elegant, 
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, mcp__codex__codex, mcp__codex__codex-reply
 ---
 
+> **BRIS v1.3 compatibility note:** This skill may contain legacy v1.0 artifact names
+> (e.g. `TASK_ONTOLOGY.md`, `COMPONENT_LADDER.md`, `TINY_RUN_AUDIT.md`). In BRIS v1.3,
+> canonical artifacts are defined in
+> [`skills/shared-references/research-agent-pipeline.md`](../shared-references/research-agent-pipeline.md);
+> the legacy names are aliases only and consumers parse either form. Full v1.3 vocabulary
+> propagation in this skill is deferred to a follow-on PR.
+
 # Research Refine: Problem-Anchored, Elegant, Frontier-Aware Plan Refinement
 
 Refine and concretize: **$ARGUMENTS**

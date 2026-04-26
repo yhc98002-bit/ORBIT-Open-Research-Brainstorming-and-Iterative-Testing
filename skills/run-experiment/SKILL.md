@@ -9,28 +9,45 @@ allowed-tools: Bash(*), Read, Grep, Glob, Edit, Write, Agent, Skill(serverless-m
 
 Deploy and run ML experiment: $ARGUMENTS
 
-## BRIS Run Gates
+## BRIS v1.3 Run Gates
 
 These gates are always-on. Load:
 
-- `shared-references/research-agent-pipeline.md`
-- `shared-references/semantic-code-audit.md`
+- `shared-references/research-agent-pipeline.md` — v1.3 stage map and hard gates G0–G19
+- `shared-references/semantic-code-audit.md` — Stage 17 diagnostic-run audit + G12 regime check
 
-Run `mkdir -p bris-research/`. Before launching anything broader than a tiny diagnostic
-run, verify:
+Run `mkdir -p bris-research/`. Before launching anything broader than a diagnostic /
+sanity run, verify:
 
 - `bris-research/PLAN_CODE_AUDIT.md` exists and its verdict line is `MATCHES_PLAN` or a
-  scoped `PARTIAL_MISMATCH` whose missing pieces are irrelevant to this run.
+  scoped `PARTIAL_MISMATCH` whose missing pieces are irrelevant to this run (G11).
   `CRITICAL_MISMATCH` blocks. `ERROR` (Codex unavailable, audit could not complete) is
-  **advisory at the tiny / sanity run stage**: surface the reason but proceed, because
-  the tiny run is cheap. Scale-up via `/experiment-queue` will re-check and require
-  explicit human acknowledgement before launching expensive runs.
-- `bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md` names the exact tiny run.
-- The first run is a sanity/tiny run unless the user explicitly overrides.
+  **advisory at the diagnostic / sanity run stage**: surface the reason but proceed,
+  because the diagnostic run is cheap. Scale-up via `/experiment-queue` will re-check and
+  require explicit human acknowledgement before launching expensive runs.
+- `bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md` (v1.0 alias accepted: `TINY_RUN_PLAN.md`)
+  names the exact diagnostic run.
+- The first run is a diagnostic / sanity run unless the user explicitly overrides.
 
-After the tiny run, write or update `bris-research/TINY_RUN_REPORT.md`. Always write
-`bris-research/TINY_RUN_AUDIT.md` with the verdict line `PASS`, `FIX_BEFORE_GPU`, or
-`REDESIGN_EXPERIMENT`. Do not proceed to full runs until the verdict is `PASS`.
+After the diagnostic run, write or update `bris-research/DIAGNOSTIC_RUN_REPORT.md`
+(v1.0 alias on read: `TINY_RUN_REPORT.md`). Always write `bris-research/DIAGNOSTIC_RUN_AUDIT.md`
+(v1.0 alias on read: `TINY_RUN_AUDIT.md`) with the verdict line `PASS`, `FIX_BEFORE_GPU`,
+or `REDESIGN_EXPERIMENT`. Do not proceed to full runs until the verdict is `PASS`.
+
+**G12 regime-aware failure interpretation (mandatory):** if the diagnostic run failed in
+a regime that violates the mechanism's necessary preconditions (e.g. scale-dependent
+emergent behaviour ablated by running at too small a scale, or a precondition from
+`ABSTRACT_TASK_MECHANISM.md` / `MECHANISM_IDEATION.md` that the diagnostic regime
+ablated), do NOT issue `REDESIGN_EXPERIMENT`. Instead, recommend redesigning the
+diagnostic to a regime where the mechanism could in principle manifest, and document
+the regime check explicitly in `DIAGNOSTIC_RUN_AUDIT.md`. If the regime check is
+unanswerable, return `ERROR` with reason `regime_check_unanswerable` and escalate to
+`HUMAN_DECISION_REQUIRED` rather than rejecting the mechanism. (See
+`shared-references/semantic-code-audit.md` §5.)
+
+**v1.0 alias note:** producers in v1.3 emit `DIAGNOSTIC_RUN_REPORT.md` and
+`DIAGNOSTIC_RUN_AUDIT.md`; consumers (`/experiment-queue`, `/research-pipeline`) accept
+either v1.3 or v1.0 alias names for one major version, preferring v1.3 if both exist.
 
 ## Workflow
 

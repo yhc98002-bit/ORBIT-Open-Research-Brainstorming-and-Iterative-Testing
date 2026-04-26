@@ -1,56 +1,127 @@
-# BRIS: Better Research in Sleep
+# BRIS — Better Research in Sleep
 
-BRIS 是基于 ARIS 的自动科研 skill 组。它保留 ARIS 的成熟基础设施，例如文献检索、idea 发现、实验部署、自动审稿、论文写作、claim audit 和 citation audit，但把科研流程重构为更严格的 0A-15 诊断式流水线。
+**v1.3 — research-methodology routing harness.** BRIS routes you through 26 stages organised
+into four spines (Discovery / Grounding / Innovation / Validation) by mode (EXPLORATION /
+INNOVATION / COMMITMENT) and risk score. It moves fast in exploration, slows down before
+commitment, encourages divergent mechanism invention before converging, and only enforces
+heavy gates before high-risk irreversible transitions. Built on ARIS execution skills —
+BRIS reuses them rather than reimplementing.
 
-核心目标：让 agent 不只是自动推进实验，而是像 junior research scientist 一样先定义问题、看数据、测 baseline ceiling、设计可诊断实验、审计代码是否忠实实现计划，再把结果约束成合理论文 claim。
+> 中文版 README 见 [README_CN.md](./README_CN.md)（v1.3 简明中文入口）。
 
-## 快速开始
+## What v1.3 Is
 
-在 Claude Code 中使用：
+v1.0 was a strict diagnostic harness with 16 forced stages (0A–15) that prevented bad
+experiments by forcing data audits, baseline ceilings, and tiny runs upfront. That worked
+for routine validation but it (a) blocked creative method invention behind upfront audits,
+(b) demanded a tiny run even when a tiny run could not falsify the central claim, and
+(c) required data audits before there was any data.
 
+v1.3 keeps the diagnostic discipline at commitment time and adds:
+
+- **mode & risk routing** — exploration vs. innovation vs. commitment, risk 1–5
+- **assumption ledger** as a first-class artifact
+- **artifact-triggered audits** (data audit fires only after the data exists)
+- **innovation loops** — divergent mechanism invention, analogy transfer, algorithm sketch
+  tournament, failure-to-innovation
+- **cheapest valid diagnostic** instead of "always tiny run"
+- **component / minimal mechanism bundle ladder** instead of "always one component at a time"
+- **plan-code consistency loop** and **reviewer red-team loop** — explicit audit → fix → re-audit
+- **Codex collaborative mode** during innovation; adversarial mode at commitment gates
+- explicit reuse of mature ARIS execution skills (`/auto-review-loop`, `/paper-writing`,
+  `/auto-paper-improvement-loop`, `/paper-claim-audit`, `/citation-audit`,
+  `/experiment-audit`, `/experiment-bridge`)
+
+## Four Spines
+
+BRIS organises the 26 stages into four spines. They are **not strictly sequential** — the
+orchestrator routes by mode and risk; many stages are loops; some stages skip in
+EXPLORATION mode and only fire before COMMITMENT.
+
+| Spine | Stages | Purpose |
+|---|---|---|
+| **Discovery** | 0, 1, 2, 2.5, 3 | Frame the problem and select a target. Routing, seed framing, literature mapping, problem reframing, problem selection. |
+| **Grounding** | 4, 5, 6, 7 | *Diagnostic support* for innovation, not innovation itself. Assumption ledger, abstract task / mechanism framing, artifact-triggered audit (only when data/env/benchmark exists), baseline ceiling. |
+| **Innovation** | 8, 9, 10, 18.5 | Divergent mechanism invention, analogy / cross-pollination, algorithm sketch tournament, failure-to-innovation. **Codex switches to collaborative mode here** — see `skills/shared-references/innovation-loops.md`. |
+| **Validation** | 11–25 | Hypothesis-mechanism-benchmark-control matrix, null-result contract, component bundle, formalization, plan-code audit, cheapest valid diagnostic, diagnostic run audit, result interpretation, scale-up, claim construction, tie / negative strategy, reviewer red-team, paper writing, human decision. |
+
+Grounding (4–7) is the calibration layer that makes Innovation actually diagnosable. It is
+*not* where new methods are invented; it is where assumptions, abstract task framing,
+available artifacts, and baseline headroom get pinned down so that Innovation produces
+candidates and Validation can tell whether they work.
+
+## Mode & Risk Routing
+
+The orchestrator's first action is to classify your input and write `MODE_ROUTING.md`.
+
+**Modes:**
+- `EXPLORATION` — broad area, unclear problem, no committed artifact. Move fast, low gate
+  intensity, candidates allowed everywhere, no paper claims yet.
+- `INNOVATION` — concrete problem, no committed method. Innovation loops fire (Stages 8/9/10);
+  Grounding (4–7) provides calibration without blocking ideation.
+- `COMMITMENT` — committed method, official experiments, scale-up, paper writing.
+  Full Validation Spine engaged with all hard gates active.
+
+**Risk score (1–5):** local/reversible (1–2) → non-trivial GPU (3) → official runs / paper
+claims (4) → public release / submission (5).
+
+Not every stage runs every time. The orchestrator runs the minimum stages needed to satisfy
+the hard gates that apply at your risk level. Full per-mode routing rules in
+`skills/shared-references/research-agent-pipeline.md`.
+
+## Quick Start
+
+In Claude Code (or another supported client):
+
+**Broad area (EXPLORATION mode):**
 ```text
-/research-pipeline "你的研究方向"
+/research-pipeline "Discrete Diffusion VLA post-training"
 ```
 
-如果已经有实验结果并准备写论文：
+BRIS routes through Discovery: seed framing → literature map → problem reframing → problem
+selection. No methods committed, no experiments run.
 
+**Concrete idea (INNOVATION mode):**
+```text
+/research-pipeline "problem | rough method idea"
+```
+
+BRIS routes through Grounding (assumption ledger, abstract task, baseline ceiling) and
+into Innovation Spine (mechanism invention, analogy transfer, algorithm sketch tournament).
+
+**Implementing official experiments (COMMITMENT mode):**
+```text
+/research-pipeline "refine-logs/EXPERIMENT_PLAN.md"
+```
+
+BRIS routes through Validation Spine: HMBC matrix, null-result contract, component bundle,
+formalization, plan-code audit, cheapest valid diagnostic.
+
+**From results to paper:**
 ```text
 /result-to-claim "main result on benchmark X with method Y"
 /paper-writing "NARRATIVE_REPORT.md" — venue: ICLR, assurance: submission
 ```
 
-> `/result-to-claim` 接受实验描述（不是路径）。它会自己去 `results/`、W&B、`EXPERIMENT_LOG.md`
-> 等位置取数据。skill argument 用一句话说明本轮要 judge 的 claim 即可。
+`/result-to-claim` accepts an experiment description (not a path); it reads from `results/`,
+W&B, `EXPERIMENT_LOG.md`, etc. The argument separator is em-dash `—`, not single `-`.
 
-如果只想跑某一段：
+## Install
 
-```text
-/research-lit "topic"
-/idea-discovery "topic"
-/research-refine "problem | rough method"
-/experiment-plan "refine-logs/FINAL_PROPOSAL.md"
-/experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"
-/run-experiment "tiny diagnostic run"
-/analyze-results "results/"
-/auto-review-loop "paper or project"
-```
-
-## 安装到项目
-
-推荐项目级安装，避免污染全局 skills：
+Project-level install (recommended; avoids polluting global skills):
 
 ```bash
 bash tools/install_aris.sh
 ```
 
-如果只想手动复制：
+Manual copy fallback:
 
 ```bash
 mkdir -p .claude/skills
 cp -r skills/* .claude/skills/
 ```
 
-Codex reviewer 需要安装 Codex CLI / MCP：
+Codex reviewer requires Codex CLI / MCP:
 
 ```bash
 npm install -g @openai/codex
@@ -58,7 +129,7 @@ codex setup
 claude mcp add codex -s user -- codex mcp-server
 ```
 
-BRIS 默认 Codex reviewer 配置：
+BRIS default Codex reviewer config:
 
 ```toml
 model = "gpt-5.5"
@@ -66,205 +137,185 @@ model_reasoning_effort = "xhigh"
 sandbox_mode = "danger-full-access"
 ```
 
-## 完整科研流水线
-
-BRIS 的主入口是 `/research-pipeline`。它按以下阶段推进：
+## v1.3 Pipeline at a Glance
 
 ```text
-0A. Seed Framing
-1. Question-driven Literature Map
-0B. Problem Taste / Problem Selection
-2. Task Ontology / Data Audit
-3. Baseline Ceiling / Headroom Audit
-4. Hypothesis-Mechanism-Benchmark-Control Matrix
-5. Null-result Contract
-6. Progressive Component Ladder
-7. Minimal Diagnostic Experiment Design
-7.5 Plan-Code Consistency Audit
-8. Tiny Run / Sanity Run
-8.5 Tiny Run Audit
-9. Result Interpretation Loop
-10. Re-read Literature After Early Results
-11. Scale-up Experiment
-12. Result-to-Claim Construction
-13. Tie / Negative Result Strategy
-14. Reviewer Red-team
-15. Human Decision / Next Research Loop
+Discovery   → 0  Mode & Risk Routing
+              1  Seed Framing
+              2  Question-driven Literature Map         (loop)
+              2.5 Problem Reframing Loop
+              3  Problem Taste / Selection
+
+Grounding   → 4  Assumption Ledger
+              5  Abstract Task / Mechanism Framing
+              6  Artifact-triggered Audit               (only when artifact exists)
+              7  Baseline Ceiling / Headroom Audit
+
+Innovation  → 8  Mechanism Invention Loop               (Codex collaborative)
+              9  Analogy / Cross-pollination Loop       (Codex collaborative)
+              10 Algorithm Sketch Tournament            (Codex collaborative)
+              18.5 Failure-to-Innovation Loop           (Codex collaborative; triggered after Stage 18)
+
+Validation  → 11 Hypothesis-Mechanism-Benchmark-Control Matrix
+              12 Null-result Contract
+              13 Progressive Component / Minimal Mechanism Bundle
+              14 Algorithmic Formalization
+              15 Plan-Code Consistency Loop             (audit → fix → re-audit)
+              16 Cheapest Valid Diagnostic
+              17 Diagnostic Run Audit
+              18 Result Interpretation Loop
+              19 Re-read Literature Loop
+              20 Scale-up Decision
+              21 Result-to-Claim Construction
+              22 Tie / Negative Result / Reframing Strategy
+              23 Reviewer Red-team Loop                 (review → fix → re-review)
+              24 Paper Writing / Improvement Loop       (delegates to ARIS chain)
+              25 Human Decision / Next Loop
 ```
 
-这不是直线流程。每次实验后都要解释结果，再决定下一步：
+Full canonical map with per-stage responsibilities, required artifacts, and verdict
+endings: `skills/shared-references/research-agent-pipeline.md`.
 
-```text
-读文献 -> 发现问题 -> 看数据 -> 测 baseline -> 设计机制
-   ^                                          |
-   |                                          v
-重新读文献 <- 解释结果 <- 小实验 <- 渐进加组件 <- 控制变量
-```
+## Hard Gates
 
-## 强制门禁
+v1.3 enforces 19 gates (G0–G19). They are verdict-line gates: each gate parses a single
+canonical token in the audit artifact, not file presence. Producers emit v1.3 artifact
+names; consumers accept either v1.0 or v1.3 names (preferring v1.3 if both exist).
 
-BRIS 的关键价值不是多跑实验，而是阻止错误实验被自动放大。
+A few highlights:
 
-必须遵守（每个门禁解析 artifact 的 verdict line，不只检查文件是否存在）：
+- **G6** — method commitment requires ≥1 of `MECHANISM_IDEATION` / `ANALOGY_TRANSFER` /
+  `ALGORITHM_TOURNAMENT` (no method commit without at least one innovation artifact)
+- **G8** — diagnostic / confirmatory experiments require `NULL_RESULT_CONTRACT.md`
+- **G11** — `PLAN_CODE_AUDIT.md` verdict `CRITICAL_MISMATCH` blocks scale-up unconditionally
+- **G12** — diagnostic run failure that violated the mechanism's necessary preconditions
+  does NOT kill the mechanism (replaces v1.0 "tiny-run failure → kill idea")
+- **G14** — no positive framing after `NULL_RESULT_CONTRACT`-triggered tie/failure
+- **G15 + G19** — scale-up, paper writing, public release require `HUMAN_DECISION_NOTE.md`
+- **G17** — post-hoc reframings must be labelled "exploratory finding, not pre-planned hypothesis"
 
-- 没有 `TASK_ONTOLOGY.md`，不得进入方法设计。
-- 没有 `BASELINE_CEILING.md`，不得跑 proposed method。
-- 没有可解释的 `NULL_RESULT_CONTRACT.md`，不得跑实验。
-- 没有 `COMPONENT_LADDER.md`，不得直接跑 full system。
-- `PLAN_CODE_AUDIT.md` verdict 必须是 `MATCHES_PLAN` 或 scoped `PARTIAL_MISMATCH` 才能 GPU
-  scale-up。`CRITICAL_MISMATCH` 一律阻止；`ERROR`（Codex 不可用、审计未完成）在 tiny run
-  阶段是 advisory，scale-up 阶段必须人类显式确认才能继续。
-- `TINY_RUN_AUDIT.md` verdict 必须是 `PASS` 才能 full run。`FIX_BEFORE_GPU` 和
-  `REDESIGN_EXPERIMENT` 都是阻塞态。
-- 每次实验后必须更新 `RESULT_INTERPRETATION.md`。
-- 打平或失败必须写 `NEGATIVE_RESULT_STRATEGY.md`，不能硬写成功故事。
-- 写论文前必须有 `CLAIM_CONSTRUCTION.md`、`HUMAN_DECISION_NOTE.md` 和 `RED_TEAM_REVIEW.md`
-  三个文件；如果是 tie / negative，还需要 `NEGATIVE_RESULT_STRATEGY.md`。
+Full canonical text: `skills/shared-references/research-agent-pipeline.md` §6.
 
-## 关键产物
+v1.0 gates "tiny run before scale-up always" and "data audit before any other stage" are
+intentionally **removed** in v1.3, replaced by G11/G12 (regime-aware) and G4
+(artifact-triggered).
 
-完整流程会在 `bris-research/` 下积累这些文件：
+## Innovation Loops
 
-```text
-SEED_FRAMING.md
-LITERATURE_MAP.md
-PROBLEM_SELECTION.md
-TASK_ONTOLOGY.md
-BASELINE_CEILING.md
-CONTROL_DESIGN.md
-NULL_RESULT_CONTRACT.md
-COMPONENT_LADDER.md
-DIAGNOSTIC_EXPERIMENT_PLAN.md
-PLAN_CODE_AUDIT.md
-TINY_RUN_REPORT.md
-TINY_RUN_AUDIT.md
-RESULT_INTERPRETATION.md
-LITERATURE_REREAD_NOTE.md
-SCALEUP_DECISION.md
-CLAIM_CONSTRUCTION.md
-NEGATIVE_RESULT_STRATEGY.md
-RED_TEAM_REVIEW.md
-HUMAN_DECISION_NOTE.md
-```
+Stages 8, 9, 10, 18.5, and 19 each delegate to a named loop in
+`skills/shared-references/innovation-loops.md`:
 
-同时继续兼容原 ARIS 产物：
+- **Loop A** — Mechanism Invention (5–10 candidates, no convergence inside the loop)
+- **Loop B** — Analogy / Cross-pollination (≥1 analogous solved problem per candidate)
+- **Loop C** — Algorithm Sketch Tournament (round-robin pairwise; keep alternates)
+- **Loop D** — Failure-to-Innovation (revive alternates after a failed run)
+- **Loop E** — Re-read Literature (targeted question-driven queries)
 
-```text
-idea-stage/IDEA_REPORT.md
-idea-stage/IDEA_CANDIDATES.md
-refine-logs/FINAL_PROPOSAL.md
-refine-logs/EXPERIMENT_PLAN.md
-refine-logs/EXPERIMENT_TRACKER.md
-review-stage/AUTO_REVIEW.md
-NARRATIVE_REPORT.md
-paper/
-```
+Plus the **Collaborative Claude-Codex Innovation Mode** spec: during innovation loops
+Codex switches to no-veto, add-only mode (so it expands the candidate space rather than
+prunes it). Codex switches back to adversarial mode at commitment gates.
 
-## Claude vs Codex 辩论
+## Common Workflows
 
-BRIS 在关键节点使用 Claude vs Codex 多轮辩论，避免单一模型收敛到局部最优。
-
-默认模式：
-
-```text
-Claude: propose
-Codex: critique
-Claude: revise
-Codex: final objections
-Claude: consensus decision
-Human: approve / redirect
-```
-
-每个节点最多两轮，输出必须是：
-
-```text
-CONSENSUS
-DISAGREEMENT
-HUMAN_DECISION_REQUIRED
-```
-
-Codex 不只做代码风格审查。关键脚本必须经过 semantic implementation audit，检查代码是否真的实现了自然语言实验计划、baseline、control、ablation、dataset split、metric 和 component ladder。审计的输出 verdict（`MATCHES_PLAN | PARTIAL_MISMATCH | CRITICAL_MISMATCH | ERROR`）和后续门禁的解析规则见 `skills/shared-references/semantic-code-audit.md` 与 `skills/shared-references/research-agent-pipeline.md` 的 Hard Gates 段落。
-
-## 常用工作流
-
-### 1. 从领域词开始
+### From a domain word
 
 ```text
 /research-pipeline "Discrete Diffusion VLA post-training"
 ```
 
-BRIS 会先做 seed framing 和 literature map，不会直接生成方法。
+Discovery routes only. No methods, no experiments.
 
-### 2. 已经有 idea，想打磨成实验计划
+### From a refined idea to an experiment plan
 
 ```text
 /research-refine "problem | rough method"
 /experiment-plan "refine-logs/FINAL_PROPOSAL.md"
 ```
 
-在 BRIS 模式下，`experiment-plan` 会补齐 task ontology、baseline ceiling、control design、null-result contract、component ladder 和 diagnostic experiment plan。
+`/experiment-plan` (in v1.3 mode) writes assumption ledger, abstract task, baseline
+ceiling, control design, null-result contract, component bundle, and diagnostic plan.
 
-### 3. 从计划到代码和小跑
+### From plan to running diagnostic
 
 ```text
 /experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"
-/run-experiment "tiny diagnostic run"
+/run-experiment "diagnostic command"
 /monitor-experiment "run id or server"
 ```
 
-全量实验前必须满足 verdict-line 条件：
-- `PLAN_CODE_AUDIT.md` verdict 是 `MATCHES_PLAN` 或 scoped `PARTIAL_MISMATCH`
-  （`CRITICAL_MISMATCH` 阻塞，`ERROR` 在 scale-up 阶段需要人类显式确认）；
-- `TINY_RUN_AUDIT.md` verdict 是 `PASS`（`FIX_BEFORE_GPU` / `REDESIGN_EXPERIMENT` 阻塞）。
+Before scale-up: `PLAN_CODE_AUDIT.md` must be `MATCHES_PLAN` or scoped `PARTIAL_MISMATCH`,
+`DIAGNOSTIC_RUN_AUDIT.md` must be `PASS` (or `TINY_RUN_AUDIT.md` if v1.0 alias).
 
-### 4. 结果解释和 claim 构造
+### From results to claims
 
 ```text
 /analyze-results "results/"
 /result-to-claim "main result on benchmark X with method Y"
 ```
 
-BRIS 会判断结果支持什么、不支持什么、是否需要降级 claim，失败时是否能转成 negative result、benchmark diagnosis 或 failure taxonomy。
-
-### 5. 论文写作
+### Paper writing (delegates to ARIS chain)
 
 ```text
 /paper-writing "NARRATIVE_REPORT.md" — venue: ICLR, assurance: submission
 ```
 
-> 参数分隔符是 em-dash `—`，不是单个 `-`。BRIS 沿用 ARIS 的约定，所有 override
-> （venue、effort、illustration、reviewer 等）都跟在 `—` 后面。
+Argument separator is em-dash `—`, not single `-`. ARIS chain remains intact:
+`/paper-plan`, `/paper-figure`, `/figure-spec` or `/paper-illustration`, `/paper-write`,
+`/paper-compile`, `/auto-paper-improvement-loop`, `/paper-claim-audit`, `/citation-audit`.
 
-原 ARIS 论文链条仍然保留：
+BRIS additional requirement: `CLAIM_CONSTRUCTION.md` must exist before `/paper-writing`
+will start (G16 + G18).
 
-```text
-/paper-plan
-/paper-figure
-/figure-spec 或 /paper-illustration
-/paper-write
-/paper-compile
-/auto-paper-improvement-loop
-/paper-claim-audit
-/citation-audit
-```
+## Important Files
 
-BRIS 额外要求：论文写作前必须先有 claim construction 和 reviewer red-team，不能把失败结果包装成成功故事。
+- `skills/research-pipeline/SKILL.md` — v1.3 routing orchestrator
+- `skills/shared-references/research-agent-pipeline.md` — canonical 0–25 stage map + 19 hard gates
+- `skills/shared-references/research-harness-prompts.md` — per-stage canonical prompts
+- `skills/shared-references/innovation-loops.md` — Stages 8/9/10/18.5 procedures + Codex collaborative mode
+- `skills/shared-references/semantic-code-audit.md` — Stage 15 plan-code audit + Stage 17 diagnostic-run audit
+- `skills/shared-references/reviewer-routing.md` — Codex / Oracle reviewer defaults
+- `AGENT_GUIDE.md` — agent-facing routing index
 
-## 重要文件
-
-- `skills/research-pipeline/SKILL.md`：BRIS 总控入口。
-- `skills/shared-references/research-agent-pipeline.md`：0A-15 流程和硬门禁。
-- `skills/shared-references/research-harness-prompts.md`：每阶段 harness prompt。
-- `skills/shared-references/semantic-code-audit.md`：Codex 语义代码审查协议。
-- `skills/shared-references/reviewer-routing.md`：reviewer 默认路由。
-
-## 设计原则
+## Design Principles
 
 ```text
-大胆想，谨慎跑。
-先诊断，再放大。
-先 baseline，再 method。
-先控制变量，再 claim。
-先小实验，再 full run。
-代码能跑不是成功，代码忠实实现实验计划才是成功。
+Move fast in exploration. Slow down before commitment.
+Bold ideas are allowed. Undiagnosable experiments are not.
+Failure is allowed. Failure without interpretation is not.
+Runnable code is not success. Code that faithfully implements the v1.3 contract is.
+Innovation loops produce candidates. Commitment gates pick what runs.
+Reuse ARIS execution skills. Do not reimplement them.
+Preserve human judgment at high-risk irreversible transitions.
 ```
+
+## Migration from v1.0
+
+Existing user projects with v1.0 artifact names continue to work — consumers accept either
+v1.0 or v1.3 names for one major version (preferring v1.3 if both exist):
+
+| v1.0 name | v1.3 canonical |
+|---|---|
+| `COMPONENT_LADDER.md` | `COMPONENT_BUNDLE_LADDER.md` |
+| `TINY_RUN_PLAN.md` | `DIAGNOSTIC_EXPERIMENT_PLAN.md` |
+| `TINY_RUN_REPORT.md` | `DIAGNOSTIC_RUN_REPORT.md` |
+| `TINY_RUN_AUDIT.md` | `DIAGNOSTIC_RUN_AUDIT.md` |
+
+`TASK_ONTOLOGY.md` (v1.0) has no alias — its content maps to four v1.3 artifacts and must
+be split manually:
+
+- mode flag → `MODE_ROUTING.md`
+- framing prose → `SEED_FRAMING.md`
+- inputs/assumptions block → `ASSUMPTION_LEDGER.md`
+- task/mechanism block → `ABSTRACT_TASK_MECHANISM.md`
+
+Full migration appendix: `skills/shared-references/research-agent-pipeline.md` (v1.0 → v1.3).
+
+Removal of v1.0 aliases is deferred to v2.0.
+
+## License
+
+See [LICENSE](./LICENSE).
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) ([中文版](./CONTRIBUTING_CN.md)).

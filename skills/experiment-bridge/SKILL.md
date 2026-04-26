@@ -37,14 +37,19 @@ This gate is always-on. Before deployment, load:
 - `shared-references/semantic-code-audit.md`
 - `shared-references/reviewer-independence.md`
 
-Run `mkdir -p bris-research/`. Verify these BRIS plan artifacts exist or are explicitly
-marked `NOT_APPLICABLE` with rationale:
+Run `mkdir -p bris-research/`. Verify these BRIS v1.3 plan artifacts exist or are
+explicitly marked `NOT_APPLICABLE` with rationale (consumers accept v1.0 alias names for
+one major version, preferring v1.3 if both exist — see footer):
 
+- `bris-research/ASSUMPTION_LEDGER.md`            *(v1.3, no alias)*
+- `bris-research/ABSTRACT_TASK_MECHANISM.md`      *(v1.3, no alias)*
+- `bris-research/ALGORITHM_TOURNAMENT.md`         *(v1.3 — which sketch / WINNER_ID is being implemented?)*
 - `bris-research/BASELINE_CEILING.md`
 - `bris-research/CONTROL_DESIGN.md`
 - `bris-research/NULL_RESULT_CONTRACT.md`
-- `bris-research/COMPONENT_LADDER.md`
-- `bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md`
+- `bris-research/COMPONENT_BUNDLE_LADDER.md`      *(v1.0 alias accepted: `COMPONENT_LADDER.md`)*
+- `bris-research/ALGORITHMIC_FORMALIZATION.md`    *(v1.3, no alias)*
+- `bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md`   *(v1.0 alias accepted: `TINY_RUN_PLAN.md`)*
 
 The implementation review is semantic. It must check whether the code implements the intended
 algorithm, baselines, controls, ablations, datasets, splits, metrics, regimes, and config
@@ -141,18 +146,24 @@ mcp__codex__codex:
   prompt: |
     Review the following experiment implementation for semantic plan-code fidelity.
 
-    Read these files directly when available:
+    Read these files directly when available (v1.3 contract; consumers accept v1.0 alias):
     - refine-logs/FINAL_PROPOSAL.md
     - refine-logs/EXPERIMENT_PLAN.md
+    - bris-research/ASSUMPTION_LEDGER.md
+    - bris-research/ABSTRACT_TASK_MECHANISM.md
+    - bris-research/ALGORITHM_TOURNAMENT.md           (which sketch is being implemented?)
     - bris-research/BASELINE_CEILING.md
     - bris-research/CONTROL_DESIGN.md
     - bris-research/NULL_RESULT_CONTRACT.md
-    - bris-research/COMPONENT_LADDER.md
-    - bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md
+    - bris-research/COMPONENT_BUNDLE_LADDER.md        (or COMPONENT_LADDER.md if v1.0 project)
+    - bris-research/ALGORITHMIC_FORMALIZATION.md
+    - bris-research/DIAGNOSTIC_EXPERIMENT_PLAN.md     (or TINY_RUN_PLAN.md if v1.0 project)
     - [training scripts]
     - [evaluation scripts]
     - [config files]
     - [launch scripts]
+    - [data loaders]
+    - [result parsers]
 
     Check for:
     1. Are the correct baselines implemented?
@@ -375,11 +386,18 @@ Ready for Workflow 2:
 Or use /research-pipeline for the full end-to-end flow (includes this bridge).
 ```
 
-## Stage-Chain Integration (Stage 2 Contract)
+## Stage-Chain Integration (BRIS v1.3 Stage 15 Contract)
+
+This skill implements BRIS v1.3 Stage 15 (Plan-Code Consistency Loop). It is an **explicit
+loop**: audit → fix → re-audit until verdict is `MATCHES_PLAN` or scoped `PARTIAL_MISMATCH`
+with documented justification. (See `shared-references/research-agent-pipeline.md` Stage 15
+and `shared-references/semantic-code-audit.md`.)
 
 For convergence-first pipeline runs, this skill must produce and maintain:
 
-- `REVIEW/CODE_REVIEW.md` (required)
+- `bris-research/PLAN_CODE_AUDIT.md` (required, with verdict line on its own line:
+  `MATCHES_PLAN | PARTIAL_MISMATCH | CRITICAL_MISMATCH | ERROR`)
+- `REVIEW/CODE_REVIEW.md` (legacy convergence-first artifact, optional)
 - update/append `REVIEW/CONSISTENCY_REPORT.md` when implementation-plan drift is found
 
 Required cross-check prompt pattern (before large-scale deployment):

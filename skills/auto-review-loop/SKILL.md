@@ -32,8 +32,10 @@ Autonomously iterate: review → implement fixes → re-review, until the extern
 
 This gate is always-on. Before starting any review round, load:
 
-- `shared-references/research-agent-pipeline.md`
-- `shared-references/research-harness-prompts.md` section `14`
+- `shared-references/research-agent-pipeline.md` — v1.3 stage map and Stage 23 (Reviewer
+  Red-team Loop) responsibilities
+- `shared-references/research-harness-prompts.md` — section `23` "Reviewer Red-team Loop"
+  (v1.3 numbering; this is the v1.0 §14 prompt as renumbered + loop semantics added)
 - `shared-references/reviewer-independence.md`
 
 `/auto-review-loop` is also the BRIS final reviewer red-team. It must attack problem
@@ -475,7 +477,13 @@ mcp__codex__codex-reply:
 
 After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save the trace following `shared-references/review-tracing.md`. Use `tools/save_trace.sh` or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
 
-## Stage-Chain Integration (Stage 4-5 Contract)
+## Stage-Chain Integration (BRIS v1.3 Stage 23 — Reviewer Red-team Loop)
+
+This skill implements BRIS v1.3 Stage 23 (Reviewer Red-team Loop). It is an **explicit
+loop**: review → fix → re-review until issues are addressed or explicitly accepted as
+residual risk. (See `shared-references/research-agent-pipeline.md` Stage 23 and
+`shared-references/research-harness-prompts.md` §23.) The loop output is
+`bris-research/RED_TEAM_REVIEW.md`.
 
 In convergence-first mode, each completed round should keep these stage artifacts current:
 
@@ -490,9 +498,12 @@ Given results + evaluation code:
 Check:
 1. Any metric computation errors?
 2. Any data leakage?
-3. Any unfair comparison?
+3. Any unfair comparison? (G13 test set isolation must hold)
 4. Any inconsistent experiment setting?
+5. Any positive framing violating G14 (NULL_RESULT_CONTRACT triggered tie/failure)?
+6. Any post-hoc reframing presented as pre-planned hypothesis (G17)?
 Return critical issues.
 ```
 
-If critical issues are detected, do not finalize the round as "ready"; route back to implementation/planning fixes.
+If critical issues are detected, do not finalize the round as "ready"; route back to
+implementation/planning fixes.

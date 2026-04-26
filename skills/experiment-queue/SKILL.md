@@ -9,28 +9,36 @@ allowed-tools: Bash(*), Read, Grep, Glob, Edit, Write, Agent, Skill(run-experime
 
 Orchestrate large batches of ML experiments on SSH remote GPU servers with proper state tracking, OOM retry, stale cleanup, and wave transitions.
 
-## BRIS Queue Gate
+## BRIS v1.3 Queue Gate
 
-This gate is always-on. This skill is for scale-up only. Before launching a large grid or
-multi-seed sweep, run `mkdir -p bris-research/` (if missing) and verify each of the
-following. Parse the verdict line of each audit, not just file presence:
+This gate is always-on. This skill is for scale-up only — Stage 20 in BRIS v1.3. Before
+launching a large grid or multi-seed sweep, run `mkdir -p bris-research/` (if missing)
+and verify each of the following. **Parse the verdict line of each audit, not just file
+presence.** v1.3 producers emit v1.3 names; consumers (this skill) accept either v1.3 or
+v1.0 alias names for one major version, preferring v1.3 if both exist.
 
 - `bris-research/PLAN_CODE_AUDIT.md` verdict line is `MATCHES_PLAN` or a scoped
-  `PARTIAL_MISMATCH` whose missing pieces are irrelevant to this scale-up wave.
-  `CRITICAL_MISMATCH` blocks unconditionally. `ERROR` (Codex unavailable, audit
-  could not complete) is a non-semantic failure: do **not** scale up automatically;
-  surface the reason code and require an explicit human acknowledgement before launch.
-- `bris-research/TINY_RUN_AUDIT.md` verdict line is `PASS`. `FIX_BEFORE_GPU` and
-  `REDESIGN_EXPERIMENT` block.
-- `bris-research/SCALEUP_DECISION.md` explicitly justifies scale-up.
-- `bris-research/RESULT_INTERPRETATION.md` explains why the next scaled experiment follows
-  from prior results.
-- The manifest includes baselines, controls, ablations, seeds, metrics, and splits required
-  by `bris-research/CONTROL_DESIGN.md`.
+  `PARTIAL_MISMATCH` whose missing pieces are irrelevant to this scale-up wave (G11).
+  `CRITICAL_MISMATCH` blocks unconditionally. `ERROR` (Codex unavailable, audit could
+  not complete) is a non-semantic failure: do **not** scale up automatically; surface
+  the reason code and require an explicit human acknowledgement before launch.
+- `bris-research/DIAGNOSTIC_RUN_AUDIT.md` verdict line is `PASS` (v1.0 alias on read:
+  `bris-research/TINY_RUN_AUDIT.md`). `FIX_BEFORE_GPU` and `REDESIGN_EXPERIMENT` block.
+- `bris-research/SCALEUP_DECISION.md` explicitly justifies scale-up. Verdict line:
+  `PROCEED | HOLD | REDESIGN | HUMAN_DECISION_REQUIRED`.
+- `bris-research/RESULT_INTERPRETATION.md` explains why the next scaled experiment
+  follows from prior results.
+- The manifest includes baselines, controls, ablations, seeds, metrics, and splits
+  required by `bris-research/CONTROL_DESIGN.md`.
+- For v1.3 mode = COMMITMENT or risk ≥ 4: `bris-research/HUMAN_DECISION_NOTE.md` exists
+  and ends with `PROCEED` (G15, G19).
+- For v1.3 new composed methods: `bris-research/COMPONENT_BUNDLE_LADDER.md` (v1.0 alias
+  on read: `COMPONENT_LADDER.md`) exists per G9.
+- For v1.3 official scale-up: `bris-research/ALGORITHMIC_FORMALIZATION.md` exists per G10.
 
 If any verdict is missing or blocking, stop and route back to `/experiment-bridge`
-(re-audit code), `/run-experiment` (re-run tiny diagnostic), or `/result-to-claim`
-(re-interpret) — whichever produced the failing artifact.
+(re-audit code, Stage 15 loop), `/run-experiment` (re-run diagnostic, Stage 17), or
+`/result-to-claim` (re-interpret, Stage 21) — whichever produced the failing artifact.
 
 ## When to Use This Skill
 

@@ -15,23 +15,37 @@ Experiments produce numbers; this gate decides what those numbers *mean*. Collec
 
 This gate is always-on. Before paper writing, load:
 
-- `shared-references/research-agent-pipeline.md`
-- `shared-references/research-harness-prompts.md` sections `12`, `13`, and `15`
+- `shared-references/research-agent-pipeline.md` — v1.3 stage map and hard gates G14, G16, G17, G18, G19
+- `shared-references/research-harness-prompts.md` sections `21`, `22`, and `25` (v1.3 numbering; old v1.0 sections `12`, `13`, `15` are mapped via the appendix)
 - `shared-references/reviewer-independence.md`
 
 Run `mkdir -p bris-research/`. Always write or update:
 
-- `bris-research/CLAIM_CONSTRUCTION.md`
+- `bris-research/CLAIM_CONSTRUCTION.md` — claim → evidence → control → scope → limitation
+  chain (Stage 21). Required by G16 and G18 before `/paper-writing`.
 - `bris-research/HUMAN_DECISION_NOTE.md` — short note summarizing what is believed, what
   evidence supports it, what remains uncertain, agent's recommendation, and ending with one
-  of `PROCEED / NARROW / REDESIGN / RE-READ / CHANGE BENCHMARK / STOP / HUMAN_DECISION_REQUIRED`
+  of `PROCEED / NARROW / REDESIGN / RE-READ / CHANGE BENCHMARK / STOP / HUMAN_DECISION_REQUIRED`.
+  Required by G15 and G19 before scale-up or paper writing.
 - `bris-research/NEGATIVE_RESULT_STRATEGY.md` if the method ties, fails, or only partially
-  supports the intended claim
+  supports the intended claim (Stage 22).
 
-Use the claim -> evidence -> control -> scope -> limitation chain. Downgrade claims when
-evidence is partial. If the result is negative, evaluate whether the contribution can become
-benchmark diagnosis, baseline ceiling analysis, failure taxonomy, negative result, regime map,
-evaluation protocol, task ontology contribution, or controlled reproduction.
+Use the claim → evidence → control → scope → limitation chain. Downgrade claims when
+evidence is partial. If the result is negative, evaluate whether the contribution can
+become benchmark diagnosis, baseline ceiling analysis, failure taxonomy, negative result,
+regime map, evaluation protocol, task ontology contribution, or controlled reproduction.
+
+**G14 inline check (mandatory):** if `bris-research/NULL_RESULT_CONTRACT.md` triggered a
+tie or failure outcome, **refuse to write positive framing** in `CLAIM_CONSTRUCTION.md`
+or `RESULT_INTERPRETATION.md`. Frame the result honestly per Stage 22 — invoke
+`NEGATIVE_RESULT_STRATEGY.md` instead of forcing a success story. No exception.
+
+**G17 inline check (mandatory):** if a result is being framed post-hoc as "what we
+predicted" — i.e., the current claim emerged from `bris-research/RESULT_INTERPRETATION.md`
+or `bris-research/FAILURE_TO_INNOVATION.md` rather than from a pre-registered hypothesis
+in `bris-research/CONTROL_DESIGN.md` — label it explicitly in `CLAIM_CONSTRUCTION.md` and
+in any downstream paper as **"exploratory finding, not pre-planned hypothesis."** Do NOT
+present post-hoc reframings as pre-planned hypotheses. No exception.
 
 ## When to Use
 

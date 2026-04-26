@@ -5,6 +5,13 @@ argument-hint: [server-alias or screen-name]
 allowed-tools: Bash(ssh *), Bash(echo *), Read, Write, Edit
 ---
 
+> **BRIS v1.3 compatibility note:** This skill may contain legacy v1.0 artifact names
+> (e.g. `TASK_ONTOLOGY.md`, `COMPONENT_LADDER.md`, `TINY_RUN_AUDIT.md`). In BRIS v1.3,
+> canonical artifacts are defined in
+> [`skills/shared-references/research-agent-pipeline.md`](../shared-references/research-agent-pipeline.md);
+> the legacy names are aliases only and consumers parse either form. Full v1.3 vocabulary
+> propagation in this skill is deferred to a follow-on PR.
+
 # Monitor Experiment Results
 
 Monitor: $ARGUMENTS

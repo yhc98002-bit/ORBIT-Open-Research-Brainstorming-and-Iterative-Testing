@@ -38,22 +38,37 @@ In this hybrid pack, the pipeline itself is unchanged, but `paper-plan` and `pap
 
 These preconditions are always-on. Before any phase below, load:
 
-- `shared-references/research-agent-pipeline.md`
-- `shared-references/research-harness-prompts.md` sections `12`, `13`, and `14`
+- `shared-references/research-agent-pipeline.md` — v1.3 hard gates G16, G17, G18, G19
+- `shared-references/research-harness-prompts.md` sections `21`, `22`, and `23` (v1.3
+  numbering; old v1.0 sections `12`, `13`, `14` are mapped via the appendix at the end of
+  that file)
 
-Run `mkdir -p bris-research/`. Verify these BRIS artifacts exist before drafting:
+Run `mkdir -p bris-research/`. Verify these BRIS v1.3 artifacts exist before drafting:
 
-- `bris-research/CLAIM_CONSTRUCTION.md`
+- `bris-research/CLAIM_CONSTRUCTION.md`  *(required by G16 + G18 — refuse start if absent)*
 - `bris-research/RED_TEAM_REVIEW.md`
-- `bris-research/HUMAN_DECISION_NOTE.md`
+- `bris-research/HUMAN_DECISION_NOTE.md`  *(required by G19 — paper writing is a high-risk transition)*
 
-If any of these is missing, stop and route the user back to `/result-to-claim` (writes
-`CLAIM_CONSTRUCTION.md` and `HUMAN_DECISION_NOTE.md`) and `/auto-review-loop` (writes
-`RED_TEAM_REVIEW.md`). Do not begin Phase 0 until they exist.
+**G16 + G18 inline guard (mandatory):** if `bris-research/CLAIM_CONSTRUCTION.md` is
+absent, **refuse to start** Phase 0. Print:
+
+```
+ERROR: G16/G18 violation — bris-research/CLAIM_CONSTRUCTION.md is required before
+/paper-writing will start. Route to /result-to-claim first.
+```
+
+and exit. No exception. This is the inline guard the v1.3 orchestrator depends on (see
+`skills/research-pipeline/SKILL.md` Stage 24).
+
+If any of the other artifacts (`RED_TEAM_REVIEW.md`, `HUMAN_DECISION_NOTE.md`) is missing,
+stop and route the user back to `/result-to-claim` (writes `CLAIM_CONSTRUCTION.md` and
+`HUMAN_DECISION_NOTE.md`) and `/auto-review-loop` (writes `RED_TEAM_REVIEW.md`). Do not
+begin Phase 0 until they exist.
 
 If the method tied, failed, or produced mixed results, also require
-`bris-research/NEGATIVE_RESULT_STRATEGY.md`. Do not write a success-story paper if the claim
-construction says only a scoped, diagnostic, or negative-result contribution is supported.
+`bris-research/NEGATIVE_RESULT_STRATEGY.md`. Do not write a success-story paper if the
+claim construction says only a scoped, diagnostic, or negative-result contribution is
+supported (G14, G17).
 
 Paper writing remains the inherited Workflow 3: `/paper-plan -> /paper-figure ->
 /paper-write -> /paper-compile -> /auto-paper-improvement-loop -> /paper-claim-audit ->
@@ -636,25 +651,41 @@ then /paper-writing for the final writing step.
 
 **Total: ~45-90 min** for a full paper from narrative report to polished PDF.
 
-## Stage-Chain Integration (Stage 6-7 Contract)
+## Stage-Chain Integration (BRIS v1.3 Stage 24 — Paper Writing / Improvement Loop)
+
+This skill implements BRIS v1.3 Stage 24. It is delegated by the orchestrator
+(`skills/research-pipeline/SKILL.md` Stage 24) and transitively invokes `/paper-plan`,
+`/paper-figure`, `/figure-spec` or `/paper-illustration`, `/paper-write`, `/paper-compile`,
+`/auto-paper-improvement-loop`, `/paper-claim-audit`, `/citation-audit`.
 
 This workflow must additionally emit (always, not only under `/research-pipeline`):
 
+- `bris-research/PAPER_IMPROVEMENT_LOG.md` — track all improvement-loop iterations
+  (round number, reviewer feedback, fix applied, audit verdicts)
 - `PAPER_DRAFT.md` — claim-oriented draft summary (in addition to `paper/` LaTeX sources)
 - `REVIEW/CLAIM_CHECK.md` — mandatory claim-to-evidence consistency report
 - `REVIEW/FINAL_CONSENSUS.md` — final debate/convergence verdict before freeze
 
-Mandatory claim check template:
+Mandatory claim check template (incorporates v1.3 G14, G17 enforcement):
 
 ```text
 Given:
 - PAPER_DRAFT
 - EXPERIMENT_RESULTS
+- bris-research/CLAIM_CONSTRUCTION.md
+- bris-research/NULL_RESULT_CONTRACT.md (if exists)
+- bris-research/NEGATIVE_RESULT_STRATEGY.md (if exists)
 Check:
-1. Are all claims supported?
+1. Are all claims supported by evidence cited in CLAIM_CONSTRUCTION (claim → evidence
+   → control → scope → limitation chain)?
 2. Any missing experiment?
 3. Any inconsistency between text and results?
+4. **G14:** if NULL_RESULT_CONTRACT triggered tie/failure, does the paper avoid positive
+   framing of those results?
+5. **G17:** are post-hoc reframings explicitly labelled "exploratory finding, not
+   pre-planned hypothesis" — both in the paper text and in CLAIM_CONSTRUCTION?
 Return issues.
 ```
 
-Do not label output as submission-ready when high-severity claim inconsistencies remain unresolved.
+Do not label output as submission-ready when high-severity claim inconsistencies remain
+unresolved.
