@@ -33,7 +33,9 @@ User input (PROBLEM + vague APPROACH)
   -> Phase 2 (Codex/GPT-5.5): Review for fidelity, specificity, contribution quality, and frontier leverage
   -> Phase 3 (Claude): Anchor check + simplicity check -> revise method -> rewrite full proposal
   -> Phase 4 (Codex, same thread): Re-evaluate revised proposal
-  -> Repeat Phase 3-4 until OVERALL SCORE >= 9 or MAX_ROUNDS reached
+  -> Repeat Phase 3-4 until OVERALL SCORE >= SCORE_THRESHOLD or MAX_ROUNDS reached
+     (SCORE_THRESHOLD and MAX_ROUNDS are derived from REVIEWER_DIFFICULTY:
+      medium → 9 / 5, hard / nightmare → 9.5 / 7)
   -> Phase 5: Save full history to refine-logs/
   -> Optional handoff: /experiment-plan for a detailed execution-ready experiment roadmap
 ```
@@ -41,8 +43,37 @@ User input (PROBLEM + vague APPROACH)
 ## Constants
 
 - **REVIEWER_MODEL = `gpt-5.5`** — Reviewer model used via Codex MCP.
-- **MAX_ROUNDS = 5** — Maximum review-revise rounds.
-- **SCORE_THRESHOLD = 9** — Minimum overall score to stop.
+- **REVIEWER_EFFORT = `xhigh`** — Codex `model_reasoning_effort` for the reviewer call.
+  Override with `— effort: <level>` (one of `low`, `medium`, `high`, `xhigh`, `max`
+  where `max` = `xhigh`). Subject to Codex MCP environment availability — if the
+  requested level is unavailable, Codex falls back to the next lower available level
+  and the fallback is logged in `STATE.notes`.
+- **VENUE = `""`** — Target venue name (e.g. `ICLR`, `NeurIPS`, `ICML`, `CVPR`, `ACL`,
+  `AAAI`, `ACM`, `IEEE_CONF`, `IEEE_JOURNAL`). When set, Phase 2 / Phase 4 reviewer
+  prompts replace the hardcoded "top venue (NeurIPS/ICML/ICLR)" with the named venue
+  so the reviewer framing is concrete to the user's actual target. Override with
+  `— venue: <name>`. Default empty (uses the hardcoded list). Mirrors
+  `/research-pipeline`'s `VENUE` constant.
+- **REVIEWER_DIFFICULTY = `medium`** — How adversarial the Phase 2 / Phase 4 reviewer
+  is. Three levels (mirrors `/auto-review-loop`'s `REVIEWER_DIFFICULTY` so the user can
+  pass the same `— difficulty:` flag through any wrapper skill — e.g. `/idea-to-proposal`,
+  `/research-pipeline`):
+  - `medium` (default): standard reviewer prompt; **SCORE_THRESHOLD = 9**,
+    **MAX_ROUNDS = 5** (the historical defaults — backward-compatible).
+  - `hard`: stricter reviewer; **SCORE_THRESHOLD = 9.5**, **MAX_ROUNDS = 7**. The
+    reviewer is explicitly instructed to push back harder on contribution sprawl, weak
+    frontier leverage, and unfocused validation. Use when the proposal must clear an
+    extra-tough bar (e.g. an oral-track ICLR submission).
+  - `nightmare`: `hard` + reviewer adopts a *reject-by-default* stance — every
+    dimension must score ≥ 8 individually for READY, not just the overall ≥ 9.5. Same
+    threshold and round count as `hard` (9.5 / 7); the difference is reviewer tone +
+    per-dimension veto. Use when you want the proposal to survive a hostile PC review.
+  Override with `— difficulty: <level>`.
+- **MAX_ROUNDS** — derived from `REVIEWER_DIFFICULTY`: `medium → 5`, `hard → 7`,
+  `nightmare → 7`. Default 5 (medium).
+- **SCORE_THRESHOLD** — derived from `REVIEWER_DIFFICULTY`: `medium → 9`, `hard → 9.5`,
+  `nightmare → 9.5`. Default 9 (medium). Note `nightmare` adds a per-dimension `≥ 8`
+  side-condition on top of the overall threshold.
 - **OUTPUT_DIR = `refine-logs/`** — Directory for round files and final report.
 - **MAX_LOCAL_PAPERS = 15** — Maximum local papers/notes to scan for grounding.
 - **MAX_CORE_EXPERIMENTS = 3** — Default cap for core validation blocks inside this skill.
@@ -64,7 +95,12 @@ the following artifacts exist or are created inside this run:
 The method proposal must identify the simplest strong baseline, the highest-headroom regime,
 the intended mechanism, controls that isolate that mechanism, and the null-result meaning.
 
-> Override via argument if needed, e.g. `/research-refine "problem | approach" -- max rounds: 3, threshold: 9`.
+> Override via argument if needed, e.g.
+> `/research-refine "problem | approach" — max rounds: 3 — threshold: 9 — venue: ICLR — difficulty: hard — effort: xhigh`.
+>
+> The `— venue:` and `— difficulty:` flags mirror the upstream `/research-pipeline`
+> and `/auto-review-loop` argument syntax respectively, so the same flag string passed
+> to a wrapper skill (e.g. `/idea-to-proposal`) propagates here verbatim.
 
 ## State Persistence (Checkpoint Recovery)
 
@@ -78,6 +114,11 @@ Long-running refinement sessions may fail mid-way (e.g., API timeout, context co
   "last_score": 6.5,
   "last_verdict": "REVISE",
   "status": "in_progress",
+  "venue": "",
+  "difficulty": "medium",
+  "effort": "xhigh",
+  "max_rounds_effective": 5,
+  "score_threshold_effective": 9.0,
   "timestamp": "2026-03-22T20:00:00"
 }
 ```
@@ -92,6 +133,11 @@ Long-running refinement sessions may fail mid-way (e.g., API timeout, context co
 | `last_score` | number or null | Most recent overall score from reviewer |
 | `last_verdict` | string or null | Most recent verdict (READY / REVISE / RETHINK) |
 | `status` | `"in_progress"` / `"awaiting_human_continue"` / `"completed"` | Loop status — three-state enum per `shared-references/continuation-contract.md` |
+| `venue` | string (e.g. `"ICLR"`) or `""` | Target venue parsed from `— venue:` flag. Empty string = use hardcoded "top venue (NeurIPS/ICML/ICLR)" reviewer framing. |
+| `difficulty` | `"medium"` / `"hard"` / `"nightmare"` | Reviewer difficulty parsed from `— difficulty:` flag. Drives `max_rounds_effective` + `score_threshold_effective` + reviewer prompt routing. Default `"medium"`. |
+| `effort` | `"low"` / `"medium"` / `"high"` / `"xhigh"` / `"max"` | Codex `model_reasoning_effort` parsed from `— effort:` flag (`max` = `xhigh`). Default `"xhigh"`. The actual effort honored is recorded in `STATE.notes` if Codex MCP fell back. |
+| `max_rounds_effective` | integer | The MAX_ROUNDS in effect for this run after `difficulty` derivation: `medium → 5`, `hard / nightmare → 7`. |
+| `score_threshold_effective` | number | The SCORE_THRESHOLD in effect for this run after `difficulty` derivation: `medium → 9.0`, `hard / nightmare → 9.5`. |
 | `timestamp` | ISO 8601 | When state was last written |
 | `next_action` | string (optional) | Free-text hint for resume |
 | `next_skill_hint` | string (optional) | Downstream skill the user should call next (e.g. `/experiment-plan`) |
@@ -352,13 +398,21 @@ Use this structure:
 
 Send the full proposal to GPT-5.5 for an **elegance-first, frontier-aware, method-first** review. The reviewer should spend most of the critique budget on the method itself, not on expanding the experiment menu.
 
+**Route by REVIEWER_DIFFICULTY** before composing the prompt:
+- `medium` (default): use the standard reviewer prompt below as-is.
+- `hard`: prepend the difficulty-escalation paragraph (see "REVIEWER_DIFFICULTY routing" subsection below) to the standard prompt; raise the verdict bar from "score ≥ 9" to "score ≥ 9.5"; allow up to MAX_ROUNDS = 7 rounds.
+- `nightmare`: same as `hard`, plus add the *reject-by-default per-dimension veto* clause (see routing subsection); reviewer must explicitly justify each dimension scoring < 8 even when overall ≥ 9.5.
+
 ```
 mcp__codex__codex:
   model: REVIEWER_MODEL
-  config: {"model_reasoning_effort": "xhigh"}
+  config: {"model_reasoning_effort": REVIEWER_EFFORT}     // honors `— effort:` flag; default "xhigh"
   prompt: |
-    You are a senior ML reviewer for a top venue (NeurIPS/ICML/ICLR).
+    You are a senior ML reviewer for {VENUE_PHRASE}.
     This is an early-stage, method-first research proposal.
+
+    [INSERT difficulty-escalation paragraph here when REVIEWER_DIFFICULTY ∈ {hard, nightmare}]
+    [INSERT per-dimension veto clause here when REVIEWER_DIFFICULTY = nightmare]
 
     Your job is NOT to reward extra modules, contribution sprawl, or a giant benchmark checklist.
     Your job IS to stress-test whether the proposed method:
@@ -395,7 +449,7 @@ mcp__codex__codex:
 
     6. **Validation Focus**: Are the proposed experiments minimal but sufficient to validate the core claims? Is there unnecessary experimental bloat?
 
-    7. **Venue Readiness**: If executed well, would the contribution feel sharp and timely enough for a top venue?
+    7. **Venue Readiness**: If executed well, would the contribution feel sharp and timely enough for {VENUE_PHRASE}?
 
     **OVERALL SCORE** (1-10): Weighted toward Problem Fidelity, Method Specificity, Contribution Quality, and Frontier Leverage.
     Use this weighting: Problem Fidelity 15%, Method Specificity 25%, Contribution Quality 25%, Frontier Leverage 15%, Feasibility 10%, Validation Focus 5%, Venue Readiness 5%.
@@ -412,9 +466,52 @@ mcp__codex__codex:
     - **Verdict**: READY / REVISE / RETHINK
 
     Verdict rule:
-    - READY: overall score >= 9, no meaningful drift, one focused dominant contribution, and no obvious complexity bloat remains
+    - READY: overall score >= SCORE_THRESHOLD, no meaningful drift, one focused dominant contribution, and no obvious complexity bloat remains
     - REVISE: the direction is promising but not yet at READY bar
     - RETHINK: the core mechanism or framing is still fundamentally off
+    [If REVIEWER_DIFFICULTY = nightmare, additionally REJECT (= REVISE) when any single dimension scores < 8 even if overall >= SCORE_THRESHOLD.]
+```
+
+**Variable substitution before sending the prompt**:
+- `{VENUE_PHRASE}` = `VENUE` if `VENUE != ""` else `"a top venue (NeurIPS/ICML/ICLR)"`.
+  Examples: `VENUE = "ICLR"` → `"ICLR"`; `VENUE = "IEEE_JOURNAL"` → `"IEEE_JOURNAL"`;
+  `VENUE = ""` → `"a top venue (NeurIPS/ICML/ICLR)"` (preserves historical wording).
+- `SCORE_THRESHOLD` = the difficulty-derived numeric threshold (medium = 9, hard /
+  nightmare = 9.5).
+- `REVIEWER_EFFORT` = the effort level parsed from `— effort:` (default `xhigh`).
+
+### REVIEWER_DIFFICULTY routing — escalation paragraphs
+
+Insert the relevant block(s) into the reviewer prompt depending on
+`REVIEWER_DIFFICULTY`:
+
+**For `hard` and `nightmare` — difficulty-escalation paragraph:**
+
+```
+DIFFICULTY: HARD. The paper is targeting an extra-tough bar (oral-track or
+flagship venue). Be more adversarial than the default. Specifically:
+- Do not let "interesting" carry weight against "focused"; sprawl is the
+  primary failure mode at this bar and must be flagged in the Verdict, not
+  buried in Simplification Opportunities.
+- Frontier-leverage incompleteness must be called out: if the proposal could
+  be strengthened by a foundation-model-era primitive that is currently
+  missing, that is a CRITICAL issue, not a Modernization Opportunity.
+- Validation focus: a single non-decisive experiment in the validation plan
+  must be flagged CRITICAL — every claim must have a falsifiable predicate
+  with a Cohen's-d threshold or equivalent.
+- Raise the verdict bar to overall score >= 9.5 for READY.
+```
+
+**For `nightmare` only — per-dimension veto clause (added after the difficulty paragraph):**
+
+```
+DIFFICULTY: NIGHTMARE. Adopt a reject-by-default stance. Every individual
+dimension (Problem Fidelity, Method Specificity, Contribution Quality,
+Frontier Leverage, Feasibility, Validation Focus, Venue Readiness) must
+independently score >= 8 for READY — overall score >= 9.5 is necessary but
+not sufficient. If any single dimension is < 8, the verdict must be REVISE
+or RETHINK regardless of the overall score, and the reviewer must list the
+specific dimension(s) below 8 in the Verdict line.
 ```
 
 **CRITICAL: Save the `threadId`** from this call for all later rounds.
@@ -529,13 +626,18 @@ Save to `refine-logs/round-N-refinement.md`:
 
 ### Phase 4: Re-evaluation (Round 2+)
 
-Send the revised proposal back to GPT-5.5 in the **same thread**:
+Send the revised proposal back to GPT-5.5 in the **same thread**. The
+REVIEWER_DIFFICULTY routing established in Phase 2 persists across all rounds —
+do NOT downgrade difficulty mid-loop, and do NOT re-issue the difficulty
+escalation paragraphs (the reviewer thread retains them from Phase 2). The
+verdict rule below uses the same SCORE_THRESHOLD derived from
+REVIEWER_DIFFICULTY.
 
 ```
 mcp__codex__codex-reply:
   threadId: [saved from Phase 2]
   model: REVIEWER_MODEL
-  config: {"model_reasoning_effort": "xhigh"}
+  config: {"model_reasoning_effort": REVIEWER_EFFORT}
   prompt: |
     [Round N re-evaluation]
 
@@ -559,7 +661,7 @@ mcp__codex__codex-reply:
     - State whether the method is simpler or still overbuilt
     - State whether the frontier leverage is now appropriate or still old-school / forced
     - Focus new critiques on missing mechanism, weak training signal, weak integration point, pseudo-novelty, or unnecessary complexity
-    - Use the same verdict rule: READY only if overall score >= 9 and no blocking issue remains
+    - Use the same verdict rule: READY only if overall score >= SCORE_THRESHOLD and no blocking issue remains (and, when REVIEWER_DIFFICULTY = nightmare, every individual dimension >= 8)
 
     Same output format: 7 scores, overall score, verdict, drift warning, simplification opportunities, modernization opportunities, remaining action items.
 ```

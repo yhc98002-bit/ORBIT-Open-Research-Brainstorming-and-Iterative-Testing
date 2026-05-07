@@ -22,7 +22,8 @@ refine-logs/FINAL_PROPOSAL.md
 
 - **AUTO_DEPLOY = true** — Automatically deploy experiments after implementation. Set `false` to review code before deploying.
 - **SANITY_FIRST = true** — Run the sanity-stage experiment first (smallest, fastest) before launching the rest. Catches setup bugs early.
-- **MAX_PARALLEL_RUNS = 4** — Maximum number of experiments to deploy in parallel (limited by available GPUs).
+- **MAX_PARALLEL_RUNS = 8** — Maximum number of experiments to deploy in parallel. **Before Phase 1, probe actual GPU count with `nvidia-smi -L | wc -l` (or `echo $CUDA_VISIBLE_DEVICES`) and set MAX_PARALLEL_RUNS = min(detected_gpu_count, 8)**. If detection fails or returns 0, fall back to 4 and warn the user. Never assume "8 GPUs" without probing — the node may have fewer, or some may be occupied. Users can override explicitly via args. (Default raised from 4 to 8 because the typical paracloud-node assignment on this cluster is a dedicated 8× A800-80GB GPU node.)
+- **GPU_VRAM_AWARE = true** — Also probe per-GPU memory with `nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | head -1`. On 80 GB A800/A100/H100 nodes, defaults written for 16-24 GB GPUs leave most of the memory idle — scale them up.
 - **BASE_REPO = false** — GitHub repo URL to use as a base codebase. When set, clone it first and implement experiments on top of it.
 - **COMPACT = false** — When `true`, prefer `idea-stage/IDEA_CANDIDATES.md` over the full `idea-stage/IDEA_REPORT.md`, and append completed runs to `EXPERIMENT_LOG.md`.
 

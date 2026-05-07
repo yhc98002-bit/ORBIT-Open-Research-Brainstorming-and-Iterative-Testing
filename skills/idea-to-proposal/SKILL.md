@@ -45,6 +45,25 @@ keyword ────► /idea-discovery ──┐
   for the Phase 4 final refinement review.
 - **AUTO_PROCEED = true** — chain phases without prompting unless user passes
   `— human checkpoint: true`.
+- **LITERATURE_PRE_FETCH_DEFAULT = false** — when `— arxiv download: true` is passed,
+  set to true and run **Phase 0.5 (Literature Pre-fetch)** before Phase 1. Default false
+  preserves prior behavior of running grounding off whatever the LLM already knows
+  about the area.
+- **LITERATURE_PRE_FETCH_SOURCES_DEFAULT = `"arxiv"`** — default sources for Phase 0.5;
+  override with `— sources: <list>` (any subset of `arxiv`, `web`, `semantic-scholar`,
+  `deepxiv`, `exa`, `alphaxiv`, `local`, `all`).
+- **LITERATURE_PRE_FETCH_MAX_DEFAULT = 10** — default cap on PDFs downloaded by
+  Phase 0.5; override with `— arxiv max download: <N>`.
+- **DIFFICULTY_DEFAULT = `"medium"`** — calibrates downstream `/research-refine`
+  reviewer behavior, READY threshold, and MAX_ROUNDS via the canonical upstream three
+  levels (mirrors `/auto-review-loop`'s `REVIEWER_DIFFICULTY` and
+  `/research-pipeline`'s `REVIEWER_DIFFICULTY` so the same flag string propagates):
+  - `medium` (default): standard reviewer prompt; SCORE_THRESHOLD = 9, MAX_ROUNDS = 5.
+  - `hard`: stricter reviewer (push back on sprawl, frontier-leverage incompleteness,
+    unfocused validation); SCORE_THRESHOLD = 9.5, MAX_ROUNDS = 7.
+  - `nightmare`: `hard` + reject-by-default per-dimension veto (every individual
+    dimension must score ≥ 8 for READY); SCORE_THRESHOLD = 9.5, MAX_ROUNDS = 7.
+  Override with `— difficulty: <level>`. Forwarded verbatim to `/research-refine`.
 - **STOP_AT_GROUNDING = false** — if `true`, skip Phase 3 and Phase 4 (produce only the
   Grounding artifacts on top of Phase 1 output).
 - **STOP_AT_PROPOSAL = false** — if `true`, skip Phase 6 (do NOT invoke `/experiment-plan`).
@@ -79,10 +98,10 @@ Written at every phase boundary with overwrite semantics. Schema:
 {
   "skill": "idea-to-proposal",
   "phase": "phase-3-innovation",         // last completed phase (one of:
-                                          //   phase-0-intake, phase-1-discovery,
-                                          //   phase-2-grounding, phase-3-innovation,
-                                          //   phase-4-final-refinement, phase-5-summary,
-                                          //   phase-6-experiment-plan)
+                                          //   phase-0-intake, phase-0-5-literature-prefetch,
+                                          //   phase-1-discovery, phase-2-grounding,
+                                          //   phase-3-innovation, phase-4-final-refinement,
+                                          //   phase-5-summary, phase-6-experiment-plan)
   "input_mode": "keyword" | "idea",      // detected at Phase 0
   "input_value": "$ARGUMENTS",           // verbatim
   "status": "in_progress" | "awaiting_human_continue" | "completed",
@@ -133,6 +152,7 @@ the STATE entry says this phase completed. If both hold, skip the phase and log
 | Phase | Expected artifact(s) |
 |---|---|
 | phase-0-intake | `orbit-research/PIPELINE_INTAKE.md` |
+| phase-0-5-literature-prefetch | `papers/` non-empty (≥ 1 PDF) AND `STATE.literature_pre_fetched == true` AND STATE timestamp within last 24 h. Skipped silently when `parsed_flags.arxiv_download == false`. |
 | phase-1-discovery | `refine-logs/FINAL_PROPOSAL.md` + `orbit-research/PROBLEM_SELECTION.md` |
 | phase-2-grounding | `orbit-research/ASSUMPTION_LEDGER.md` + `ABSTRACT_TASK_MECHANISM.md` + `BASELINE_CEILING.md` |
 | phase-3-innovation | `orbit-research/MECHANISM_IDEATION.md` + `ANALOGY_TRANSFER.md` + `ALGORITHM_TOURNAMENT.md` |
@@ -154,6 +174,12 @@ inconsistent state" warning.
 | `— no-checkpoint: true` | Skip the Phase 6 `awaiting_human_continue` exit; transition straight to `completed` |
 | `STOP_AT_GROUNDING: true` | Skip Phase 3 + Phase 4 + Phase 6; produce only Grounding artifacts; awaiting_human_continue at Phase 5 |
 | `STOP_AT_PROPOSAL: true` | Skip Phase 6; produce proposal + Discovery/Grounding/Innovation artifacts only; awaiting_human_continue at Phase 5 |
+| `— arxiv download: <bool>` | When `true`, run **Phase 0.5 (Literature Pre-fetch)** before Phase 1: delegates to `/research-lit` to populate `papers/` and `research-wiki/papers/` so downstream skills (especially `/research-refine`'s "Check `papers/` first" step in Phase 1b, and the Stage-4/5/7 grounding harness prompts in Phase 2) have local PDFs to scan. Default `false` (preserves prior behavior — grounding runs off whatever the LLM already knows). Without this flag, the literature pre-fetch is skipped silently. |
+| `— sources: <list>` | Comma-separated source list for Phase 0.5. Subset of: `arxiv`, `web`, `semantic-scholar`, `deepxiv`, `exa`, `alphaxiv`, `local`, `all`. Default `arxiv`. Forwarded verbatim to `/research-lit — sources: <list>`. Has no effect if `— arxiv download: false`. |
+| `— arxiv max download: <N>` | Cap on PDFs downloaded by Phase 0.5. Default `LITERATURE_PRE_FETCH_MAX_DEFAULT = 10`. Forwarded to `/research-lit — max download: <N>`. |
+| `— venue: <name>` | Target venue (e.g. `iclr`, `icml`, `neurips`, `cvpr`, `naacl`). Recorded in `PIPELINE_INTAKE.md` and forwarded as `— venue: <name>` to `/research-refine`, `/research-pipeline`, and `/experiment-plan` so their reviewer prompts can name the venue specifically rather than the hardcoded "top venue". Default: unset. |
+| `— effort: <level>` | Codex effort level: `low`, `medium`, `high`, `xhigh`, or `max` (alias for `xhigh`). Sets the per-call `model_reasoning_effort` for Codex MCP invocations across this skill (overrides `CODEX_REVIEW_EFFORT = xhigh` constant for this run). The actual effort honored is subject to Codex MCP environment availability — if the requested level is unavailable, Codex falls back to the next lower available level and the fallback (e.g. `gpt-5.2 high`) is logged in `STATE.notes`. |
+| `— difficulty: <level>` | Calibrates the downstream `/research-refine` (Phase 1b idea-mode + Phase 4 final refinement) reviewer behavior + READY threshold + MAX_ROUNDS. Three levels (mirror upstream `/auto-review-loop` + `/research-pipeline`): `medium` (default) = standard reviewer + ≥9.0 / 5 rounds; `hard` = stricter reviewer + ≥9.5 / 7 rounds; `nightmare` = `hard` + reject-by-default per-dimension veto (every dimension ≥ 8) + ≥9.5 / 7 rounds. Forwarded verbatim as `— difficulty: <level>` to `/research-refine` (which honors it natively per its own `REVIEWER_DIFFICULTY` constant). |
 
 ## Workflow
 
@@ -182,6 +208,18 @@ Write a one-line classifier note to `orbit-research/PIPELINE_INTAKE.md`:
 - Stops at: proposal (Validation Spine NOT triggered)
 ```
 
+**Parse inline flags** from `$ARGUMENTS` and record them in
+`orbit-research/PIPELINE_INTAKE.md` AND in the STATE block below. Flags
+recognised by this skill (see Override flags table above for full list):
+`AUTO_PROCEED`, `human checkpoint`, `STOP_AT_GROUNDING`, `STOP_AT_PROPOSAL`,
+`arxiv download`, `sources`, `arxiv max download`, `venue`, `effort`,
+`difficulty`, `from-phase`, `resume`, `fresh`, `no-checkpoint`.
+
+Unknown flags are recorded in `PIPELINE_INTAKE.md` with a `⚠️ unknown flag —
+will not be honored` annotation rather than silently dropped. **This is a
+contract: a flag that survives parsing must either be honored or be flagged as
+unknown — never silently captured-but-ignored.**
+
 **Write STATE** at end of Phase 0:
 
 ```jsonc
@@ -190,22 +228,135 @@ Write a one-line classifier note to `orbit-research/PIPELINE_INTAKE.md`:
   "phase": "phase-0-intake",
   "input_mode": "keyword | idea",
   "input_value": "$ARGUMENTS",
+  "parsed_flags": {                      // every flag parsed in Phase 0
+    "auto_proceed": true,
+    "human_checkpoint": false,
+    "arxiv_download": false,             // ← Phase 0.5 trigger
+    "sources": "arxiv",
+    "arxiv_max_download": 10,
+    "venue": null,                        // forwarded to downstream reviewer prompts
+    "effort": "xhigh",                    // CODEX_REVIEW_EFFORT for this run
+    "difficulty": "medium"                // /research-refine threshold + MAX_ROUNDS
+  },
   "status": "in_progress",
-  "next_action": "phase-1-discovery",
+  "next_action": "phase-0-5-literature-prefetch | phase-1-discovery",   // depends on arxiv_download
   "timestamp": "<now>",
   "artifact_inventory": ["orbit-research/PIPELINE_INTAKE.md"]
 }
 ```
 
+### Phase 0.5: Literature Pre-fetch (conditional)
+
+**Trigger condition**: `parsed_flags.arxiv_download == true` (i.e. user passed
+`— arxiv download: true`). If false, **skip this phase silently** and proceed to
+Phase 1 — the historical default behavior is preserved when the flag is absent
+or false.
+
+**Why this phase exists** (the bug it fixes): `/research-refine` (Phase 1b
+idea-mode) and the Stage-4/5/7 grounding harness prompts (Phase 2) both check
+`papers/` and `literature/` for local PDFs first (per `research-refine
+SKILL.md` L181: "Check `papers/` and `literature/` first"). Without a
+populated `papers/`, those checks return empty and grounding falls back to
+whatever the LLM already knows about the area — which is often outdated for
+fast-moving fields and silently misses concurrent work that the user expected
+the pipeline to find. Before this patch the `— arxiv download: true` flag was
+captured into `PIPELINE_INTAKE.md` but never honored anywhere downstream, so
+`papers/` stayed empty even when explicitly requested. Phase 0.5 closes that
+loop by delegating to `/research-lit` (which orchestrates arXiv + Semantic
+Scholar + DeepXiv + Exa + Zotero + Obsidian per `— sources:`) and downloading
+the top-N most relevant PDFs into `papers/` plus ingesting them into
+`research-wiki/papers/` (when `research-wiki/` exists in the project root).
+
+**Step 1 — Derive a focused query from the input**:
+- **idea-mode** (input is `.md`): read the file's headline / "Direction" /
+  "Tasks" sections and synthesise a 1-2 line query of key technical terms
+  (e.g. for the round-5 example: "DiT rectified-flow image editing
+  post-training RL EditScore DanceGRPO").
+- **keyword-mode** (input is a topic phrase): use it directly as the query.
+
+Record the derived query in `PIPELINE_INTAKE.md` under a "Phase 0.5 query"
+field for transparency and reproducibility.
+
+**Step 2 — Invoke `/research-lit`** with the parsed flags:
+
+```bash
+/research-lit "<derived query>" \
+    — sources: <parsed_flags.sources> \
+    — arxiv download: true \
+    — max download: <parsed_flags.arxiv_max_download>
+```
+
+`/research-lit` itself handles the multi-source fan-out, rate limiting
+(`time.sleep(1)` between consecutive arXiv API calls), dedup against
+already-present `papers/*.pdf`, PDF download into `papers/`, and (when
+`research-wiki/` exists) automatic ingest into `research-wiki/papers/` via
+`tools/research_wiki.py ingest_paper`. This skill does not duplicate that
+logic.
+
+**Step 3 — Fallback ladder when `/research-lit` is unavailable** (per the
+standard ARIS-fallback contract):
+1. Try `/research-lit` first (the canonical multi-source entry point).
+2. If `/research-lit` skill is not registered, try `/arxiv "<query>" — download:
+   all — max: <N>` directly. `/arxiv` covers the arXiv-only path and includes
+   wiki ingestion in its Step 6.
+3. If `/arxiv` is also unavailable, fall back to direct invocation of
+   `tools/arxiv_fetch.py search` + `tools/arxiv_fetch.py download` per ID + (if
+   `research-wiki/` exists) `tools/research_wiki.py sync research-wiki/
+   — arxiv-ids <comma-list>`.
+4. If the helper scripts are also missing, log
+   `PHASE_0_5_DEGRADED (literature_prefetch_unavailable)` in `STATE.notes`,
+   warn the user, and proceed to Phase 1 anyway (Phase 0.5 is best-effort —
+   never block proposal generation on a missing literature pre-fetch).
+
+**Step 4 — Append to PIPELINE_INTAKE.md** under a new
+`## Phase 0.5: Literature pre-fetch` section:
+- Sources requested + sources actually used (after fallback if any).
+- Number of PDFs downloaded into `papers/` (with size).
+- Number of papers ingested into `research-wiki/papers/`.
+- Any rate-limit / API-error events with affected arXiv IDs.
+
+**Write STATE** at end of Phase 0.5:
+
+```jsonc
+{
+  "phase": "phase-0-5-literature-prefetch",
+  "status": "in_progress",
+  "next_action": "phase-1-discovery",
+  "literature_pre_fetched": true,
+  "literature_pre_fetch_count": <N>,
+  "literature_pre_fetch_partial_failures": <K>,    // arXiv IDs that failed (rate limit, 429, etc.)
+  "timestamp": "<now>",
+  "artifact_inventory": [
+    "orbit-research/PIPELINE_INTAKE.md",
+    "papers/ (<N> PDFs, <total size>)",
+    "research-wiki/papers/ (<N> ingested)"          // only if research-wiki/ exists
+  ]
+}
+```
+
+**Idempotency**: if `papers/` already contains ≥ `parsed_flags.arxiv_max_download / 2`
+PDFs AND `STATE.literature_pre_fetched == true` from a prior run within the
+last 24 h, skip Phase 0.5 with a "skipped (already pre-fetched within 24 h)"
+log line. To force a re-fetch, pass `— fresh: true` (which deletes STATE) or
+manually delete `papers/`. This protects against duplicate downloads when the
+user re-invokes the skill to resume from a later phase.
+
 ### Phase 1: Discovery — produce a baseline proposal + problem selection
 
 #### Phase 1a — keyword-mode
 
-Invoke the existing Workflow 1:
+Invoke the existing Workflow 1, forwarding the parsed flags:
 
 ```bash
-/idea-discovery "$ARGUMENTS"
+/idea-discovery "$ARGUMENTS" \
+    — venue: <parsed_flags.venue> \
+    — effort: <parsed_flags.effort> \
+    — difficulty: <parsed_flags.difficulty>
 ```
+
+(`/idea-discovery` itself internally calls `/research-refine-pipeline` →
+`/research-refine`; the flags propagate through that chain. Omit any flag
+whose parsed value is null / default.)
 
 This produces:
 - `idea-stage/IDEA_REPORT.md` (ranked candidates)
@@ -220,11 +371,28 @@ top-ranked candidate unless the user passed `— human checkpoint: true`.
 
 #### Phase 1b — idea-mode
 
-Read the user's draft `.md` file, then invoke:
+Read the user's draft `.md` file, then invoke `/research-refine` with the
+parsed flags forwarded:
 
 ```bash
-/research-refine "$ARGUMENTS"
+/research-refine "$ARGUMENTS" \
+    — venue: <parsed_flags.venue> \
+    — effort: <parsed_flags.effort> \
+    — difficulty: <parsed_flags.difficulty>
 ```
+
+(Forward `venue` / `effort` / `difficulty` so `/research-refine`'s reviewer
+prompt names the venue specifically rather than the hardcoded "top venue", and
+so the Phase 4 READY threshold + MAX_ROUNDS match the user's difficulty
+calibration. Omit a flag if its parsed value is null / default.)
+
+If Phase 0.5 ran (`STATE.literature_pre_fetched == true`), `papers/` is now
+populated with up to `parsed_flags.arxiv_max_download` PDFs and
+`/research-refine`'s "Check `papers/` and `literature/` first" step (its
+SKILL.md L181) will scan them as the grounding base — closing the loop that
+this skill's `— arxiv download:` flag was originally promised to enable. If
+Phase 0.5 was skipped (the flag was false or absent), `/research-refine` falls
+back to whatever the LLM already knows about the area, as it always has.
 
 This produces `refine-logs/FINAL_PROPOSAL.md`. Then derive `orbit-research/PROBLEM_SELECTION.md`
 manually by extracting the Problem Anchor from `FINAL_PROPOSAL.md` and writing a brief
