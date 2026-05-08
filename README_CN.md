@@ -193,7 +193,7 @@ agent 连贯跑，段与段之间 `awaiting_human_continue`（见
 ```
 1. /idea-to-proposal "<keyword OR draft-idea.md>"
    Discovery → Grounding → Innovation → final refinement → experiment plan
-   ⏸ STOP A: 一起审 FINAL_PROPOSAL.md + EXPERIMENT_PLAN.md + claim map
+   ⏸ STOP A: 一起审 FINAL_PROPOSAL.md + EXPERIMENT_PLAN.md + EXPERIMENT_PLAN_EXEC.md
               （合并的"值得花 GPU 吗"决策点）
 
 2. /experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"

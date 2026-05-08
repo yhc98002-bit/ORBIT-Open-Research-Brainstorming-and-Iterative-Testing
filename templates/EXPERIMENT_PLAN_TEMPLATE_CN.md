@@ -1,53 +1,45 @@
-# 实验计划
+# 实验计划 — 索引
 
-> **Workflow 1.5 (`/experiment-bridge`) 的模板。** 填写后保存为 `refine-logs/EXPERIMENT_PLAN.md`，然后运行 `/experiment-bridge`。
+> **Workflow 1.5 (`/experiment-bridge`) 模板。** 将本文件保存为
+> `refine-logs/EXPERIMENT_PLAN.md`。可执行细节放入
+> `refine-logs/EXPERIMENT_PLAN_EXEC.md` 和 run card 文件。
 
-**问题**: [你的方法解决什么问题？]
-**方法论点**: [一句话描述你的方法]
+**用途**：本文件是**索引**。真正的执行计划拆分为可由 agent 直接行动的
+run card 和协议文件。下游 skill 应先读本索引，再跟随交叉引用。
 
-## Claim 映射
+**项目**：[一句话说明项目 / 方法 / 目标会议 / 算力状态]
 
-| Claim | 重要性 | 最低说服力证据 | 关联实验块 |
-|-------|--------|---------------|-----------|
-| C1: [主要 claim] | [为什么重要] | [需要的证据] | B1, B2 |
-| C2: [辅助 claim] | [为什么重要] | [需要的证据] | B3 |
+## 文件
 
-## 实验块
+| 阶段 | 文件 | 内容 | 何时读取 |
+|---|---|---|---|
+| 方法规格 | `FINAL_PROPOSAL.md` | proposal 索引和方法相关引用 | 总是读取 |
+| 主执行计划 | `EXPERIMENT_PLAN_EXEC.md` | Claim map、紧凑实验块、运行顺序、关卡、预算、风险 | 总是读取 |
+| 当前直接任务 | `[MILESTONE]_RUN_CARD.md` | 只写下一步动作：命令面、成功关卡、停止规则 | 当前任务存在时读取 |
+| 失败路由 | `NULL_RESULT_CONTRACT.md` | NEGATIVE / TIE 结果解释和论文 pivot 规则 | 任一实验失败或打平时读取 |
+| 可选协议 | `[PROTOCOL].md` | 数据集映射、baseline 协议、图表计划或其他局部细节 | 被引用时读取 |
 
-### 实验块 1: 主实验
-- **验证 Claim**: C1
-- **数据集 / 划分 / 任务**: [如：ImageNet val]
-- **对比系统**: [你的方法 vs. 基线 A vs. 基线 B]
-- **评估指标**: [主要：准确率/PPL。次要：吞吐量]
-- **实验设置**: [骨干网络、优化器、学习率、训练轮数、随机种子]
-- **成功标准**: [如："> 基线 2% 准确率"]
-- **失败解读**: [如果结果为负，意味着什么？]
-- **优先级**: 必须运行
+## 阶段流程
 
-### 实验块 2: 消融实验
-- **验证 Claim**: C1（新颖性隔离）
-- **对比系统**: [完整方法、去掉组件 A、去掉组件 B]
-- **成功标准**: [每个组件贡献 > 0.5%]
-- **优先级**: 必须运行
+```text
+Phase 0 — Sanity / diagnostic gate
+  -> [当前里程碑或关卡]
+Phase 1 — Baselines and main method
+  -> EXPERIMENT_PLAN_EXEC.md Run Order
+Phase 2 — Decisive ablations
+  -> 每个预注册决策关卡都必须 halt
+Phase 3 — Appendix / qualitative / write-up support
+  -> 主证据成立后再运行
+```
 
-### 实验块 3: [额外实验]
-- **优先级**: 可选
+## 关键约束
 
-## 运行顺序
+- [下游 agent 必须执行的 hard stop / 预算 / 数据约束]
+- [不能静默放宽阈值；不能启动未注册实验]
+- [可选实验不能拖延 must-run 证据]
 
-| 里程碑 | 目标 | 运行内容 | 决策关卡 | 预估耗时 |
-|--------|------|---------|---------|---------|
-| M0: 健全性检查 | 流程跑通 | 1 次快速运行 | loss 在下降？ | ~0.5h |
-| M1: 基线复现 | 复现基线结果 | 实验块 3 | 数值匹配？ | ~4h |
-| M2: 主实验 | 完整方法 | 实验块 1 | 达到标准？ | ~8h |
-| M3: 消融 | 组件验证 | 实验块 2 | 每个都有贡献？ | ~6h |
+## 下游 Skill
 
-## 算力预算
-
-- **预估总 GPU 小时**: ~18h
-- **硬件**: [如：4x RTX 3090]
-- **最大瓶颈**: [如：基线复现]
-
-## 风险
-
-- **风险**: [可能出什么问题] → **缓解措施**: [如何应对]
+`/experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"` 读取本索引，跟随交叉引用，
+并按 `EXPERIMENT_PLAN_EXEC.md` 中的里程碑顺序实现实验。bridge skill 不能在
+hard stop 之后自动启动下一阶段，除非得到明确的人类批准。

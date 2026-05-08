@@ -1,51 +1,47 @@
-# Experiment Plan
+# Experiment Plan — Index
 
-> **Template for Workflow 1.5 (`/experiment-bridge`).** Fill in, save as `refine-logs/EXPERIMENT_PLAN.md`, then run `/experiment-bridge`.
+> **Template for Workflow 1.5 (`/experiment-bridge`).** Save this file as
+> `refine-logs/EXPERIMENT_PLAN.md`. Put executable details in
+> `refine-logs/EXPERIMENT_PLAN_EXEC.md` and run-card files.
 
-**Problem**: [What problem does your method solve?]
-**Method Thesis**: [One-sentence description of your approach]
+**Purpose**: this file is an **index**. The actual execution plan is split into
+agent-actionable run cards and protocol files. Downstream skills should read this
+index, then follow the cross-references.
 
-## Claim Map
+**Project**: [one-line project / method / venue / budget status]
 
-| Claim | Why It Matters | Minimum Convincing Evidence | Linked Blocks |
-|-------|----------------|----------------------------|---------------|
-| C1: [Main claim] | [Why] | [Evidence needed] | B1, B2 |
-| C2: [Supporting claim] | [Why] | [Evidence needed] | B3 |
+## Files
 
-## Experiment Blocks
+| Stage | File | What it contains | When to read |
+|---|---|---|---|
+| Method spec | `FINAL_PROPOSAL.md` | Proposal index and method cross-references | always |
+| Main exec plan | `EXPERIMENT_PLAN_EXEC.md` | Claim map; compact block cards; run order; gates; budget; risks | always |
+| Current immediate task | `[MILESTONE]_RUN_CARD.md` | The next action only: command surface, success gate, halt rule | now, if present |
+| Failure routing | `NULL_RESULT_CONTRACT.md` | NEGATIVE / TIE interpretation and paper-pivot rules | when any block fails or ties |
+| Optional protocols | `[PROTOCOL].md` | Dataset mapping, baseline protocol, figure plan, or other scoped details | only when referenced |
 
-### Block 1: Main Result
-- **Claim tested**: C1
-- **Dataset / split / task**: [e.g., ImageNet val]
-- **Compared systems**: [Your method vs. Baseline A vs. Baseline B]
-- **Metrics**: [Primary: accuracy/PPL. Secondary: throughput]
-- **Setup details**: [Backbone, optimizer, lr, epochs, seeds]
-- **Success criterion**: [e.g., "> 2% accuracy over baseline"]
-- **Failure interpretation**: [If negative, what does it mean?]
-- **Priority**: MUST-RUN
+## Phased Flow
 
-### Block 2: Ablation Study
-- **Claim tested**: C1 (novelty isolation)
-- **Compared systems**: [Full method, -component A, -component B]
-- **Success criterion**: [Each component contributes > 0.5%]
-- **Priority**: MUST-RUN
+```text
+Phase 0 — Sanity / diagnostic gate
+  -> [current milestone or gate]
+Phase 1 — Baselines and main method
+  -> EXPERIMENT_PLAN_EXEC.md Run Order
+Phase 2 — Decisive ablations
+  -> halt at each registered decision gate
+Phase 3 — Appendix / qualitative / write-up support
+  -> run only after main evidence is secured
+```
 
-### Block 3: [Additional Experiment]
-- **Priority**: NICE-TO-HAVE
+## Key Constraints
 
-## Run Order
+- [Hard stop / budget / data constraint that downstream agents must enforce]
+- [No silent threshold relaxation; no unregistered experiment launch]
+- [Nice-to-have runs must not delay must-run evidence]
 
-| Milestone | Goal | Runs | Decision Gate | Cost |
-|-----------|------|------|---------------|------|
-| M0: Sanity | Pipeline works | 1 quick run | Loss decreases? | ~0.5h |
-| M1: Baselines | Reproduce baselines | Block 3 | Numbers match? | ~4h |
-| M2: Main | Full method | Block 1 | Meets criterion? | ~8h |
-| M3: Ablation | Components | Block 2 | Each matters? | ~6h |
+## Downstream Skill
 
-## Compute Budget
-- **Total estimated GPU-hours**: ~18h
-- **Hardware**: [e.g., 4x RTX 3090]
-- **Biggest bottleneck**: [e.g., baseline reproduction]
-
-## Risks
-- **Risk**: [What could go wrong] → **Mitigation**: [How to handle it]
+`/experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"` reads this index, follows
+the cross-references, and implements the milestones in `EXPERIMENT_PLAN_EXEC.md`
+order. The bridge skill must not auto-launch a milestone past a hard stop without
+explicit human approval.

@@ -511,17 +511,67 @@ This file is the high-level round-by-round review record. It should answer: each
 - Remaining weaknesses:
 ```
 
-#### Step 5.2: Write `refine-logs/FINAL_PROPOSAL.md`
+#### Step 5.2: Write the progressive-disclosure proposal bundle
 
-This file is the clean final version document. It should contain only the final proposal itself, without review chatter, round history, or raw reviewer output.
+Write `refine-logs/FINAL_PROPOSAL.md` as a short **index**, not as the full proposal.
+It should route readers to the right level of detail and avoid review chatter, round
+history, raw reviewer output, repeated caveats, or long method exposition.
 
 ```markdown
-# Research Proposal: [Title]
+# Final Proposal — Index
 
-[Paste the final refined proposal only]
+**Purpose**: this file is an **index**. The proposal is split into progressive-disclosure files so agents read only the layer they need.
+
+**Project**: [one-line project / method / target venue / current status]
+
+## Read first
+
+| File | Purpose | Audience | Length |
+|---|---|---|---|
+| `FINAL_PROPOSAL_SHORT.md` | Pitch document: problem, core reframing, method, claims, next gate | mentor / coauthor / quick self-review | 2-4 pages |
+
+## Method spec
+
+| File | Purpose |
+|---|---|
+| `METHOD_SPEC.md` | Implementation contract: equations, modules, data flow, training/inference protocol, hyperparameters |
+| `FAILURE_CONTRACT.md` | Failure modes, null-result routing, and forbidden post-hoc reframings, if not already covered by `orbit-research/NULL_RESULT_CONTRACT.md` |
+
+## Execution
+
+| File | Purpose |
+|---|---|
+| `EXPERIMENT_PLAN.md` | Index for the experiment plan |
+| `EXPERIMENT_PLAN_EXEC.md` | Claim map, experiment blocks, run order, gates, budget |
+
+## Archive
+
+| File | Purpose |
+|---|---|
+| `FINAL_PROPOSAL_FULL.md` | Optional archive of the previous monolithic proposal or revision-history wording. Create only when preserving history is useful. |
+
+## Reading paths
+
+- First time on this project -> `FINAL_PROPOSAL_SHORT.md`
+- Implementing the method -> `METHOD_SPEC.md`
+- Running experiments -> `EXPERIMENT_PLAN.md` then `EXPERIMENT_PLAN_EXEC.md`
+- Something broke -> `FAILURE_CONTRACT.md` or `orbit-research/NULL_RESULT_CONTRACT.md`
+- Reviewer asks about past wording -> `FINAL_PROPOSAL_FULL.md`, if present
+
+## Status
+
+**STATE**: [READY / REVISE / RETHINK / awaiting_human_continue]
+**Next gate**: [next decision or experiment gate]
 ```
 
-If the final verdict is not READY, still write the best current final version here.
+Also write:
+
+- `refine-logs/FINAL_PROPOSAL_SHORT.md` — the clean 2-4 page proposal. It should contain only the problem, thesis, method overview, core claims, strongest baselines, main risks, and next gate.
+- `refine-logs/METHOD_SPEC.md` — the implementation-level method contract. This is where formulas, module boundaries, hyperparameters, and data flow belong.
+- `refine-logs/FAILURE_CONTRACT.md` — only when failure routing is not already cleanly represented in `orbit-research/NULL_RESULT_CONTRACT.md`.
+- `refine-logs/FINAL_PROPOSAL_FULL.md` — optional archive only when the current run started from a useful monolithic proposal or when preserving round-history language matters.
+
+If the final verdict is not READY, still write the best current index, short proposal, and method spec, and mark the unresolved status in the index.
 
 #### Step 5.3: Write `refine-logs/REFINEMENT_REPORT.md`
 
@@ -540,7 +590,10 @@ If the final verdict is not READY, still write the best current final version he
 
 ## Output Files
 - Review summary: `refine-logs/REVIEW_SUMMARY.md`
-- Final proposal: `refine-logs/FINAL_PROPOSAL.md`
+- Proposal index: `refine-logs/FINAL_PROPOSAL.md`
+- Short proposal: `refine-logs/FINAL_PROPOSAL_SHORT.md`
+- Method spec: `refine-logs/METHOD_SPEC.md`
+- Optional archive: `refine-logs/FINAL_PROPOSAL_FULL.md`
 
 ## Score Evolution
 
@@ -556,7 +609,9 @@ If the final verdict is not READY, still write the best current final version he
 | 2     | ...                     | ...              | ...    |
 
 ## Final Proposal Snapshot
-- Canonical clean version lives in `refine-logs/FINAL_PROPOSAL.md`
+- Canonical navigation entry lives in `refine-logs/FINAL_PROPOSAL.md`
+- Clean short version lives in `refine-logs/FINAL_PROPOSAL_SHORT.md`
+- Implementation details live in `refine-logs/METHOD_SPEC.md`
 - Summarize the final thesis in 3-5 bullets here
 
 ## Method Evolution Highlights
@@ -584,7 +639,7 @@ If the final verdict is not READY, still write the best current final version he
 ...
 
 ## Next Steps
-- If READY: proceed to `/experiment-plan` for a full experiment roadmap, then `/run-experiment`
+- If READY: proceed to `/experiment-plan` for an experiment-plan index plus execution plan, then `/experiment-bridge`
 - If REVISE: manually address the remaining mechanism weaknesses, then re-run `/research-refine`
 - If RETHINK: revisit the core mechanism, possibly with `/idea-creator`
 ```
@@ -618,7 +673,9 @@ Remaining concerns:
 
 Review summary: refine-logs/REVIEW_SUMMARY.md
 Full report: refine-logs/REFINEMENT_REPORT.md
-Final proposal: refine-logs/FINAL_PROPOSAL.md
+Proposal index: refine-logs/FINAL_PROPOSAL.md
+Short proposal: refine-logs/FINAL_PROPOSAL_SHORT.md
+Method spec: refine-logs/METHOD_SPEC.md
 Suggested next step: /experiment-plan
 ```
 
@@ -631,7 +688,7 @@ Suggested next step: /experiment-plan
 
 ## Key Rules
 
-- **Large file handling**: If the Write tool fails due to file size, immediately retry using Bash (`cat << 'EOF' > file`) to write in chunks. Do NOT ask the user for permission — just do it silently.
+- **Progressive disclosure.** Keep `FINAL_PROPOSAL.md` as an index. Put the clean pitch in `FINAL_PROPOSAL_SHORT.md`, implementation detail in `METHOD_SPEC.md`, and long history in `FINAL_PROPOSAL_FULL.md` only when it is useful.
 
 - **Anchor first, every round.** Always carry forward the same Problem Anchor.
 - **One paper, one dominant contribution.** Avoid multiple parallel contributions unless the paper truly needs them.
@@ -664,7 +721,7 @@ Typical flow:
 
 1. `/idea-creator` or local reading gives you a problem and a vague method direction
 2. `/research-refine` turns that into an anchored, elegant, frontier-aware method plan
-3. `/experiment-plan` turns the final proposal into a detailed claim-driven experiment roadmap
+3. `/experiment-plan` turns the final proposal into an experiment-plan index plus execution plan
 4. `/research-refine-pipeline` is the one-shot wrapper when the user wants both stages in a single request
 5. `/run-experiment` executes the chosen runs
 6. Later loops operate on results, not just ideas

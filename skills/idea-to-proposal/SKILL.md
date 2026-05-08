@@ -576,7 +576,9 @@ Write `orbit-research/PIPELINE_SUMMARY.md`:
 ## Artifact map (Discovery + Grounding + Innovation)
 
 ### Discovery (from /idea-discovery or /research-refine)
-- refine-logs/FINAL_PROPOSAL.md           — final proposal (v1.3-integrated)
+- refine-logs/FINAL_PROPOSAL.md           — final proposal index (v1.3-integrated)
+- refine-logs/FINAL_PROPOSAL_SHORT.md     — clean short proposal
+- refine-logs/METHOD_SPEC.md              — implementation-level method contract
 - idea-stage/IDEA_REPORT.md                — (keyword mode only)
 - orbit-research/PROBLEM_SELECTION.md      — problem selection verdict
 
@@ -591,7 +593,8 @@ Write `orbit-research/PIPELINE_SUMMARY.md`:
 - orbit-research/ALGORITHM_TOURNAMENT.md   — tentative preferred sketch + alternates
 
 ### Validation Prereqs (Phase 6 — pre-implementation, no GPU)
-- refine-logs/EXPERIMENT_PLAN.md           — claim-driven experiment roadmap (v1.3-aware)
+- refine-logs/EXPERIMENT_PLAN.md           — experiment-plan index (v1.3-aware)
+- refine-logs/EXPERIMENT_PLAN_EXEC.md      — claim map, blocks, run order, gates, budget
 - orbit-research/CONTROL_DESIGN.md         — required controls
 - orbit-research/NULL_RESULT_CONTRACT.md   — what null/tie/fail means
 - orbit-research/COMPONENT_BUNDLE_LADDER.md — progressive component / bundle order
@@ -650,7 +653,8 @@ Otherwise (default — chain to Phase 6):
 ### Phase 6: Validation Prereqs — invoke `/experiment-plan`
 
 **Skip this phase if `STOP_AT_PROPOSAL = true` or `STOP_AT_GROUNDING = true`.** Otherwise
-chain to `/experiment-plan` to produce the EXPERIMENT_PLAN.md and Stage 11/12/13/14/16
+chain to `/experiment-plan` to produce the EXPERIMENT_PLAN.md index, EXPERIMENT_PLAN_EXEC.md,
+and Stage 11/12/13/14/16
 prerequisites. This still costs **zero GPU**; it is the final pre-implementation step.
 
 ```bash
@@ -659,7 +663,8 @@ prerequisites. This still costs **zero GPU**; it is the final pre-implementation
 
 `/experiment-plan` (T4-upgraded) reads the v1.3 grounding/innovation artifacts produced in
 Phases 2–4 (ASSUMPTION_LEDGER, ABSTRACT_TASK_MECHANISM, ALGORITHM_TOURNAMENT) and writes a
-v1.3-aware `refine-logs/EXPERIMENT_PLAN.md` plus:
+v1.3-aware `refine-logs/EXPERIMENT_PLAN.md` index plus `refine-logs/EXPERIMENT_PLAN_EXEC.md`
+and:
 
 - `orbit-research/CONTROL_DESIGN.md`
 - `orbit-research/NULL_RESULT_CONTRACT.md`
@@ -672,7 +677,7 @@ unfillable, etc.), surface to user and write Phase 6 STATE with `status = "in_pr
 `next_action = "experiment-plan-failed:<reason>"` so the user can fix and re-invoke.
 
 **Write final STATE** at end of Phase 6 with **`awaiting_human_continue`** (this is now
-the designed human checkpoint of this skill — combined STOP A: proposal + experiment plan
+the designed human checkpoint of this skill — combined STOP A: proposal index + experiment plan index + execution plan
 reviewed together):
 
 ```jsonc
@@ -701,7 +706,10 @@ reviewed together):
     "orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md",
     "orbit-research/PIPELINE_SUMMARY.md",
     "refine-logs/FINAL_PROPOSAL.md",
-    "refine-logs/EXPERIMENT_PLAN.md"
+    "refine-logs/FINAL_PROPOSAL_SHORT.md",
+    "refine-logs/METHOD_SPEC.md",
+    "refine-logs/EXPERIMENT_PLAN.md",
+    "refine-logs/EXPERIMENT_PLAN_EXEC.md"
     // + idea-stage/IDEA_REPORT.md if keyword-mode
   ]
 }

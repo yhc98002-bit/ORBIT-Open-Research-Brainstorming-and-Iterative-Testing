@@ -26,11 +26,14 @@ project/
 │       └── research_contract.md           # Focused context for the active idea
 │
 ├── refine-logs/                           # W1.5: Experiment Planning & Refinement
-│   ├── EXPERIMENT_PLAN.md                 # Experiment design (claims + blocks)
+│   ├── EXPERIMENT_PLAN.md                 # Experiment-plan index
+│   ├── EXPERIMENT_PLAN_EXEC.md            # Claims + blocks + run order
 │   ├── EXPERIMENT_TRACKER.md              # Execution checklist (TODO → DONE)
 │   ├── EXPERIMENT_RESULTS.md              # Collected experiment results
 │   ├── EXPERIMENT_LOG.md                  # Complete record of all experiments run
-│   ├── FINAL_PROPOSAL.md                 # Final refined proposal
+│   ├── FINAL_PROPOSAL.md                 # Proposal index
+│   ├── FINAL_PROPOSAL_SHORT.md           # Clean short proposal
+│   ├── METHOD_SPEC.md                    # Implementation-level method spec
 │   ├── PIPELINE_SUMMARY.md               # Pipeline execution summary
 │   ├── REFINE_STATE.json                  # Refinement recovery state
 │   └── round_N_*.md                       # Per-round review/proposal files
@@ -53,7 +56,8 @@ project/
 | File | Created by | Purpose |
 |------|-----------|---------|
 | `idea-stage/IDEA_REPORT.md` | `/idea-creator` | Raw brainstorm output: all 8-12 ideas + pilot results + eliminated ideas |
-| `refine-logs/EXPERIMENT_PLAN.md` | `/experiment-plan` | Experiment design: claim map, blocks, run order, compute budget |
+| `refine-logs/EXPERIMENT_PLAN.md` | `/experiment-plan` | Experiment-plan index and reading paths |
+| `refine-logs/EXPERIMENT_PLAN_EXEC.md` | `/experiment-plan` | Executable experiment design: claim map, blocks, run order, compute budget |
 | `refine-logs/EXPERIMENT_TRACKER.md` | `/experiment-plan` | Execution checklist: run ID, status (TODO→DONE), one-line notes |
 | `review-stage/AUTO_REVIEW.md` | `/auto-review-loop` | Cumulative review log: scores, reviewer responses, actions taken |
 | `review-stage/REVIEW_STATE.json` | `/auto-review-loop` | Recovery state for context compaction |

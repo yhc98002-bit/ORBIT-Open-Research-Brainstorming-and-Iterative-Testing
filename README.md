@@ -230,7 +230,7 @@ abandon.
 ```
 1. /idea-to-proposal "<keyword OR draft-idea.md>"
    Discovery → Grounding → Innovation → final refinement → experiment plan
-   ⏸ STOP A: review FINAL_PROPOSAL.md + EXPERIMENT_PLAN.md + claim map together
+   ⏸ STOP A: review FINAL_PROPOSAL.md + EXPERIMENT_PLAN.md + EXPERIMENT_PLAN_EXEC.md together
               (single combined "is this worth GPU?" decision)
 
 2. /experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"
@@ -306,7 +306,8 @@ revisiting.
 ```
 
 This will read v1.3 grounding/innovation artifacts (assumption ledger, abstract task,
-algorithm tournament) when present and write a v1.3-aware EXPERIMENT_PLAN.md.
+algorithm tournament) when present and write a v1.3-aware `EXPERIMENT_PLAN.md` index
+plus `EXPERIMENT_PLAN_EXEC.md` for executable details.
 
 ### From plan to running diagnostic (auto-routes solo vs queue)
 

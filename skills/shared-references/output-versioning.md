@@ -28,9 +28,12 @@ project/
 │
 ├── refine-logs/                           # W1.5: Experiment Planning & Refinement
 │   ├── EXPERIMENT_PLAN.md
+│   ├── EXPERIMENT_PLAN_EXEC.md
 │   ├── EXPERIMENT_TRACKER.md
 │   ├── EXPERIMENT_RESULTS.md
 │   ├── FINAL_PROPOSAL.md
+│   ├── FINAL_PROPOSAL_SHORT.md
+│   ├── METHOD_SPEC.md
 │   ├── PIPELINE_SUMMARY.md
 │   ├── REFINE_STATE.json
 │   ├── REVIEW_SUMMARY.md
@@ -52,8 +55,8 @@ project/
 
 Files that get overwritten on re-runs:
 - `IDEA_REPORT.md`, `IDEA_CANDIDATES.md`, `REF_PAPER_SUMMARY.md`
-- `EXPERIMENT_PLAN.md`, `EXPERIMENT_TRACKER.md`, `EXPERIMENT_RESULTS.md`
-- `FINAL_PROPOSAL.md`, `PIPELINE_SUMMARY.md`
+- `EXPERIMENT_PLAN.md`, `EXPERIMENT_PLAN_EXEC.md`, `EXPERIMENT_TRACKER.md`, `EXPERIMENT_RESULTS.md`
+- `FINAL_PROPOSAL.md`, `FINAL_PROPOSAL_SHORT.md`, `METHOD_SPEC.md`, `PIPELINE_SUMMARY.md`
 - `AUTO_REVIEW.md` (when starting a new review loop, not within a loop)
 - `paper/main.tex`
 - State files: `REFINE_STATE.json`, `REVIEW_STATE.json`

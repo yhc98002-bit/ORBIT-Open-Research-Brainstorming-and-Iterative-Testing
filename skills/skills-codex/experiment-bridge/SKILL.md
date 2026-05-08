@@ -33,11 +33,14 @@ refine-logs/FINAL_PROPOSAL.md
 
 This skill expects one or more of:
 
-1. **`refine-logs/EXPERIMENT_PLAN.md`** (best) — claim-driven experiment roadmap from `/experiment-plan`
-2. **`refine-logs/EXPERIMENT_TRACKER.md`** — run-by-run execution table
-3. **`refine-logs/FINAL_PROPOSAL.md`** — method description for implementation context
-4. **`idea-stage/IDEA_CANDIDATES.md`** — compact idea summary (preferred when `COMPACT = true`) *(fall back to `./IDEA_CANDIDATES.md` if not found)*
-5. **`idea-stage/IDEA_REPORT.md`** — fallback if refine-logs don't exist *(fall back to `./IDEA_REPORT.md` if not found)*
+1. **`refine-logs/EXPERIMENT_PLAN.md`** (best) — index for the experiment plan from `/experiment-plan`
+2. **`refine-logs/EXPERIMENT_PLAN_EXEC.md`** — executable claim map, blocks, run order, gates, budget
+3. **`refine-logs/EXPERIMENT_TRACKER.md`** — run-by-run execution table
+4. **`refine-logs/FINAL_PROPOSAL.md`** — proposal index and reading paths
+5. **`refine-logs/METHOD_SPEC.md`** — implementation-level method contract, if present
+6. **`refine-logs/FINAL_PROPOSAL_SHORT.md`** — compact proposal context, if present
+7. **`idea-stage/IDEA_CANDIDATES.md`** — compact idea summary (preferred when `COMPACT = true`) *(fall back to `./IDEA_CANDIDATES.md` if not found)*
+8. **`idea-stage/IDEA_REPORT.md`** — fallback if refine-logs don't exist *(fall back to `./IDEA_REPORT.md` if not found)*
 
 If none exist, ask the user what experiments to implement.
 
@@ -45,7 +48,14 @@ If none exist, ask the user what experiments to implement.
 
 ### Phase 1: Parse the Experiment Plan
 
-Read `EXPERIMENT_PLAN.md` and extract:
+Read `EXPERIMENT_PLAN.md` first. If it is an index, follow its `Files` table and `Reading paths` before extracting implementation details:
+
+- Read `EXPERIMENT_PLAN_EXEC.md` for claim map, experiment blocks, run order, gates, budget, and risks.
+- Read the current `[MILESTONE]_RUN_CARD.md` when the index marks one as "NOW" or "current immediate task"; this run card overrides generic milestone prose for the current launch.
+- Read `FINAL_PROPOSAL.md` as a proposal index, then prefer `METHOD_SPEC.md` for implementation details and `FINAL_PROPOSAL_SHORT.md` for compact project context.
+- Read optional protocol files only when the exec plan or run card references them.
+
+Then extract:
 
 1. **Run order and milestones** — which experiments run first (sanity → baseline → main → ablation → polish)
 2. **For each experiment block:**
@@ -56,16 +66,17 @@ Read `EXPERIMENT_PLAN.md` and extract:
    - Success criterion
    - Priority (MUST-RUN vs NICE-TO-HAVE)
 3. **Compute budget** — total estimated GPU-hours
-4. **Method details** from `FINAL_PROPOSAL.md` — what exactly to implement
+4. **Method details** from `METHOD_SPEC.md` when present, otherwise from `FINAL_PROPOSAL_SHORT.md` / `FINAL_PROPOSAL.md`
 
 Present a brief summary:
 
 ```
-📋 Experiment plan loaded:
+Experiment plan loaded:
 - Milestones: [N] (sanity → baseline → main → ablation)
 - Must-run experiments: [N]
 - Nice-to-have: [N]
 - Estimated GPU-hours: [X]
+- Source files followed: EXPERIMENT_PLAN.md -> EXPERIMENT_PLAN_EXEC.md -> [run card / METHOD_SPEC as applicable]
 
 Proceeding to implementation.
 ```
@@ -97,7 +108,7 @@ For each milestone (in order), write the experiment scripts:
    - Are all hyperparameters from EXPERIMENT_PLAN.md reflected in argparse?
    - Is the random seed fixed and controllable?
    - Are results saved in a parseable format (JSON/CSV)?
-   - Does the code match FINAL_PROPOSAL.md's method description?
+   - Does the code match `METHOD_SPEC.md` when present, otherwise the proposal index's referenced method document?
    - **CRITICAL**: does evaluation compare predictions against dataset ground truth, never another model's output?
 
 ### Phase 3: Sanity Check (if SANITY_FIRST = true)
@@ -206,9 +217,9 @@ Append each completed experiment to `EXPERIMENT_LOG.md`:
 
 After main experiments (M2) complete with positive results, invoke `/ablation-planner` to design ablation studies:
 
-- Read the main results and method description
+- Read the main results and method spec
 - Generate a claim-driven ablation plan: which components to remove, what to compare, and expected outcomes
-- Append ablation blocks to `refine-logs/EXPERIMENT_PLAN.md` and `refine-logs/EXPERIMENT_TRACKER.md`
+- Append ablation blocks to `refine-logs/EXPERIMENT_PLAN_EXEC.md` and `refine-logs/EXPERIMENT_TRACKER.md`; keep `refine-logs/EXPERIMENT_PLAN.md` as a short index.
 - If main results are negative or inconclusive, skip ablation planning and note that in the summary
 
 If `/ablation-planner` is unavailable, skip silently.

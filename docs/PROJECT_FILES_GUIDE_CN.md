@@ -26,11 +26,14 @@ project/
 │       └── research_contract.md           # 当前 idea 的聚焦上下文
 │
 ├── refine-logs/                           # W1.5: 实验规划与精炼
-│   ├── EXPERIMENT_PLAN.md                 # 实验设计（claim + blocks）
+│   ├── EXPERIMENT_PLAN.md                 # 实验计划索引
+│   ├── EXPERIMENT_PLAN_EXEC.md            # Claim + blocks + 执行顺序
 │   ├── EXPERIMENT_TRACKER.md              # 执行清单（TODO → DONE）
 │   ├── EXPERIMENT_RESULTS.md              # 收集的实验结果
 │   ├── EXPERIMENT_LOG.md                  # 所有实验的完整记录
-│   ├── FINAL_PROPOSAL.md                 # 最终精炼提案
+│   ├── FINAL_PROPOSAL.md                 # Proposal 索引
+│   ├── FINAL_PROPOSAL_SHORT.md           # 干净短提案
+│   ├── METHOD_SPEC.md                    # 实现级方法规格
 │   ├── PIPELINE_SUMMARY.md               # 流水线执行摘要
 │   ├── REFINE_STATE.json                  # 精炼恢复状态
 │   └── round_N_*.md                       # 每轮审稿/提案文件
@@ -53,7 +56,8 @@ project/
 | 文件 | 创建者 | 定位 |
 |------|--------|------|
 | `idea-stage/IDEA_REPORT.md` | `/idea-creator` | brainstorm 原始产出：全部 8-12 个 idea + pilot 结果 + 被 kill 的 idea |
-| `refine-logs/EXPERIMENT_PLAN.md` | `/experiment-plan` | 实验设计：claim 映射、实验块、执行顺序、算力预算 |
+| `refine-logs/EXPERIMENT_PLAN.md` | `/experiment-plan` | 实验计划索引和阅读路径 |
+| `refine-logs/EXPERIMENT_PLAN_EXEC.md` | `/experiment-plan` | 可执行实验设计：claim 映射、实验块、执行顺序、算力预算 |
 | `refine-logs/EXPERIMENT_TRACKER.md` | `/experiment-plan` | 执行清单：run ID、状态（TODO→DONE）、一句话 notes |
 | `review-stage/AUTO_REVIEW.md` | `/auto-review-loop` | 审稿循环累积日志：评分、reviewer 原始响应、采取的行动 |
 | `review-stage/REVIEW_STATE.json` | `/auto-review-loop` | 上下文压缩恢复状态 |

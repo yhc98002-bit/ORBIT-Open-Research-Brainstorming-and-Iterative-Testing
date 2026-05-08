@@ -196,7 +196,6 @@ Prefer one strong baseline family over many weak baselines. If a stronger modern
 For every kept block, fully specify:
 
 - **Claim tested** (cite C-IDs from Phase 1 Claim Map)
-- **Why this block exists**
 - **Dataset / split / task** (when `ARTIFACT_AUDIT.md` exists for the dataset, cite it)
 - **Compared systems**: strongest baselines, ablations, and variants only
   - When `ALGORITHM_TOURNAMENT.md` exists, the proposed system is the
@@ -248,30 +247,74 @@ Separate **must-run** from **nice-to-have** experiments.
 
 #### Step 5.1: Write `refine-logs/EXPERIMENT_PLAN.md`
 
+Write this file as a short **index**, not as the full experiment plan. It should tell
+downstream agents which file to read for each task and preserve only the current status,
+key constraints, and routing logic. Do not paste full claim maps, full experiment blocks,
+round history, or repeated rationale into this index.
+
 Use this structure:
 
 ```markdown
-# Experiment Plan
+# Experiment Plan — Index
 
-**Problem**: [problem]
-**Method Thesis**: [one-sentence thesis]
-**Date**: [today]
+**Purpose**: this file is an **index**. The actual execution plan is split into agent-actionable run cards and protocol files. Each downstream skill reads this index and follows the relevant cross-reference.
+
+**Project**: [one-line project / method / venue / budget status]
+
+## Files
+
+| Stage | File | What it contains | When to read |
+|---|---|---|---|
+| Method spec | `FINAL_PROPOSAL.md` | Proposal index and method cross-references | always |
+| Main exec plan | `EXPERIMENT_PLAN_EXEC.md` | Claim Map; compact Block cards; Run Order; budget gates; risks; checklist | always |
+| Current immediate task | `[MILESTONE]_RUN_CARD.md` | The next action only: command surface, success gate, halt rule | now, if present |
+| Failure routing | `NULL_RESULT_CONTRACT.md` | NEGATIVE / TIE interpretation and paper-pivot rules | when any block fails or ties |
+| Optional protocols | `[PROTOCOL].md` | Dataset mapping, baseline protocol, figure plan, or other scoped details | only when referenced by a run card |
+
+## Phased flow
+
+```text
+Phase 0 — Sanity / diagnostic gate
+  -> [current milestone or gate]
+Phase 1 — Baselines and main method
+  -> `EXPERIMENT_PLAN_EXEC.md` Run Order
+Phase 2 — Decisive ablations
+  -> halt at each registered decision gate
+Phase 3 — Appendix / qualitative / write-up support
+  -> run only after main evidence is secured
+```
+
+## Key constraints
+
+- [Hard stop / budget / data constraint that downstream agents must enforce]
+- [No silent threshold relaxation; no unregistered experiment launch]
+- [Nice-to-have runs must not delay must-run evidence]
+
+## Downstream skill
+
+`/experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"` reads this index, follows the cross-references, and implements the milestones in `EXPERIMENT_PLAN_EXEC.md` order. The bridge skill must not auto-launch a milestone past a hard stop without explicit human approval.
+```
+
+#### Step 5.2: Write `refine-logs/EXPERIMENT_PLAN_EXEC.md`
+
+Write the executable plan here. Keep it compact and decision-oriented: every row should
+either tell the implementer what to run, what result would change the paper, or when to
+halt. Avoid prose introductions, repeated claim rationales, and broad benchmark wishlists.
+
+Use this structure:
+
+```markdown
+# Experiment Plan Exec
 
 ## Claim Map
-| Claim | Why It Matters | Minimum Convincing Evidence | Linked Blocks |
-|-------|-----------------|-----------------------------|---------------|
-| C1    | ...             | ...                         | B1, B2        |
-
-## Paper Storyline
-- Main paper must prove:
-- Appendix can support:
-- Experiments intentionally cut:
+| Claim | Minimum Convincing Evidence | Linked Blocks | Assumptions / Sketch IDs |
+|---|---|---|---|
+| C1 | ... | B1, B2 | A1, S3 |
 
 ## Experiment Blocks
 
-### Block 1: [Name]
+### Block A: [Name]
 - Claim tested:
-- Why this block exists:
 - Dataset / split / task:
 - Compared systems:
 - Metrics:
@@ -281,7 +324,7 @@ Use this structure:
 - Table / figure target:
 - Priority: MUST-RUN / NICE-TO-HAVE
 
-### Block 2: [Name]
+### Block B: [Name]
 ...
 
 ## Run Order and Milestones
@@ -307,7 +350,18 @@ Use this structure:
 - [ ] Nice-to-have runs are separated from must-run runs
 ```
 
-#### Step 5.2: Write `refine-logs/EXPERIMENT_TRACKER.md`
+#### Step 5.3: Write optional companion files only when useful
+
+Create companion files only when the content would otherwise bloat the index or exec plan.
+Common examples:
+
+- `refine-logs/[MILESTONE]_RUN_CARD.md` — current active run or important completed predecessor.
+- `refine-logs/CATEGORY_MAPPING_PROTOCOL.md` — dataset/task mapping that must be reused.
+- `refine-logs/TIER2_BASELINE_CARD.md` — secondary baseline protocol and drop rules.
+- `refine-logs/PAPER_FIGURE_PLAN.md` — figure/table sourcing plan.
+- `refine-logs/EXPERIMENT_PLAN_FULL.md` — optional archive only when preserving a previous monolithic plan or revision history is useful.
+
+#### Step 5.4: Write `refine-logs/EXPERIMENT_TRACKER.md`
 
 Use this structure:
 
@@ -321,25 +375,22 @@ Use this structure:
 
 Keep the tracker compact and execution-oriented.
 
-#### Step 5.3: Present a Brief Summary to the User
+#### Step 5.5: Present a Brief Summary to the User
 
 ```
 Experiment plan ready.
 
-Must-run blocks:
-- [Block 1]
-- [Block 2]
+Index: refine-logs/EXPERIMENT_PLAN.md
+Execution plan: refine-logs/EXPERIMENT_PLAN_EXEC.md
+Tracker: refine-logs/EXPERIMENT_TRACKER.md
 
-Highest-risk assumption:
-- [risk]
+Current next gate:
+- [milestone / run card / halt condition]
 
-First three runs to launch:
+First runs to launch:
 1. [run]
 2. [run]
 3. [run]
-
-Plan file: refine-logs/EXPERIMENT_PLAN.md
-Tracker file: refine-logs/EXPERIMENT_TRACKER.md
 ```
 
 ## Output Protocols
@@ -351,7 +402,7 @@ Tracker file: refine-logs/EXPERIMENT_TRACKER.md
 
 ## Key Rules
 
-- **Large file handling**: If the Write tool fails due to file size, immediately retry using Bash (`cat << 'EOF' > file`) to write in chunks. Do NOT ask the user for permission — just do it silently.
+- **Progressive disclosure.** Keep `EXPERIMENT_PLAN.md` as an index. Put executable detail in `EXPERIMENT_PLAN_EXEC.md`; put milestone-specific instructions in run cards; archive old monoliths only when they preserve useful history.
 
 - **Every experiment must defend a claim.** If it does not change a reviewer belief, cut it.
 - **Prefer a compact paper story.** Design the main table first, then add only the ablations that defend it.

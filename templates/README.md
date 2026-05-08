@@ -8,7 +8,7 @@ Ready-to-use templates for each ARIS workflow. Copy, fill in your content, and r
 |----------|-------------|------------|
 | [RESEARCH_BRIEF_TEMPLATE.md](RESEARCH_BRIEF_TEMPLATE.md) | Workflow 1 | Detailed research direction as document input |
 | [RESEARCH_CONTRACT_TEMPLATE.md](RESEARCH_CONTRACT_TEMPLATE.md) | Workflow 1 | Define problem boundaries, non-goals, timeline before starting |
-| [EXPERIMENT_PLAN_TEMPLATE.md](EXPERIMENT_PLAN_TEMPLATE.md) | Workflow 1.5 | Claim-driven experiment roadmap with run order and budgets |
+| [EXPERIMENT_PLAN_TEMPLATE.md](EXPERIMENT_PLAN_TEMPLATE.md) | Workflow 1.5 | Progressive-disclosure experiment-plan index; executable details live in `EXPERIMENT_PLAN_EXEC.md` |
 | [NARRATIVE_REPORT_TEMPLATE.md](NARRATIVE_REPORT_TEMPLATE.md) | Workflow 3 | Research narrative with claims, experiments, results |
 | [PAPER_PLAN_TEMPLATE.md](PAPER_PLAN_TEMPLATE.md) | Workflow 3 | Pre-made outline to skip planning phase |
 | [CLAUDE_MD_TEMPLATE.md](CLAUDE_MD_TEMPLATE.md) | All Workflows | Project dashboard with Pipeline Status — create once per project |
@@ -20,7 +20,7 @@ Ready-to-use templates for each ARIS workflow. Copy, fill in your content, and r
 |----------|-------------|------------|
 | [RESEARCH_BRIEF_TEMPLATE_CN.md](RESEARCH_BRIEF_TEMPLATE_CN.md) | Workflow 1 | 研究简报中文模板 |
 | [IDEA_CANDIDATES_TEMPLATE_CN.md](IDEA_CANDIDATES_TEMPLATE_CN.md) | Workflow 1 | Idea 候选池中文模板 |
-| [EXPERIMENT_PLAN_TEMPLATE_CN.md](EXPERIMENT_PLAN_TEMPLATE_CN.md) | Workflow 1.5 | 实验计划中文模板 |
+| [EXPERIMENT_PLAN_TEMPLATE_CN.md](EXPERIMENT_PLAN_TEMPLATE_CN.md) | Workflow 1.5 | 渐进式披露的实验计划索引模板；执行细节放入 `EXPERIMENT_PLAN_EXEC.md` |
 
 ### Patent Templates (`/patent-pipeline`)
 
@@ -44,6 +44,7 @@ Ready-to-use templates for each ARIS workflow. Copy, fill in your content, and r
 
 ```bash
 cp templates/EXPERIMENT_PLAN_TEMPLATE.md refine-logs/EXPERIMENT_PLAN.md
+# Put claim maps, run order, budgets, and block cards in refine-logs/EXPERIMENT_PLAN_EXEC.md
 # Edit with your content, then:
 /experiment-bridge
 ```
