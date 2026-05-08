@@ -33,7 +33,7 @@ training_status: running on server-X, GPU 0-3, tmux=train01, wandb=run_id,
 active_tasks:
   - "training exp01 on server-X (tmux=exp01, GPU 0-3)"
   - "downloading dataset-Y on server-Z (tmux=download01)"
-language: en         # en | zh — 控制技能输出语言
+language: en         # en | zh — artifact 语言；默认/推荐 English
 last_updated: ""     # YYYY-MM-DD HH:mm — 技能每次输出时自动更新
 next: 下一步行动
 ```
@@ -50,7 +50,7 @@ next: 下一步行动
 | `training_status` | 训练总体状态 | `running on b2, GPU 0-3, tmux=exp01` |
 | `active_tasks` | 所有正在运行的任务（训练、下载、评估），含位置和检查方式 — 防止新 session 丢失对后台任务的追踪 | `training exp01 on b2 (GPU 0-3)` |
 | `next` | 具体下一步 | `"等训练完，在测试集上跑 eval"` |
-| `language` | 技能输出语言 | `en` 或 `zh` — 控制技能输出语言 |
+| `language` | artifact 语言 | `en` 或 `zh`；研究 artifact 默认/推荐 `en` |
 | `last_updated` | 技能最后输出时间 | `2025-06-15 14:30` — 技能自动更新 |
 
 ### 什么时候更新 Pipeline Status

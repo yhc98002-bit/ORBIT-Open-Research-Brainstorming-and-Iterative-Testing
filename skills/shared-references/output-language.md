@@ -2,10 +2,20 @@
 
 ## Language Detection
 
-Determine the output language using this priority:
-1. Check `CLAUDE.md` for a `language:` field in `## Pipeline Status` — if `language: zh` or `language: cn`, output in Chinese
-2. If the user's most recent message is in Chinese, output in Chinese
-3. Default: English
+Research artifacts, reviewer prompts, and skill-generated templates default to **English**.
+English is the operational language for ORBIT because it is the strongest language for
+research reasoning, paper writing, benchmark names, and downstream tool consistency.
+
+Determine the artifact output language using this priority:
+1. If the user explicitly asks for Chinese output for this run, output prose artifacts in Chinese.
+2. Else check `CLAUDE.md` for a `language:` field in `## Pipeline Status`:
+   - `language: zh` or `language: cn` → output prose artifacts in Chinese.
+   - `language: en` or missing → output prose artifacts in English.
+3. Otherwise default to English.
+
+Do **not** switch artifact language only because the user's chat message is in Chinese.
+The assistant may answer the user conversationally in Chinese, but persistent research
+artifacts should remain English unless the user explicitly opts into Chinese artifacts.
 
 ## What to Localize
 
@@ -31,15 +41,15 @@ Determine the output language using this priority:
 
 | Skill | Language Support | Notes |
 |-------|-----------------|-------|
-| /idea-creator | Full | IDEA_REPORT.md follows language setting |
+| /idea-creator | Full | IDEA_REPORT.md follows artifact language setting; default English |
 | /idea-discovery | Full | Inherits from sub-skills |
-| /analyze-results | Full | Result analysis follows language setting |
-| /auto-review-loop | Partial | AUTO_REVIEW.md follows setting; reviewer prompts stay English |
-| /experiment-plan | Full | EXPERIMENT_PLAN.md follows setting |
-| /experiment-bridge | Full | EXPERIMENT_RESULTS.md follows setting |
-| /research-refine | Full | FINAL_PROPOSAL.md follows setting |
-| /research-refine-pipeline | Full | PIPELINE_SUMMARY.md follows setting |
+| /analyze-results | Full | Result analysis follows artifact language setting; default English |
+| /auto-review-loop | Partial | AUTO_REVIEW.md follows artifact language setting; reviewer prompts stay English |
+| /experiment-plan | Full | EXPERIMENT_PLAN.md follows artifact language setting; default English |
+| /experiment-bridge | Full | EXPERIMENT_RESULTS.md follows artifact language setting; default English |
+| /research-refine | Full | FINAL_PROPOSAL.md follows artifact language setting; default English |
+| /research-refine-pipeline | Full | PIPELINE_SUMMARY.md follows artifact language setting; default English |
 | /research-pipeline | Full | Inherits from sub-skills |
-| /result-to-claim | Full | Claim descriptions follow setting |
+| /result-to-claim | Full | Claim descriptions follow artifact language setting; default English |
 | /paper-writing | Skip | Always English LaTeX for submission |
 | /paper-write | Skip | Always English LaTeX |

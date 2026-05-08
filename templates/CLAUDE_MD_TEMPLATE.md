@@ -9,7 +9,7 @@ contract: ""         # Path to research_contract.md (e.g., idea-stage/docs/resea
 current_branch: ""   # Git branch for this idea
 baseline: ""         # Baseline numbers for comparison
 training_status: idle  # idle | running | complete | failed
-language: en         # en | zh — controls skill output language (see shared-references/output-language.md)
+language: en         # en | zh — artifact language; default/recommended is English
 active_tasks: []
 next: ""             # Concrete next step
 last_updated: ""     # YYYY-MM-DD HH:mm — auto-updated by skills on every output write

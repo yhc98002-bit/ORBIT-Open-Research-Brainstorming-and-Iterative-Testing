@@ -8,6 +8,9 @@
 long context `.md` files, and committed draft-idea `.md` files. Context docs still run
 discovery; only explicit draft ideas skip directly to refinement.
 
+**Language note:** ORBIT's persistent research artifacts default to English even when the
+chat is in Chinese. Chinese templates are manual opt-in only.
+
 **v1.3 — research-methodology routing harness.** ORBIT routes you through 26 stages organised
 into four spines (Discovery / Grounding / Innovation / Validation) by mode (EXPLORATION /
 INNOVATION / COMMITMENT) and risk score. It moves fast in exploration, slows down before

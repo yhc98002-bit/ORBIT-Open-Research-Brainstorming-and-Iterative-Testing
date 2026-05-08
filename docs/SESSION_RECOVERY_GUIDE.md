@@ -33,7 +33,7 @@ training_status: running on server-X, GPU 0-3, tmux=train01, wandb=run_id,
 active_tasks:
   - "training exp01 on server-X (tmux=exp01, GPU 0-3)"
   - "downloading dataset-Y on server-Z (tmux=download01)"
-language: en         # en | zh — controls skill output language
+language: en         # en | zh — artifact language; default/recommended is English
 last_updated: ""     # YYYY-MM-DD HH:mm — auto-updated by skills on every output write
 next: what to do next
 ```
@@ -50,7 +50,7 @@ next: what to do next
 | `training_status` | Overall training state | `running on b2, GPU 0-3, tmux=exp01` |
 | `active_tasks` | All running tasks (training, downloads, evals) with location and check commands — prevents new sessions from losing track of background work | `training exp01 on b2 (GPU 0-3)` |
 | `next` | Concrete next action | `"wait for training, then run eval on test set"` |
-| `language` | Skill output language | `en` or `zh` — controls skill output language |
+| `language` | Artifact language | `en` or `zh`; default/recommended is `en` for research artifacts |
 | `last_updated` | When skills last wrote output | `2025-06-15 14:30` — auto-updated by skills |
 
 ### When to Update Pipeline Status

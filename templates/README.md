@@ -2,6 +2,14 @@
 
 Ready-to-use templates for each ARIS workflow. Copy, fill in your content, and run the corresponding skill.
 
+## Language Policy
+
+Operational skill outputs and research artifacts should use the English templates by
+default. The `_CN.md` files are optional human-facing convenience copies for users who
+explicitly want Chinese artifacts; skills should not select them automatically just
+because the chat is in Chinese. See
+[`skills/shared-references/output-language.md`](../skills/shared-references/output-language.md).
+
 ### Workflow Input Templates
 
 | Template | For Workflow | What to do |
@@ -14,7 +22,7 @@ Ready-to-use templates for each ARIS workflow. Copy, fill in your content, and r
 | [CLAUDE_MD_TEMPLATE.md](CLAUDE_MD_TEMPLATE.md) | All Workflows | Project dashboard with Pipeline Status — create once per project |
 | [MANIFEST_TEMPLATE.md](MANIFEST_TEMPLATE.md) | All Workflows | Output tracking manifest — auto-maintained by skills |
 
-### Chinese Templates (中文模板)
+### Optional Chinese Templates (manual opt-in)
 
 | Template | For Workflow | What to do |
 |----------|-------------|------------|
