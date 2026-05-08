@@ -1,7 +1,7 @@
 ---
 name: idea-to-proposal
-description: "ORBIT v1.3 thin pipeline from a research-area keyword OR a draft idea .md file all the way to a v1.3-complete proposal AND experiment plan — everything you need before touching GPU. Chains existing /idea-discovery (for keywords) or /research-refine (for .md), then runs Stage 4/5/7 (Grounding) + Stage 8/9/10 (Innovation, Codex collaborative) + a final /research-refine pass that integrates the tentative sketch winner + /experiment-plan to produce EXPERIMENT_PLAN + Validation prereqs. Outputs FINAL_PROPOSAL.md, EXPERIMENT_PLAN.md, plus the v1.3 Discovery/Grounding/Innovation artifact set. Does NOT touch GPU. Use when user says \"领域到proposal\", \"出proposal\", \"想法到方案\", \"idea-to-proposal\", \"proposal pipeline\", \"从领域跑到方案\", or wants the full pre-implementation package in one call."
-argument-hint: [research-area-keyword OR path/to/draft-idea.md]
+description: "ORBIT v1.3 thin pipeline from a research-area keyword, a long context .md, OR a draft idea .md file all the way to a v1.3-complete proposal AND experiment plan — everything you need before touching GPU. Chains existing /idea-discovery for keywords and context docs, or /research-refine only for explicit draft ideas, then runs Stage 4/5/7 (Grounding) + Stage 8/9/10 (Innovation, Codex collaborative) + a final /research-refine pass that integrates the tentative sketch winner + /experiment-plan to produce EXPERIMENT_PLAN + Validation prereqs. Outputs FINAL_PROPOSAL.md, EXPERIMENT_PLAN.md, plus the v1.3 Discovery/Grounding/Innovation artifact set. Does NOT touch GPU. Use when user says \"领域到proposal\", \"出proposal\", \"想法到方案\", \"idea-to-proposal\", \"proposal pipeline\", \"从领域跑到方案\", or wants the full pre-implementation package in one call."
+argument-hint: [research-area-keyword OR path/to/context.md OR path/to/draft-idea.md]
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, mcp__codex__codex, mcp__codex__codex-reply
 ---
 
@@ -25,15 +25,16 @@ run any experiment, does not write a paper. To take the plan further, hand off t
 `/experiment-bridge` (Stage 15) or `/research-pipeline` from Stage 15 onward.
 
 ```
-Input:        Phase 1 (Discovery)    Phase 2 (Grounding)   Phase 3 (Innovation, Codex collab)   Phase 4               Phase 5      Phase 6
-keyword ────► /idea-discovery ──┐
-.md file ───► /research-refine ─┴► Stage 4 → 5 → 7 ─────► Stage 8 → 9 → 10 ─────────────────► /research-refine ──► PIPELINE_   ──► /experiment-plan
-                                  (assumption,            (mechanism, analogy,                 final pass            SUMMARY        Stage 11/12/13/14/16
-                                   abstract, baseline)     sketch tournament)                  (winner integrated)                  prereqs
-                                                                                                                                    │
-                                                                                                                                    ▼
-                                                                                                                          ⏸ STOP awaiting_human_continue
-                                                                                                                          (or earlier with --stop-at-proposal)
+Input:          Phase 1 (Discovery)      Phase 2 (Grounding)   Phase 3 (Innovation, Codex collab)   Phase 4               Phase 5      Phase 6
+keyword ──────► /idea-discovery ────┐
+context .md ──► /idea-discovery ────┤
+draft idea .md ─► /research-refine ─┴► Stage 4 → 5 → 7 ─────► Stage 8 → 9 → 10 ─────────────────► /research-refine ──► PIPELINE_   ──► /experiment-plan
+                                      (assumption,            (mechanism, analogy,                 final pass            SUMMARY        Stage 11/12/13/14/16
+                                       abstract, baseline)     sketch tournament)                  (winner integrated)                  prereqs
+                                                                                                                                        │
+                                                                                                                                        ▼
+                                                                                                                              ⏸ STOP awaiting_human_continue
+                                                                                                                              (or earlier with --stop-at-proposal)
 ```
 
 ## Constants
@@ -102,7 +103,7 @@ Written at every phase boundary with overwrite semantics. Schema:
                                           //   phase-1-discovery, phase-2-grounding,
                                           //   phase-3-innovation, phase-4-final-refinement,
                                           //   phase-5-summary, phase-6-experiment-plan)
-  "input_mode": "keyword" | "idea",      // detected at Phase 0
+  "input_mode": "keyword" | "context" | "idea",      // detected at Phase 0
   "input_value": "$ARGUMENTS",           // verbatim
   "status": "in_progress" | "awaiting_human_continue" | "completed",
   "next_action": "phase-4-final-refinement",        // for same-skill resume
@@ -174,12 +175,15 @@ inconsistent state" warning.
 | `— no-checkpoint: true` | Skip the Phase 6 `awaiting_human_continue` exit; transition straight to `completed` |
 | `STOP_AT_GROUNDING: true` | Skip Phase 3 + Phase 4 + Phase 6; produce only Grounding artifacts; awaiting_human_continue at Phase 5 |
 | `STOP_AT_PROPOSAL: true` | Skip Phase 6; produce proposal + Discovery/Grounding/Innovation artifacts only; awaiting_human_continue at Phase 5 |
-| `— arxiv download: <bool>` | When `true`, run **Phase 0.5 (Literature Pre-fetch)** before Phase 1: delegates to `/research-lit` to populate `papers/` and `research-wiki/papers/` so downstream skills (especially `/research-refine`'s "Check `papers/` first" step in Phase 1b, and the Stage-4/5/7 grounding harness prompts in Phase 2) have local PDFs to scan. Default `false` (preserves prior behavior — grounding runs off whatever the LLM already knows). Without this flag, the literature pre-fetch is skipped silently. |
+| `— arxiv download: <bool>` | When `true`, run **Phase 0.5 (Literature Pre-fetch)** before Phase 1: delegates to `/research-lit` to populate `papers/` and `research-wiki/papers/` so downstream skills (especially `/research-refine`'s "Check `papers/` first" step in Phase 1c, and the Stage-4/5/7 grounding harness prompts in Phase 2) have local PDFs to scan. Default `false` (preserves prior behavior — grounding runs off whatever the LLM already knows). Without this flag, the literature pre-fetch is skipped silently. |
 | `— sources: <list>` | Comma-separated source list for Phase 0.5. Subset of: `arxiv`, `web`, `semantic-scholar`, `deepxiv`, `exa`, `alphaxiv`, `local`, `all`. Default `arxiv`. Forwarded verbatim to `/research-lit — sources: <list>`. Has no effect if `— arxiv download: false`. |
 | `— arxiv max download: <N>` | Cap on PDFs downloaded by Phase 0.5. Default `LITERATURE_PRE_FETCH_MAX_DEFAULT = 10`. Forwarded to `/research-lit — max download: <N>`. |
 | `— venue: <name>` | Target venue (e.g. `iclr`, `icml`, `neurips`, `cvpr`, `naacl`). Recorded in `PIPELINE_INTAKE.md` and forwarded as `— venue: <name>` to `/research-refine`, `/research-pipeline`, and `/experiment-plan` so their reviewer prompts can name the venue specifically rather than the hardcoded "top venue". Default: unset. |
 | `— effort: <level>` | Codex effort level: `low`, `medium`, `high`, `xhigh`, or `max` (alias for `xhigh`). Sets the per-call `model_reasoning_effort` for Codex MCP invocations across this skill (overrides `CODEX_REVIEW_EFFORT = xhigh` constant for this run). The actual effort honored is subject to Codex MCP environment availability — if the requested level is unavailable, Codex falls back to the next lower available level and the fallback (e.g. `gpt-5.2 high`) is logged in `STATE.notes`. |
-| `— difficulty: <level>` | Calibrates the downstream `/research-refine` (Phase 1b idea-mode + Phase 4 final refinement) reviewer behavior + READY threshold + MAX_ROUNDS. Three levels (mirror upstream `/auto-review-loop` + `/research-pipeline`): `medium` (default) = standard reviewer + ≥9.0 / 5 rounds; `hard` = stricter reviewer + ≥9.5 / 7 rounds; `nightmare` = `hard` + reject-by-default per-dimension veto (every dimension ≥ 8) + ≥9.5 / 7 rounds. Forwarded verbatim as `— difficulty: <level>` to `/research-refine` (which honors it natively per its own `REVIEWER_DIFFICULTY` constant). |
+| `— difficulty: <level>` | Calibrates the downstream `/research-refine` (Phase 1c idea-mode + Phase 4 final refinement) reviewer behavior + READY threshold + MAX_ROUNDS. Three levels (mirror upstream `/auto-review-loop` + `/research-pipeline`): `medium` (default) = standard reviewer + ≥9.0 / 5 rounds; `hard` = stricter reviewer + ≥9.5 / 7 rounds; `nightmare` = `hard` + reject-by-default per-dimension veto (every dimension ≥ 8) + ≥9.5 / 7 rounds. Forwarded verbatim as `— difficulty: <level>` to `/research-refine` (which honors it natively per its own `REVIEWER_DIFFICULTY` constant). |
+| `— input-mode: keyword\|context\|idea` | Override Phase 0 input classification. Use `context` for long notes/background `.md` files that should still run `/idea-discovery`; use `idea` only for an already committed method/direction draft that should skip discovery and go straight to `/research-refine`. |
+| `— context: true` | Alias for `— input-mode: context`. Explicitly treat a `.md` file as contextual material, not as a final idea. |
+| `— idea: true` | Alias for `— input-mode: idea`. Explicitly treat a `.md` file as a draft idea/method proposal and skip discovery. |
 
 ## Workflow
 
@@ -191,8 +195,20 @@ applies its own idempotent-skip check).
 
 Otherwise (fresh start), inspect `$ARGUMENTS`:
 
-- If it is a **path to an existing file** ending in `.md` → **idea-mode**.
-- Otherwise → **keyword-mode** (research area, topic phrase).
+1. Explicit mode flags win:
+   - `— input-mode: keyword` → **keyword-mode**.
+   - `— input-mode: context` or `— context: true` → **context-mode**.
+   - `— input-mode: idea` or `— idea: true` → **idea-mode**.
+2. If the input is a **path to an existing file** ending in `.md`, classify it by intent:
+   - **context-mode** when the filename or headings indicate notes/background/context,
+     e.g. `context`, `background`, `notes`, `reading`, `survey`, `constraints`,
+     `requirements`, `方向`, `背景`, `上下文`, `阅读笔记`, `约束`.
+   - **idea-mode** when the filename or headings indicate a committed method/proposal,
+     e.g. `proposal`, `method`, `approach`, `experiment plan`, `hypothesis`, `idea`,
+     `方案`, `方法`, `假设`, `实验计划`, `研究想法`.
+   - If ambiguous, default to **context-mode**. A long `.md` should not silently skip
+     discovery just because it is a file.
+3. Otherwise → **keyword-mode** (research area, topic phrase).
 
 ```bash
 mkdir -p orbit-research/ refine-logs/
@@ -203,7 +219,7 @@ Write a one-line classifier note to `orbit-research/PIPELINE_INTAKE.md`:
 ```markdown
 # Pipeline Intake
 - Input: $ARGUMENTS
-- Mode: keyword | idea
+- Mode: keyword | context | idea
 - Started: <ISO timestamp>
 - Stops at: proposal (Validation Spine NOT triggered)
 ```
@@ -213,7 +229,8 @@ Write a one-line classifier note to `orbit-research/PIPELINE_INTAKE.md`:
 recognised by this skill (see Override flags table above for full list):
 `AUTO_PROCEED`, `human checkpoint`, `STOP_AT_GROUNDING`, `STOP_AT_PROPOSAL`,
 `arxiv download`, `sources`, `arxiv max download`, `venue`, `effort`,
-`difficulty`, `from-phase`, `resume`, `fresh`, `no-checkpoint`.
+`difficulty`, `input-mode`, `context`, `idea`, `from-phase`, `resume`, `fresh`,
+`no-checkpoint`.
 
 Unknown flags are recorded in `PIPELINE_INTAKE.md` with a `⚠️ unknown flag —
 will not be honored` annotation rather than silently dropped. **This is a
@@ -226,7 +243,7 @@ unknown — never silently captured-but-ignored.**
 {
   "skill": "idea-to-proposal",
   "phase": "phase-0-intake",
-  "input_mode": "keyword | idea",
+  "input_mode": "keyword | context | idea",
   "input_value": "$ARGUMENTS",
   "parsed_flags": {                      // every flag parsed in Phase 0
     "auto_proceed": true,
@@ -252,7 +269,7 @@ unknown — never silently captured-but-ignored.**
 Phase 1 — the historical default behavior is preserved when the flag is absent
 or false.
 
-**Why this phase exists** (the bug it fixes): `/research-refine` (Phase 1b
+**Why this phase exists** (the bug it fixes): `/research-refine` (Phase 1c
 idea-mode) and the Stage-4/5/7 grounding harness prompts (Phase 2) both check
 `papers/` and `literature/` for local PDFs first (per `research-refine
 SKILL.md` L181: "Check `papers/` and `literature/` first"). Without a
@@ -268,11 +285,14 @@ the top-N most relevant PDFs into `papers/` plus ingesting them into
 `research-wiki/papers/` (when `research-wiki/` exists in the project root).
 
 **Step 1 — Derive a focused query from the input**:
-- **idea-mode** (input is `.md`): read the file's headline / "Direction" /
-  "Tasks" sections and synthesise a 1-2 line query of key technical terms
-  (e.g. for the round-5 example: "DiT rectified-flow image editing
-  post-training RL EditScore DanceGRPO").
 - **keyword-mode** (input is a topic phrase): use it directly as the query.
+- **context-mode** (input is a context `.md`): read the file and synthesize a
+  1-2 line query from the domain, goals, constraints, mentioned papers/systems,
+  and tentative directions. Ignore long prose that is only background.
+- **idea-mode** (input is a draft idea `.md`): read the file's headline /
+  "Direction" / "Tasks" sections and synthesize a 1-2 line query of key technical
+  terms (e.g. for the round-5 example: "DiT rectified-flow image editing
+  post-training RL EditScore DanceGRPO").
 
 Record the derived query in `PIPELINE_INTAKE.md` under a "Phase 0.5 query"
 field for transparency and reproducibility.
@@ -369,7 +389,44 @@ This produces:
 When `/idea-discovery` reaches its post-Phase-2 user checkpoint, pass through with the
 top-ranked candidate unless the user passed `— human checkpoint: true`.
 
-#### Phase 1b — idea-mode
+#### Phase 1b — context-mode
+
+Read the user's context `.md` file and extract a compact discovery brief into
+`orbit-research/PIPELINE_INTAKE.md` under `## Context-mode discovery brief`.
+The brief should contain only decision-relevant material:
+
+- domain / research area
+- goals and non-goals
+- hard constraints, available resources, datasets, codebases, venues, or deadlines
+- cited papers/systems/negative examples
+- tentative directions, explicitly marked as tentative rather than committed ideas
+
+Then invoke `/idea-discovery` with the original file path plus the brief location,
+forwarding parsed flags:
+
+```bash
+/idea-discovery "$ARGUMENTS + context-mode discovery brief in orbit-research/PIPELINE_INTAKE.md" \
+    — venue: <parsed_flags.venue> \
+    — effort: <parsed_flags.effort> \
+    — difficulty: <parsed_flags.difficulty>
+```
+
+The instruction to `/idea-discovery` is: treat the `.md` as context and constraints,
+not as the selected solution. It must still generate and compare candidate ideas before
+choosing one.
+
+This produces the same artifact set as keyword-mode:
+- `idea-stage/IDEA_REPORT.md` (ranked candidates)
+- `refine-logs/FINAL_PROPOSAL.md` (top idea, refined via `/research-refine-pipeline`)
+- `refine-logs/EXPERIMENT_PLAN.md` (preliminary — will be **regenerated** when the user
+  later commits to the Validation Spine; do NOT treat as canonical)
+- `refine-logs/EXPERIMENT_TRACKER.md`
+- `orbit-research/PROBLEM_SELECTION.md`
+
+When `/idea-discovery` reaches its post-Phase-2 user checkpoint, pass through with the
+top-ranked candidate unless the user passed `— human checkpoint: true`.
+
+#### Phase 1c — idea-mode
 
 Read the user's draft `.md` file, then invoke `/research-refine` with the
 parsed flags forwarded:
@@ -411,7 +468,7 @@ ending with `PROCEED | NARROW | RETHINK`. If `RETHINK`, stop here and surface th
     "orbit-research/PIPELINE_INTAKE.md",
     "refine-logs/FINAL_PROPOSAL.md",
     "orbit-research/PROBLEM_SELECTION.md"
-    // + idea-stage/IDEA_REPORT.md if keyword-mode
+    // + idea-stage/IDEA_REPORT.md if keyword-mode or context-mode
   ]
 }
 ```
@@ -569,7 +626,7 @@ Write `orbit-research/PIPELINE_SUMMARY.md`:
 # /idea-to-proposal Pipeline Summary
 
 - Input: $ARGUMENTS
-- Mode: keyword | idea
+- Mode: keyword | context | idea
 - Completed: <ISO timestamp>
 - Validation Spine triggered: NO
 
@@ -579,7 +636,7 @@ Write `orbit-research/PIPELINE_SUMMARY.md`:
 - refine-logs/FINAL_PROPOSAL.md           — final proposal index (v1.3-integrated)
 - refine-logs/FINAL_PROPOSAL_SHORT.md     — clean short proposal
 - refine-logs/METHOD_SPEC.md              — implementation-level method contract
-- idea-stage/IDEA_REPORT.md                — (keyword mode only)
+- idea-stage/IDEA_REPORT.md                — (keyword/context mode only)
 - orbit-research/PROBLEM_SELECTION.md      — problem selection verdict
 
 ### Grounding (Phase 2)
@@ -684,7 +741,7 @@ reviewed together):
 {
   "skill": "idea-to-proposal",
   "phase": "phase-6-experiment-plan",
-  "input_mode": "keyword | idea",
+  "input_mode": "keyword | context | idea",
   "input_value": "$ARGUMENTS",
   "status": "awaiting_human_continue",
   "next_action": "human-must-confirm-then-call-/experiment-bridge-or-/research-pipeline",
@@ -710,7 +767,7 @@ reviewed together):
     "refine-logs/METHOD_SPEC.md",
     "refine-logs/EXPERIMENT_PLAN.md",
     "refine-logs/EXPERIMENT_PLAN_EXEC.md"
-    // + idea-stage/IDEA_REPORT.md if keyword-mode
+    // + idea-stage/IDEA_REPORT.md if keyword-mode or context-mode
   ]
 }
 ```

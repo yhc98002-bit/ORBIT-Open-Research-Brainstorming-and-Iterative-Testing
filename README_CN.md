@@ -191,7 +191,7 @@ agent 连贯跑，段与段之间 `awaiting_human_continue`（见
 决定是否继续。
 
 ```
-1. /idea-to-proposal "<keyword OR draft-idea.md>"
+1. /idea-to-proposal "<keyword OR context.md OR draft-idea.md>"
    Discovery → Grounding → Innovation → final refinement → experiment plan
    ⏸ STOP A: 一起审 FINAL_PROPOSAL.md + EXPERIMENT_PLAN.md + EXPERIMENT_PLAN_EXEC.md
               （合并的"值得花 GPU 吗"决策点）
@@ -211,6 +211,10 @@ agent 连贯跑，段与段之间 `awaiting_human_continue`（见
    论文写作链（G16+G18 强制 — 必须有 STOP C 产生的 CLAIM_CONSTRUCTION.md）
    ⏸ STOP D（隐式）: 投稿/上 arXiv 前最后人工审
 ```
+
+如果你有大量背景、约束、论文笔记，但还没确定 idea，用
+`/idea-to-proposal "path/to/context.md" — input-mode: context`。只有 `.md` 已经是明确方法草稿、
+希望跳过 discovery 时，才用 `— input-mode: idea`。
 
 **段内行为：** AUTO_PROCEED = true 默认。任何 skill 加 `— human checkpoint: true` 让它
 每个内部 phase 都停。加 `— no-checkpoint: true` 跳过 designed `awaiting_human_continue`

@@ -4,6 +4,10 @@
 
 # ORBIT — Open Research Brainstorming and Iterative Testing
 
+**Input-mode note:** `/idea-to-proposal` now distinguishes broad keywords,
+long context `.md` files, and committed draft-idea `.md` files. Context docs still run
+discovery; only explicit draft ideas skip directly to refinement.
+
 **v1.3 — research-methodology routing harness.** ORBIT routes you through 26 stages organised
 into four spines (Discovery / Grounding / Innovation / Validation) by mode (EXPLORATION /
 INNOVATION / COMMITMENT) and risk score. It moves fast in exploration, slows down before
@@ -228,7 +232,7 @@ so a human can review the milestone artifact and decide whether to continue, rev
 abandon.
 
 ```
-1. /idea-to-proposal "<keyword OR draft-idea.md>"
+1. /idea-to-proposal "<keyword OR context.md OR draft-idea.md>"
    Discovery → Grounding → Innovation → final refinement → experiment plan
    ⏸ STOP A: review FINAL_PROPOSAL.md + EXPERIMENT_PLAN.md + EXPERIMENT_PLAN_EXEC.md together
               (single combined "is this worth GPU?" decision)
@@ -269,6 +273,11 @@ based on phase progress, artifact presence, and 24h staleness.
 /diagnostic-to-review "[diagnostic command]"               # STOP C: review claim + red-team
 /paper-writing "NARRATIVE_REPORT.md" — venue: ICLR         # STOP D: ship paper
 ```
+
+For long notes where the idea is not settled yet, pass the file as context:
+`/idea-to-proposal "path/to/context.md" — input-mode: context`. Use
+`— input-mode: idea` only when the `.md` is already a committed method draft that should
+skip discovery.
 
 ### Just want a proposal (no experiment plan yet)
 

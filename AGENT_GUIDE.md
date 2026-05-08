@@ -184,7 +184,7 @@ stages. Sub-skills enforce their own v1.3 gates even when invoked directly.
 
 | Skill | What it does |
 |-------|-------------|
-| `/idea-to-proposal "<keyword OR idea.md>"` | STOP A: keyword/idea → proposal + experiment plan, no GPU |
+| `/idea-to-proposal "<keyword OR context.md OR idea.md>"` | STOP A: keyword/context/idea → proposal + experiment plan, no GPU. Context `.md` still runs discovery; explicit idea `.md` skips to refinement. |
 | `/proposal-revise "<target>" — critiques: "..."` | STOP A revision loop: targeted critique-driven edits |
 | `/diagnostic-to-review "<diagnostic command>"` | STOP C: chains run → analyze → claim → review |
 | `/alphaxiv "arxiv-id"` | LLM-optimized single-paper summary |

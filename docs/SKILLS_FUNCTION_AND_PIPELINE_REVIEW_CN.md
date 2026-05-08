@@ -101,14 +101,17 @@ STOP D: /paper-writing
 ### 推荐入口
 
 ```text
-/idea-to-proposal "<research keyword OR path/to/draft-idea.md>"
+/idea-to-proposal "<research keyword OR path/to/context.md OR path/to/draft-idea.md>"
 ```
 
 ### 工作流
 
 1. **Phase 0：输入识别**
    - keyword-mode：输入是研究方向或短语。
-   - idea-mode：输入是已有 `.md` idea 草稿。
+   - context-mode：输入是大量背景、约束、论文笔记、负例或资源说明的 `.md`；还没有选定 idea。
+   - idea-mode：输入是已有 `.md` idea / method 草稿，表示已经选定方向。
+   - 显式参数优先：`— input-mode: context` / `— context: true` 强制走 discovery；`— input-mode: idea` / `— idea: true` 才跳过 discovery。
+   - 歧义 `.md` 默认按 context-mode 处理，避免用户只是传长上下文却意外跳过 discovery。
    - 写 `orbit-research/PIPELINE_INTAKE.md` 和 `IDEA_TO_PROPOSAL_STATE.json`。
 
 2. **Phase 0.5：可选文献预抓取**
@@ -118,6 +121,7 @@ STOP D: /paper-writing
 
 3. **Phase 1：Discovery**
    - keyword-mode：调用 `/idea-discovery`。
+   - context-mode：先把 `.md` 压缩成 `PIPELINE_INTAKE.md` 里的 discovery brief，再调用 `/idea-discovery`；原始 `.md` 只作为上下文和约束，不作为已选方案。
    - idea-mode：调用 `/research-refine`。
    - 产出 `refine-logs/FINAL_PROPOSAL.md` 与 `orbit-research/PROBLEM_SELECTION.md`。
 
@@ -576,7 +580,13 @@ paper/
 ### 已经有 idea 草稿
 
 ```text
-/idea-to-proposal "path/to/idea.md"
+/idea-to-proposal "path/to/idea.md" — input-mode: idea
+```
+
+### 有很多上下文但 idea 还没定
+
+```text
+/idea-to-proposal "path/to/context.md" — input-mode: context
 ```
 
 ### 只想打磨方法
