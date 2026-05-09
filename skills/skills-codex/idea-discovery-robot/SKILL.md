@@ -13,7 +13,7 @@ This skill chains four sub-skills into a single automated pipeline:
 
 ```
 /research-lit → /idea-creator (robotics framing) → /novelty-check → /research-review
-  (survey)              (filter + pilot plan)         (verify novel)    (critical feedback)
+  (survey)              (filter + diagnostics)        (verify novel)    (critical feedback)
 ```
 
 But every phase must be grounded in robotics-specific constraints:
@@ -33,14 +33,16 @@ The goal is not to produce flashy demos. The goal is to produce ideas that are:
 
 ## Constants
 
-- **MAX_PILOT_IDEAS = 3** — Validate at most 3 top ideas deeply
-- **PILOT_MODE = `sim-first`** — Prefer simulation or offline-log pilots before any hardware execution
-- **REAL_ROBOT_PILOTS = `explicit approval only`** — Never assume physical robot access or approval
+- **NO_PRE_STOP_A_EXPERIMENTS = true** — ORBIT v1.4+ robotics idea discovery is
+  non-experimental. Do not run simulations, offline evaluations, real-robot trials, or
+  `/run-experiment` before STOP A.
+- **EXPECTED_DIAGNOSTIC_DESIGN_ONLY = true** — Specify what would be tested later after
+  `/experiment-bridge` creates a plan and implementation contract.
 - **AUTO_PROCEED = true** — If user does not respond at checkpoints, proceed with the best sim-first option
 - **REVIEWER_MODEL = `gpt-5.5`** — External reviewer model via a secondary Codex agent
 - **TARGET_VENUES = CoRL, RSS, ICRA, IROS, RA-L** — Default novelty and reviewer framing
 
-> Override inline, e.g. `/idea-discovery-robot "bimanual manipulation" — only sim ideas, no real robot` or `/idea-discovery-robot "drone navigation" — focus on CoRL/RSS, 2 pilot ideas max`
+> Override inline, e.g. `/idea-discovery-robot "bimanual manipulation" — only sim-benchmark ideas, no real robot` or `/idea-discovery-robot "drone navigation" — focus on CoRL/RSS`
 
 ## Execution Rule
 
@@ -139,7 +141,7 @@ Generate ideas only after the robotics frame is explicit.
 Invoke the existing idea generator, but pass the **Robotics Problem Frame** and landscape matrix into the prompt so it does not produce generic ML ideas:
 
 ```
-/idea-creator "$ARGUMENTS — robotics frame: [paste Robotics Problem Frame] — focus venues: CoRL, RSS, ICRA, IROS, RA-L — benchmark-specific ideas only — sim-first pilots — no real-robot execution without explicit approval — require failure metrics and baseline clarity"
+/idea-creator "$ARGUMENTS — robotics frame: [paste Robotics Problem Frame] — focus venues: CoRL, RSS, ICRA, IROS, RA-L — benchmark-specific ideas only — no experiments before STOP A — require failure metrics and baseline clarity"
 ```
 
 Then rewrite and filter the output using the robotics-specific rules below.
@@ -149,7 +151,7 @@ Each candidate idea must include:
 - **Target embodiment**
 - **Target benchmark / simulator / dataset**
 - **Core bottleneck being addressed**
-- **Minimum sim-first pilot**
+- **Expected diagnostic after STOP A**
 - **Mandatory metrics**
 - **Expected failure mode if the idea does not work**
 - **Whether the idea truly needs real hardware**
@@ -189,30 +191,24 @@ For each idea, reject or heavily downrank if:
 ```
 💡 Robotics ideas generated. Top candidates:
 
-1. [Idea 1] — Embodiment: [...] — Benchmark: [...] — Pilot: sim/offline — Risk: LOW/MEDIUM/HIGH
-2. [Idea 2] — Embodiment: [...] — Benchmark: [...] — Pilot: sim/offline — Risk: LOW/MEDIUM/HIGH
+1. [Idea 1] — Embodiment: [...] — Benchmark: [...] — Diagnostic clarity: HIGH — Risk: LOW/MEDIUM/HIGH
+2. [Idea 2] — Embodiment: [...] — Benchmark: [...] — Diagnostic clarity: MEDIUM — Risk: LOW/MEDIUM/HIGH
 3. [Idea 3] — requires hardware / weak benchmark / high risk
 
 Should I carry the top sim-first ideas into novelty checking and external review?
 (If no response, I'll continue with the strongest benchmark-grounded ideas.)
 ```
 
-- **User picks ideas** (or no response + AUTO_PROCEED=true) → proceed to Phase 3 with the top sim-first ideas, then continue to Phase 4 and Phase 5.
+- **User picks ideas** (or no response + AUTO_PROCEED=true) → proceed to Phase 3 with the top benchmark-grounded ideas, then continue to Phase 4 and Phase 5.
 - **User wants different constraints** → update the robotics frame and re-run Phase 2.
 - **User wants narrower scope** → go back to Phase 1 with a tighter embodiment / task / benchmark focus.
 
-## Phase 3: Feasibility and Pilot Design
+## Phase 3: Feasibility and Expected Diagnostic Design
 
-For the top ideas, design a **minimal validation package**.
+For the top ideas, design a **minimal expected diagnostic package**.
 
-If the repository already contains a usable simulator, benchmark harness, or offline dataset pipeline, you may validate the top 1-3 ideas there. If not, do **not** force execution. Produce a concrete pilot plan instead.
-
-By default, pilots should be one of:
-- **simulation pilot**
-- **offline log / dataset pilot**
-- **analysis-only pilot** using existing benchmark outputs
-
-Only propose a real-robot pilot if the user explicitly wants that.
+Do not execute it here. The purpose is to decide whether the idea is worth formal
+experiment planning after STOP A.
 
 For each surviving idea, specify:
 
@@ -220,13 +216,13 @@ For each surviving idea, specify:
 - Embodiment:
 - Benchmark / simulator:
 - Baselines:
-- Pilot type: sim / offline / real
+- Expected diagnostic type: sim / offline / real-hardware-needed-later
 - Compute estimate:
 - Human/operator time:
 - Success metrics:
 - Failure metrics:
 - Safety concerns:
-- What result would count as positive signal:
+- What result pattern would support the idea later:
 - What negative result would still be publishable:
 ```
 
@@ -234,12 +230,12 @@ For each surviving idea, specify:
 
 **Never auto-proceed to physical robot testing.** If an idea needs hardware:
 - mark it as `needs physical validation`
-- design the sim or offline precursor first
-- ask for explicit user confirmation before any real-robot step
+- design the expected sim or offline precursor first
+- route implementation and any execution through `/experiment-bridge` and `/diagnostic-to-review`
 
-If no cheap sim/offline pilot exists, keep the idea in the report but label it **high execution risk**.
+If no cheap sim/offline diagnostic exists, keep the idea in the report but label it **high execution risk**.
 
-After Phase 3, continue to Phase 4 even if you only produced a pilot plan rather than running a pilot. Lack of immediate execution is not a reason to stop the workflow.
+After Phase 3, continue to Phase 4. Lack of immediate execution is expected before STOP A.
 
 ## Phase 4: Deep Novelty Verification
 
@@ -269,7 +265,7 @@ If the method is not novel but the **finding** or **evaluation protocol** is, sa
 Invoke:
 
 ```
-/research-review "[top idea with robotics framing, embodiment, benchmark, baselines, pilot plan, evaluation metrics, and sim2real/hardware risks — review as CoRL/RSS/ICRA reviewer]"
+/research-review "[top idea with robotics framing, embodiment, benchmark, baselines, expected diagnostics, evaluation metrics, and sim2real/hardware risks — review as CoRL/RSS/ICRA reviewer]"
 ```
 
 Frame the reviewer as a senior **CoRL / RSS / ICRA** reviewer. Ask them to focus on:
@@ -308,8 +304,8 @@ Write or update `idea-stage/IDEA_REPORT.md` with a robotics-specific structure s
 - Embodiment:
 - Benchmark / simulator:
 - Bottleneck addressed:
-- Pilot type: sim / offline / real
-- Positive signal:
+- Expected diagnostic after STOP A:
+- Supportive result pattern:
 - Novelty:
 - Reviewer score:
 - Hardware risk:
@@ -325,9 +321,9 @@ Write or update `idea-stage/IDEA_REPORT.md` with a robotics-specific structure s
 - Whether real robot evidence is mandatory:
 
 ## Next Steps
-- [ ] Implement sim-first pilot
-- [ ] Run /novelty-check on the final idea wording
-- [ ] Only after approval: consider hardware validation
+- [ ] STOP A: decide whether the robotics proposal is worth formal experiment planning
+- [ ] /experiment-bridge "refine-logs/FINAL_PROPOSAL.md" after approval
+- [ ] /diagnostic-to-review after STOP B for any formal diagnostic execution
 ```
 
 ## Key Rules
@@ -346,9 +342,8 @@ After this workflow identifies a strong robotics idea:
 
 ```
 /idea-discovery-robot "direction"   ← you are here
-implement sim-first pilot
-/run-experiment                     ← if infrastructure exists
-/auto-review-loop "top robotics idea"
+/idea-to-proposal "top robotics idea" or /experiment-bridge after STOP A
+/diagnostic-to-review "<diagnostic command OR manifest>" after STOP B
 ```
 
 If no simulator or benchmark is available yet, stop at the report and ask the user to choose whether to build infrastructure or pivot to a more executable idea.
@@ -356,7 +351,6 @@ If no simulator or benchmark is available yet, stop at the report and ask the us
 ## Output Protocols
 
 > Follow these shared protocols for all output files:
-> - **[Output Versioning Protocol](../../shared-references/output-versioning.md)** — write timestamped file first, then copy to fixed name
+> - **[Output Versioning Protocol](../../shared-references/output-versioning.md)** — follow selective milestone timestamping rules
 > - **[Output Manifest Protocol](../../shared-references/output-manifest.md)** — log every output to MANIFEST.md
 > - **[Output Language Protocol](../../shared-references/output-language.md)** — respect the project's language setting
-

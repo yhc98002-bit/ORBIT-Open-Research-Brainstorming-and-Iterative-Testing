@@ -8,7 +8,8 @@
 
 - **Description**: [One-paragraph summary of the idea]
 - **Source**: IDEA_REPORT.md, Idea #N
-- **Selection rationale**: [Why this idea over others — pilot results, novelty score, feasibility]
+- **Selection rationale**: [Why this idea over others — literature grounding, novelty,
+  feasibility, mechanism plausibility, baseline/headroom, diagnostic clarity, reviewer assessment]
 
 ## Proposal Status
 

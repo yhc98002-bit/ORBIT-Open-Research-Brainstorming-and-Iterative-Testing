@@ -11,9 +11,10 @@ Run a feedback-driven targeted revision for: **$ARGUMENTS**
 
 ## Overview
 
-After STOP A in the standard 4-stop HITL flow (`/idea-to-proposal` produces FINAL_PROPOSAL
-+ EXPERIMENT_PLAN), if the user is dissatisfied with specific points, this skill takes
-the user's critique and revises only the affected v1.3 artifacts — not the whole pipeline.
+After STOP A in the standard 4-stop HITL flow (`/idea-to-proposal` produces the proposal
+bundle; `/experiment-bridge` later produces experiment plans), if the user is dissatisfied
+with specific points, this skill takes the user's critique and revises only the affected
+v1.3 artifacts — not the whole pipeline.
 It reuses existing machinery rather than building new:
 
 - **Phase 3-4 of `/research-refine`** for anchor-check + simplicity-check + revise-and-rewrite
@@ -31,9 +32,10 @@ Input: target artifact + critique points
   Phase 4: Diff Report + STOP awaiting_human_continue
 ```
 
-**Scope boundary:** does NOT touch GPU, does NOT modify v1.3 contract files, does NOT
-regenerate every v1.3 artifact (only those flagged by critique items), does NOT auto-accept
-revisions (Phase 4 always ends `awaiting_human_continue` unless `— no-checkpoint: true`).
+**Scope boundary:** does NOT run experiments, does NOT modify v1.3 contract files, does
+NOT regenerate every v1.3 artifact (only those flagged by critique items), does NOT
+auto-accept revisions (Phase 4 always ends `awaiting_human_continue` unless
+`— no-checkpoint: true`).
 
 ## Constants
 
@@ -214,7 +216,7 @@ Parse the critique into structured items. Each item:
 | "null result not interpretable" / "can't tell why it fails" | 12 | NULL_RESULT_CONTRACT.md |
 | "bundle ladder skips a rung" / "components shouldn't bundle" | 13 | COMPONENT_BUNDLE_LADDER.md |
 | "formalization wrong update rule" / "loss should be X" | 14 | ALGORITHMIC_FORMALIZATION.md |
-| "diagnostic too expensive" / "smaller pilot" / "regime wrong" | 16 | DIAGNOSTIC_EXPERIMENT_PLAN.md |
+| "diagnostic too expensive" / "smaller diagnostic" / "regime wrong" | 16 | DIAGNOSTIC_EXPERIMENT_PLAN.md |
 | "claim too strong" / "scope too wide" / "evidence chain weak" | 21 | (target FINAL_PROPOSAL claim section directly; no orbit-research artifact yet) |
 | free-form / unclear | 23 (red-team default) | flag for user clarification |
 
@@ -554,7 +556,7 @@ Codex MCP unavailability per the three-tier degradation in
 
 ## What This Skill Deliberately Does NOT Do
 
-- Does **not** touch GPU. (Same scope boundary as `/idea-to-proposal`.)
+- Does **not** run experiments; revisions do not generate evidence.
 - Does **not** modify v1.3 contract files (`research-agent-pipeline.md`,
   `research-harness-prompts.md`, etc.) — only reads them.
 - Does **not** regenerate every v1.3 artifact — only those whose owning stage was flagged

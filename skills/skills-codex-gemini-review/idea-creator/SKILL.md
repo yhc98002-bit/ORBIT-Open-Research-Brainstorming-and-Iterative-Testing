@@ -11,19 +11,22 @@ Generate publishable research ideas for: $ARGUMENTS
 
 ## Overview
 
-Given a broad research direction from the user, systematically generate, validate, and rank concrete research ideas. This skill composes with `/research-lit`, `/novelty-check`, and `/research-review` to form a complete idea discovery pipeline.
+Given a broad research direction from the user, systematically generate, screen, and rank
+concrete research ideas. This skill composes with `/research-lit`, `/novelty-check`, and
+`/research-review` to form a non-experimental idea discovery pipeline.
 
 ## Constants
 
-- **PILOT_MAX_HOURS = 2** — Skip any pilot estimated to take > 2 hours per GPU. Flag as "needs manual pilot".
-- **PILOT_TIMEOUT_HOURS = 3** — Hard timeout: kill pilots exceeding 3 hours. Collect partial results if available.
-- **MAX_PILOT_IDEAS = 3** — Pilot at most 3 ideas in parallel. Additional ideas are validated on paper only.
-- **MAX_TOTAL_GPU_HOURS = 8** — Total GPU budget for all pilots combined.
+- **NO_PRE_STOP_A_EXPERIMENTS = true** — ORBIT v1.4+ idea creation is non-experimental.
+  Do not run experiments, do not use GPU, and do not call `/run-experiment` before STOP A.
+- **IDEA_RANKING_CRITERIA** — Literature grounding, novelty, feasibility, mechanism
+  plausibility, baseline/headroom, expected diagnostic clarity, and reviewer critique.
 - **REVIEWER_MODEL = `gemini-review`** — Gemini reviewer invoked through the local `gemini-review` MCP bridge for brainstorming and critique. Set `GEMINI_REVIEW_MODEL` if you need a specific Gemini model override.
 
 - **OUTPUT_DIR = `idea-stage/`** — Directory for idea output files.
 
-> 💡 Override via argument, e.g., `/idea-creator "topic" — pilot budget: 4h per idea, 20h total`.
+> 💡 This skill does not run experiments. Formal experiment planning starts in
+> `/experiment-bridge` after STOP A.
 
 ## Workflow
 
@@ -72,13 +75,13 @@ mcp__gemini-review__review_start:
     Generate 8-12 concrete research ideas. For each idea:
     1. One-sentence summary
     2. Core hypothesis (what you expect to find and why)
-    3. Minimum viable experiment (what's the cheapest way to test this?)
+    3. Expected diagnostic after STOP A (what would be tested later?)
     4. Expected contribution type: empirical finding / new method / theoretical result / diagnostic
     5. Risk level: LOW (likely works) / MEDIUM (50-50) / HIGH (speculative)
     6. Estimated effort: days / weeks / months
 
     Prioritize ideas that are:
-    - Testable with moderate compute (8x RTX 3090 or less)
+    - Plausibly testable after formal planning with moderate compute
     - Likely to produce a clear positive OR negative result (both are publishable)
     - Not "apply X to Y" unless the application reveals genuinely surprising insights
     - Differentiated from the 10-15 papers above
@@ -92,21 +95,21 @@ After this start call, immediately save the returned `jobId` and poll `mcp__gemi
 
 For each generated idea, quickly evaluate:
 
-1. **Feasibility check**: Can we actually run this experiment with available resources?
-   - Compute requirements (estimate GPU-hours)
+1. **Feasibility check**: Could this become a valid experiment after STOP A with available resources?
+   - Compute requirements (estimate total cost and likely hardware class)
    - Data availability
    - Implementation complexity
-   - Skip ideas requiring > 1 week of GPU time or unavailable datasets
+   - Skip ideas requiring excessive compute or unavailable datasets
 
 2. **Novelty quick-check**: For each idea, do 2-3 targeted searches to see if it's already been done. Full `/novelty-check` comes later for survivors.
 
 3. **Impact estimation**: Would a reviewer care about the result?
-   - "So what?" test: if the experiment succeeds, does it change how people think?
+   - "So what?" test: if the later diagnostic succeeds, does it change how people think?
    - Is the finding actionable or just interesting?
 
 Eliminate ideas that fail any of these. Typically 8-12 ideas reduce to 4-6.
 
-### Phase 4: Deep Validation (for top ideas)
+### Phase 4: Deep Screening (for top ideas)
 
 For each surviving idea, run a deeper evaluation:
 
@@ -129,35 +132,34 @@ For each surviving idea, run a deeper evaluation:
 
    After this start call, immediately save the returned `jobId` and poll `mcp__gemini-review__review_status` with a bounded `waitSeconds` until `done=true`. Treat the completed status payload's `response` as the follow-up critique.
 
-3. **Combine rankings**: Merge your assessment with Gemini's ranking. Select top 2-3 ideas for pilot experiments.
+3. **Combine rankings**: Merge your assessment with Gemini's ranking. Select top 2-3
+   ideas for proposal refinement using literature grounding, novelty, feasibility,
+   mechanism plausibility, baseline/headroom, expected diagnostic clarity, and reviewer
+   critique.
 
-### Phase 5: Parallel Pilot Experiments (for top 2-3 ideas)
+### Phase 5: Decision-Ready Ranking (no experiments)
 
-Before committing to a full research effort, run cheap pilot experiments to get empirical signal. This is the key differentiator from paper-only validation.
+Before STOP A, do not run experiments. At this stage the project usually lacks selected
+model files/checkpoints, dataset paths/splits, evaluator definitions, baseline commands,
+control design, null-result contract, experiment plan, and implementation contract.
 
-1. **Design pilots**: For each top idea, define the minimal experiment that would give a positive or negative signal:
-   - Single seed, small scale (e.g., small dataset subset, fewer epochs)
-   - Target: 30 min - PILOT_MAX_HOURS per pilot on 1 GPU
-   - **Estimate GPU-hours BEFORE launching.** If estimated time > PILOT_MAX_HOURS, reduce scale (fewer epochs, smaller subset) or flag as "needs manual pilot"
-   - Clear success metric defined upfront (e.g., "if metric improves by > 1%, signal is positive")
+1. **Define expected diagnostics**: For each top idea, state the cheapest diagnostic that
+   would be designed later in `/experiment-bridge`.
+   - What model/data/evaluator assumptions would need to become explicit?
+   - What baseline or control would make the result interpretable?
+   - What null result would weaken or reframe the idea?
+   - What result pattern would be diagnostic rather than anecdotal?
 
-2. **Deploy in parallel**: Use `/run-experiment` to launch pilots on different GPUs simultaneously:
-   ```
-   GPU 0: Pilot for Idea 1
-   GPU 1: Pilot for Idea 2
-   GPU 2: Pilot for Idea 3
-   ```
-   Use `run_in_background: true` to launch all at once.
+2. **Score diagnostic clarity**:
+   - HIGH: clear measurable contrast, available benchmark/control, interpretable failure.
+   - MEDIUM: plausible contrast but missing some setup details.
+   - LOW: result would be ambiguous, uncontrolled, or mostly anecdotal.
 
-3. **Collect results**: Use `/monitor-experiment` to check progress. If any pilot exceeds PILOT_TIMEOUT_HOURS, kill it and collect partial results. Once all pilots complete (or timeout), compare:
-   - Which ideas showed positive signal?
-   - Which showed null/negative results? (eliminate or deprioritize)
-   - Any surprising findings that suggest a pivot?
-   - Total GPU-hours consumed (track against MAX_TOTAL_GPU_HOURS budget)
+3. **Re-rank without execution**: Update the idea ranking from the combined literature,
+   novelty, feasibility, mechanism, baseline/headroom, diagnostic-clarity, and reviewer
+   evidence.
 
-4. **Re-rank based on empirical evidence**: Update the idea ranking using pilot results. An idea with strong pilot signal jumps ahead of a theoretically appealing but untested idea.
-
-Note: Skip this phase if the ideas are purely theoretical or if no GPU is available. Flag skipped ideas as "needs pilot validation" in the report.
+Do not use `/run-experiment`, `/monitor-experiment`, or GPU resources in this phase.
 
 ### Phase 6: Output — Ranked Idea Report
 
@@ -168,7 +170,7 @@ Write a structured report to `idea-stage/IDEA_REPORT.md`:
 
 **Direction**: [user's research direction]
 **Generated**: [date]
-**Ideas evaluated**: X generated → Y survived filtering → Z piloted → W recommended
+**Ideas evaluated**: X generated → Y survived filtering → W recommended
 
 ## Landscape Summary
 [3-5 paragraphs on the current state of the field]
@@ -177,13 +179,14 @@ Write a structured report to `idea-stage/IDEA_REPORT.md`:
 
 ### Idea 1: [title]
 - **Hypothesis**: [one sentence]
-- **Minimum experiment**: [concrete description]
-- **Expected outcome**: [what success/failure looks like]
+- **Expected diagnostic after STOP A**: [what would be designed later in /experiment-bridge]
+- **Expected outcome pattern**: [what success/failure would look like later]
 - **Novelty**: X/10 — closest work: [paper]
 - **Feasibility**: [compute, data, implementation estimates]
+- **Baseline/headroom**: [simple strong baseline and expected ceiling]
+- **Expected diagnostic clarity**: HIGH/MEDIUM/LOW
 - **Risk**: LOW/MEDIUM/HIGH
 - **Contribution type**: empirical / method / theory / diagnostic
-- **Pilot result**: [POSITIVE: metric +X% / NEGATIVE: no signal / SKIPPED: needs GPU]
 - **Reviewer's likely objection**: [strongest counterargument]
 - **Why we should do this**: [1-2 sentences]
 
@@ -194,30 +197,31 @@ Write a structured report to `idea-stage/IDEA_REPORT.md`:
 | Idea | Reason eliminated |
 |------|-------------------|
 | ... | Already done by [paper] |
-| ... | Requires > 1 week GPU time |
+| ... | Requires unavailable data or excessive compute |
 | ... | Result wouldn't be interesting either way |
 
-## Pilot Experiment Results
-| Idea | GPU | Time | Key Metric | Signal |
-|------|-----|------|------------|--------|
-| Idea 1 | GPU 0 | 45 min | +2.3% CE | POSITIVE |
-| Idea 2 | GPU 1 | 30 min | -0.1% CE | NEGATIVE |
-| Idea 3 | GPU 2 | 1.5 hr | +0.8% CE | WEAK POSITIVE |
+## Ranking Rationale
+| Idea | Novelty | Feasibility | Baseline/headroom | Diagnostic clarity | Reviewer risk |
+|------|---------|-------------|-------------------|--------------------|---------------|
+| Idea 1 | CONFIRMED | HIGH | GOOD | HIGH | LOW |
+| Idea 2 | UNCLEAR | MEDIUM | MEDIUM | MEDIUM | MEDIUM |
+| Idea 3 | CONFLICTING | LOW | LOW | LOW | HIGH |
 
 ## Suggested Execution Order
-1. Start with Idea 1 (positive pilot signal, lowest risk)
-2. Idea 3 as backup (weak signal, may need larger scale to confirm)
-3. Idea 2 eliminated by pilot — negative result documented
+1. Start with Idea 1 (best novelty/feasibility/diagnostic-clarity tradeoff)
+2. Keep Idea 2 as backup if novelty can be clarified
+3. Archive Idea 3 unless new literature changes the assessment
 
 ## Next Steps
-- [ ] Scale up Idea 1 to full experiment (multi-seed, full dataset)
-- [ ] If confirmed, invoke /auto-review-loop for full iteration
+- [ ] STOP A: review whether the top idea is worth formal experiment planning
+- [ ] If approved, invoke /experiment-bridge "refine-logs/FINAL_PROPOSAL.md"
+- [ ] Use /diagnostic-to-review later for formal diagnostics and any paper-level evidence
 ```
 
 ## Output Protocols
 
 > Follow these shared protocols for all output files:
-> - **[Output Versioning Protocol](../../shared-references/output-versioning.md)** — write timestamped file first, then copy to fixed name
+> - **[Output Versioning Protocol](../../shared-references/output-versioning.md)** — follow selective milestone timestamping rules
 > - **[Output Manifest Protocol](../../shared-references/output-manifest.md)** — log every output to MANIFEST.md
 > - **[Output Language Protocol](../../shared-references/output-language.md)** — respect the project's language setting
 
@@ -228,8 +232,8 @@ Write a structured report to `idea-stage/IDEA_REPORT.md`:
 - The user provides a DIRECTION, not an idea. Your job is to generate the ideas.
 - Quantity first, quality second: brainstorm broadly, then filter ruthlessly.
 - A good negative result is just as publishable as a positive one. Prioritize ideas where the answer matters regardless of direction.
-- Don't fall in love with any idea before validating it. Be willing to kill ideas.
-- Always estimate compute cost. An idea that needs 1000 GPU-hours is not actionable for most researchers.
+- Don't fall in love with any idea before screening it. Be willing to kill ideas.
+- Always estimate compute cost. An idea that needs excessive compute is not actionable for most researchers.
 - "Apply X to Y" is the lowest form of research idea. Push for deeper questions.
 - Include eliminated ideas in the report — they save future time by documenting dead ends.
 - **If the user's direction is too broad (e.g., "NLP", "computer vision", "reinforcement learning"), STOP and ask them to narrow it.** A good direction is 1-2 sentences specifying the problem, domain, and constraint — e.g., "factorized gap in discrete diffusion LMs" or "sample efficiency of offline RL with image observations". Without sufficient specificity, generated ideas will be too vague to run experiments on.
@@ -241,7 +245,7 @@ After this skill produces the ranked report:
 /idea-creator "direction"     → ranked ideas
 /novelty-check "top idea"     → deep novelty verification (already done in Phase 4, but user can re-run)
 /research-review "top idea"   → external critical feedback
-implement                     → write code
-/run-experiment               → deploy to GPU
-/auto-review-loop             → iterate until submission-ready
+/idea-to-proposal "top idea"  → proposal candidate
+/experiment-bridge "refine-logs/FINAL_PROPOSAL.md" → plan + implement after STOP A
+/diagnostic-to-review "<command OR manifest>"       → formal diagnostics after STOP B
 ```

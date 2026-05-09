@@ -14,16 +14,16 @@
 - **One-line**: [What it does]
 - **Novelty score**: X/10
 - **Reviewer assessment**: [Key strength + key risk]
-- **Pilot result**: [POSITIVE/NEGATIVE/NOT TESTED — one-line metric]
-- **Estimated effort**: [GPU hours, implementation complexity]
+- **Expected diagnostic clarity**: HIGH/MEDIUM/LOW
+- **Estimated effort**: [compute cost, implementation complexity]
 - **Why not selected first**: [Reason — e.g., higher risk, needs more data, less novel]
 
 ### Candidate 2: [Idea Name]
 - **One-line**: [What it does]
 - **Novelty score**: X/10
 - **Reviewer assessment**: [Key strength + key risk]
-- **Pilot result**: [POSITIVE/NEGATIVE/NOT TESTED]
-- **Estimated effort**: [GPU hours, implementation complexity]
+- **Expected diagnostic clarity**: HIGH/MEDIUM/LOW
+- **Estimated effort**: [compute cost, implementation complexity]
 - **Why not selected first**: [Reason]
 
 ### Candidate 3: [Idea Name]
@@ -34,7 +34,7 @@
 > Ideas that were evaluated and explicitly rejected. Kept here to avoid re-exploring dead ends.
 
 ### [Killed Idea Name]
-- **Kill reason**: [Why — e.g., not novel (found prior work X), infeasible (needs Y data), pilot negative]
+- **Kill reason**: [Why — e.g., not novel (found prior work X), infeasible (needs Y data), unclear diagnostic]
 - **Kill date**: YYYY-MM-DD
 - **Source**: IDEA_REPORT.md, Idea #N
 

@@ -1,6 +1,6 @@
 ---
 name: idea-discovery
-description: "Workflow 1: Full idea discovery pipeline. Orchestrates research-lit → idea-creator → novelty-check → research-review to go from a broad research direction to validated, pilot-tested ideas. Use when user says \"找idea全流程\", \"idea discovery pipeline\", \"从零开始找方向\", or wants the complete idea exploration workflow."
+description: "Workflow 1: Full idea discovery pipeline. Orchestrates research-lit → idea-creator → novelty-check → research-review to go from a broad research direction to ranked, non-experimental idea candidates. Use when user says \"找idea全流程\", \"idea discovery pipeline\", \"从零开始找方向\", or wants the complete idea exploration workflow."
 argument-hint: [research-direction]
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, mcp__codex__codex, mcp__codex__codex-reply
 ---
@@ -18,17 +18,19 @@ This skill chains sub-skills into a single automated pipeline:
   (survey)      (brainstorm)    (verify novel)    (critical feedback)  (refine proposal)
 ```
 
-Each phase builds on the previous one's output. The final deliverables are a validated
-`idea-stage/IDEA_REPORT.md` with ranked ideas plus a refined proposal
+Each phase builds on the previous one's output. The final deliverables are a ranked
+`idea-stage/IDEA_REPORT.md` with candidate ideas plus a refined proposal
 (`refine-logs/FINAL_PROPOSAL.md`) for the top idea. Experiment planning happens later in
 `/experiment-bridge` after STOP A.
 
 ## Constants
 
-- **PILOT_MAX_HOURS = 2** — Skip any pilot experiment estimated to take > 2 hours per GPU. Flag as "needs manual pilot" in the report.
-- **PILOT_TIMEOUT_HOURS = 3** — Hard timeout: kill any running pilot that exceeds 3 hours. Collect partial results if available.
-- **MAX_PILOT_IDEAS = 3** — Run pilots for at most 3 top ideas in parallel. Additional ideas are validated on paper only.
-- **MAX_TOTAL_GPU_HOURS = 8** — Total GPU budget across all pilots. If exceeded, skip remaining pilots and note in report.
+- **NO_PRE_STOP_A_EXPERIMENTS = true** — ORBIT v1.4+ idea discovery is non-experimental.
+  Do not run experiments, do not use GPU, and do not call `/run-experiment` before STOP A.
+  Formal experiment planning begins in `/experiment-bridge` after STOP A.
+- **IDEA_RANKING_CRITERIA** — Rank by literature grounding, novelty, feasibility,
+  mechanism plausibility, baseline/headroom reasoning, expected diagnostic clarity, and
+  reviewer critique.
 - **AUTO_PROCEED = true** — If user doesn't respond at a checkpoint, automatically proceed with the best option after presenting results. Set to `false` to always wait for explicit user confirmation.
 - **REVIEWER_MODEL = `gpt-5.5`** — Model used via Codex MCP. ORBIT default is `gpt-5.5` with xhigh reasoning. Passed to sub-skills.
 - **OUTPUT_DIR = `idea-stage/`** — All idea-stage outputs go here. Create the directory if it doesn't exist.
@@ -39,7 +41,7 @@ Each phase builds on the previous one's output. The final deliverables are a val
   or alias `— review-difficulty: <medium|hard|nightmare>`. Forward this only to
   downstream adversarial review/refinement stages (`/research-refine`); do not apply
   `hard` / `nightmare` to literature search, idea
-  generation, novelty checks, pilots, or innovation loops.
+  generation, novelty checks, feasibility ranking, or innovation loops.
 
 > 💡 These are defaults. Override by telling the skill, e.g., `/idea-discovery "topic" — ref paper: https://arxiv.org/abs/2406.04329` or `/idea-discovery "topic" — compact: true`.
 
@@ -163,7 +165,7 @@ Does this match your understanding? Should I adjust the scope before generating 
 - **User approves** (or no response + AUTO_PROCEED=true) → proceed to Phase 2 with best direction.
 - **User requests changes** (e.g., "focus more on X", "ignore Y", "too broad") → refine the search with updated queries, re-run `/research-lit` with adjusted scope, and present again. Repeat until the user is satisfied.
 
-### Phase 2: Idea Generation + Filtering + Pilots
+### Phase 2: Idea Generation + Filtering
 
 Invoke `/idea-creator` with the landscape context (and `idea-stage/REF_PAPER_SUMMARY.md` if available):
 
@@ -175,21 +177,24 @@ Invoke `/idea-creator` with the landscape context (and `idea-stage/REF_PAPER_SUM
 - If `idea-stage/REF_PAPER_SUMMARY.md` exists, include it as context — ideas should build on, improve, or extend the reference paper
 - Brainstorm 8-12 concrete ideas via GPT-5.5 xhigh
 - Filter by feasibility, compute cost, quick novelty search
-- Deep validate top ideas (full novelty check + devil's advocate)
-- Run parallel pilot experiments on available GPUs (top 2-3 ideas)
-- Rank by empirical signal
+- Deep screen top ideas (full novelty check + devil's advocate)
+- Rank by literature grounding, novelty, feasibility, mechanism plausibility,
+  baseline/headroom, expected diagnostic clarity, and reviewer critique
 - Output `idea-stage/IDEA_REPORT.md`
+
+No experiments are run in `/idea-discovery`. No GPU is used in `/idea-discovery`.
+Formal experiment planning begins in `/experiment-bridge` after STOP A.
 
 **🚦 Checkpoint:** Present `idea-stage/IDEA_REPORT.md` ranked ideas to the user. Ask:
 
 ```
-💡 Generated X ideas, filtered to Y, piloted Z. Top results:
+💡 Generated X ideas, filtered to Y. Top results:
 
-1. [Idea 1] — Pilot: POSITIVE (+X%)
-2. [Idea 2] — Pilot: WEAK POSITIVE (+Y%)
-3. [Idea 3] — Pilot: NEGATIVE, eliminated
+1. [Idea 1] — Novelty: CONFIRMED; Feasibility: HIGH; Expected diagnostic clarity: HIGH; Reviewer risk: LOW
+2. [Idea 2] — Novelty: UNCLEAR; Feasibility: MEDIUM; Expected diagnostic clarity: MEDIUM; Reviewer risk: MEDIUM
+3. [Idea 3] — Novelty: CONFLICTING; Feasibility: LOW; Expected diagnostic clarity: LOW; Reviewer risk: HIGH
 
-Which ideas should I validate further? Or should I regenerate with different constraints?
+Which ideas should I check further? Or should I regenerate with different constraints?
 (If no response, I'll proceed with the top-ranked ideas.)
 ```
 
@@ -199,7 +204,8 @@ Which ideas should I validate further? Or should I regenerate with different con
 
 ### Phase 3: Deep Novelty Verification
 
-For each top idea (positive pilot signal), run a thorough novelty check:
+For each top idea that passes novelty and feasibility filters, run a thorough novelty
+check:
 
 ```
 /novelty-check "[top idea 1 description]"
@@ -219,7 +225,7 @@ For each top idea (positive pilot signal), run a thorough novelty check:
 For the surviving top idea(s), get brutal feedback:
 
 ```
-/research-review "[top idea with hypothesis + pilot results]"
+/research-review "[top idea with hypothesis + literature/novelty/feasibility evidence]"
 ```
 
 **What this does:**
@@ -234,7 +240,7 @@ For the surviving top idea(s), get brutal feedback:
 After review, refine the top idea into a concrete proposal:
 
 ```
-/research-refine "[top idea description + pilot results + reviewer feedback]" \
+/research-refine "[top idea description + literature/novelty/feasibility evidence + reviewer feedback]" \
   — difficulty: <parsed difficulty or review-difficulty>
 ```
 
@@ -274,7 +280,7 @@ Finalize `idea-stage/IDEA_REPORT.md` with all accumulated information:
 **Pipeline**: research-lit → idea-creator → novelty-check → research-review → research-refine
 
 ## Executive Summary
-[2-3 sentences: best idea, key evidence, recommended next step]
+[2-3 sentences: best idea, key literature/novelty/feasibility/reviewer basis, recommended next step]
 
 ## Literature Landscape
 [from Phase 1]
@@ -283,9 +289,11 @@ Finalize `idea-stage/IDEA_REPORT.md` with all accumulated information:
 [from Phase 2, updated with Phase 3-4 results]
 
 ### 🏆 Idea 1: [title] — RECOMMENDED
-- Pilot: POSITIVE (+X%)
-- Novelty: CONFIRMED (closest: [paper], differentiation: [what's different])
+- Novelty: CONFIRMED / UNCLEAR / CONFLICTING (closest: [paper], differentiation: [what's different])
+- Feasibility: HIGH / MEDIUM / LOW
 - Reviewer score: X/10
+- Reviewer risk: LOW / MEDIUM / HIGH
+- Expected diagnostic: [what would be tested later in /experiment-bridge]
 - Next step: STOP A review, then `/experiment-bridge "refine-logs/FINAL_PROPOSAL.md"`
 
 ### Idea 2: [title] — BACKUP
@@ -312,15 +320,16 @@ Write `idea-stage/IDEA_CANDIDATES.md` — a lean summary of the top 3-5 survivin
 ```markdown
 # Idea Candidates
 
-| # | Idea | Pilot Signal | Novelty | Reviewer Score | Status |
-|---|------|-------------|---------|---------------|--------|
-| 1 | [title] | +X% | Confirmed | X/10 | RECOMMENDED |
-| 2 | [title] | +Y% | Confirmed | X/10 | BACKUP |
-| 3 | [title] | Negative | — | — | ELIMINATED |
+| # | Idea | Novelty | Feasibility | Diagnostic clarity | Reviewer risk | Status |
+|---|------|---------|-------------|--------------------|---------------|--------|
+| 1 | [title] | CONFIRMED | HIGH | HIGH | LOW | RECOMMENDED |
+| 2 | [title] | UNCLEAR | MEDIUM | MEDIUM | MEDIUM | BACKUP |
+| 3 | [title] | CONFLICTING | LOW | LOW | HIGH | ELIMINATED |
 
 ## Active Idea: #1 — [title]
 - Hypothesis: [one sentence]
-- Key evidence: [pilot result]
+- Key evidence: literature + novelty + feasibility + reviewer assessment
+- Expected diagnostic: [what would be tested later in /experiment-bridge]
 - Next step: /experiment-bridge "refine-logs/FINAL_PROPOSAL.md" or /research-refine
 ```
 
@@ -340,14 +349,19 @@ This file is intentionally small (~30 lines) so downstream skills and session re
 - **Don't skip phases.** Each phase filters and validates — skipping leads to wasted effort later.
 - **Checkpoint between phases.** Briefly summarize what was found before moving on.
 - **Kill ideas early.** It's better to kill 10 bad ideas in Phase 3 than to implement one and fail.
-- **Empirical signal > theoretical appeal.** An idea with a positive pilot outranks a "sounds great" idea without evidence.
+- **Do not confuse plausible idea-selection evidence with experimental evidence.**
+- **Before STOP A, rank ideas by literature grounding, novelty, feasibility, mechanism
+  plausibility, baseline/headroom, and expected diagnostic clarity.**
+- **Experimental evidence begins only after `/experiment-bridge` defines a valid
+  experiment plan and `/diagnostic-to-review` runs formal diagnostics.**
 - **Document everything.** Dead ends are just as valuable as successes for future reference.
-- **Be honest with the reviewer.** Include negative results and failed pilots in the review prompt.
+- **Be honest with the reviewer.** Include known risks, rejected ideas, and reviewer
+  concerns in the review prompt.
 - **Feishu notifications are optional.** If `~/.claude/feishu.json` exists, send `checkpoint` at each phase transition and `pipeline_done` at final report. If absent/off, skip silently.
 
 ## Composing with Workflow 2
 
-After this pipeline produces a validated top idea:
+After this pipeline produces a ranked top idea:
 
 ```
 /idea-discovery "direction"         ← you are here (Workflow 1, includes method refinement)
@@ -377,6 +391,6 @@ Check:
 1. Is the proposal anchored to the selected problem?
 2. Are variables and method scope clearly defined?
 3. Are central factual/method/benchmark/paper-bearing claims represented in the ledger?
-4. Is this proposal worth planning experiments for?
+4. Is this proposal worth formal experiment planning?
 Return structured inconsistencies.
 ```

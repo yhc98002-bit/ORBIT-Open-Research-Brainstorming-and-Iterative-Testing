@@ -8,6 +8,12 @@
 long context `.md` files, and committed draft-idea `.md` files. Context docs still run
 discovery; only explicit draft ideas skip directly to refinement.
 
+**STOP-A boundary note:** `/idea-to-proposal` and `/idea-discovery` are non-experimental
+in ORBIT v1.4+. They do not run experiments, do not use GPU, and do not call
+`/run-experiment`. Idea ranking before STOP A uses literature, novelty, feasibility,
+mechanism plausibility, baseline/headroom, expected diagnostic clarity, and reviewer
+critique.
+
 **Language note:** ORBIT's persistent research artifacts default to English even when the
 chat is in Chinese. Chinese templates are manual opt-in only.
 
@@ -90,7 +96,8 @@ In Claude Code (or another supported client):
 ```
 
 ORBIT routes through Discovery: seed framing → literature map → problem reframing → problem
-selection. No methods committed, no experiments run.
+selection. No methods are committed, no experiments are run, and no GPU is used before
+STOP A.
 
 **Concrete idea (INNOVATION mode):**
 ```text
@@ -239,7 +246,7 @@ abandon.
    Discovery → Grounding → Innovation → final proposal refinement
    Outputs proposal only: FINAL_PROPOSAL.md, FINAL_PROPOSAL_SHORT.md, METHOD_SPEC.md
    and key orbit-research grounding/innovation artifacts.
-   ⏸ STOP A: human asks "Is this proposal worth planning experiments for?"
+   ⏸ STOP A: human asks "Is this proposal worth formal experiment planning?"
 
 2. /experiment-bridge "refine-logs/FINAL_PROPOSAL.md"
    Experiment planning → implementation → PLAN_CODE_AUDIT.md → limited probe when mode allows

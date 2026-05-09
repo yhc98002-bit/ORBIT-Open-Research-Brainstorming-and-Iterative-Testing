@@ -14,6 +14,12 @@ stages needed, expand the candidate space during innovation (Codex collaborative
 down assumptions / abstract task / baseline ceiling during grounding, enforce verdict-line
 gates at commitment, and only then turn results into scoped, evidence-bound claims.
 
+STOP A is a proposal boundary, not a formal validation boundary. Keyword/context discovery
+is non-experimental in ORBIT v1.4+: do not run experiments, do not use GPU, and do not call
+`/run-experiment` before STOP A. Rank ideas by literature grounding, novelty, feasibility,
+mechanism plausibility, baseline/headroom, expected diagnostic clarity, and reviewer
+critique.
+
 ## How to Invoke Skills
 
 **Claude Code / Cursor / Trae:**

@@ -1,6 +1,6 @@
 ---
 name: idea-to-proposal
-description: "ORBIT v1.4 proposal wrapper that turns a research-area keyword, long context .md, or draft idea .md into an approved-proposal candidate. Runs Discovery, Grounding, Innovation, and final proposal refinement, then stops before experiment planning. Outputs FINAL_PROPOSAL.md, FINAL_PROPOSAL_SHORT.md, METHOD_SPEC.md when useful, and the Discovery/Grounding/Innovation artifact set. Does NOT write canonical EXPERIMENT_PLAN.md by default, implement code, run experiments, or touch GPU. Use when user says \"领域到proposal\", \"出proposal\", \"想法到方案\", \"idea-to-proposal\", \"proposal pipeline\", or \"从领域跑到方案\"."
+description: "ORBIT v1.4 proposal wrapper that turns a research-area keyword, long context .md, or draft idea .md into an approved-proposal candidate. Runs non-experimental Discovery, Grounding, Innovation, and final proposal refinement, then stops before experiment planning. Outputs FINAL_PROPOSAL.md, FINAL_PROPOSAL_SHORT.md, METHOD_SPEC.md when useful, and the Discovery/Grounding/Innovation artifact set. Does NOT write canonical EXPERIMENT_PLAN.md / EXPERIMENT_PLAN_EXEC.md, implement formal experiment code, run experiments, use GPU, or produce paper-level diagnostic evidence. Use when user says \"领域到proposal\", \"出proposal\", \"想法到方案\", \"idea-to-proposal\", \"proposal pipeline\", or \"从领域跑到方案\"."
 argument-hint: [research-area-keyword OR path/to/context.md OR path/to/draft-idea.md]
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, mcp__codex__codex, mcp__codex__codex-reply
 ---
@@ -20,9 +20,11 @@ proposal wrapper. It produces:
   algorithm sketch tournament
 - a short pipeline summary for STOP A
 
-**Scope boundary** — this skill stops before experiment planning. It does not write
-canonical `EXPERIMENT_PLAN.md` or `EXPERIMENT_PLAN_EXEC.md` by default, does not implement
-code, does not run any experiment, and does not write a paper. After STOP A, hand the
+**Scope boundary** — this skill stops before formal experiment planning. It does not write
+canonical `EXPERIMENT_PLAN.md` / `EXPERIMENT_PLAN_EXEC.md`, does not implement formal
+experiment code, does not run experiments, does not use GPU, and does not produce
+paper-level diagnostic evidence. When delegating to `/idea-discovery`, no experiments are
+run; idea discovery is non-experimental in ORBIT v1.4+. After STOP A, hand the
 approved proposal to `/experiment-bridge "refine-logs/FINAL_PROPOSAL.md"`.
 
 ```
@@ -72,6 +74,9 @@ draft idea .md ─► /research-refine ─┴► Stage 4 → 5 → 7 ───�
   `— with-experiment-plan: true` or `— legacy-full-preimplementation: true`, the skill may
   invoke `/experiment-plan` after STOP A semantics, but this path is not recommended for
   new canonical ORBIT runs.
+- **NO_PRE_STOP_A_EXPERIMENTS = true** — keyword/context mode may delegate to
+  `/idea-discovery`, but `/idea-discovery` is non-experimental in ORBIT v1.4+. Do not run
+  experiments, do not use GPU, and do not call `/run-experiment` before STOP A.
 
 ## Load First
 
@@ -388,6 +393,10 @@ This produces:
 - `refine-logs/FINAL_PROPOSAL.md` (top idea, refined via `/research-refine`)
 - `orbit-research/PROBLEM_SELECTION.md`
 
+When delegating to `/idea-discovery`, no experiments are run. Idea ranking
+comes from literature grounding, novelty, feasibility, mechanism plausibility,
+baseline/headroom reasoning, expected diagnostic clarity, and reviewer critique.
+
 If legacy sub-skills emit `refine-logs/EXPERIMENT_PLAN.md` as a side effect, do not list
 it as a canonical `/idea-to-proposal` output. Mark it as legacy/pre-STOP-A and let
 `/experiment-bridge` reuse or refresh it after the human approves STOP A.
@@ -428,6 +437,9 @@ This produces the same artifact set as keyword-mode:
 
 If legacy sub-skills emit an experiment plan as a side effect, treat it as legacy context,
 not as the canonical post-STOP-A plan.
+
+When delegating to `/idea-discovery`, no experiments are run. `FINAL_PROPOSAL.md`
+must not cite pre-STOP-A runs as evidence.
 
 When `/idea-discovery` reaches its post-Phase-2 user checkpoint, pass through with the
 top-ranked candidate unless the user passed `— human checkpoint: true`.
@@ -692,7 +704,7 @@ Write `orbit-research/PIPELINE_SUMMARY.md`:
 
 Human review question:
 
-> Is this proposal worth planning experiments for?
+> Is this proposal worth formal experiment planning?
 
 Review:
 - `refine-logs/FINAL_PROPOSAL.md`
@@ -800,12 +812,13 @@ For Codex MCP unavailability during Phase 4 (final refinement adversarial review
 
 - Does **not** invoke `/experiment-plan` in the canonical default path; that is allowed
   only through the explicit legacy flags documented above.
-- Does **not** invoke `/experiment-bridge`, `/run-experiment`, `/experiment-queue`,
-  `/result-to-claim`, `/auto-review-loop`, `/paper-writing`, or any execution skill.
+- Does **not** invoke `/experiment-bridge`, `/experiment-queue`, `/result-to-claim`,
+  `/auto-review-loop`, `/paper-writing`, or any formal diagnostic/claim/paper skill.
+- Does **not** run experiments or use GPU, including when keyword/context mode delegates
+  to `/idea-discovery`.
 - Does **not** write `CONTROL_DESIGN.md`, `NULL_RESULT_CONTRACT.md`,
   `COMPONENT_BUNDLE_LADDER.md`, `ALGORITHMIC_FORMALIZATION.md`, `PLAN_CODE_AUDIT.md`, or
   any DIAGNOSTIC_RUN_*.md in the canonical default path.
-- Does **not** touch GPUs.
 - Does **not** finalise method commitment — Stage 10's pick is explicitly tentative
   (`TENTATIVE_PREFERRED_SKETCH_ID`); experiment planning and implementation happen after
   STOP A through `/experiment-bridge`.
@@ -820,7 +833,8 @@ For Codex MCP unavailability during Phase 4 (final refinement adversarial review
 ## Final Rule
 
 ```text
-Discover then ground then invent then write a proposal — no implementation, no GPU.
+Discover then ground then invent then write a proposal — no canonical plan, formal
+implementation, or paper-level diagnostic evidence.
 Innovation produces candidates; this skill stops before commitment picks one for real.
 The proposal carries the tentative sketch ID forward; downstream skills can switch.
 ```

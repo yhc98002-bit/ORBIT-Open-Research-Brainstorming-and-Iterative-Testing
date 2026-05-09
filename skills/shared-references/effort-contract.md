@@ -77,7 +77,7 @@ User can override independently:
 | research-lit | query variants | 2 | 5 | 8 | 15+ |
 | research-lit | deep reads | 3 | 5-8 | 8 | 15+ |
 | idea-creator | ideas generated | 4-6 | 8-12 | 12-16 | 20-30 |
-| idea-creator | pilots | 1-2 | 2-3 | 3-4 | 5-6 |
+| idea-creator | expected diagnostics sketched | 1-2 | 2-3 | 3-4 | 5-6 |
 | novelty-check | claims checked | 2-3 | 3-4 | 4-6 | all |
 | novelty-check | closest works | top-3 | top-5 | top-8 | top-10+ |
 | research-refine | max rounds | 3 | 5 | 7 | 10+ |
