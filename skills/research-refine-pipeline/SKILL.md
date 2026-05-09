@@ -159,7 +159,7 @@ that points to `orbit-research/PIPELINE_SUMMARY.md`.
 - [Mitigation]:
 
 ## Next Action
-- Proceed to `/run-experiment`
+- Proceed to `/experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"` for implementation and plan-code audit
 ```
 
 ### Phase 5: Present a Brief Summary to the User
@@ -178,7 +178,7 @@ Pipeline summary:
 - orbit-research/PIPELINE_SUMMARY.md
 
 Best next step:
-- /run-experiment
+- /experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"
 ```
 
 ## Output Protocols
@@ -210,5 +210,5 @@ Best next step:
 /research-refine-pipeline -> one-shot method + experiment planning
 /research-refine   -> method refinement only
 /experiment-plan   -> experiment planning only
-/run-experiment    -> execution
+/experiment-bridge -> implementation + plan-code audit before execution
 ```
