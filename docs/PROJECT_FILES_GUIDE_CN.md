@@ -34,9 +34,13 @@ project/
 │   ├── FINAL_PROPOSAL.md                 # Proposal 索引
 │   ├── FINAL_PROPOSAL_SHORT.md           # 干净短提案
 │   ├── METHOD_SPEC.md                    # 实现级方法规格
-│   ├── PIPELINE_SUMMARY.md               # 流水线执行摘要
 │   ├── REFINE_STATE.json                  # 精炼恢复状态
 │   └── round_N_*.md                       # 每轮审稿/提案文件
+│
+├── orbit-research/                        # ORBIT 全局研究产物
+│   ├── PIPELINE_SUMMARY.md                # 全局流水线摘要
+│   ├── RUN_LEDGER.jsonl                   # canonical run provenance
+│   └── RESEARCH_DECISION_LOG.md           # 失败/意外诊断决策日志
 │
 ├── review-stage/                          # W2: Auto Review 产出
 │   ├── AUTO_REVIEW.md                     # 审稿循环日志（来自 /auto-review-loop）

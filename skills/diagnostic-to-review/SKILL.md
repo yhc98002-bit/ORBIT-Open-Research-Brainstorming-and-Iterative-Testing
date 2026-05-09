@@ -48,7 +48,7 @@ Input:  diagnostic command / manifest / grid
            OR     if G14 (positive framing after tie/failure) detected
            OR     if G17 (post-hoc reframing as pre-planned) detected
 
-  Phase 5: PIPELINE_SUMMARY.md + STATE.status = awaiting_human_continue
+  Phase 5: orbit-research/PIPELINE_SUMMARY.md + STATE.status = awaiting_human_continue
            (happy path: STOP D ready; abort: clear next_action describing blocker)
 ```
 

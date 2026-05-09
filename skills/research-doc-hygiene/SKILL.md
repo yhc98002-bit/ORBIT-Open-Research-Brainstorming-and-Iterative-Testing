@@ -40,8 +40,12 @@ Scan proposal-facing files for:
 
 Write `refine-logs/DOC_HYGIENE_REPORT.md` with:
 
+- verdict line: `PASS` / `NEEDS_CLEANUP` / `ROLE_CONFUSION` / `DEFENSIVE_BLOAT`
 - files inspected
 - bloat found
 - content moved and destination artifact
 - content left in place with rationale
 - follow-up actions, if any
+
+The verdict is advisory. It is not a hard gate; use it to decide whether to clean the
+document now or defer cleanup until the next proposal revision.

@@ -32,6 +32,11 @@ Each phase builds on the previous one's output. The final deliverables are a val
 - **ARXIV_DOWNLOAD = false** — When `true`, `/research-lit` downloads the top relevant arXiv PDFs during Phase 1. When `false` (default), only fetches metadata. Passed through to `/research-lit`.
 - **COMPACT = false** — When `true`, generate compact summary files for short-context models and session recovery. Writes `idea-stage/IDEA_CANDIDATES.md` (top 3-5 ideas only) at the end of this workflow. Downstream skills read this instead of the full `idea-stage/IDEA_REPORT.md`.
 - **REF_PAPER = false** — Reference paper to base ideas on. Accepts: local PDF path, arXiv URL, or any paper URL. When set, the paper is summarized first (`idea-stage/REF_PAPER_SUMMARY.md`), then idea generation uses it as context. Combine with `base repo` for "improve this paper with this codebase" workflows.
+- **REVIEW_DIFFICULTY = `medium`** — Accept `— difficulty: <medium|hard|nightmare>`
+  or alias `— review-difficulty: <medium|hard|nightmare>`. Forward this only to
+  downstream adversarial review/refinement stages (`/research-refine-pipeline` →
+  `/research-refine`); do not apply `hard` / `nightmare` to literature search, idea
+  generation, novelty checks, pilots, or innovation loops.
 
 > 💡 These are defaults. Override by telling the skill, e.g., `/idea-discovery "topic" — ref paper: https://arxiv.org/abs/2406.04329` or `/idea-discovery "topic" — compact: true`.
 
@@ -226,7 +231,8 @@ For the surviving top idea(s), get brutal feedback:
 After review, refine the top idea into a concrete proposal and plan experiments:
 
 ```
-/research-refine-pipeline "[top idea description + pilot results + reviewer feedback]"
+/research-refine-pipeline "[top idea description + pilot results + reviewer feedback]" \
+  — difficulty: <parsed difficulty or review-difficulty>
 ```
 
 **What this does:**
@@ -249,7 +255,8 @@ Proceed to implementation? Or adjust the proposal?
 ```
 
 - **User approves** (or AUTO_PROCEED=true) → proceed to Final Report.
-- **User requests changes** → pass feedback to `/research-refine` for another round.
+- **User requests changes** → pass feedback to `/research-refine` for another round,
+  forwarding `— difficulty` / `— review-difficulty` if the user set it.
 - **Lite mode:** If reviewer score < 6 or pilot was weak, run `/research-refine` only (skip `/experiment-plan`) and note remaining risks in the report.
 
 ### Phase 5: Final Report

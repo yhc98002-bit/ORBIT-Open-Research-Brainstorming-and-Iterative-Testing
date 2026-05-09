@@ -350,7 +350,7 @@ refine-logs/EXPERIMENT_TRACKER.md    # run status
    - 写 `RED_TEAM_REVIEW.md`。
 
 5. **Phase 5：Summary**
-   - 写 `PIPELINE_SUMMARY.md`。
+   - 写 `orbit-research/PIPELINE_SUMMARY.md`。
    - 以 `awaiting_human_continue` 停在 STOP C。
 
 ### STOP C

@@ -48,7 +48,7 @@ artifacts should remain English unless the user explicitly opts into Chinese art
 | /experiment-plan | Full | EXPERIMENT_PLAN.md follows artifact language setting; default English |
 | /experiment-bridge | Full | EXPERIMENT_RESULTS.md follows artifact language setting; default English |
 | /research-refine | Full | FINAL_PROPOSAL.md follows artifact language setting; default English |
-| /research-refine-pipeline | Full | PIPELINE_SUMMARY.md follows artifact language setting; default English |
+| /research-refine-pipeline | Full | orbit-research/PIPELINE_SUMMARY.md follows artifact language setting; default English |
 | /research-pipeline | Full | Inherits from sub-skills |
 | /result-to-claim | Full | Claim descriptions follow artifact language setting; default English |
 | /paper-writing | Skip | Always English LaTeX for submission |

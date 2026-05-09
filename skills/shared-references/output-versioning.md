@@ -43,11 +43,15 @@ project/
 │   ├── FINAL_PROPOSAL.md
 │   ├── FINAL_PROPOSAL_SHORT.md
 │   ├── METHOD_SPEC.md
-│   ├── PIPELINE_SUMMARY.md
 │   ├── REFINE_STATE.json
 │   ├── REVIEW_SUMMARY.md
 │   ├── REFINEMENT_REPORT.md
 │   └── round_N_*.md
+│
+├── orbit-research/                        # ORBIT global artifacts
+│   ├── PIPELINE_SUMMARY.md
+│   ├── RUN_LEDGER.jsonl
+│   └── RESEARCH_DECISION_LOG.md
 │
 ├── review-stage/                          # W2: Auto Review
 │   ├── AUTO_REVIEW.md

@@ -1,17 +1,17 @@
 ---
 name: "experiment-plan"
-description: "Turn a refined research proposal or method idea into a detailed, claim-driven experiment roadmap. Use after `research-refine`, or when the user asks for a detailed experiment plan, ablation matrix, evaluation protocol, run order, compute budget, or paper-ready validation that supports the core problem, novelty, simplicity, and any LLM / VLM / Diffusion / RL-based contribution."
+description: "Turn a refined research proposal or method idea into a detailed, decision-driven experiment roadmap. Use after `research-refine`, or when the user asks for a detailed experiment plan, ablation matrix, evaluation protocol, run order, compute budget, or paper-ready validation that supports the core problem, novelty, simplicity, and any LLM / VLM / Diffusion / RL-based contribution."
 ---
 
-# Experiment Plan: Claim-Driven, Paper-Oriented Validation
+# Experiment Plan: Decision-Driven Validation
 
 Refine and concretize: **$ARGUMENTS**
 
 ## Overview
 
-Use this skill after the method is stable enough that the next question becomes: **what exact experiments should we run, in what order, to defend the paper?** If the user wants the full chain in one request, prefer `/research-refine-pipeline`.
+Use this skill after the method is stable enough that the next question becomes: **what exact experiments should we run, in what order, to change the next research decision?** If the user wants the full chain in one request, prefer `/research-refine-pipeline`.
 
-The goal is not to generate a giant benchmark wishlist. The goal is to turn a proposal into a **claim -> evidence -> run order** roadmap that supports four things:
+The goal is not to generate a giant benchmark wishlist. The goal is to turn a proposal into a **decision -> evidence target -> run order** roadmap that supports four things:
 
 1. the method actually solves the anchored problem
 2. the dominant contribution is real and focused
@@ -47,16 +47,18 @@ Extract:
 
 If these files do not exist, derive the same information from the user's prompt.
 
-### Phase 1: Freeze the Paper Claims
+### Phase 1: Define Candidate Claims / Evidence Targets
 
-Before proposing experiments, write down the claims that must be defended.
+Before proposing experiments, write down the candidate claims or evidence targets whose
+outcomes would change a research decision.
 
 Use this structure:
 
 - **Primary claim**: the main mechanism-level contribution
 - **Supporting claim**: optional, only if it directly strengthens the main paper story
 - **Anti-claim to rule out**: e.g. "the gain only comes from more parameters," "the gain only comes from a larger search space," or "the modern component is just decoration"
-- **Minimum convincing evidence**: what would make each claim believable to a strong reviewer?
+- **Minimum convincing evidence**: what would make the decision change? For paper-bearing
+  experiments, what would make the claim believable to a strong reviewer?
 
 Do not exceed `MAX_PRIMARY_CLAIMS` unless the paper truly has multiple inseparable claims.
 
@@ -72,7 +74,7 @@ Design the paper around a compact set of experiment blocks. Default to the follo
 
 For each block, decide whether it belongs in:
 
-- **Main paper** — essential to defend the core claims
+- **Paper-bearing** — essential only if this experiment supports paper-level claim scope
 - **Appendix** — useful but non-blocking
 - **Cut** — interesting, but not worth the paper budget
 
@@ -279,7 +281,7 @@ First runs to launch:
 
 - **Progressive disclosure.** Keep `EXPERIMENT_PLAN.md` as an index. Put executable detail in `EXPERIMENT_PLAN_EXEC.md`; put milestone-specific instructions in run cards; archive old monoliths only when they preserve useful history.
 
-- **Every experiment must defend a claim.** If it does not change a reviewer belief, cut it.
+- **Every committed experiment must change a research decision.** Paper-claim defense is required only for paper-bearing experiments.
 - **Prefer a compact paper story.** Design the main table first, then add only the ablations that defend it.
 - **Defend simplicity explicitly.** If complexity is a concern, include a deletion study or a stronger-but-bloated variant comparison.
 - **Defend frontier choices explicitly.** If a modern primitive is central, prove why it is better than the strongest simpler alternative.

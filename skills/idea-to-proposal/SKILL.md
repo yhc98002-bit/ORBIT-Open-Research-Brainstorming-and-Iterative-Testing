@@ -607,8 +607,15 @@ Codex switches **back to adversarial mode**.
 Feed the Phase 3c winner sketch back into `/research-refine`:
 
 ```bash
-/research-refine "refine-logs/FINAL_PROPOSAL.md + orbit-research/ALGORITHM_TOURNAMENT.md TENTATIVE_PREFERRED_SKETCH_ID + orbit-research/ABSTRACT_TASK_MECHANISM.md + orbit-research/ASSUMPTION_LEDGER.md"
+/research-refine "refine-logs/FINAL_PROPOSAL.md + orbit-research/ALGORITHM_TOURNAMENT.md TENTATIVE_PREFERRED_SKETCH_ID + orbit-research/ABSTRACT_TASK_MECHANISM.md + orbit-research/ASSUMPTION_LEDGER.md" \
+    — venue: <parsed_flags.venue> \
+    — effort: <parsed_flags.effort> \
+    — difficulty: <parsed_flags.difficulty>
 ```
+
+Forward `venue`, `effort`, and `difficulty` explicitly for this final adversarial
+refinement pass. Do not apply `hard` / `nightmare` difficulty to Stage 8/9/10 innovation
+loops; difficulty only calibrates adversarial review/refinement stages.
 
 Goal: regenerate `refine-logs/FINAL_PROPOSAL.md` so it (a) anchors on the Phase 1 problem,
 (b) declares the Phase 3c tentative sketch as the proposed method, (c) cites
@@ -716,7 +723,7 @@ If `STOP_AT_GROUNDING = true` OR `STOP_AT_PROPOSAL = true`:
   "next_action": "human-must-confirm-then-call-/experiment-plan-or-/research-pipeline",
   "next_skill_hint": "/experiment-plan OR /research-pipeline",
   "timestamp": "<now>",
-  "artifact_inventory": [/* prior 9 v1.3 artifacts + PIPELINE_SUMMARY.md */]
+  "artifact_inventory": [/* prior 9 v1.3 artifacts + orbit-research/PIPELINE_SUMMARY.md */]
 }
 ```
 
@@ -728,7 +735,7 @@ Otherwise (default — chain to Phase 6):
   "status": "in_progress",
   "next_action": "phase-6-experiment-plan",
   "timestamp": "<now>",
-  "artifact_inventory": [/* prior + PIPELINE_SUMMARY.md */]
+  "artifact_inventory": [/* prior + orbit-research/PIPELINE_SUMMARY.md */]
 }
 ```
 

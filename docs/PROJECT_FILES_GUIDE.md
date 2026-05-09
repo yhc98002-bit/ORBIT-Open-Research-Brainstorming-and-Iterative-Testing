@@ -34,9 +34,13 @@ project/
 │   ├── FINAL_PROPOSAL.md                 # Proposal index
 │   ├── FINAL_PROPOSAL_SHORT.md           # Clean short proposal
 │   ├── METHOD_SPEC.md                    # Implementation-level method spec
-│   ├── PIPELINE_SUMMARY.md               # Pipeline execution summary
 │   ├── REFINE_STATE.json                  # Refinement recovery state
 │   └── round_N_*.md                       # Per-round review/proposal files
+│
+├── orbit-research/                        # ORBIT global research artifacts
+│   ├── PIPELINE_SUMMARY.md                # Global pipeline summary
+│   ├── RUN_LEDGER.jsonl                   # Canonical run provenance
+│   └── RESEARCH_DECISION_LOG.md           # Failed/surprising diagnostic decisions
 │
 ├── review-stage/                          # W2: Auto Review outputs
 │   ├── AUTO_REVIEW.md                     # Review loop log (from /auto-review-loop)
