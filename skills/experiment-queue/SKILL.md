@@ -9,6 +9,10 @@ allowed-tools: Bash(*), Read, Grep, Glob, Edit, Write, Agent, Skill(run-experime
 
 Orchestrate large batches of ML experiments on SSH remote GPU servers with proper state tracking, OOM retry, stale cleanup, and wave transitions.
 
+All queued jobs participate in the canonical run provenance ledger:
+`orbit-research/RUN_LEDGER.jsonl`. Each job gets a stable `run_id`; `queue_state.json`
+stores that `run_id`, and each ledger record stores the queue job id / state path.
+
 ## ORBIT v1.3 Queue Gate
 
 This gate is always-on. This skill is for scale-up only — Stage 20 in ORBIT v1.3. Before
@@ -101,6 +105,7 @@ oom_retry:
 
 jobs:
   - id: s200_N64_n50K
+    run_id: auto   # resolved before launch; also written to RUN_LEDGER.jsonl
     args: {seed: 200, n_hidden: 64, n_train_subset: 50000, subset_seed: 2024}
   - id: s200_N128_n50K
     args: {seed: 200, n_hidden: 128, n_train_subset: 50000, subset_seed: 2024}
@@ -115,6 +120,13 @@ pending → running → completed
                  ↘ failed_other → stuck (needs manual inspection)
 stale_screen_detected → cleaned → pending
 ```
+
+Every transition appends a ledger record. `pending → running` writes `run-start`;
+terminal states (`completed`, `failed_oom`, `failed_other`, `stuck`, timeout/killed/no
+result) write `run-final`. OOM retries append a terminal `run-final` for the failed
+attempt and a new `run-start` for the retry, using either a new attempt-specific `run_id`
+or a stable parent id plus attempt suffix (`<run_id>_try2`). Do not overwrite old ledger
+lines.
 
 ### Wave Orchestration
 
@@ -134,6 +146,9 @@ Input can be:
 - **Natural language description** (Claude parses into manifest)
 
 Save the built manifest to `<project>/experiment_queue/<timestamp>/manifest.json` for reproducibility.
+Assign every job a `run_id` before scheduling. Persist it in both the manifest copy and
+`queue_state.json`, and append the run-start record immediately before the scheduler
+launches the screen/process.
 
 ### Step 2: Pre-flight
 
@@ -218,12 +233,18 @@ ssh <server> 'nohup python3 ~/.aris_queue/queue_manager.py \
 The scheduler:
 - Reads manifest
 - Loops: for each pending job, assign to free GPU, launch via `screen`
+- Writes `run-start` to `orbit-research/RUN_LEDGER.jsonl` before each launch
+  (`queue_job_id`, `queue_state_path`, and `attempt` included when available)
 - Polls job status (every 60s)
-- Detects stale screens (python exited but screen detached → kill)
-- Detects OOM (CUDA OOM in log → mark failed_oom → retry after delay)
-- Detects completion (expected output JSON/file exists) → mark completed
+- Detects stale screens (python exited but screen detached → kill) and appends a ledger
+  transition/final record with `failure_type: stale_screen`
+- Detects OOM (CUDA OOM in log → mark failed_oom → retry after delay) and appends a
+  `run-final` record with `status: oom`
+- Detects completion (expected output JSON/file exists) → mark completed and append
+  `run-final` with result file paths and metrics when parseable
 - Launches next wave when current wave settles
-- Writes state to `queue_state.json` continuously
+- Writes state to `queue_state.json` continuously. Each job state includes `run_id`,
+  `ledger_path`, `ledger_start_record`, and latest terminal/final record timestamp.
 
 ### Step 4: Monitoring
 
@@ -293,11 +314,12 @@ torch\.OutOfMemoryError: CUDA out of memory
 
 On detection:
 1. Mark job `failed_oom`
-2. Kill screen
-3. Wait `oom_retry.delay` seconds
-4. Check if current GPU is free; if not, try another free GPU
-5. Requeue as `pending`
-6. Max `oom_retry.max_attempts` before marking `stuck`
+2. Append `RUN_LEDGER.jsonl` `run-final` with `status: oom`, stdout/stderr log, GPU, and attempt number
+3. Kill screen
+4. Wait `oom_retry.delay` seconds
+5. Check if current GPU is free; if not, try another free GPU
+6. Requeue as `pending` with a new attempt `run_id` or attempt suffix
+7. Max `oom_retry.max_attempts` before marking `stuck` and appending final status `failed`
 
 ## Stale Screen Detection
 
@@ -306,7 +328,7 @@ Every 60s, for each running screen:
 2. Check python PID still running (`ps -p`)
 3. If screen exists but python exited:
    - If expected output file exists → mark `completed`, kill stale screen
-   - If no output file → mark `failed_other`, kill screen
+   - If no output file → mark `failed_other`, append `run-final` with `status: no_result`, kill screen
 
 ## Resume-on-restart
 
@@ -352,8 +374,8 @@ If scheduler crashes / is killed:
 | OOM retry | Manual | Automatic |
 | Stale screen cleanup | Manual | Automatic |
 | Teacher→student chain | Manual | Built-in |
-| State persistence | No | Yes (JSON) |
-| Resume on crash | No | Yes |
+| State persistence | Yes (`RUN_EXPERIMENT_STATE.json` + ledger) | Yes (`queue_state.json` + ledger) |
+| Resume on crash | Single-run attach/replay | Yes |
 | Grid expansion | Manual | Declarative |
 
 **Rule**: Use `/run-experiment` for ≤5 jobs. Use `experiment-queue` for ≥10 jobs or anything with phases.
@@ -362,6 +384,8 @@ If scheduler crashes / is killed:
 
 - **Never overlap screens on the same GPU** — always wait for `memory.used < 500 MiB` before launching new job
 - **Always write state to disk** — every state change flushed to `queue_state.json`
+- **Always cross-reference the ledger** — every job in `queue_state.json` has `run_id`
+  and every `run_id` has at least one entry in `orbit-research/RUN_LEDGER.jsonl`
 - **Idempotent scheduler** — safe to restart; picks up from state file
 - **Expected-output-based completion** — don't trust screen state alone; verify output file exists
 - **Bounded retry** — max N OOM retries, then mark `stuck` and alert

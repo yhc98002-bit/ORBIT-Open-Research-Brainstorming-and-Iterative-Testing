@@ -16,7 +16,7 @@ phases into one pipeline. It produces:
 - a problem-anchored proposal (FINAL_PROPOSAL.md)
 - the v1.3 artifact set: assumption ledger, abstract task / mechanism, baseline ceiling,
   mechanism ideation, analogy transfer, algorithm sketch tournament
-- a claim-driven experiment plan (EXPERIMENT_PLAN.md) with control design, null-result
+- a decision-driven experiment plan (EXPERIMENT_PLAN.md) with control design, null-result
   contract, component bundle ladder, algorithmic formalization, diagnostic experiment plan
 
 **Scope boundary** — this skill stops *before* GPU. It produces every artifact required
@@ -85,6 +85,8 @@ draft idea .md ─► /research-refine ─┴► Stage 4 → 5 → 7 ───�
 - `shared-references/continuation-contract.md` — STATE.json schema, three-state enum,
   resume/idempotency rules, override flags
 - `shared-references/reviewer-independence.md`
+- `shared-references/document-hygiene.md` — keep `FINAL_PROPOSAL` readable; route
+  uncertainty and audit history to the correct artifacts
 
 ## State Persistence (Continuation Contract)
 
@@ -484,15 +486,28 @@ context. Codex stays in adversarial mode here (Grounding is calibration, not inv
 
 #### Phase 2a — Stage 4: Assumption Ledger
 
-Use harness §4. List every assumption the Phase 1 proposal depends on. Tag each as
-`factual` (citable) or `working` (must be tested). Cover at minimum: data availability,
-mechanism plausibility, baseline behaviour, evaluator validity, scale regime,
-infrastructure cost, time horizon.
+Use harness §4. List assumptions behind the Phase 1 proposal's central factual, method,
+benchmark, and paper-bearing claims. Tag each as `factual` (citable) or `working` (must be
+tested). Cover at minimum: data availability, mechanism plausibility, baseline behaviour,
+evaluator validity, scale regime, infrastructure cost, time horizon. Do not ledger every
+background sentence unless it is used to justify the method, benchmark, or paper-level
+claim.
 
-Write `orbit-research/ASSUMPTION_LEDGER.md`.
+Write `orbit-research/ASSUMPTION_LEDGER.md`. It must include a
+`## Critical Hypotheses` section before or after the assumption table:
 
-**Inline G2 reminder:** any "is/will/always" claim in downstream artifacts must trace
-to a row in this ledger or get demoted.
+| ID | Hypothesis | Role | Confidence | Cheapest diagnostic | If false | Linked assumption/block |
+|----|------------|------|------------|----------------------|----------|-------------------------|
+| H1 | [central hypothesis] | paper-breaking/supporting/optional | low/medium/high | [diagnostic] | continue/weaken/reframe/archive | A<n> / B<n> |
+
+This is a risk register, not a pre-proposal gate. Do not block proposal generation because
+a critical hypothesis is uncertain; record the risk and make the cheapest diagnostic
+explicit.
+
+**Inline G2 reminder:** central factual, method, benchmark, and paper-bearing
+"is/will/always" claims in downstream artifacts must trace to a row in this ledger or get
+demoted. Background context can stay readable without row-by-row tracing unless it carries
+the argumentative weight of the proposal.
 
 #### Phase 2b — Stage 5: Abstract Task / Mechanism Framing
 
@@ -597,8 +612,18 @@ Feed the Phase 3c winner sketch back into `/research-refine`:
 
 Goal: regenerate `refine-logs/FINAL_PROPOSAL.md` so it (a) anchors on the Phase 1 problem,
 (b) declares the Phase 3c tentative sketch as the proposed method, (c) cites
-ASSUMPTION_LEDGER row IDs for every "is/will" claim, (d) cites the abstract task framing,
-(e) acknowledges the alternate sketches kept on the table for later revival.
+ASSUMPTION_LEDGER row IDs for central factual, method, benchmark, and paper-bearing
+"is/will" claims, (d) cites the abstract task framing, (e) acknowledges the alternate
+sketches kept on the table for later revival, and
+(f) includes `## Proposal Status` plus `## Critical Hypotheses` in both
+`FINAL_PROPOSAL.md` and `FINAL_PROPOSAL_SHORT.md`.
+
+Keep `FINAL_PROPOSAL.md` readable. Put dense assumption tracing in
+`orbit-research/ASSUMPTION_LEDGER.md`, implementation detail in `METHOD_SPEC.md`, and
+decision history in `orbit-research/RESEARCH_DECISION_LOG.md`.
+
+At this phase the proposal status remains `SPECULATIVE`: the method has been refined and
+grounded, but no diagnostic evidence has validated the central hypotheses yet.
 
 If Codex flags a serious problem with the winner sketch, the integrated proposal MAY pick
 an alternate from `ALGORITHM_TOURNAMENT.md` instead — record this in the proposal's
@@ -640,7 +665,7 @@ Write `orbit-research/PIPELINE_SUMMARY.md`:
 - orbit-research/PROBLEM_SELECTION.md      — problem selection verdict
 
 ### Grounding (Phase 2)
-- orbit-research/ASSUMPTION_LEDGER.md      — every assumption tagged factual / working
+- orbit-research/ASSUMPTION_LEDGER.md      — central assumptions tagged factual / working
 - orbit-research/ABSTRACT_TASK_MECHANISM.md — abstract task + mechanism families
 - orbit-research/BASELINE_CEILING.md       — simple-strong baseline reference
 
@@ -728,6 +753,11 @@ and:
 - `orbit-research/COMPONENT_BUNDLE_LADDER.md`
 - `orbit-research/ALGORITHMIC_FORMALIZATION.md`
 - `orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md`
+
+After `EXPERIMENT_PLAN_EXEC.md` is written and includes a diagnostic decision tree for the
+critical hypotheses, update `FINAL_PROPOSAL.md` and `FINAL_PROPOSAL_SHORT.md` status from
+`SPECULATIVE` to `DIAGNOSTIC_READY`. This means "ready for the first diagnostic gate", not
+"validated" or "supported".
 
 If `/experiment-plan` returns an unrecoverable error (proposal too vague, claim map
 unfillable, etc.), surface to user and write Phase 6 STATE with `status = "in_progress"` +

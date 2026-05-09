@@ -1,6 +1,6 @@
 ---
 name: proposal-revise
-description: "ORBIT v1.3 feedback-driven targeted revision loop. Accepts a target artifact (refine-logs/FINAL_PROPOSAL.md, refine-logs/EXPERIMENT_PLAN.md, or both) plus user-authored critique points (inline string or critique file), classifies each critique by which v1.3 stage owns the underlying decision, re-runs only the affected stages, then re-integrates via /research-refine Phase 3-4 (anchor + simplicity check) for proposal targets or /experiment-plan for experiment-plan targets. Stops at awaiting_human_continue with a diff report. Use when user says \"改proposal\", \"修改方案\", \"不满意\", \"revise proposal\", \"critique-driven update\", \"针对性修改\", or wants STOP A revision without a full pipeline rerun."
+description: "ORBIT v1.3 feedback-driven targeted revision loop. Accepts a target artifact (refine-logs/FINAL_PROPOSAL.md, refine-logs/EXPERIMENT_PLAN.md, or both) plus user-authored critique points or RESEARCH_DECISION_LOG.md routing, classifies each critique by which v1.3 stage owns the underlying decision, re-runs only the affected stages, then re-integrates via /research-refine Phase 3-4 for proposal targets or /experiment-plan for plan targets. Supports patch-oriented modes (assumption-only, mechanism-only, benchmark/control-only, diagnostic-branch-only, plan-only, proposal-only, both); after failed diagnostics, both is never the default unless the decision log explicitly requires it. Stops at awaiting_human_continue with a diff report. Use when user says \"改proposal\", \"修改方案\", \"不满意\", \"revise proposal\", \"critique-driven update\", \"针对性修改\", or wants STOP A revision without a full pipeline rerun."
 argument-hint: [target-artifact-path-or-both]
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, mcp__codex__codex, mcp__codex__codex-reply
 ---
@@ -69,6 +69,13 @@ $ARGUMENTS = path to target artifact OR "both"
 — scope: method | mechanism | baseline | claim | experiments | assumptions
        | controls | null-result | bundle | formalization | diagnostic
   (multiple comma-separated allowed; pre-classifies and skips Phase 0 triage)
+
+# Optional patch mode (preferred after failed diagnostics)
+— mode: assumption-only | mechanism-only | benchmark/control-only
+       | diagnostic-branch-only | plan-only | proposal-only | both
+  If omitted and `orbit-research/RESEARCH_DECISION_LOG.md` exists, infer the mode from
+  the decision log. If omitted and no decision log exists, use critique classification.
+  Do not default to `both` after failed diagnostics.
 
 # Override flags (per continuation contract)
 — resume: true              # force resume even if STATE looks ambiguous
@@ -155,12 +162,31 @@ Apply the canonical contract decision tree:
 Read inputs:
 - target artifact(s) — load FINAL_PROPOSAL.md and/or EXPERIMENT_PLAN.md depending on `$ARGUMENTS`
 - critique source — `— critiques:` inline string OR `— critique-file:` file path
+- decision source — if `orbit-research/RESEARCH_DECISION_LOG.md` exists, read it before
+  target selection and use its `Decision`, `Local patch target`, and
+  `Proposal revision needed` fields to constrain the revision. The decision log wins over
+  broad target words like `both` unless the user explicitly passes `— mode: both`.
 
 Read all current v1.3 artifacts under `orbit-research/` to build a section index for
 critique mapping (PROBLEM_SELECTION, ASSUMPTION_LEDGER, ABSTRACT_TASK_MECHANISM,
 BASELINE_CEILING, MECHANISM_IDEATION, ANALOGY_TRANSFER, ALGORITHM_TOURNAMENT,
 CONTROL_DESIGN, NULL_RESULT_CONTRACT, COMPONENT_BUNDLE_LADDER, ALGORITHMIC_FORMALIZATION,
-DIAGNOSTIC_EXPERIMENT_PLAN).
+DIAGNOSTIC_EXPERIMENT_PLAN, RESEARCH_DECISION_LOG).
+
+**Patch mode semantics**:
+
+| Mode | Revise only | Default target |
+|---|---|---|
+| `assumption-only` | `ASSUMPTION_LEDGER.md` and proposal hypothesis/status references | proposal-only if wording changes |
+| `mechanism-only` | mechanism framing, ideation/tournament, method spec/proposal mechanism sections | proposal-only |
+| `benchmark/control-only` | baseline ceiling, controls, benchmark/control plan sections | plan-only unless claim wording changes |
+| `diagnostic-branch-only` | `EXPERIMENT_PLAN_EXEC.md` Decision Tree / Branch Table, run cards, diagnostic plan | plan-only |
+| `plan-only` | experiment plan index/exec/tracker and validation artifacts | plan-only |
+| `proposal-only` | proposal index/short/method spec/status wording | proposal-only |
+| `both` | proposal and plan | explicit user request or decision log only |
+
+After failed diagnostics, `both` is forbidden as an implicit default. Use the narrowest
+mode that matches `RESEARCH_DECISION_LOG.md`.
 
 Parse the critique into structured items. Each item:
 
@@ -201,6 +227,8 @@ Write `refine-logs/REVISION_INTAKE.md`:
 ```markdown
 # Revision Intake — Round <N>
 - Target: FINAL_PROPOSAL | EXPERIMENT_PLAN | both
+- Patch mode: assumption-only | mechanism-only | benchmark/control-only | diagnostic-branch-only | plan-only | proposal-only | both
+- Decision log used: yes/no (`orbit-research/RESEARCH_DECISION_LOG.md`)
 - Critique source: inline | <file>
 - Timestamp: <ISO>
 
@@ -366,15 +394,21 @@ into our artifact_inventory.
 
 **If target includes EXPERIMENT_PLAN.md:**
 
-Invoke `/experiment-plan` on the (possibly-revised) FINAL_PROPOSAL.md:
+Invoke `/experiment-plan` on the (possibly-revised) FINAL_PROPOSAL.md. If the patch mode
+is `diagnostic-branch-only`, `benchmark/control-only`, or `plan-only`, pass that mode
+through and update only the affected plan sections; do not regenerate proposal files.
 
 ```bash
-/experiment-plan "refine-logs/FINAL_PROPOSAL.md" — fresh: true
+/experiment-plan "refine-logs/FINAL_PROPOSAL.md" — mode: <patch-mode> — fresh: true
 ```
 
 `/experiment-plan` (T4-upgraded) reads the v1.3 grounding/innovation artifacts produced
 in Phase 1 and writes a v1.3-aware EXPERIMENT_PLAN.md that cites the revised
 ASSUMPTION_LEDGER row IDs and ALGORITHM_TOURNAMENT sketch IDs.
+
+If `RESEARCH_DECISION_LOG.md` says `Proposal revision needed: no`, Phase 3 must not invoke
+`/research-refine` even when `$ARGUMENTS` contains `both`; revise the plan branch or local
+artifact only and record the narrowing in `REVISION_REPORT.md`.
 
 **Codex Phase 3 re-evaluation** (per `auto-paper-improvement-loop` reviewer-independence):
 
@@ -547,4 +581,8 @@ problem anchor and the simplicity discipline. Anchor drift and complexity creep
 are not improvements; they are failure modes that this skill is designed to catch.
 A rejected critique is not a refusal to listen; it is a flag that the user's
 desired change would break what they originally chose to build.
+
+After a failed or surprising diagnostic, `RESEARCH_DECISION_LOG.md` is the routing source
+of truth. Do not revise both proposal and plan unless that log or the user explicitly
+requests `both`.
 ```

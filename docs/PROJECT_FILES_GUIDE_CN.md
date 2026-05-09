@@ -30,7 +30,7 @@ project/
 │   ├── EXPERIMENT_PLAN_EXEC.md            # Claim + blocks + 执行顺序
 │   ├── EXPERIMENT_TRACKER.md              # 执行清单（TODO → DONE）
 │   ├── EXPERIMENT_RESULTS.md              # 收集的实验结果
-│   ├── EXPERIMENT_LOG.md                  # 所有实验的完整记录
+│   ├── EXPERIMENT_LOG.md                  # 实验的人类可读摘要
 │   ├── FINAL_PROPOSAL.md                 # Proposal 索引
 │   ├── FINAL_PROPOSAL_SHORT.md           # 干净短提案
 │   ├── METHOD_SPEC.md                    # 实现级方法规格
@@ -57,8 +57,10 @@ project/
 |------|--------|------|
 | `idea-stage/IDEA_REPORT.md` | `/idea-creator` | brainstorm 原始产出：全部 8-12 个 idea + pilot 结果 + 被 kill 的 idea |
 | `refine-logs/EXPERIMENT_PLAN.md` | `/experiment-plan` | 实验计划索引和阅读路径 |
-| `refine-logs/EXPERIMENT_PLAN_EXEC.md` | `/experiment-plan` | 可执行实验设计：claim 映射、实验块、执行顺序、算力预算 |
+| `refine-logs/EXPERIMENT_PLAN_EXEC.md` | `/experiment-plan` | 可执行实验设计：claim 映射、实验块、decision tree、执行顺序、算力预算 |
 | `refine-logs/EXPERIMENT_TRACKER.md` | `/experiment-plan` | 执行清单：run ID、状态（TODO→DONE）、一句话 notes |
+| `orbit-research/RUN_LEDGER.jsonl` | `/run-experiment`, `/experiment-queue` | append-only run provenance：命令、config、日志、结果文件、失败记录 |
+| `orbit-research/RESEARCH_DECISION_LOG.md` | `/diagnostic-to-review` | 失败/意外诊断的分类与局部下一步路由 |
 | `review-stage/AUTO_REVIEW.md` | `/auto-review-loop` | 审稿循环累积日志：评分、reviewer 原始响应、采取的行动 |
 | `review-stage/REVIEW_STATE.json` | `/auto-review-loop` | 上下文压缩恢复状态 |
 
@@ -68,7 +70,7 @@ project/
 |------|------|------|
 | `idea-stage/IDEA_CANDIDATES.md` | 评审后存活的可行 idea 候选池 — idea 失败时从这里选下一个 | [`IDEA_CANDIDATES_TEMPLATE_CN.md`](../templates/IDEA_CANDIDATES_TEMPLATE_CN.md) |
 | `findings.md` | 轻量级发现日志 — 实验异常、debug 根因、关键决策 | [`FINDINGS_TEMPLATE.md`](../templates/FINDINGS_TEMPLATE.md) |
-| `refine-logs/EXPERIMENT_LOG.md` | 完整实验记录 — 详细结果、配置、复现命令 | [`EXPERIMENT_LOG_TEMPLATE.md`](../templates/EXPERIMENT_LOG_TEMPLATE.md) |
+| `refine-logs/EXPERIMENT_LOG.md` | 人类可读实验摘要；事实 provenance 以 `RUN_LEDGER.jsonl` 为准 | [`EXPERIMENT_LOG_TEMPLATE.md`](../templates/EXPERIMENT_LOG_TEMPLATE.md) |
 | `idea-stage/docs/research_contract.md` | 当前 idea 的聚焦工作文档（见[会话恢复指南](SESSION_RECOVERY_GUIDE_CN.md)） | [`RESEARCH_CONTRACT_TEMPLATE.md`](../templates/RESEARCH_CONTRACT_TEMPLATE.md) |
 
 ## 文件之间的关系
@@ -94,12 +96,16 @@ EXPERIMENT_PLAN.md                （跑什么 — 设计）
   ↓
 EXPERIMENT_TRACKER.md             （执行状态 — TODO/RUNNING/DONE）
   ↓ 实验完成
-EXPERIMENT_LOG.md                 （跑出了什么 — 完整结果 + 复现命令）
+RUN_LEDGER.jsonl                  （事实记录 — command/config/logs/results/status）
+  ↓
+EXPERIMENT_LOG.md                 （人类可读摘要 — 学到了什么）
   ↓ 发现异常
 findings.md                       （一句话记录 — 异常、根因、决策）
 ```
 
-**为什么 tracker 和 log 分开？** 受众不同。Tracker 是执行管理（"还剩什么没跑"），Log 是知识保存（"跑了什么、学到了什么"）。Tracker 切 idea 时可以重置；Log 是永久记录。
+**为什么 tracker、ledger 和 log 分开？** 受众不同。Tracker 是执行管理（"还剩什么没跑"）。
+`RUN_LEDGER.jsonl` 是事实 provenance（"到底运行了什么"）。Log 是知识保存（"学到了什么"）。
+Tracker 切 idea 时可以重置；ledger 保持 append-only。
 
 ### 写入时机
 
@@ -128,7 +134,7 @@ findings.md                       （一句话记录 — 异常、根因、决�
 | brainstorm 的 idea 放哪？ | `IDEA_REPORT.md`（原始）→ `IDEA_CANDIDATES.md`（筛选后） |
 | 当前 idea 的完整上下文放哪？ | `idea-stage/docs/research_contract.md` |
 | "实验 X 正在跑"放哪？ | `EXPERIMENT_TRACKER.md` |
-| "实验 X 准确率 95.2"放哪？ | `EXPERIMENT_LOG.md` |
+| "实验 X 准确率 95.2"放哪？ | 事实 metric 路径进 `RUN_LEDGER.jsonl`；可读解释进 `EXPERIMENT_LOG.md` |
 | "lr=1e-4 在数据集 X 上发散"放哪？ | `findings.md` |
 | "reviewer 说加 ablation"放哪？ | `review-stage/AUTO_REVIEW.md` |
 | "选方案 A 而不是 B，因为 Z"放哪？ | `findings.md` |
@@ -136,19 +142,21 @@ findings.md                       （一句话记录 — 异常、根因、决�
 
 ## 产出版本控制
 
-ARIS 技能使用带时间戳的文件名保留历史。每次产出写入两份：
+ORBIT 使用选择性时间戳。主要 proposal / plan / claim / paper 里程碑可以写入两份：
 
 1. **带时间戳文件**：`{FILENAME}_{YYYYMMDD_HHmmss}.md` — 永久历史记录
 2. **固定名文件**：`{FILENAME}.md` — 最新副本，供下游技能读取
 
 ```
-idea-stage/
-├── IDEA_REPORT_20250615_143022.md    ← 第一次运行
-├── IDEA_REPORT_20250616_090015.md    ← 第二次运行
-├── IDEA_REPORT.md                    ← 最新副本（= 20250616 版本）
+refine-logs/
+├── FINAL_PROPOSAL_SHORT_20250615_143022.md    ← 里程碑快照
+├── FINAL_PROPOSAL_SHORT_20250616_090015.md    ← 后续里程碑快照
+├── FINAL_PROPOSAL_SHORT.md                    ← 最新副本
 ```
 
-**不带时间戳的文件**：追加式文件（`findings.md`）、每轮文件（`round_N_*.md`）、仪表盘（`CLAUDE.md`）、清单（`MANIFEST.md`）。
+**不带时间戳的文件**：追加式文件（`findings.md`、`RUN_LEDGER.jsonl`、
+`MANIFEST.md`）、路由/决策日志、状态文件、每轮文件（`round_N_*.md`）、仪表盘
+（`CLAUDE.md`）和执行摘要（`EXPERIMENT_LOG.md`）。
 
 详见 [shared-references/output-versioning.md](../skills/shared-references/output-versioning.md)。
 

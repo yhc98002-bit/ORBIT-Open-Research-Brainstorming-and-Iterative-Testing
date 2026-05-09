@@ -232,7 +232,7 @@ After review, refine the top idea into a concrete proposal and plan experiments:
 **What this does:**
 - Freeze a **Problem Anchor** to prevent scope drift
 - Iteratively refine the method via GPT-5.5 review (up to 5 rounds, until score ≥ 9)
-- Generate a claim-driven experiment roadmap with ablations, budgets, and run order
+- Generate a decision-driven experiment roadmap with ablations, budgets, and run order
 - Output: `refine-logs/FINAL_PROPOSAL.md`, `refine-logs/EXPERIMENT_PLAN.md`, `refine-logs/EXPERIMENT_TRACKER.md`
 
 **🚦 Checkpoint:** Present the refined proposal summary:
@@ -321,7 +321,7 @@ This file is intentionally small (~30 lines) so downstream skills and session re
 ## Output Protocols
 
 > Follow these shared protocols for all output files:
-> - **[Output Versioning Protocol](../shared-references/output-versioning.md)** — write timestamped file first, then copy to fixed name
+> - **[Output Versioning Protocol](../shared-references/output-versioning.md)** — apply selective milestone timestamping rules
 > - **[Output Manifest Protocol](../shared-references/output-manifest.md)** — log every output to MANIFEST.md
 > - **[Output Language Protocol](../shared-references/output-language.md)** — respect the project's language setting
 

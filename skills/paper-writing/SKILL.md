@@ -409,6 +409,11 @@ fi
 
 After the final paper-claim-audit passes, run `/citation-audit` to verify every `\cite{...}` along three axes: existence, metadata correctness, and context appropriateness. This is the fourth and final layer of the evidence-and-claim assurance stack (`experiment-audit` → `result-to-claim` → `paper-claim-audit` → `citation-audit`).
 
+If `EXPERIMENT_AUDIT.json` exists and marks an affected result `fail`, paper-writing must
+not use that result as primary claim support. The only allowed use is to label it
+explicitly as `proxy_evidence` or `invalid_evidence`, exclude it from the main evidence
+chain, and explain the limitation.
+
 ```
 if paper/references.bib (or paper.bib) exists and contains entries cited from sec/*.tex:
     Run /citation-audit "paper/"
@@ -621,7 +626,7 @@ or directly if `assurance=draft`)
 ## Output Protocols
 
 > Follow these shared protocols for all output files:
-> - **[Output Versioning Protocol](../shared-references/output-versioning.md)** — write timestamped file first, then copy to fixed name
+> - **[Output Versioning Protocol](../shared-references/output-versioning.md)** — apply selective milestone timestamping rules
 > - **[Output Manifest Protocol](../shared-references/output-manifest.md)** — log every output to MANIFEST.md
 > - **[Output Language Protocol](../shared-references/output-language.md)** — note: paper-writing always outputs English LaTeX for venue submission
 

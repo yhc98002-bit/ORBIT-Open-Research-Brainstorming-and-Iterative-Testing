@@ -1,6 +1,6 @@
 ---
 name: experiment-plan
-description: 'Turn a refined research proposal or method idea into a detailed, claim-driven experiment roadmap. Use after `research-refine`, or when the user asks for a detailed experiment plan, ablation matrix, evaluation protocol, run order, compute budget, or paper-ready validation that supports the core problem, novelty, simplicity, and any LLM / VLM / Diffusion / RL-based contribution.'
+description: 'Turn a refined research proposal or method idea into a detailed, decision-driven experiment roadmap. Use after `research-refine`, or when the user asks for a detailed experiment plan, ablation matrix, evaluation protocol, run order, compute budget, or paper-ready validation that supports the core problem, novelty, simplicity, and any LLM / VLM / Diffusion / RL-based contribution.'
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent
 ---
 
@@ -11,15 +11,15 @@ allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agen
 > the legacy names are aliases only and consumers parse either form. Full v1.3 vocabulary
 > propagation in this skill is deferred to a follow-on PR.
 
-# Experiment Plan: Claim-Driven, Paper-Oriented Validation
+# Experiment Plan: Decision-Driven Validation
 
 Refine and concretize: **$ARGUMENTS**
 
 ## Overview
 
-Use this skill after the method is stable enough that the next question becomes: **what exact experiments should we run, in what order, to defend the paper?** If the user wants the full chain in one request, prefer `/research-refine-pipeline`.
+Use this skill after the method is stable enough that the next question becomes: **what exact experiments should we run, in what order, to change the next research decision?** If the user wants the full chain in one request, prefer `/research-refine-pipeline`.
 
-The goal is not to generate a giant benchmark wishlist. The goal is to turn a proposal into a **claim -> evidence -> run order** roadmap that supports four things:
+The goal is not to generate a giant benchmark wishlist. The goal is to turn a proposal into a **decision -> evidence target -> run order** roadmap that supports four things:
 
 1. the method actually solves the anchored problem
 2. the dominant contribution is real and focused
@@ -33,6 +33,14 @@ The goal is not to generate a giant benchmark wishlist. The goal is to turn a pr
 - **MAX_CORE_BLOCKS = 5** — Keep the must-run experimental story compact.
 - **MAX_BASELINE_FAMILIES = 3** — Prefer a few strong baselines over many weak ones.
 - **DEFAULT_SEEDS = 3** — Use 3 seeds when stochastic variance matters and budget allows.
+- **PATCH_MODE_DEFAULT = off** — Full planning by default. When invoked by
+  `diagnostic-to-review` or `proposal-revise`, support local patch modes:
+  `diagnostic-branch-only`, `benchmark/control-only`, and `plan-only`.
+
+Patch modes must update only the affected planning sections (`EXPERIMENT_PLAN_EXEC.md`
+branch table, control/benchmark blocks, run order, or companion run cards). They must not
+regenerate `FINAL_PROPOSAL.md`, rerun `/idea-to-proposal`, or rewrite unaffected
+experiment blocks.
 
 ## ORBIT Diagnostic Planning Gate
 
@@ -43,6 +51,8 @@ This gate is always-on. Before any planning work, load:
   (v1.3 numbering — Grounding + Validation prerequisites)
 - `shared-references/semantic-code-audit.md` (so this skill knows which v1.3 artifacts the
   downstream Stage 15 plan-code audit will require)
+- `shared-references/document-hygiene.md` (so plans stay concise and uncertainty is routed
+  to the right artifact)
 
 Run `mkdir -p orbit-research/`. Before writing or finalizing
 `refine-logs/EXPERIMENT_PLAN.md`, create or update:
@@ -119,7 +129,12 @@ Extract from the v1.3 artifacts:
 
 - **Selected problem ID + PROCEED/NARROW/RETHINK verdict** (from PROBLEM_SELECTION)
 - **Working assumptions + their A-IDs** (from ASSUMPTION_LEDGER) — these become explicit
-  rows in the Claim Map (Phase 1) so every claim cites the assumption it depends on
+  rows in the Candidate Claim / Evidence Target map (Phase 1) for central factual,
+  method, benchmark, or paper-bearing claims
+- **Critical hypotheses H1-Hk** (from ASSUMPTION_LEDGER `## Critical Hypotheses`, or from
+  FINAL_PROPOSAL when the ledger is missing) — these become explicit diagnostic risks in
+  the Claim Map and the Decision Tree / Branch Table. They are not a blocking
+  pre-proposal gate.
 - **Abstract task signature + mechanism family** (from ABSTRACT_TASK_MECHANISM) — used in
   Experiment Block specifications (Phase 3)
 - **Headroom / saturation status** (from BASELINE_CEILING) — calibrates how loud the
@@ -152,20 +167,26 @@ warning to the user:
 Default action under AUTO_PROCEED = true: proceed in degraded mode but write a clear
 warning into `EXPERIMENT_PLAN.md` header explaining which v1.3 artifacts are missing.
 
-### Phase 1: Freeze the Paper Claims
+### Phase 1: Define Candidate Claims / Evidence Targets
 
-Before proposing experiments, write down the claims that must be defended.
+Before proposing experiments, write down the candidate claims or evidence targets whose
+outcomes would change a research decision.
 
 Use this structure:
 
 - **Primary claim**: the main mechanism-level contribution
 - **Supporting claim**: optional, only if it directly strengthens the main paper story
 - **Anti-claim to rule out**: e.g. "the gain only comes from more parameters," "the gain only comes from a larger search space," or "the modern component is just decoration"
-- **Minimum convincing evidence**: what would make each claim believable to a strong reviewer?
+- **Critical hypotheses covered**: H-IDs from the risk register, especially any
+  `paper-breaking` hypothesis
+- **Minimum convincing evidence**: what would make the decision change? For paper-bearing
+  experiments, what would make the claim believable to a strong reviewer?
 - **Assumptions cited** (v1.3 — required when `ASSUMPTION_LEDGER.md` exists): list the
-  ASSUMPTION_LEDGER row IDs (A1, A2, ...) that this claim depends on. Per Hard Gate G2,
-  every "is/will/always" wording must trace to a ledger row, otherwise it must be demoted
-  to "we hypothesise" or cite external evidence.
+  ASSUMPTION_LEDGER row IDs (A1, A2, ...) that central factual, method, benchmark, or
+  paper-bearing claims depend on. Per Hard Gate G2, strong "is/will/always" wording in
+  those claims must trace to a ledger row, otherwise it must be demoted to "we
+  hypothesise" or cite external evidence. Do not force every background sentence into
+  the ledger.
 - **Mechanism cited** (v1.3 — required when `ALGORITHM_TOURNAMENT.md` exists): the sketch
   ID (S<n>) being claimed. Usually the TENTATIVE_PREFERRED_SKETCH_ID from Stage 10, but
   Phase 1 of this skill is allowed to switch to an alternate from the tournament if the
@@ -185,7 +206,7 @@ Design the paper around a compact set of experiment blocks. Default to the follo
 
 For each block, decide whether it belongs in:
 
-- **Main paper** — essential to defend the core claims
+- **Paper-bearing** — essential only if this experiment supports paper-level claim scope
 - **Appendix** — useful but non-blocking
 - **Cut** — interesting, but not worth the paper budget
 
@@ -266,9 +287,10 @@ Use this structure:
 | Stage | File | What it contains | When to read |
 |---|---|---|---|
 | Method spec | `FINAL_PROPOSAL.md` | Proposal index and method cross-references | always |
-| Main exec plan | `EXPERIMENT_PLAN_EXEC.md` | Claim Map; compact Block cards; Run Order; budget gates; risks; checklist | always |
+| Main exec plan | `EXPERIMENT_PLAN_EXEC.md` | Claim Map; compact Block cards; Decision Tree / Branch Table; Run Order; budget gates; risks; checklist | always |
 | Current immediate task | `[MILESTONE]_RUN_CARD.md` | The next action only: command surface, success gate, halt rule | now, if present |
 | Failure routing | `NULL_RESULT_CONTRACT.md` | NEGATIVE / TIE interpretation and paper-pivot rules | when any block fails or ties |
+| Decision log | `../orbit-research/RESEARCH_DECISION_LOG.md` | Failed/surprising diagnostic classification and next-route decision | after any failed, mixed, or surprising diagnostic |
 | Optional protocols | `[PROTOCOL].md` | Dataset mapping, baseline protocol, figure plan, or other scoped details | only when referenced by a run card |
 
 ## Phased flow
@@ -307,9 +329,9 @@ Use this structure:
 # Experiment Plan Exec
 
 ## Claim Map
-| Claim | Minimum Convincing Evidence | Linked Blocks | Assumptions / Sketch IDs |
+| Claim | Minimum Convincing Evidence | Linked Blocks | Assumptions / Hypotheses / Sketch IDs |
 |---|---|---|---|
-| C1 | ... | B1, B2 | A1, S3 |
+| C1 | ... | B1, B2 | A1, H1, S3 |
 
 ## Experiment Blocks
 
@@ -332,6 +354,15 @@ Use this structure:
 |-----------|------|------|---------------|------|------|
 | M0        | ...  | ...  | ...           | ...  | ...  |
 
+## Decision Tree / Branch Table
+| Result pattern | Interpretation | Next action | Proposal revision needed? | Scope if revision needed |
+|---|---|---|---|---|
+| Sanity/config failure | Implementation or config issue, not a hypothesis result | local patch via `/experiment-bridge` fix loop | no | none |
+| Diagnostic cannot exercise H<n> | Invalid diagnostic or regime mismatch | change diagnostic via `/experiment-plan` patch mode | no | diagnostic-branch-only / plan-only |
+| H<n> supporting hypothesis false | Narrow or weaken claim; mechanism may still be useful | local patch or proposal-revise if claim wording changes | conditional | assumption-only / proposal-only |
+| H<n> paper-breaking hypothesis false | Central mechanism/paper story not viable as stated | require human decision; mark proposal REFRAMED or ARCHIVED | yes | mechanism-only / proposal-only |
+| Baseline/headroom dominates | Benchmark/control/headroom issue | revise controls, benchmark, or claim scope | conditional | benchmark/control-only / plan-only |
+
 ## Compute and Data Budget
 - Total estimated GPU-hours:
 - Data preparation needs:
@@ -348,6 +379,7 @@ Use this structure:
 - [ ] Simplicity is defended
 - [ ] Frontier contribution is justified or explicitly not claimed
 - [ ] Nice-to-have runs are separated from must-run runs
+- [ ] Decision Tree / Branch Table covers failed, mixed, and surprising diagnostic outcomes
 ```
 
 #### Step 5.3: Write optional companion files only when useful
@@ -396,7 +428,7 @@ First runs to launch:
 ## Output Protocols
 
 > Follow these shared protocols for all output files:
-> - **[Output Versioning Protocol](../shared-references/output-versioning.md)** — write timestamped file first, then copy to fixed name
+> - **[Output Versioning Protocol](../shared-references/output-versioning.md)** — apply selective milestone timestamping rules
 > - **[Output Manifest Protocol](../shared-references/output-manifest.md)** — log every output to MANIFEST.md
 > - **[Output Language Protocol](../shared-references/output-language.md)** — respect the project's language setting
 
@@ -404,7 +436,7 @@ First runs to launch:
 
 - **Progressive disclosure.** Keep `EXPERIMENT_PLAN.md` as an index. Put executable detail in `EXPERIMENT_PLAN_EXEC.md`; put milestone-specific instructions in run cards; archive old monoliths only when they preserve useful history.
 
-- **Every experiment must defend a claim.** If it does not change a reviewer belief, cut it.
+- **Every committed experiment must change a research decision.** Paper-claim defense is required only for paper-bearing experiments.
 - **Prefer a compact paper story.** Design the main table first, then add only the ablations that defend it.
 - **Defend simplicity explicitly.** If complexity is a concern, include a deletion study or a stronger-but-bloated variant comparison.
 - **Defend frontier choices explicitly.** If a modern primitive is central, prove why it is better than the strongest simpler alternative.

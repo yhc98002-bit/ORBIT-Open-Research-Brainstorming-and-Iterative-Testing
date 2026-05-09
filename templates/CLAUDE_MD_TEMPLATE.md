@@ -6,6 +6,9 @@
 stage: idle          # idle | idea-discovery | implementation | training | review | paper
 idea: ""             # Current idea title (one line)
 contract: ""         # Path to research_contract.md (e.g., idea-stage/docs/research_contract.md)
+proposal_status: ""  # SPECULATIVE | DIAGNOSTIC_READY | SUPPORTED | REFRAMED | ARCHIVED
+decision_log: ""     # Path to orbit-research/RESEARCH_DECISION_LOG.md when diagnostics route a decision
+run_ledger: "orbit-research/RUN_LEDGER.jsonl"
 current_branch: ""   # Git branch for this idea
 baseline: ""         # Baseline numbers for comparison
 training_status: idle  # idle | running | complete | failed
@@ -27,3 +30,21 @@ last_updated: ""     # YYYY-MM-DD HH:mm — auto-updated by skills on every outp
 ## Compute Budget
 
 - {budget details, e.g., "8x A100 for 24h via vast.ai"}
+
+## Current Critical Hypotheses
+
+| ID | Role | Status | Cheapest diagnostic | If false |
+|----|------|--------|----------------------|----------|
+| H1 | paper-breaking | untested | {diagnostic} | reframe/archive |
+
+## Latest Research Decision
+
+- **Decision log**: `orbit-research/RESEARCH_DECISION_LOG.md`
+- **Latest decision**: {continue | local patch | change diagnostic | re-read literature | failure-to-innovation | proposal-revise | archive}
+- **Next route**: {skill or manual decision}
+
+## Latest Runs
+
+| run_id | Status | Command/config | Result path | Decision impact |
+|--------|--------|----------------|-------------|-----------------|
+| run_... | completed/failed/oom/timeout/no_result | {command or config} | {result path} | {none / decision log entry} |

@@ -265,7 +265,7 @@ This is a late-stage adversarial check. It must always use **fresh** `mcp__codex
 
 **Thread 2: Defense**
 - Use a second fresh thread with the current paper files plus the attack memo.
-- Prompt: "Now defend the paper against the attack memo. For each rejection point, classify it as already fixed, partially fixed, or still unresolved, and cite the current files. Do not reuse prior review context."
+- Prompt: "Now address the attack memo. For each rejection point, classify it as already fixed, partially fixed, or still unresolved, and cite the current files. Do not reuse prior review context."
 
 **Merge rule**
 - Dedupe attack points against the Round 2 weakness list by semantic overlap.

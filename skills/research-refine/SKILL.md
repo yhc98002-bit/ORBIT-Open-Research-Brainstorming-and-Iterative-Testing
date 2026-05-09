@@ -4,12 +4,11 @@ description: 'Turn a vague research direction into a problem-anchored, elegant, 
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, mcp__codex__codex, mcp__codex__codex-reply
 ---
 
-> **ORBIT v1.3 compatibility note:** This skill may contain legacy v1.0 artifact names
-> (e.g. `TASK_ONTOLOGY.md`, `COMPONENT_LADDER.md`, `TINY_RUN_AUDIT.md`). In ORBIT v1.3,
-> canonical artifacts are defined in
+> **ORBIT v1.4 compatibility note:** This skill may still accept legacy v1.0 artifact
+> aliases (e.g. `TASK_ONTOLOGY.md`, `COMPONENT_LADDER.md`, `TINY_RUN_AUDIT.md`), but
+> new ORBIT refinement gates use the v1.4 canonical semantics defined in
 > [`skills/shared-references/research-agent-pipeline.md`](../shared-references/research-agent-pipeline.md);
-> the legacy names are aliases only and consumers parse either form. Full v1.3 vocabulary
-> propagation in this skill is deferred to a follow-on PR.
+> legacy names are read only as aliases.
 
 # Research Refine: Problem-Anchored, Elegant, Frontier-Aware Plan Refinement
 
@@ -82,15 +81,18 @@ User input (PROBLEM + vague APPROACH)
 
 ## ORBIT Refinement Gates
 
-These gates are always-on. Load `shared-references/research-agent-pipeline.md` before
-refining. Run `mkdir -p orbit-research/`. Do not refine directly from idea to method unless
-the following artifacts exist or are created inside this run:
+These gates are always-on. Load `shared-references/research-agent-pipeline.md` and
+`shared-references/document-hygiene.md` before refining. Run `mkdir -p orbit-research/`.
+Do not refine directly from idea to method unless the following canonical artifacts exist
+or are created inside this run:
 
-- `orbit-research/TASK_ONTOLOGY.md`
+- `orbit-research/PROBLEM_SELECTION.md`
+- `orbit-research/ASSUMPTION_LEDGER.md`
+- `orbit-research/ABSTRACT_TASK_MECHANISM.md`  *(legacy alias accepted: `TASK_ONTOLOGY.md`)*
 - `orbit-research/BASELINE_CEILING.md`
 - `orbit-research/CONTROL_DESIGN.md`
 - `orbit-research/NULL_RESULT_CONTRACT.md`
-- `orbit-research/COMPONENT_LADDER.md`
+- `orbit-research/COMPONENT_BUNDLE_LADDER.md`  *(legacy alias accepted: `COMPONENT_LADDER.md`)*
 
 The method proposal must identify the simplest strong baseline, the highest-headroom regime,
 the intended mechanism, controls that isolate that mechanism, and the null-result meaning.
@@ -243,7 +245,7 @@ Do not stop at generic research questions. Make the gap operational:
 3. **Smallest adequate intervention**: what is the least additional mechanism that could plausibly fix the bottleneck?
 4. **Frontier-native alternative**: is there a more current route using foundation-model-era primitives that better matches the bottleneck?
 5. **Core technical claim**: what exact mechanism claim could survive top-venue scrutiny?
-6. **Required evidence**: what minimum proof is needed to defend that claim?
+6. **Required evidence**: what minimum proof would support the candidate claim or change the next research decision?
 
 #### Step 1.3: Choose the Sharpest Route
 
@@ -581,7 +583,7 @@ Bias the revisions toward:
 - fewer moving parts
 - cleaner reuse of strong existing backbones
 - more natural foundation-model-era leverage when it improves the paper
-- leaner, claim-driven experiments
+- leaner, decision-changing experiments
 
 Do **not** add multiple parallel contributions just to chase score. If the reviewer requests another module, first ask whether the same gain can come from a better interface, distillation signal, reward model, or inference policy on top of an existing backbone.
 
@@ -722,12 +724,35 @@ Write `refine-logs/FINAL_PROPOSAL.md` as a short **index**, not as the full prop
 It should route readers to the right level of detail and avoid review chatter, round
 history, raw reviewer output, repeated caveats, or long method exposition.
 
+Do not paste reviewer objections or rebuttal-style defenses into `FINAL_PROPOSAL.md`.
+Resolve them by changing method/scope or moving decision history to
+`orbit-research/RESEARCH_DECISION_LOG.md`, claim support to
+`orbit-research/CLAIM_CONSTRUCTION.md`, and reviewer concerns to
+`orbit-research/RED_TEAM_REVIEW.md`.
+
 ```markdown
 # Final Proposal — Index
 
 **Purpose**: this file is an **index**. The proposal is split into progressive-disclosure files so agents read only the layer they need.
 
 **Project**: [one-line project / method / target venue / current status]
+
+## Proposal Status
+
+**Status**: SPECULATIVE
+**Allowed values**: SPECULATIVE / DIAGNOSTIC_READY / SUPPORTED / REFRAMED / ARCHIVED
+**Evidence basis**: proposal/refinement only; central hypotheses are not validated until diagnostics support them
+**Next gate**: `/experiment-plan` then `/experiment-bridge` diagnostic implementation
+**Last status change**: <ISO date> — created by `/research-refine`
+
+## Critical Hypotheses
+
+Brief summary only. The canonical risk register lives in
+`orbit-research/ASSUMPTION_LEDGER.md` when present.
+
+| ID | Role | Confidence | Cheapest diagnostic | If false |
+|----|------|------------|----------------------|----------|
+| H1 | paper-breaking/supporting/optional | low/medium/high | [diagnostic] | continue/weaken/reframe/archive |
 
 ## Read first
 
@@ -771,7 +796,7 @@ history, raw reviewer output, repeated caveats, or long method exposition.
 
 Also write:
 
-- `refine-logs/FINAL_PROPOSAL_SHORT.md` — the clean 2-4 page proposal. It should contain only the problem, thesis, method overview, core claims, strongest baselines, main risks, and next gate.
+- `refine-logs/FINAL_PROPOSAL_SHORT.md` — the clean 2-4 page proposal. It must include the same `## Proposal Status` block and a compact `## Critical Hypotheses` table, then only the problem, thesis, method overview, core claims, strongest baselines, main risks, and next gate.
 - `refine-logs/METHOD_SPEC.md` — the implementation-level method contract. This is where formulas, module boundaries, hyperparameters, and data flow belong.
 - `refine-logs/FAILURE_CONTRACT.md` — only when failure routing is not already cleanly represented in `orbit-research/NULL_RESULT_CONTRACT.md`.
 - `refine-logs/FINAL_PROPOSAL_FULL.md` — optional archive only when the current run started from a useful monolithic proposal or when preserving round-history language matters.
@@ -889,13 +914,14 @@ Suggested next step: /experiment-plan
 ## Output Protocols
 
 > Follow these shared protocols for all output files:
-> - **[Output Versioning Protocol](../shared-references/output-versioning.md)** — write timestamped file first, then copy to fixed name
+> - **[Output Versioning Protocol](../shared-references/output-versioning.md)** — apply selective milestone timestamping rules
 > - **[Output Manifest Protocol](../shared-references/output-manifest.md)** — log every output to MANIFEST.md
 > - **[Output Language Protocol](../shared-references/output-language.md)** — respect the project's language setting
 
 ## Key Rules
 
 - **Progressive disclosure.** Keep `FINAL_PROPOSAL.md` as an index. Put the clean pitch in `FINAL_PROPOSAL_SHORT.md`, implementation detail in `METHOD_SPEC.md`, and long history in `FINAL_PROPOSAL_FULL.md` only when it is useful.
+- **Document hygiene.** Do not paste reviewer objections or rebuttal-style defenses into `FINAL_PROPOSAL`. Resolve them by changing method/scope or moving decision history to `RESEARCH_DECISION_LOG`, claim support to `CLAIM_CONSTRUCTION`, and reviewer concerns to `RED_TEAM_REVIEW`.
 
 - **Anchor first, every round.** Always carry forward the same Problem Anchor.
 - **One paper, one dominant contribution.** Avoid multiple parallel contributions unless the paper truly needs them.
@@ -909,7 +935,7 @@ Suggested next step: /experiment-plan
 - **Save `threadId` from Phase 2** and use `mcp__codex__codex-reply` for later rounds.
 - **Do not fabricate results.** Only describe expected evidence and planned experiments.
 - **Be specific about compute and data assumptions.** Vague "we'll train a model" is not enough.
-- **Document everything.** Save every raw review, every anchor check, every simplicity check, and every major method change.
+- **Document in the right layer.** Save raw reviews, anchor checks, simplicity checks, and major method changes in round files or `REFINEMENT_REPORT.md`; do not carry them into `FINAL_PROPOSAL`.
 
 ## Composing with Other Skills
 

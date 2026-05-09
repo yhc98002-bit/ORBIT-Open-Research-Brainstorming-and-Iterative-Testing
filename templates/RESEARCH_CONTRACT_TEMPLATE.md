@@ -10,11 +10,26 @@
 - **Source**: IDEA_REPORT.md, Idea #N
 - **Selection rationale**: [Why this idea over others — pilot results, novelty score, feasibility]
 
+## Proposal Status
+
+**Status**: SPECULATIVE
+**Allowed values**: SPECULATIVE / DIAGNOSTIC_READY / SUPPORTED / REFRAMED / ARCHIVED
+**Evidence basis**: [What evidence currently supports this status; "proposal only" is valid for SPECULATIVE]
+**Next gate**: [Cheapest diagnostic / implementation audit / human decision]
+**Last status change**: [YYYY-MM-DD, reason]
+
 ## Core Claims
 
 1. [Main claim — what your method achieves]
 2. [Supporting claim — why it works / when it works best]
 3. [Optional: scope/limitation claim]
+
+## Critical Hypotheses
+
+| ID | Hypothesis | Role | Confidence | Cheapest diagnostic | If false | Linked assumption/block |
+|----|------------|------|------------|----------------------|----------|-------------------------|
+| H1 | [Central paper-breaking hypothesis] | paper-breaking | low/medium/high | [Diagnostic] | continue/weaken/reframe/archive | A1 / B1 |
+| H2 | [Supporting hypothesis] | supporting | low/medium/high | [Diagnostic] | continue/weaken/reframe/archive | A2 / B2 |
 
 ## Method Summary
 
@@ -48,6 +63,12 @@
 - [Decision 1: Why approach X over Y — with reasoning]
 - [Decision 2: Why this hyperparameter / architecture choice]
 - [Known limitations / risks and how you plan to handle them]
+
+## Research Decision Log Pointer
+
+- **Canonical log**: `orbit-research/RESEARCH_DECISION_LOG.md`
+- **Latest decision**: [continue / local patch / change diagnostic / re-read literature / failure-to-innovation / proposal-revise / archive]
+- **Proposal revision needed?** [none / proposal-only / plan-only / both / specific patch mode]
 
 ## Status
 

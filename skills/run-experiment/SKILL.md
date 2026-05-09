@@ -52,7 +52,8 @@ else (gray zone 6-9) → run inline parallel; log "moderate batch, /experiment-q
 When delegating, this skill writes a routing breadcrumb to
 `orbit-research/RUN_EXPERIMENT_STATE.json` (status = `completed`, `next_action = "delegated-to-experiment-queue"`,
 `next_skill_hint = "/experiment-queue"`) so the orchestrator and downstream skills can
-trace what happened. The actual job state is then owned by `queue_state.json`.
+trace what happened. The actual job state is then owned by `queue_state.json`, with each
+queued job cross-referenced to `orbit-research/RUN_LEDGER.jsonl`.
 
 **The orchestrator (`/research-pipeline` Stage 17) only ever calls `/run-experiment`** —
 it does not need to decide between solo and queue. This skill handles routing. Same when
@@ -71,7 +72,7 @@ Schema:
   "skill": "run-experiment",
   "phase": "step-5-launched" | "step-6-monitoring" | "step-7-completed",
   "status": "in_progress" | "awaiting_human_continue" | "completed",
-  "run_id": "exp_<timestamp>_<short-hash-of-cmd>",
+  "run_id": "run_<timestamp>_<short-hash-of-cmd>",
   "command": "<verbatim command sent to the GPU>",
   "server": "<ssh alias OR local OR vast:<id> OR modal:<app>>",
   "screen_name": "<screen session name on the remote>",
@@ -82,6 +83,7 @@ Schema:
   "next_skill_hint": "/monitor-experiment OR /experiment-queue",
   "timestamp": "<ISO 8601 UTC>",
   "artifact_inventory": [
+    "orbit-research/RUN_LEDGER.jsonl",
     "orbit-research/DIAGNOSTIC_RUN_REPORT.md",
     "orbit-research/DIAGNOSTIC_RUN_AUDIT.md"
   ]
@@ -117,9 +119,9 @@ Schema:
 
 | Phase | Expected artifact |
 |---|---|
-| step-5-launched | `orbit-research/RUN_EXPERIMENT_STATE.json` with `screen_name` set |
+| step-5-launched | `orbit-research/RUN_LEDGER.jsonl` run-start + `RUN_EXPERIMENT_STATE.json` with `screen_name` set |
 | step-6-monitoring | `orbit-research/DIAGNOSTIC_RUN_REPORT.md` (interim updates) |
-| step-7-completed | `orbit-research/DIAGNOSTIC_RUN_REPORT.md` finalised + `DIAGNOSTIC_RUN_AUDIT.md` written |
+| step-7-completed | `orbit-research/RUN_LEDGER.jsonl` run-final + `DIAGNOSTIC_RUN_REPORT.md` finalised + `DIAGNOSTIC_RUN_AUDIT.md` written |
 
 ## ORBIT v1.3 Run Gates
 
@@ -128,6 +130,7 @@ These gates are always-on. Load:
 - `shared-references/research-agent-pipeline.md` — v1.3 stage map and hard gates G0–G19
 - `shared-references/semantic-code-audit.md` — Stage 17 diagnostic-run audit + G12 regime check
 - `shared-references/continuation-contract.md` — STATE.json schema and resume rules (used by Step 0 + State Persistence above)
+- `shared-references/run-ledger.md` — append-only run provenance contract
 
 Run `mkdir -p orbit-research/`. Before launching anything broader than a diagnostic /
 sanity run, verify:
@@ -146,6 +149,8 @@ After the diagnostic run, write or update `orbit-research/DIAGNOSTIC_RUN_REPORT.
 (v1.0 alias on read: `TINY_RUN_REPORT.md`). Always write `orbit-research/DIAGNOSTIC_RUN_AUDIT.md`
 (v1.0 alias on read: `TINY_RUN_AUDIT.md`) with the verdict line `PASS`, `FIX_BEFORE_GPU`,
 or `REDESIGN_EXPERIMENT`. Do not proceed to full runs until the verdict is `PASS`.
+`DIAGNOSTIC_RUN_REPORT.md` must include the ledger `run_id` and the paths to the matching
+`RUN_LEDGER.jsonl` start/final records.
 
 **G12 regime-aware failure interpretation (mandatory):** if the diagnostic run failed in
 a regime that violates the mechanism's necessary preconditions (e.g. scale-dependent
@@ -290,6 +295,22 @@ Before deploying, ensure the experiment scripts have W&B logging:
 
 ### Step 4: Deploy
 
+Before executing the command, append a `run-start` record to
+`orbit-research/RUN_LEDGER.jsonl` following `shared-references/run-ledger.md`.
+Generate `run_id = run_<UTC timestamp>_<short hash of command/config>`. Capture:
+
+- exact command and cwd
+- `git rev-parse HEAD` and `git status --short` summarized as `clean|dirty|unknown`
+- config path and SHA256 hash when a config file is present
+- dataset, split, seed when parseable from manifest/config/args
+- host, GPU, screen name or process id
+- W&B run id when available
+- diagnostic plan path and `PLAN_CODE_AUDIT.md` verdict
+
+The start record must be written before the screen/process/modal job launches. If launch
+itself fails, still append a `run-final` record with `status: failed` and
+`failure_type: launch`.
+
 #### Remote (via SSH + screen)
 
 For each experiment, create a dedicated screen session with GPU binding:
@@ -360,6 +381,25 @@ modal app logs <app>   # Stream logs
 **Local:**
 Check process is running and GPU is allocated.
 
+### Step 5.5: Finalize Run Ledger and Diagnostic Report
+
+When the run reaches any terminal state, append the `run-final` record to
+`orbit-research/RUN_LEDGER.jsonl` before writing the final diagnostic report. Terminal
+states include success, script exception, OOM, timeout, killed process, missing output, or
+partial results. Then write `DIAGNOSTIC_RUN_REPORT.md` with:
+
+- `run_id`
+- exact command
+- ledger path: `orbit-research/RUN_LEDGER.jsonl`
+- stdout/stderr log paths
+- result file paths
+- W&B run id, if present
+- status and failure type when not completed
+
+If no result file is produced, still write `DIAGNOSTIC_RUN_REPORT.md` and
+`DIAGNOSTIC_RUN_AUDIT.md`; the audit verdict should be `FIX_BEFORE_GPU`,
+`REDESIGN_EXPERIMENT`, or `ERROR` with a reason rather than silently omitting the run.
+
 ### Step 6: Feishu Notification (if configured)
 
 After deployment is verified, check `~/.claude/feishu.json`:
@@ -371,6 +411,12 @@ After deployment is verified, check `~/.claude/feishu.json`:
 **Skip this step if not using vast.ai or `auto_destroy` is `false`.**
 
 After the experiment completes (detected via `/monitor-experiment` or screen session ending):
+
+0. Confirm the Step 5.5 `run-final` record includes any Vast-specific downloaded
+   stdout/stderr log paths, result files, primary/baseline metrics when parseable,
+   `DIAGNOSTIC_RUN_AUDIT.md` verdict, failure type, and short notes. If cleanup reveals a
+   missing or partial result after the first terminal record, append a follow-up `run-final`
+   record with the same `run_id` and updated fields.
 
 1. **Download results** from the instance:
    ```bash
@@ -402,6 +448,8 @@ After the experiment completes (detected via `/monitor-experiment` or screen ses
 ## Key Rules
 
 - ALWAYS check GPU availability first — never blindly assign GPUs (except Modal, which manages allocation automatically)
+- ALWAYS append `RUN_LEDGER.jsonl` `run-start` before launch and `run-final` after any terminal outcome
+- Failed/OOM/timeout/killed/no-result runs are evidence and must be recorded, not discarded
 - Each experiment gets its own screen session + GPU (remote) or background process (local)
 - Use `tee` to save logs for later inspection
 - Run deployment commands with `run_in_background: true` to keep conversation responsive

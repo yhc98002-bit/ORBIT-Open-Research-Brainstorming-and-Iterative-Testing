@@ -30,7 +30,7 @@ project/
 │   ├── EXPERIMENT_PLAN_EXEC.md            # Claims + blocks + run order
 │   ├── EXPERIMENT_TRACKER.md              # Execution checklist (TODO → DONE)
 │   ├── EXPERIMENT_RESULTS.md              # Collected experiment results
-│   ├── EXPERIMENT_LOG.md                  # Complete record of all experiments run
+│   ├── EXPERIMENT_LOG.md                  # Human-readable experiment summary
 │   ├── FINAL_PROPOSAL.md                 # Proposal index
 │   ├── FINAL_PROPOSAL_SHORT.md           # Clean short proposal
 │   ├── METHOD_SPEC.md                    # Implementation-level method spec
@@ -57,8 +57,10 @@ project/
 |------|-----------|---------|
 | `idea-stage/IDEA_REPORT.md` | `/idea-creator` | Raw brainstorm output: all 8-12 ideas + pilot results + eliminated ideas |
 | `refine-logs/EXPERIMENT_PLAN.md` | `/experiment-plan` | Experiment-plan index and reading paths |
-| `refine-logs/EXPERIMENT_PLAN_EXEC.md` | `/experiment-plan` | Executable experiment design: claim map, blocks, run order, compute budget |
+| `refine-logs/EXPERIMENT_PLAN_EXEC.md` | `/experiment-plan` | Executable experiment design: claim map, blocks, decision tree, run order, compute budget |
 | `refine-logs/EXPERIMENT_TRACKER.md` | `/experiment-plan` | Execution checklist: run ID, status (TODO→DONE), one-line notes |
+| `orbit-research/RUN_LEDGER.jsonl` | `/run-experiment`, `/experiment-queue` | Append-only run provenance: commands, configs, logs, result files, failures |
+| `orbit-research/RESEARCH_DECISION_LOG.md` | `/diagnostic-to-review` | Failed/surprising diagnostic classification and local next-route decision |
 | `review-stage/AUTO_REVIEW.md` | `/auto-review-loop` | Cumulative review log: scores, reviewer responses, actions taken |
 | `review-stage/REVIEW_STATE.json` | `/auto-review-loop` | Recovery state for context compaction |
 
@@ -68,7 +70,7 @@ project/
 |------|---------|----------|
 | `idea-stage/IDEA_CANDIDATES.md` | Curated pool of viable ideas that survived review — pick next idea from here when pivoting | [`IDEA_CANDIDATES_TEMPLATE.md`](../templates/IDEA_CANDIDATES_TEMPLATE.md) |
 | `findings.md` | Lightweight discovery log — anomalies, debug root causes, key decisions during experiments | [`FINDINGS_TEMPLATE.md`](../templates/FINDINGS_TEMPLATE.md) |
-| `refine-logs/EXPERIMENT_LOG.md` | Complete experiment record — full results, configs, reproduction commands | [`EXPERIMENT_LOG_TEMPLATE.md`](../templates/EXPERIMENT_LOG_TEMPLATE.md) |
+| `refine-logs/EXPERIMENT_LOG.md` | Human-readable experiment narrative; canonical factual provenance lives in `RUN_LEDGER.jsonl` | [`EXPERIMENT_LOG_TEMPLATE.md`](../templates/EXPERIMENT_LOG_TEMPLATE.md) |
 | `idea-stage/docs/research_contract.md` | Focused working document for the active idea (from [Session Recovery Guide](SESSION_RECOVERY_GUIDE.md)) | [`RESEARCH_CONTRACT_TEMPLATE.md`](../templates/RESEARCH_CONTRACT_TEMPLATE.md) |
 
 ## How They Relate
@@ -94,12 +96,17 @@ EXPERIMENT_PLAN.md                (what to run — design)
   ↓
 EXPERIMENT_TRACKER.md             (execution status — TODO/RUNNING/DONE)
   ↓ experiment completes
-EXPERIMENT_LOG.md                 (what happened — full results + reproduction)
+RUN_LEDGER.jsonl                  (canonical facts — command/config/logs/results/status)
+  ↓
+EXPERIMENT_LOG.md                 (human-readable summary — what we learned)
   ↓ discover something unexpected
 findings.md                       (one-line entry — anomaly, root cause, decision)
 ```
 
-**Why separate tracker and log?** Different audiences. The tracker is for execution management ("what's left to run?"). The log is for knowledge preservation ("what did we learn?"). The tracker can be reset between ideas; the log is permanent.
+**Why separate tracker, ledger, and log?** Different audiences. The tracker is for
+execution management ("what's left to run?"). `RUN_LEDGER.jsonl` is factual provenance
+("what exactly ran?"). The log is for knowledge preservation ("what did we learn?").
+The tracker can be reset between ideas; the ledger stays append-only.
 
 ### When to Write Each File
 
@@ -128,7 +135,7 @@ Do NOT read `IDEA_REPORT.md` or `IDEA_CANDIDATES.md` unless switching ideas.
 | Where does a brainstorm idea go? | `IDEA_REPORT.md` (raw) → `IDEA_CANDIDATES.md` (curated) |
 | Where does the current idea's full context go? | `idea-stage/docs/research_contract.md` |
 | Where does "experiment X is running" go? | `EXPERIMENT_TRACKER.md` |
-| Where does "experiment X got accuracy 95.2" go? | `EXPERIMENT_LOG.md` |
+| Where does "experiment X got accuracy 95.2" go? | `RUN_LEDGER.jsonl` for the factual metric path; `EXPERIMENT_LOG.md` for the readable interpretation |
 | Where does "lr=1e-4 diverges on dataset-X" go? | `findings.md` |
 | Where does "reviewer says add ablation" go? | `review-stage/AUTO_REVIEW.md` |
 | Where does "chose approach A over B because Z" go? | `findings.md` |
@@ -136,19 +143,22 @@ Do NOT read `IDEA_REPORT.md` or `IDEA_CANDIDATES.md` unless switching ideas.
 
 ## Output Versioning
 
-ARIS skills use timestamped filenames to preserve history. Each output is written twice:
+ORBIT uses selective timestamping. Major proposal/plan/claim/paper milestones may be
+written twice:
 
 1. **Timestamped file**: `{FILENAME}_{YYYYMMDD_HHmmss}.md` — permanent history
 2. **Fixed-name file**: `{FILENAME}.md` — latest copy, read by downstream skills
 
 ```
-idea-stage/
-├── IDEA_REPORT_20250615_143022.md    ← first run
-├── IDEA_REPORT_20250616_090015.md    ← second run
-├── IDEA_REPORT.md                    ← latest copy (= 20250616 version)
+refine-logs/
+├── FINAL_PROPOSAL_SHORT_20250615_143022.md    ← milestone snapshot
+├── FINAL_PROPOSAL_SHORT_20250616_090015.md    ← later milestone snapshot
+├── FINAL_PROPOSAL_SHORT.md                    ← latest copy
 ```
 
-**Not timestamped**: append-only files (`findings.md`), per-round files (`round_N_*.md`), dashboard (`CLAUDE.md`), manifest (`MANIFEST.md`).
+**Not timestamped**: append-only files (`findings.md`, `RUN_LEDGER.jsonl`,
+`MANIFEST.md`), routing/decision logs, state files, per-round files (`round_N_*.md`),
+dashboard (`CLAUDE.md`), and human-readable execution summaries (`EXPERIMENT_LOG.md`).
 
 See [shared-references/output-versioning.md](../skills/shared-references/output-versioning.md) for the full protocol.
 

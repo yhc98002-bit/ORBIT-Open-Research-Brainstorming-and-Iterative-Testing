@@ -43,7 +43,7 @@ because the chat is in Chinese. See
 | Template | Written by | Purpose |
 |----------|-----------|---------|
 | [IDEA_CANDIDATES_TEMPLATE.md](IDEA_CANDIDATES_TEMPLATE.md) | `/idea-discovery` | Top 3-5 surviving ideas (lean, not full 12-idea report) |
-| [EXPERIMENT_LOG_TEMPLATE.md](EXPERIMENT_LOG_TEMPLATE.md) | `/experiment-bridge` | Structured experiment record (results + reproduction commands) |
+| [EXPERIMENT_LOG_TEMPLATE.md](EXPERIMENT_LOG_TEMPLATE.md) | `/experiment-bridge` | Human-readable experiment summary; `RUN_LEDGER.jsonl` is factual provenance |
 | [FINDINGS_TEMPLATE.md](FINDINGS_TEMPLATE.md) | `/auto-review-loop` | One-line-per-finding discovery log (anomalies, decisions) |
 
 ## Usage

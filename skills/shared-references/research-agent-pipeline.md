@@ -185,10 +185,12 @@ Required ending: `PROCEED | NARROW | RETHINK`
 
 ### 4. Assumption Ledger
 
-List every assumption the proposed work depends on: data availability, mechanism plausibility,
-baseline behaviour, evaluator validity, scale regime, infrastructure cost, time horizon. Each
-assumption is tagged `factual` (citable to evidence) or `working` (must be tested or accepted
-as a risk). Downstream artifacts must trace any "is/will/always" claim to this ledger.
+List assumptions behind the proposed work's central factual, method, benchmark, and
+paper-bearing claims: data availability, mechanism plausibility, baseline behaviour,
+evaluator validity, scale regime, infrastructure cost, time horizon. Each assumption is
+tagged `factual` (citable to evidence) or `working` (must be tested or accepted as a risk).
+Downstream artifacts must trace central "is/will/always" claims to this ledger; do not
+force every background sentence into the ledger.
 
 Required artifact: `ASSUMPTION_LEDGER.md`
 
@@ -326,10 +328,14 @@ config, and produce logs sufficient for null-result diagnosis.
 necessary preconditions (e.g., scale-dependent emergent behaviour ablated), do not reject
 the mechanism — recommend redesign to a regime where the mechanism could manifest.
 
-Required artifacts: `DIAGNOSTIC_RUN_REPORT.md` + `DIAGNOSTIC_RUN_AUDIT.md`
+Required artifacts: `RUN_LEDGER.jsonl` + `DIAGNOSTIC_RUN_REPORT.md` + `DIAGNOSTIC_RUN_AUDIT.md`
 *(v1.0 aliases: `TINY_RUN_REPORT.md` + `TINY_RUN_AUDIT.md`)*
 
 Required ending: `PASS | FIX_BEFORE_GPU | REDESIGN_EXPERIMENT`
+
+`RUN_LEDGER.jsonl` is append-only. Every run writes a `run-start` record before execution
+and a `run-final` record after completion, failure, OOM, timeout, kill, no-result, or
+partial result. Failed runs are evidence and must not disappear from later analysis.
 
 ### 18. Result Interpretation Loop
 
@@ -338,6 +344,12 @@ experiment must depend on the current interpretation. Honest tie/failure framing
 required if NULL_RESULT_CONTRACT triggered such an outcome.
 
 Required artifact: `RESULT_INTERPRETATION.md`
+
+When the result is failed, mixed, contradictory, or surprising, also write
+`RESEARCH_DECISION_LOG.md` before routing. This log classifies the failure type and chooses
+the local next action (`continue`, `local patch`, `change diagnostic`, `re-read literature`,
+`failure-to-innovation`, `proposal-revise`, or `archive`) so failed diagnostics do not
+default to full proposal+plan revision.
 
 ### 18.5 Failure-to-Innovation Loop
 

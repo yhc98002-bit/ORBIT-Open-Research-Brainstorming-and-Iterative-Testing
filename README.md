@@ -307,9 +307,11 @@ catch revisions that drift from the original problem or add unnecessary complexi
 at `awaiting_human_continue` with a diff report. Run multiple rounds until satisfied;
 use `— fresh: true` to clear and start a different revision direction.
 
-Pass `"both"` as the target to revise both FINAL_PROPOSAL.md and EXPERIMENT_PLAN.md.
-Use `— scope: <list>` to skip auto-classification when you already know which stages need
-revisiting.
+Pass `"both"` only when both FINAL_PROPOSAL.md and EXPERIMENT_PLAN.md genuinely need
+revision. After failed diagnostics, `/diagnostic-to-review` writes
+`orbit-research/RESEARCH_DECISION_LOG.md`; `/proposal-revise` reads that log and defaults
+to the narrowest patch mode (`mechanism-only`, `diagnostic-branch-only`,
+`benchmark/control-only`, etc.) instead of revising both artifacts.
 
 ### Already have proposal, want experiment plan only
 
@@ -336,6 +338,9 @@ across all 8; on a shared box it conservatively uses only the truly idle GPUs.
 
 Before scale-up: `PLAN_CODE_AUDIT.md` must be `MATCHES_PLAN` or scoped `PARTIAL_MISMATCH`;
 `DIAGNOSTIC_RUN_AUDIT.md` must be `PASS` (or `TINY_RUN_AUDIT.md` if v1.0 alias).
+Every launched run appends provenance to `orbit-research/RUN_LEDGER.jsonl`, including
+failed/OOM/timeout/no-result runs, exact commands, configs, logs, result files, and
+audit verdicts.
 
 ### From results to claims (chained)
 
@@ -344,7 +349,10 @@ Before scale-up: `PLAN_CODE_AUDIT.md` must be `MATCHES_PLAN` or scoped `PARTIAL_
 ```
 
 Runs run-experiment → analyze-results → result-to-claim → auto-review-loop as one chain;
-aborts cleanly with awaiting_human_continue + next_action on any bottleneck.
+aborts cleanly with awaiting_human_continue + next_action on any bottleneck. Failed,
+mixed, or surprising diagnostics write `orbit-research/RESEARCH_DECISION_LOG.md` first,
+then route to a local patch, diagnostic change, failure-to-innovation, scoped
+proposal-revise, or archive decision.
 
 Or invoke each individually:
 

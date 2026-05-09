@@ -123,7 +123,9 @@ ORBIT 走 Grounding（assumption ledger、abstract task、baseline ceiling）+ I
 的 stages（不是整个 pipeline 重来），然后通过 `/research-refine`（proposal target）或
 `/experiment-plan`（plan target）再积分。Anchor + Simplicity 检查会拒绝那些会让
 revision 偏离原始问题或引入不必要复杂度的修改。Stop 在 `awaiting_human_continue`，可多轮
-迭代直到满意；想换方向就加 `— fresh: true` 清掉重来。target 传 `"both"` 同时改两个文件。
+迭代直到满意；想换方向就加 `— fresh: true` 清掉重来。target 传 `"both"` 只用于两个文件都
+确实需要改的情况。诊断失败后，先看 `orbit-research/RESEARCH_DECISION_LOG.md`；
+`/proposal-revise` 会按这个 log 选择窄 patch mode，而不是默认同时改 proposal + plan。
 
 ## 流水线一眼看完
 
@@ -199,12 +201,16 @@ agent 连贯跑，段与段之间 `awaiting_human_continue`（见
 2. /experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"
    实施 + plan-code 一致性循环 (Stage 15)
    ⏸ STOP B: 审 PLAN_CODE_AUDIT.md verdict — GPU 花钱前最后一关
+   每个启动的 run 都写入 orbit-research/RUN_LEDGER.jsonl，包括失败/OOM/timeout/no-result、
+   exact command、config、日志、结果文件和 audit verdict
 
 3. /diagnostic-to-review "<diagnostic command OR manifest>"
    /run-experiment（自动 solo vs queue 路由）→ /analyze-results →
    /result-to-claim → /auto-review-loop
    遇到任何 verdict 瓶颈（FIX_BEFORE_GPU、claim_supported=no、不可救的 review 分、
    G14/G17 违反）就 awaiting_human_continue + 清晰 next_action 报告，从不 silent fail
+   失败/混合/意外诊断会先写 RESEARCH_DECISION_LOG.md，再路由到局部 patch / 改诊断 /
+   failure-to-innovation / scoped proposal-revise / archive
    ⏸ STOP C: 一起审 CLAIM_CONSTRUCTION + RED_TEAM_REVIEW + HUMAN_DECISION_NOTE
 
 4. /paper-writing "NARRATIVE_REPORT.md" — venue: ICLR, assurance: submission

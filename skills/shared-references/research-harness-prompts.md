@@ -148,8 +148,10 @@ End with one of: PROCEED | NARROW | RETHINK. Write PROBLEM_SELECTION.md.
 ## 4. Assumption Ledger
 
 ```text
-List every assumption the proposed work depends on. Treat assumptions as first-class
-objects — never let them silently become facts.
+List assumptions behind the proposed work's central factual, method, benchmark, and
+paper-bearing claims. Treat assumptions as first-class objects — never let them silently
+become facts. Do not ledger every background sentence unless it carries the argumentative
+weight of the method, benchmark, or paper-level claim.
 
 For each assumption, record:
 1. ID (A1, A2, ...).
@@ -168,8 +170,9 @@ Cover at minimum:
 - infrastructure cost;
 - time horizon.
 
-Downstream artifacts will be required to trace any "is/will/always" claim back to a row
-in this ledger (G2). Write ASSUMPTION_LEDGER.md.
+Downstream artifacts will be required to trace central factual, method, benchmark, and
+paper-bearing "is/will/always" claims back to a row in this ledger (G2). Background
+context stays readable unless it is used as evidence. Write ASSUMPTION_LEDGER.md.
 ```
 
 ## 5. Abstract Task / Mechanism Framing

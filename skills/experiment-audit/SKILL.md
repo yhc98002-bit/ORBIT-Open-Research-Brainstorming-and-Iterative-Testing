@@ -28,6 +28,12 @@ This follows `shared-references/reviewer-independence.md` and `shared-references
 ## Constants
 
 - **REVIEWER_BACKEND = `codex`** — Default: Codex MCP (`gpt-5.5`, xhigh). Override with `— reviewer: oracle-pro` only if explicitly requested. See `shared-references/reviewer-routing.md`.
+- **AUDIT_POLICY_BY_MODE**:
+  - Exploration / diagnostics: `WARN` and `FAIL` are advisory but must be visible in
+    RESULT_INTERPRETATION / RESEARCH_DECISION_LOG when relevant.
+  - Claim construction / paper-writing: `FAIL` blocks use of the affected result as
+    claim-supporting evidence until resolved or explicitly marked as
+    `proxy_evidence` / `invalid_evidence` and excluded from primary support.
 
 ## Workflow
 
@@ -40,7 +46,7 @@ Scan project directory for:
 1. Evaluation scripts:    *eval*.py, *metric*.py, *test*.py, *benchmark*.py
 2. Result files:          *.json, *.csv in results/, outputs/, logs/
 3. Ground truth paths:    look in eval scripts for data loading (dataset paths, GT references)
-4. Experiment tracker:    EXPERIMENT_TRACKER.md, EXPERIMENT_LOG.md
+4. Experiment tracker:    EXPERIMENT_TRACKER.md, EXPERIMENT_LOG.md, orbit-research/RUN_LEDGER.jsonl
 5. Paper claims:          NARRATIVE_REPORT.md, paper/sections/*.tex, PAPER_PLAN.md
 6. Config files:          *.yaml, *.toml, *.json configs with metric definitions
 ```
@@ -92,7 +98,10 @@ mcp__codex__codex:
     2. Does the claimed metric key exist in that file?
     3. Does the claimed NUMBER match what's in the file?
     4. Is the experiment tracker status DONE (not TODO/IN_PROGRESS)?
-    FAIL if: Claimed results reference nonexistent files or mismatched numbers.
+    5. Does each result map to a `run_id` in orbit-research/RUN_LEDGER.jsonl?
+    6. Are failed/OOM/timeout/no-result runs disclosed rather than silently ignored?
+    FAIL if: Claimed results reference nonexistent files, mismatched numbers, or unledgered
+    primary evidence.
 
     ### D. Dead Code Detection
     For each metric function defined in eval scripts:
@@ -211,22 +220,25 @@ Also write `EXPERIMENT_AUDIT.json` for machine consumption:
 
 ## Integration with Other Skills
 
-### Automatic in /research-pipeline (advisory, never blocks)
+### Automatic in /research-pipeline
 
 When integrated into the pipeline, this skill runs automatically after `/experiment-bridge` and before `/auto-review-loop`:
 
 ```
 /experiment-bridge → results ready
     ↓
-/experiment-audit (automatic, advisory)
+/experiment-audit
     ├── PASS  → continue normally
-    ├── WARN  → print ⚠️ warning, continue, tag claims as [INTEGRITY: WARN]
-    └── FAIL  → print 🔴 alert, continue, tag claims as [INTEGRITY CONCERN]
+    ├── WARN  → exploration: advisory; claim/paper: tag claims as [INTEGRITY: WARN]
+    └── FAIL  → exploration: advisory; claim/paper: block affected claim use
     ↓
 /auto-review-loop → proceeds with integrity tags visible to reviewer
 ```
 
-**Never blocks the pipeline.** Even on FAIL, the pipeline continues — but claims carry visible integrity tags.
+In exploration mode, audit failures do not block the pipeline; they preserve warning
+signals for later review. Before `/result-to-claim`, `/paper-writing`, or any
+claim-supporting use, `FAIL` blocks the affected result until resolved or explicitly
+classified as `proxy_evidence` / `invalid_evidence` and excluded from primary support.
 
 ### Read by /result-to-claim (if exists)
 
@@ -235,7 +247,8 @@ if EXPERIMENT_AUDIT.json exists:
     read integrity_status
     attach to verdict: {claim_supported: "yes", integrity_status: "warn"}
     if integrity_status == "fail":
-        downgrade verdict display: "yes [INTEGRITY CONCERN]"
+        block claim_supported=yes for affected claims unless the result is explicitly
+        marked proxy_evidence/invalid_evidence and excluded from primary support
 else:
     verdict as normal, integrity_status = "unavailable"
     mark as "provisional — no integrity audit"
@@ -245,13 +258,14 @@ else:
 
 ```
 if EXPERIMENT_AUDIT.json exists AND integrity_status == "fail":
-    add footnote to affected claims: "Note: integrity audit flagged concerns with this evaluation"
+    block affected claim use until resolved or explicitly marked as proxy/invalid evidence
 ```
 
 ## Key Rules
 
 - **Reviewer independence**: executor collects paths, reviewer judges. Period.
-- **Never block**: warn loudly, never halt the pipeline.
+- **Mode-aware blocking**: exploration warnings are advisory; claim/paper use of
+  audit-failed evidence is blocked unless explicitly marked proxy/invalid.
 - **File-as-switch**: no EXPERIMENT_AUDIT.md = skill was never run = zero impact on existing behavior.
 - **Cross-model**: the reviewer MUST be a different model family from the executor.
 - **Honest about limits**: the audit catches common patterns, not all possible fraud. It is a safety net, not a guarantee.

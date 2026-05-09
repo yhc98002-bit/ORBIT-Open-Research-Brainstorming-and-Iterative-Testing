@@ -1,21 +1,22 @@
 ---
 name: diagnostic-to-review
-description: "ORBIT v1.3 thin pipeline that chains the post-implementation segment: /run-experiment (Stage 16/17 with auto-routing to /experiment-queue if needed) → /analyze-results (Stage 18) → /result-to-claim (Stage 21) → /auto-review-loop (Stage 23). Runs the happy path automatically; aborts and reports cleanly the moment any verdict-line gate signals a bottleneck (DIAGNOSTIC_RUN_AUDIT != PASS, claim_supported = no, irrecoverable review score, G14/G17 violations). Aborts are NOT errors — they are awaiting_human_continue states with clear next_action so the user can decide. Use when user has PLAN_CODE_AUDIT verdict = MATCHES_PLAN and wants to chain diagnostic → claim → review without re-typing four skill calls."
+description: "ORBIT v1.4 thin pipeline that chains the post-implementation segment: /run-experiment (Stage 16/17 with auto-routing to /experiment-queue if needed) → /analyze-results (Stage 18), then conditionally /result-to-claim (Stage 21) → /auto-review-loop (Stage 23) only when the diagnostic affects paper-level claim scope. Runs the happy path automatically for paper-bearing diagnostics; stops after interpretation + decision log for sanity, provenance, and mechanism probes. Aborts are NOT errors — they are awaiting_human_continue states with clear next_action so the user can decide."
 argument-hint: [diagnostic-command OR manifest-path OR grid-spec]
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, mcp__codex__codex, mcp__codex__codex-reply
 ---
 
-# /diagnostic-to-review — v1.3 Run → Analyze → Claim → Review
+# /diagnostic-to-review — v1.4 Run → Analyze → Optional Claim → Review
 
 Chain the post-implementation segment for: **$ARGUMENTS**
 
 ## Overview
 
-This skill is a thin orchestrator that walks Stages 17/18/21/23 of the ORBIT v1.3
-pipeline as one continuous run. The user invokes it once after `/experiment-bridge`
-returned `MATCHES_PLAN`; this skill takes over until either the happy path completes
-(red-team review done, claim construction stable) or a verdict-line gate aborts the chain
-and surfaces a clear "what's blocking + what to decide" report.
+This skill is a thin orchestrator that walks Stage 17/18 of the ORBIT pipeline, then
+continues to Stage 21/23 only when the result affects paper-level claim scope. The user
+invokes it once after `/experiment-bridge` returned `MATCHES_PLAN`; this skill takes over
+until either the diagnostic-only path has a clean interpretation + decision log, the
+paper-bearing happy path completes, or a verdict-line gate aborts the chain and surfaces a
+clear "what's blocking + what to decide" report.
 
 **Scope boundary:**
 - Starts after `PLAN_CODE_AUDIT.md` exists with verdict = `MATCHES_PLAN` (or scoped
@@ -37,9 +38,10 @@ Input:  diagnostic command / manifest / grid
            ABORT if no parseable results found
            OR     if signs of metric/data fraud per experiment-integrity protocol
 
-  Phase 3: /result-to-claim "<auto-derived experiment description>"
-           ABORT if claim_supported = "no"
-           Continue (with downgrade) if claim_supported = "partial"
+  Phase 3: Claim relevance gate
+           If sanity/provenance/mechanism-only: stop after RESULT_INTERPRETATION +
+           RESEARCH_DECISION_LOG.
+           If paper-level claim scope is affected: /result-to-claim
 
   Phase 4: /auto-review-loop "<scope>" — difficulty: hard
            ABORT if reviewer score < ABORT_REVIEW_SCORE after MAX_ROUNDS
@@ -68,6 +70,16 @@ Input:  diagnostic command / manifest / grid
 - `shared-references/research-harness-prompts.md` — sections `17`, `18`, `21`, `22`, `23`
 - `shared-references/semantic-code-audit.md` — Stage 17 audit + G12 regime check
 - `shared-references/experiment-integrity.md` — Phase 2 metric / data fraud signals
+- `shared-references/document-hygiene.md` — avoid turning proposal documents into claim
+  audits or rebuttal logs
+
+Also read these project artifacts when present because failure routing depends on them:
+
+- `orbit-research/RUN_LEDGER.jsonl` — canonical run provenance and failed/no-result runs
+- `refine-logs/EXPERIMENT_PLAN_EXEC.md` — especially `Decision Tree / Branch Table`
+- `refine-logs/FINAL_PROPOSAL.md` and `FINAL_PROPOSAL_SHORT.md` — proposal status block
+- `orbit-research/ASSUMPTION_LEDGER.md` — critical hypotheses H1-Hk
+- `orbit-research/NULL_RESULT_CONTRACT.md` — tie/negative interpretation
 - `shared-references/continuation-contract.md` — STATE schema, three-state enum, resume
   rules
 
@@ -107,6 +119,7 @@ Schema:
   "next_skill_hint": "/paper-writing OR /experiment-bridge (re-audit) OR ...",
   "timestamp": "<ISO 8601 UTC>",
   "artifact_inventory": [
+    "orbit-research/RUN_LEDGER.jsonl",
     "orbit-research/DIAGNOSTIC_RUN_REPORT.md",
     "orbit-research/DIAGNOSTIC_RUN_AUDIT.md",
     "orbit-research/RESULT_INTERPRETATION.md",
@@ -146,9 +159,9 @@ Apply the canonical contract decision tree. Specifically:
 
 | Phase | Expected artifacts |
 |---|---|
-| phase-1-run | `orbit-research/DIAGNOSTIC_RUN_REPORT.md` + `DIAGNOSTIC_RUN_AUDIT.md` (verdict line) |
-| phase-2-analyze | `orbit-research/RESULT_INTERPRETATION.md` |
-| phase-3-claim | `orbit-research/CLAIM_CONSTRUCTION.md` + `HUMAN_DECISION_NOTE.md` |
+| phase-1-run | `orbit-research/RUN_LEDGER.jsonl` + `DIAGNOSTIC_RUN_REPORT.md` + `DIAGNOSTIC_RUN_AUDIT.md` (verdict line) |
+| phase-2-analyze | `orbit-research/RESULT_INTERPRETATION.md` + `RESEARCH_DECISION_LOG.md` when result is failed / mixed / surprising |
+| phase-3-claim | `orbit-research/CLAIM_CONSTRUCTION.md` + `HUMAN_DECISION_NOTE.md` + `RESEARCH_DECISION_LOG.md` when claim is unsupported |
 | phase-4-review | `orbit-research/RED_TEAM_REVIEW.md` |
 | phase-5-summary | `orbit-research/PIPELINE_SUMMARY.md` |
 
@@ -162,7 +175,9 @@ Apply the canonical contract decision tree. Specifically:
 
 `/run-experiment` (T3a-state + T3a-route) handles auto-routing (solo vs `/experiment-queue`),
 state-based resume on interruption (screen attach + log offset replay), and writes
-`DIAGNOSTIC_RUN_REPORT.md` + `DIAGNOSTIC_RUN_AUDIT.md` with verdict line.
+`RUN_LEDGER.jsonl` + `DIAGNOSTIC_RUN_REPORT.md` + `DIAGNOSTIC_RUN_AUDIT.md` with verdict
+line. If the run fails, OOMs, times out, is killed, or produces no result, it is still a
+valid ledgered diagnostic event.
 
 **Abort triggers:**
 
@@ -187,25 +202,77 @@ Or pass an explicit results path / W&B run id derived from Phase 1's `DIAGNOSTIC
 
 Writes `orbit-research/RESULT_INTERPRETATION.md` per Stage 18 harness.
 
+If the diagnostic is failed, mixed, contradictory, or surprising, write
+`orbit-research/RESEARCH_DECISION_LOG.md` before routing or aborting. The log is the
+canonical local decision artifact for failed diagnostics; do not default to
+`/idea-to-proposal — fresh: true` or broad `/proposal-revise both`.
+
+Use this structure:
+
+```markdown
+# Research Decision Log
+
+- Diagnostic / run ID: [from DIAGNOSTIC_RUN_REPORT]
+- Result pattern: [positive / negative / mixed / tie / surprising / invalid]
+- Affected hypotheses: [H1-Hk, especially paper-breaking entries]
+- Failure type: implementation/config issue | invalid diagnostic | mechanism issue | benchmark/headroom issue | central paper-breaking hypothesis false | literature conflict | inconclusive
+- Decision: continue | local patch | change diagnostic | re-read literature | failure-to-innovation | proposal-revise | archive
+- Local patch target: experiment-bridge | experiment-plan | proposal-revise | research-lit | failure-to-innovation | manual
+- Proposal status update: unchanged | SUPPORTED | REFRAMED | ARCHIVED
+- Proposal revision needed: no | proposal-only | plan-only | both | assumption-only | mechanism-only | benchmark/control-only | diagnostic-branch-only
+- Next skill hint: [/experiment-bridge | /experiment-plan | /proposal-revise | /research-lit | /research-pipeline from Stage 18.5 | human decision]
+- Human decision required: yes/no
+
+## Rationale
+[Short evidence-based reason, citing RESULT_INTERPRETATION, NULL_RESULT_CONTRACT,
+EXPERIMENT_PLAN_EXEC Decision Tree, and affected H-IDs.]
+```
+
 **Abort triggers:**
 
 | Condition | Abort reason | next_skill_hint |
 |---|---|---|
-| No parseable results found at expected paths | `results-not-found` | manual investigation; check `/run-experiment` output paths |
+| No parseable results found at expected paths | `results-not-found` | write RESULT_INTERPRETATION from RUN_LEDGER failure/no-result records, then write/update RESEARCH_DECISION_LOG before routing |
 | `experiment-integrity.md` fraud signals detected (fake ground truth, score normalisation fraud, phantom results, scope inflation) | `integrity-failure` | `/experiment-audit` for full integrity audit; do NOT proceed to claim construction with corrupt eval |
-| Result interpretation entirely contradicts the proposal's claim direction | `result-contradicts-proposal` | `/idea-to-proposal — fresh: true` to reframe, or `/experiment-plan` to revise design |
+| Result interpretation entirely contradicts the proposal's claim direction | `result-contradicts-proposal` | follow `RESEARCH_DECISION_LOG.md`; likely `/proposal-revise — mode: mechanism-only` or human decision to mark proposal `REFRAMED` / `ARCHIVED` |
 
 If interpretation is well-formed (positive / negative / mixed all OK as long as the
 result is *interpretable* per `NULL_RESULT_CONTRACT.md`) → write Phase 2 STATE and
 continue to Phase 3.
 
-### Phase 3: Claim — `/result-to-claim`
+If no metric result exists, still write `RESULT_INTERPRETATION.md` from
+`RUN_LEDGER.jsonl`, logs, and `DIAGNOSTIC_RUN_AUDIT.md`. Classify the outcome as
+`no_result`, `oom`, `timeout`, `killed`, or `failed`; then write/update
+`RESEARCH_DECISION_LOG.md` before routing. Do not skip straight to proposal revision.
+
+### Phase 3: Claim Relevance Gate — optional `/result-to-claim`
+
+Do not invoke `/result-to-claim` after every diagnostic. First classify the run's purpose
+from `DIAGNOSTIC_EXPERIMENT_PLAN.md`, `EXPERIMENT_PLAN_EXEC.md`, and
+`RESULT_INTERPRETATION.md`.
+
+Stop after `RESULT_INTERPRETATION.md` + `RESEARCH_DECISION_LOG.md` when the diagnostic is:
+
+- sanity / smoke testing
+- provenance or logging validation
+- implementation/config validation
+- mechanism probing that informs the next local patch but does not change paper-level
+  claim scope yet
+- benchmark plumbing, data availability, or evaluator validity checking
+
+Invoke `/result-to-claim` only when the result affects paper-level claim scope, such as:
+
+- a main benchmark or ablation intended to support a paper claim
+- a critical hypothesis whose truth changes `FINAL_PROPOSAL` status or claim wording
+- a scale-up decision where evidence may become primary paper support
+- a negative/tie result that would weaken, reframe, or archive a paper-bearing claim
 
 ```bash
 /result-to-claim "<one-line description: e.g. 'main result on benchmark X with method Y'>"
 ```
 
-Auto-derive the description from `RESULT_INTERPRETATION.md` if the user did not pass one.
+Auto-derive the description from `RESULT_INTERPRETATION.md` if the user did not pass one
+and the claim relevance gate says this is paper-bearing.
 Writes `orbit-research/CLAIM_CONSTRUCTION.md` and `HUMAN_DECISION_NOTE.md` per Stage 21
 harness; writes `NEGATIVE_RESULT_STRATEGY.md` if Stage 22 triggered.
 
@@ -213,12 +280,31 @@ harness; writes `NEGATIVE_RESULT_STRATEGY.md` if Stage 22 triggered.
 
 | Condition | Abort reason | next_skill_hint |
 |---|---|---|
-| `claim_supported = no` AND `— continue-on-no: true` NOT set | `claim-not-supported` | review options: revise claim, run more experiments, pivot, or treat as documented negative result via `/idea-to-proposal — fresh: true` |
+| `claim_supported = no` AND `— continue-on-no: true` NOT set | `claim-not-supported` | write/update `RESEARCH_DECISION_LOG.md`; route according to its decision, not broad full-pipeline revision |
 | G14 violation detected: NULL_RESULT_CONTRACT triggered tie/failure but draft has positive framing | `g14-positive-framing-on-failure` | rewrite per Stage 22 (Tie / Negative Strategy); G14 is no-exception |
 | G17 violation detected: post-hoc claim presented as pre-planned hypothesis | `g17-post-hoc-as-pre-planned` | label explicitly as "exploratory finding, not pre-planned hypothesis" before proceeding; G17 is no-exception |
 
 If `claim_supported = yes` OR (`claim_supported = partial` AND `CONTINUE_ON_PARTIAL = true`)
 → write Phase 3 STATE and continue to Phase 4.
+
+### Failure Routing from `RESEARCH_DECISION_LOG.md`
+
+When the decision log exists, its `Decision`, `Failure type`, and `Proposal revision
+needed` fields are binding for recovery routing:
+
+| Failure type | Route | Rule |
+|---|---|---|
+| implementation/config issue | `/experiment-bridge` fix loop | Patch implementation/config and re-run plan-code audit; do not revise proposal. |
+| invalid diagnostic | `/experiment-plan — mode: diagnostic-branch-only` | Patch the diagnostic branch / run card; do not mark mechanism false. |
+| mechanism issue | `/proposal-revise — mode: mechanism-only` or failure-to-innovation | Revise only mechanism artifacts unless the log explicitly says proposal-only/both. |
+| benchmark/headroom issue | `/experiment-plan — mode: benchmark/control-only` or `/proposal-revise — mode: benchmark/control-only` | Patch controls, benchmark, or claim scope only. |
+| central paper-breaking hypothesis false | human decision | Patch only the `## Proposal Status` block in `FINAL_PROPOSAL.md` and `FINAL_PROPOSAL_SHORT.md` to `REFRAMED` or `ARCHIVED`; do not auto-run broad revision. |
+| literature conflict | `/research-lit` then targeted revise | Re-read literature before changing mechanism or claims. |
+| inconclusive | continue or change diagnostic | Follow the Decision Tree / Branch Table; avoid proposal revision unless required. |
+
+`/idea-to-proposal — fresh: true` is not a default failed-diagnostic recovery. Use it only
+when the human explicitly chooses to abandon the current problem/method and restart
+discovery.
 
 ### Phase 4: Red-team — `/auto-review-loop`
 
@@ -237,7 +323,10 @@ Runs review → fix → re-review iterations per Stage 23. Writes `orbit-researc
 | `/auto-review-loop` returned with required fixes that loop into a Stage 11 redesign | `redesign-required` | `/research-pipeline — from-stage: 11` to redo HMBC matrix |
 
 If review converges with score ≥ ABORT_REVIEW_SCORE and no gate violations → write Phase 4
-STATE and continue to Phase 5.
+STATE and continue to Phase 5. If the reviewed claim supports the central diagnostic
+hypothesis, patch only the `## Proposal Status` block in `FINAL_PROPOSAL.md` and
+`FINAL_PROPOSAL_SHORT.md` to `SUPPORTED`, with evidence basis citing
+`CLAIM_CONSTRUCTION.md` and `RED_TEAM_REVIEW.md`.
 
 ### Phase 5: Pipeline Summary
 
@@ -257,9 +346,11 @@ Write `orbit-research/PIPELINE_SUMMARY.md`:
 - orbit-research/DIAGNOSTIC_RUN_AUDIT.md  (verdict: PASS)
 
 ### Phase 2 — Analyze (Stage 18)
+- orbit-research/RUN_LEDGER.jsonl
 - orbit-research/RESULT_INTERPRETATION.md
+- orbit-research/RESEARCH_DECISION_LOG.md  (if failed / mixed / surprising / unsupported)
 
-### Phase 3 — Claim (Stage 21 / 22)
+### Phase 3 — Claim (Stage 21 / 22, only if paper-level claim scope is affected)
 - orbit-research/CLAIM_CONSTRUCTION.md
 - orbit-research/HUMAN_DECISION_NOTE.md
 - orbit-research/NEGATIVE_RESULT_STRATEGY.md  (if tie/failure)
@@ -332,7 +423,8 @@ For Codex MCP unavailability:
 - Does **not** modify `PLAN_CODE_AUDIT.md` — if Phase 1 abort path is `fix-code`, route
   back to `/experiment-bridge`.
 - Does **not** modify `EXPERIMENT_PLAN.md` — if Phase 1 abort path is `redesign-diagnostic`,
-  route back to `/experiment-plan` or `/idea-to-proposal — fresh: true`.
+  route back to `/experiment-plan` patch mode. Use `/idea-to-proposal — fresh: true` only
+  after an explicit human decision to abandon and restart discovery.
 
 ## Output Protocols
 
@@ -344,7 +436,7 @@ For Codex MCP unavailability:
 ## Final Rule
 
 ```text
-Run cheap, interpret honestly, claim narrowly, review hard.
+Run cheap, interpret honestly, claim only when paper-level scope is affected, review hard.
 A bottleneck is information; it is not failure.
 Every abort produces a clear next_action — never a silent stop.
 Convergence on a defensible claim is the goal; abandoning a bad chain early

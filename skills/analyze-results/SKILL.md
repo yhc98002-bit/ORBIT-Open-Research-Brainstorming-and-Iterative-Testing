@@ -12,9 +12,12 @@ Analyze: $ARGUMENTS
 ## ORBIT Result Interpretation Gate
 
 This gate is always-on. Load `shared-references/research-agent-pipeline.md` before analysis.
+Also load `shared-references/run-ledger.md` and read
+`orbit-research/RUN_LEDGER.jsonl` when present.
 Do not stop at comparison tables. Run `mkdir -p orbit-research/`, then write or update
 `orbit-research/RESULT_INTERPRETATION.md` with:
 
+- ledger coverage: which `run_id`s were analyzed, missing, failed, or orphaned
 - expected vs observed result
 - whether the expected signal appeared
 - supported and weakened hypotheses
@@ -28,10 +31,36 @@ The next experiment must depend on this interpretation.
 
 ## Workflow
 
-### Step 1: Locate Results
+### Step 1: Locate Results and Verify Provenance
 Find all relevant JSON/CSV result files:
 - Check `figures/`, `results/`, or project-specific output directories
 - Parse JSON results into structured data
+
+Before computing metrics, verify that result files correspond to
+`orbit-research/RUN_LEDGER.jsonl` entries:
+
+- Match each result file to a `run_id` by explicit `run_id` field, path in a `run-final`
+  `result_files` list, W&B run id, or command/config/seed match.
+- Warn if a result file is older than its matching `timestamp_start`.
+- Warn if a result file has no matching `run_id` (orphan result).
+- Warn if multiple ledger runs claim the same result file (duplicate result).
+- Report expected seeds/jobs with terminal ledger status `failed`, `oom`, `timeout`,
+  `killed`, `no_result`, or `partial`; do not silently ignore them.
+- Report missing seeds/config cells by comparing the experiment plan / queue manifest /
+  ledger start records against final records and discovered results.
+
+Write a `## Ledger Coverage` section in `RESULT_INTERPRETATION.md`:
+
+```markdown
+## Ledger Coverage
+| run_id | seed/config | ledger status | result files | included in metrics? | notes |
+|---|---|---|---|---|---|
+| run_... | seed=42 | completed | results/x.json | yes | |
+| run_... | seed=43 | oom | none | no | counted as failed run |
+
+Warnings:
+- [orphan / stale / duplicate / missing seed warning]
+```
 
 ### Step 2: Build Comparison Table
 Organize results by:

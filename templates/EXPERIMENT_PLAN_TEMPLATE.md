@@ -15,9 +15,10 @@ index, then follow the cross-references.
 | Stage | File | What it contains | When to read |
 |---|---|---|---|
 | Method spec | `FINAL_PROPOSAL.md` | Proposal index and method cross-references | always |
-| Main exec plan | `EXPERIMENT_PLAN_EXEC.md` | Claim map; compact block cards; run order; gates; budget; risks | always |
+| Main exec plan | `EXPERIMENT_PLAN_EXEC.md` | Claim map; compact block cards; run order; decision tree; gates; budget; risks | always |
 | Current immediate task | `[MILESTONE]_RUN_CARD.md` | The next action only: command surface, success gate, halt rule | now, if present |
 | Failure routing | `NULL_RESULT_CONTRACT.md` | NEGATIVE / TIE interpretation and paper-pivot rules | when any block fails or ties |
+| Decision log | `../orbit-research/RESEARCH_DECISION_LOG.md` | Failed/surprising diagnostic classification and next-route decision | after any failed, mixed, or surprising diagnostic |
 | Optional protocols | `[PROTOCOL].md` | Dataset mapping, baseline protocol, figure plan, or other scoped details | only when referenced |
 
 ## Phased Flow
@@ -38,6 +39,21 @@ Phase 3 — Appendix / qualitative / write-up support
 - [Hard stop / budget / data constraint that downstream agents must enforce]
 - [No silent threshold relaxation; no unregistered experiment launch]
 - [Nice-to-have runs must not delay must-run evidence]
+
+## Required Exec-Plan Sections
+
+`EXPERIMENT_PLAN_EXEC.md` must include:
+
+- `## Claim Map`
+- `## Experiment Blocks`
+- `## Decision Tree / Branch Table`
+- `## Run Order and Milestones`
+
+Decision tree schema:
+
+| Result pattern | Interpretation | Next action | Proposal revision needed? | Scope if revision needed |
+|---|---|---|---|---|
+| [e.g., sanity pass, main effect absent, baseline stronger, regime mismatch] | [What this means] | continue / local patch / change diagnostic / re-read literature / failure-to-innovation / proposal-revise / archive | no / yes | assumption-only / mechanism-only / benchmark/control-only / diagnostic-branch-only / plan-only / proposal-only / both |
 
 ## Downstream Skill
 

@@ -74,8 +74,9 @@ This skill expects one or more of:
 4. **`refine-logs/FINAL_PROPOSAL.md`** — proposal index and reading paths
 5. **`refine-logs/METHOD_SPEC.md`** — implementation-level method contract, if present
 6. **`refine-logs/FINAL_PROPOSAL_SHORT.md`** — compact proposal context, if present
-7. **`idea-stage/IDEA_CANDIDATES.md`** — compact idea summary (preferred when `COMPACT: true`) *(fall back to `./IDEA_CANDIDATES.md` if not found)*
-8. **`idea-stage/IDEA_REPORT.md`** — full brainstorm output *(fall back to `./IDEA_REPORT.md` if not found)*
+7. **`orbit-research/RESEARCH_DECISION_LOG.md`** — if invoked after a failed/surprising diagnostic, constrains the local implementation/config fix target
+8. **`idea-stage/IDEA_CANDIDATES.md`** — compact idea summary (preferred when `COMPACT: true`) *(fall back to `./IDEA_CANDIDATES.md` if not found)*
+9. **`idea-stage/IDEA_REPORT.md`** — full brainstorm output *(fall back to `./IDEA_REPORT.md` if not found)*
 
 If none exist, ask the user what experiments to implement.
 
@@ -86,6 +87,8 @@ If none exist, ask the user what experiments to implement.
 Read `EXPERIMENT_PLAN.md` first. If it is an index, follow its `Files` table and `Reading paths` before extracting implementation details:
 
 - Read `EXPERIMENT_PLAN_EXEC.md` for claim map, experiment blocks, run order, gates, budget, and risks.
+- Read `EXPERIMENT_PLAN_EXEC.md` `Decision Tree / Branch Table` before implementing a failed-diagnostic follow-up; if the next action is not an implementation/config patch, stop and route to the indicated skill.
+- Read `orbit-research/RESEARCH_DECISION_LOG.md` when present. If it says the failure type is `implementation/config issue`, patch only the local implementation/config surface it names; if it names another failure type, do not broaden the implementation task.
 - Read the current `[MILESTONE]_RUN_CARD.md` when the index marks one as "NOW" or "current immediate task"; this run card overrides generic milestone prose for the current launch.
 - Read `FINAL_PROPOSAL.md` as a proposal index, then prefer `METHOD_SPEC.md` for implementation details and `FINAL_PROPOSAL_SHORT.md` for compact project context.
 - Read optional protocol files only when the exec plan or run card references them.
@@ -343,7 +346,7 @@ This structured log survives session recovery — downstream skills read it inst
 After main experiments (M2) complete with positive results, invoke `/ablation-planner` to design ablation studies:
 
 - Read the main results and method spec
-- Generate a claim-driven ablation plan: which components to remove, what to compare, expected outcomes
+- Generate a decision-driven ablation plan: which components to remove, what to compare, expected outcomes
 - Append ablation blocks to `refine-logs/EXPERIMENT_PLAN_EXEC.md` and `refine-logs/EXPERIMENT_TRACKER.md`; keep `refine-logs/EXPERIMENT_PLAN.md` as a short index.
 - If main results are negative or inconclusive, skip ablation planning and note in the summary
 
@@ -370,7 +373,7 @@ Ready for Workflow 2:
 ## Output Protocols
 
 > Follow these shared protocols for all output files:
-> - **[Output Versioning Protocol](../shared-references/output-versioning.md)** — write timestamped file first, then copy to fixed name
+> - **[Output Versioning Protocol](../shared-references/output-versioning.md)** — apply selective milestone timestamping rules
 > - **[Output Manifest Protocol](../shared-references/output-manifest.md)** — log every output to MANIFEST.md
 > - **[Output Language Protocol](../shared-references/output-language.md)** — respect the project's language setting
 

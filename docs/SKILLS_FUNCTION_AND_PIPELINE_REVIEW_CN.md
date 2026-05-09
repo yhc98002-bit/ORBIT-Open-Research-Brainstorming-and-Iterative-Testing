@@ -250,6 +250,7 @@ refine-logs/EXPERIMENT_TRACKER.md    # run status
 
 6. **收集初始结果**
    - 更新 `EXPERIMENT_TRACKER.md`。
+   - 每个 run 都必须写入 `RUN_LEDGER.jsonl`：run_id、命令、config、commit、日志、结果文件、失败状态。
    - 写 `EXPERIMENT_RESULTS.md` 或相关 summary。
    - 若主结果为正，可触发 `/ablation-planner`，追加到 `EXPERIMENT_PLAN_EXEC.md`。
 
@@ -333,13 +334,16 @@ refine-logs/EXPERIMENT_TRACKER.md    # run status
 
 2. **Phase 2：Analyze**
    - 调用 `/analyze-results`。
+   - 先检查结果文件是否能对应到 `RUN_LEDGER.jsonl` 的 run_id；孤儿结果、缺 seed、失败 run 要报告。
    - 写 `RESULT_INTERPRETATION.md`。
+   - 若结果失败、混合、矛盾或意外，先写 `RESEARCH_DECISION_LOG.md` 再路由。
    - 检查无结果、指标污染、评估欺诈等问题。
 
 3. **Phase 3：Claim**
    - 调用 `/result-to-claim`。
    - 写 `CLAIM_CONSTRUCTION.md` 与 `HUMAN_DECISION_NOTE.md`。
    - 如果是负结果/打平，写 `NEGATIVE_RESULT_STRATEGY.md`。
+   - 如果 `claim_supported = no`，按 `RESEARCH_DECISION_LOG.md` 决定局部 patch、改诊断、failure-to-innovation、scoped proposal-revise 或 archive；不默认重跑 `/idea-to-proposal` 或同时修改 proposal+plan。
 
 4. **Phase 4：Red-team**
    - 调用 `/auto-review-loop`。
@@ -356,13 +360,15 @@ refine-logs/EXPERIMENT_TRACKER.md    # run status
 - `CLAIM_CONSTRUCTION.md`
 - `RED_TEAM_REVIEW.md`
 - `HUMAN_DECISION_NOTE.md`
+- `RESEARCH_DECISION_LOG.md`（如果本轮诊断失败、混合或意外）
 - 是否 scale-up、补实验、pivot、还是进入论文写作。
 
 ---
 
 ## 11. Result-to-Claim Gate
 
-`/result-to-claim` 的职责是把实验数字转成可 defend 的 claim，而不是把结果包装成好故事。
+`/result-to-claim` 的职责是把会影响论文级 claim scope 的实验数字转成可审查的 claim support，
+而不是把每个诊断结果包装成好故事。
 
 它会：
 
@@ -459,7 +465,7 @@ paper-writing 有 ORBIT inline guard：
 | `/novelty-check` | 查新 |
 | `/research-review` | Codex GPT-5.5 xhigh 深度批评 |
 | `/research-refine` | 迭代 reviewer loop，把粗 idea 打磨成 method spec |
-| `/proposal-revise` | STOP A 后，按用户 critique 定向修改 proposal / experiment plan |
+| `/proposal-revise` | STOP A 后或失败诊断后，按 critique / RESEARCH_DECISION_LOG 定向 patch proposal / experiment plan |
 
 ### 实验与诊断
 

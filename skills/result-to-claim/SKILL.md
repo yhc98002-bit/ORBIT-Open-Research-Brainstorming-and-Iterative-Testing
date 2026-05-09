@@ -18,6 +18,7 @@ This gate is always-on. Before paper writing, load:
 - `shared-references/research-agent-pipeline.md` — v1.3 stage map and hard gates G14, G16, G17, G18, G19
 - `shared-references/research-harness-prompts.md` sections `21`, `22`, and `25` (v1.3 numbering; old v1.0 sections `12`, `13`, `15` are mapped via the appendix)
 - `shared-references/reviewer-independence.md`
+- `shared-references/run-ledger.md` — verify evidence traces to ledgered `run_id`s
 
 Run `mkdir -p orbit-research/`. Always write or update:
 
@@ -59,17 +60,21 @@ present post-hoc reframings as pre-planned hypotheses. No exception.
 
 Gather experiment data from whatever sources are available in the project:
 
-1. **W&B** (preferred): `wandb.Api().run("<entity>/<project>/<run_id>").history()` — metrics, training curves, comparisons
-2. **EXPERIMENT_LOG.md**: full results table with baselines and verdicts
-3. **EXPERIMENT_TRACKER.md**: check which experiments are DONE vs still running
-4. **Log files**: `ssh server "tail -100 /path/to/training.log"` if no other source
-5. **docs/research_contract.md**: intended claims and experiment design
+1. **RUN_LEDGER.jsonl**: canonical run provenance, terminal status, result files, logs,
+   config, and `run_id`
+2. **W&B**: `wandb.Api().run("<entity>/<project>/<run_id>").history()` — metrics, training curves, comparisons
+3. **EXPERIMENT_LOG.md**: full results table with baselines and verdicts
+4. **EXPERIMENT_TRACKER.md**: check which experiments are DONE vs still running
+5. **Log files**: `ssh server "tail -100 /path/to/training.log"` if no other source
+6. **docs/research_contract.md**: intended claims and experiment design
 
 Assemble the key information:
 - What experiments were run (method, dataset, config)
 - Main metrics and baseline comparisons (deltas)
 - The intended claim these experiments were designed to test
 - Any known confounds or caveats
+- Ledger coverage: which `run_id`s support this claim, which expected runs failed/OOMed,
+  and whether any result file is orphaned or unledgered
 
 ### Step 2: Codex Judgment
 
@@ -89,7 +94,7 @@ mcp__codex__codex:
     Intended claim: [the claim these experiments test]
 
     Experiments run:
-    [list experiments with method, dataset, metrics]
+    [list experiments with run_id, method, dataset, config, metrics]
 
     Results:
     [paste key numbers, comparison deltas, significance]
@@ -139,7 +144,8 @@ if EXPERIMENT_AUDIT.json exists:
         integrity_status: pass | warn | fail
 
     if integrity_status == "fail":
-        append to verdict: "[INTEGRITY CONCERN] — audit found issues, see EXPERIMENT_AUDIT.md"
+        block claim_supported=yes for affected claims unless the result is explicitly
+        marked proxy_evidence/invalid_evidence and excluded from primary support
         downgrade confidence to "low" regardless of Codex judgment
 
     if integrity_status == "warn":
@@ -151,6 +157,10 @@ else:
 ```
 
 See `shared-references/experiment-integrity.md` for the full integrity protocol.
+
+If result files are not linked to `RUN_LEDGER.jsonl` run_ids, mark the evidence
+`provisional_unledgered` and do not use it as primary claim support until the provenance is
+reconciled.
 
 ### Step 4: Route Based on Verdict
 
