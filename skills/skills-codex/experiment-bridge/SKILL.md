@@ -1,297 +1,230 @@
 ---
 name: experiment-bridge
-description: "Workflow 1.5: Bridge between idea discovery and auto review. Reads EXPERIMENT_PLAN.md, implements experiment code, deploys to GPU, collects initial results. Use when user says \"实现实验\", \"implement experiments\", \"bridge\", \"从计划到跑实验\", \"deploy the plan\", or has an experiment plan ready to execute."
+description: "ORBIT v1.4 STOP B wrapper. Turns an approved proposal into decision-driven experiment-plan artifacts, implements the planned code, runs semantic plan-code audit, and may run limited implementation-facing probes. Accepts FINAL_PROPOSAL.md, FINAL_PROPOSAL_SHORT.md, METHOD_SPEC.md, or existing legacy EXPERIMENT_PLAN.md. Does not create paper claims or run auto-review-loop; formal diagnostics and claim/review routing belong to /diagnostic-to-review."
 ---
 
-# Workflow 1.5: Experiment Bridge
+# /experiment-bridge — v1.4 Proposal → Plan → Code → Audit → Probe
 
-Implement and deploy experiments from plan: **$ARGUMENTS**
+Bridge an approved proposal into implementation readiness for: **$ARGUMENTS**
 
 ## Overview
 
-This skill bridges Workflow 1 (idea discovery + method refinement) and Workflow 2 (auto review loop). It takes the experiment plan and turns it into running experiments with initial results.
+This is a wrapper skill, not a code-only atomic step. It owns STOP B:
 
+1. read the approved proposal and ORBIT grounding/innovation artifacts;
+2. call or perform `/experiment-plan` to write decision-driven experiment artifacts;
+3. implement the planned code;
+4. run semantic plan-code audit and write `PLAN_CODE_AUDIT.md`;
+5. run limited implementation-facing probes when mode allows;
+6. hand formal diagnostics to `/diagnostic-to-review`.
+
+Canonical flow:
+
+```text
+/idea-to-proposal "..."                         -> STOP A proposal review
+/experiment-bridge "refine-logs/FINAL_PROPOSAL.md"
+  -> /experiment-plan
+  -> implementation
+  -> PLAN_CODE_AUDIT.md
+  -> limited probe when mode allows
+  -> STOP B plan/code/probe review
+/diagnostic-to-review "<diagnostic command>"    -> STOP C results + claim/review when paper-bearing
 ```
-Workflow 1 output:                    This skill:                        Workflow 2 input:
-refine-logs/EXPERIMENT_PLAN.md   →   implement → deploy → collect   →   initial results ready
-refine-logs/EXPERIMENT_TRACKER.md     code        /run-experiment        for /auto-review-loop
-refine-logs/FINAL_PROPOSAL.md
-```
 
-## Constants
+## Modes
 
-- **AUTO_DEPLOY = true** — Automatically deploy experiments after implementation. Set `false` to review code before deploying.
-- **SANITY_FIRST = true** — Run the sanity-stage experiment first (smallest, fastest) before launching the rest. Catches setup bugs early.
-- **MAX_PARALLEL_RUNS = 8** — Maximum number of experiments to deploy in parallel. **Before Phase 1, probe actual GPU count with `nvidia-smi -L | wc -l` (or `echo $CUDA_VISIBLE_DEVICES`) and set MAX_PARALLEL_RUNS = min(detected_gpu_count, 8)**. If detection fails or returns 0, fall back to 4 and warn the user. Never assume "8 GPUs" without probing — the node may have fewer, or some may be occupied. Users can override explicitly via args. (Default raised from 4 to 8 because the typical paracloud-node assignment on this cluster is a dedicated 8× A800-80GB GPU node.)
-- **GPU_VRAM_AWARE = true** — Also probe per-GPU memory with `nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | head -1`. On 80 GB A800/A100/H100 nodes, defaults written for 16-24 GB GPUs leave most of the memory idle — scale them up.
-- **BASE_REPO = false** — GitHub repo URL to use as a base codebase. When set, clone it first and implement experiments on top of it.
-- **COMPACT = false** — When `true`, prefer `idea-stage/IDEA_CANDIDATES.md` over the full `idea-stage/IDEA_REPORT.md`, and append completed runs to `EXPERIMENT_LOG.md`.
+- **`plan-only`**: approved proposal -> experiment plan artifacts only.
+- **`audit-only`**: experiment plan -> implementation -> `PLAN_CODE_AUDIT.md`, no GPU/probe.
+- **`probe`**: default. Plan -> implementation -> audit -> limited sanity/probe.
+- **`full-bridge`**: explicit opt-in. After plan/audit/probe, call
+  `/diagnostic-to-review` for formal diagnostic execution. This mode must not call
+  `/auto-review-loop` directly.
 
-> Override: `/experiment-bridge "EXPERIMENT_PLAN.md" — compact: true, base repo: https://github.com/org/project`
+Parse mode from `— mode: <plan-only|audit-only|probe|full-bridge>`. Default: `probe`.
 
 ## Inputs
 
-This skill expects one or more of:
+Canonical inputs after STOP A:
 
-1. **`refine-logs/EXPERIMENT_PLAN.md`** (best) — index for the experiment plan from `/experiment-plan`
-2. **`refine-logs/EXPERIMENT_PLAN_EXEC.md`** — executable claim map, blocks, run order, gates, budget
-3. **`refine-logs/EXPERIMENT_TRACKER.md`** — run-by-run execution table
-4. **`refine-logs/FINAL_PROPOSAL.md`** — proposal index and reading paths
-5. **`refine-logs/METHOD_SPEC.md`** — implementation-level method contract, if present
-6. **`refine-logs/FINAL_PROPOSAL_SHORT.md`** — compact proposal context, if present
-7. **`idea-stage/IDEA_CANDIDATES.md`** — compact idea summary (preferred when `COMPACT = true`) *(fall back to `./IDEA_CANDIDATES.md` if not found)*
-8. **`idea-stage/IDEA_REPORT.md`** — fallback if refine-logs don't exist *(fall back to `./IDEA_REPORT.md` if not found)*
+- `refine-logs/FINAL_PROPOSAL.md`
+- `refine-logs/FINAL_PROPOSAL_SHORT.md`
+- `refine-logs/METHOD_SPEC.md`
+- `orbit-research/PROBLEM_SELECTION.md`
+- `orbit-research/ASSUMPTION_LEDGER.md`
+- `orbit-research/ABSTRACT_TASK_MECHANISM.md`
+- `orbit-research/BASELINE_CEILING.md`
+- `orbit-research/MECHANISM_IDEATION.md`
+- `orbit-research/ANALOGY_TRANSFER.md`
+- `orbit-research/ALGORITHM_TOURNAMENT.md`
 
-If none exist, ask the user what experiments to implement.
+Compatibility inputs:
 
-## Workflow
+- `refine-logs/EXPERIMENT_PLAN.md`
+- `refine-logs/EXPERIMENT_PLAN_EXEC.md`
+- `refine-logs/EXPERIMENT_TRACKER.md`
+- `orbit-research/RESEARCH_DECISION_LOG.md` for failed/surprising diagnostic recovery
 
-### Phase 1: Parse the Experiment Plan
+Pre-patch `/idea-to-proposal` generated experiment plans. In the new flow, experiment
+planning moves here after STOP A. Existing `EXPERIMENT_PLAN.md` files remain readable:
+reuse them if they are current, refresh them if stale or inconsistent with the approved
+proposal, and warn if they look like legacy pre-STOP-A plans.
 
-Read `EXPERIMENT_PLAN.md` first. If it is an index, follow its `Files` table and `Reading paths` before extracting implementation details:
+## Required Outputs
 
-- Read `EXPERIMENT_PLAN_EXEC.md` for claim map, experiment blocks, run order, gates, budget, and risks.
-- Read the current `[MILESTONE]_RUN_CARD.md` when the index marks one as "NOW" or "current immediate task"; this run card overrides generic milestone prose for the current launch.
-- Read `FINAL_PROPOSAL.md` as a proposal index, then prefer `METHOD_SPEC.md` for implementation details and `FINAL_PROPOSAL_SHORT.md` for compact project context.
-- Read optional protocol files only when the exec plan or run card references them.
+Planning outputs:
 
-Then extract:
+- `refine-logs/EXPERIMENT_PLAN.md`
+- `refine-logs/EXPERIMENT_PLAN_EXEC.md`
+- `refine-logs/EXPERIMENT_TRACKER.md`
+- `orbit-research/CONTROL_DESIGN.md`
+- `orbit-research/NULL_RESULT_CONTRACT.md`
+- `orbit-research/COMPONENT_BUNDLE_LADDER.md`
+- `orbit-research/ALGORITHMIC_FORMALIZATION.md`
+- `orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md`
 
-1. **Run order and milestones** — which experiments run first (sanity → baseline → main → ablation → polish)
-2. **For each experiment block:**
-   - Dataset / split / task
-   - Compared systems and variants
-   - Metrics to compute
-   - Setup details (backbone, hyperparameters, seeds)
-   - Success criterion
-   - Priority (MUST-RUN vs NICE-TO-HAVE)
-3. **Compute budget** — total estimated GPU-hours
-4. **Method details** from `METHOD_SPEC.md` when present, otherwise from `FINAL_PROPOSAL_SHORT.md` / `FINAL_PROPOSAL.md`
+Implementation/audit outputs:
 
-Present a brief summary:
+- code/config/scripts needed by the plan
+- `orbit-research/PLAN_CODE_AUDIT.md` with verdict:
+  `MATCHES_PLAN | PARTIAL_MISMATCH | CRITICAL_MISMATCH | ERROR`
 
-```
-Experiment plan loaded:
-- Milestones: [N] (sanity → baseline → main → ablation)
-- Must-run experiments: [N]
-- Nice-to-have: [N]
-- Estimated GPU-hours: [X]
-- Source files followed: EXPERIMENT_PLAN.md -> EXPERIMENT_PLAN_EXEC.md -> [run card / METHOD_SPEC as applicable]
+Probe outputs when `/run-experiment` is used:
 
-Proceeding to implementation.
-```
+- `orbit-research/RUN_LEDGER.jsonl`
+- `orbit-research/DIAGNOSTIC_RUN_REPORT.md`
+- `orbit-research/DIAGNOSTIC_RUN_AUDIT.md`
+- concise probe notes in `refine-logs/EXPERIMENT_TRACKER.md` or
+  `orbit-research/PIPELINE_SUMMARY.md`
 
-### Phase 2: Implement Experiment Code
+## Phase 0: Load Context And Decide Resume Point
 
-**If `BASE_REPO` is set** — clone the repo first:
+Create `orbit-research/` and `refine-logs/` if needed.
+
+Read `$ARGUMENTS` first. If it points to `FINAL_PROPOSAL.md`,
+`FINAL_PROPOSAL_SHORT.md`, or `METHOD_SPEC.md`, treat it as the approved proposal and
+start with planning. If it points to `EXPERIMENT_PLAN.md` or `EXPERIMENT_PLAN_EXEC.md`,
+verify whether a plan already exists and resume from implementation.
+
+Read `orbit-research/IDEA_TO_PROPOSAL_STATE.json` when present. If it has
+`status = "awaiting_human_continue"`, treat this invocation as the human's STOP A
+approval signal.
+
+Read `RESEARCH_DECISION_LOG.md` when present. If it says the failure type is
+`implementation/config issue`, patch only the local implementation/config surface it
+names. If it names another failure type, route to the indicated skill.
+
+## Phase 1: Experiment Planning From The Approved Proposal
+
+If `EXPERIMENT_PLAN.md` and `EXPERIMENT_PLAN_EXEC.md` are missing, stale, or legacy,
+invoke or perform `/experiment-plan` grounded in:
 
 ```bash
-git clone <BASE_REPO> base_repo/
+/experiment-plan "refine-logs/FINAL_PROPOSAL.md"
 ```
 
-For each milestone (in order), write the experiment scripts:
+The plan must be decision-driven:
 
-1. **Check existing code** — scan the project (or cloned `base_repo/`) for existing experiment scripts, model code, and data loaders. Reuse as much as possible.
+- candidate claims / evidence targets, not frozen paper claims
+- every committed experiment must change a research decision
+- paper-claim defense applies only to paper-bearing experiments
+- `EXPERIMENT_PLAN.md` stays a short index
+- `EXPERIMENT_PLAN_EXEC.md` contains the executable run order and
+  `Decision Tree / Branch Table`
 
-2. **Implement missing pieces:**
-   - Training scripts with proper argparse (all hyperparameters configurable)
-   - Evaluation scripts computing the specified metrics
-   - Data loading / preprocessing if needed
-   - Baseline implementations if not already present
-   - Fixed random seeds for reproducibility
-   - Results saved to JSON/CSV for later analysis
-   - Proper logging (wandb if configured in AGENTS.md)
+After `EXPERIMENT_PLAN_EXEC.md` exists and includes the decision tree, update only the
+proposal status block in `FINAL_PROPOSAL.md` / `FINAL_PROPOSAL_SHORT.md` to
+`EXPERIMENT_PLAN_READY` with evidence basis pointing to the plan artifacts. This means
+"ready for plan-code bridge", not validated.
 
-3. **Follow the plan's run order** — implement sanity-stage experiments first, then baselines, then main method, then ablations.
+If mode is `plan-only`, stop here with STOP B planning summary and next action:
+`/experiment-bridge "refine-logs/EXPERIMENT_PLAN.md" — mode: audit-only` or `— mode: probe`.
 
-4. **Self-review before deploying:**
-   - Are all hyperparameters from EXPERIMENT_PLAN.md reflected in argparse?
-   - Is the random seed fixed and controllable?
-   - Are results saved in a parseable format (JSON/CSV)?
-   - Does the code match `METHOD_SPEC.md` when present, otherwise the proposal index's referenced method document?
-   - **CRITICAL**: does evaluation compare predictions against dataset ground truth, never another model's output?
+## Phase 2: Implement The Planned Code
 
-### Phase 3: Sanity Check (if SANITY_FIRST = true)
+Read `EXPERIMENT_PLAN.md` as an index. Follow its `Files` table and reading paths before
+extracting implementation details:
 
-Before deploying the full experiment suite, run the sanity-stage experiment:
+- `EXPERIMENT_PLAN_EXEC.md` for claim/evidence targets, experiment blocks, run order,
+  decision gates, budget, and risks
+- current `[MILESTONE]_RUN_CARD.md` if marked as "NOW" or current immediate task
+- `METHOD_SPEC.md` for implementation-level method details
+- `FINAL_PROPOSAL_SHORT.md` for compact context
+- ORBIT planning artifacts listed above for controls, null-result interpretation,
+  formalization, and diagnostic design
 
-```
-/run-experiment [sanity experiment command]
-```
+Implement only what the plan requires: training/evaluation scripts, data loaders,
+baselines/controls, seeds, parseable outputs, logging paths, and launch configs.
 
-Wait for completion. Verify:
-- Training loop runs without errors
-- Metrics are computed and saved correctly
-- GPU memory usage is within bounds
-- Output format matches expectations
+## Phase 3: Semantic Plan-Code Audit
 
-If sanity fails → fix the code, re-run. Do not proceed to full deployment with broken code.
+Before any probe or formal diagnostic, run the semantic audit from
+`shared-references/semantic-code-audit.md`. Always write
+`orbit-research/PLAN_CODE_AUDIT.md` with a verdict line:
 
-### Phase 4: Deploy Full Experiments
-
-Deploy experiments following the plan's milestone order:
-
-```
-/run-experiment [experiment commands]
+```text
+MATCHES_PLAN | PARTIAL_MISMATCH | CRITICAL_MISMATCH | ERROR
 ```
 
-For each milestone:
-1. Deploy experiments in parallel (up to MAX_PARALLEL_RUNS)
-2. Use `/monitor-experiment` to track progress
-3. Collect results as experiments complete
+`CRITICAL_MISMATCH` blocks probes and diagnostics until fixed. `ERROR` blocks formal
+diagnostics; a tiny implementation probe may proceed only when the error is audit-tool
+availability, not a known code/plan mismatch.
 
-**🚦 Checkpoint (if AUTO_DEPLOY = false):**
+If mode is `audit-only`, stop after writing `PLAN_CODE_AUDIT.md`.
 
-```
-🔧 Code implementation complete. Ready to deploy:
+## Phase 4: Limited Implementation-Facing Probe
 
-Milestone 0 (sanity): [status — passed/pending]
-Milestone 1 (baseline): [N experiments, ~X GPU-hours]
-Milestone 2 (main method): [N experiments, ~X GPU-hours]
-Milestone 3 (ablations): [N experiments, ~X GPU-hours]
+Probe runs are allowed by default in `probe` mode, but they are not paper evidence. They
+exist to validate implementation feasibility: environment, dataloader, metric parser,
+one-batch/tiny overfit, logging/result paths, or diagnostic command smoke test.
 
-Total estimated: ~X GPU-hours on [N] GPUs
+Probe runs may call `/run-experiment`. When they do, they must be ledgered through:
 
-Deploy now? Or review the code first?
-```
+- `orbit-research/RUN_LEDGER.jsonl`
+- `orbit-research/DIAGNOSTIC_RUN_REPORT.md`
+- `orbit-research/DIAGNOSTIC_RUN_AUDIT.md`
 
-### Phase 5: Collect Initial Results
+Probe results must not directly create paper claims. Do not write
+`CLAIM_CONSTRUCTION.md`, do not run `/auto-review-loop`, and do not perform formal
+scientific result interpretation. If a probe unexpectedly affects paper-level claim
+scope, stop and hand off to `/diagnostic-to-review`.
 
-As experiments complete:
+## Phase 5: Handoff
 
-1. **Parse output files** (JSON/CSV/logs) for key metrics
-2. **Training quality check** — if W&B data is available, invoke `/training-check` to detect NaN, loss divergence, plateaus, or overfitting. If W&B is not configured, skip silently.
-3. **Update `refine-logs/EXPERIMENT_TRACKER.md`** — fill in Status and Notes columns
-4. **Check success criteria** from EXPERIMENT_PLAN.md — did each experiment meet its bar?
-5. **Write initial results summary:**
+Write or update `orbit-research/PIPELINE_SUMMARY.md` with:
 
-```markdown
-# Initial Experiment Results
+- input and mode
+- proposal, plan, exec plan, audit, and probe report paths
+- STOP B review checklist
+- next command: `/diagnostic-to-review "<diagnostic command OR manifest>"`
 
-**Date**: [today]
-**Plan**: refine-logs/EXPERIMENT_PLAN.md
-
-## Results by Milestone
-
-### M0: Sanity — PASSED
-- [result]
-
-### M1: Baselines
-| Run | System | Key Metric | Status |
-|-----|--------|-----------|--------|
-| R001 | baseline_1 | X.XX | DONE |
-
-### M2: Main Method
-| Run | System | Key Metric | Status |
-|-----|--------|-----------|--------|
-| R003 | our_method | X.XX | DONE |
-
-### M3: Ablations
-...
-
-## Summary
-- [X/Y] must-run experiments completed
-- Main result: [positive/negative/inconclusive]
-- Ready for /auto-review-loop: [YES/NO]
-
-## Next Step
-→ /auto-review-loop "[topic]"
-```
-
-### Phase 5.5: Write Compact Log (when COMPACT = true)
-
-**Skip entirely if `COMPACT` is `false`.**
-
-Append each completed experiment to `EXPERIMENT_LOG.md`:
-
-```markdown
-## [Run ID] — [timestamp]
-- **System**: [method name]
-- **Config**: [key hyperparameters]
-- **Result**: [primary metric = X.XX]
-- **Verdict**: [positive / negative / inconclusive]
-- **Reproduce**: `python train.py --config configs/run_id.yaml --seed 42`
-```
-
-### Phase 5.6: Auto Ablation Planning
-
-After main experiments (M2) complete with positive results, invoke `/ablation-planner` to design ablation studies:
-
-- Read the main results and method spec
-- Generate a claim-driven ablation plan: which components to remove, what to compare, and expected outcomes
-- Append ablation blocks to `refine-logs/EXPERIMENT_PLAN_EXEC.md` and `refine-logs/EXPERIMENT_TRACKER.md`; keep `refine-logs/EXPERIMENT_PLAN.md` as a short index.
-- If main results are negative or inconclusive, skip ablation planning and note that in the summary
-
-If `/ablation-planner` is unavailable, skip silently.
-
-### Phase 6: Handoff
-
-Present final status:
-
-```
-🔬 Experiment bridge complete:
-- Implemented: [N] experiment scripts
-- Deployed: [N] experiments on [M] GPUs
-- Completed: [X/Y] must-run, [A/B] nice-to-have
-- Main result: [one sentence]
-
-Results: refine-logs/EXPERIMENT_RESULTS.md
-Tracker: refine-logs/EXPERIMENT_TRACKER.md
-
-Ready for Workflow 2:
-→ /auto-review-loop "[topic]"
-```
+If mode is `full-bridge`, call `/diagnostic-to-review` after writing the STOP B summary.
+Do not call `/auto-review-loop` directly.
 
 ## Output Protocols
 
 > Follow these shared protocols for all output files:
-> - **[Output Versioning Protocol](../../shared-references/output-versioning.md)** — write timestamped file first, then copy to fixed name
+> - **[Output Versioning Protocol](../../shared-references/output-versioning.md)** — apply selective milestone timestamping rules
 > - **[Output Manifest Protocol](../../shared-references/output-manifest.md)** — log every output to MANIFEST.md
 > - **[Output Language Protocol](../../shared-references/output-language.md)** — respect the project's language setting
 
 ## Key Rules
 
-- **Large file handling**: If the Write tool fails due to file size, immediately retry using Bash (`cat << 'EOF' > file`) to write in chunks. Do NOT ask the user for permission — just do it silently.
-- **CRITICAL — Evaluation must use dataset ground truth.** Always compare model predictions against the dataset's actual labels/targets, never another model's output. If the task has official eval scripts, prefer them.
-- **Follow the plan.** Do not invent experiments not in EXPERIMENT_PLAN.md. If you think something is missing, note it but don't add it.
-- **Sanity first.** Never deploy a full suite without verifying the sanity stage passes.
-- **Reuse existing code.** Scan the project before writing new scripts. Extend, don't duplicate.
-- **Save everything as JSON/CSV.** The auto-review-loop needs parseable results, not just terminal output.
-- **Update the tracker.** `EXPERIMENT_TRACKER.md` should reflect real status after each run completes.
-- **Don't wait forever.** If an experiment exceeds 2x its estimated time, flag it and move on to the next milestone.
-- **Budget awareness.** Track GPU-hours against the plan's budget. Warn if approaching the limit.
+- Keep `/experiment-bridge` as the STOP B wrapper: planning, implementation, audit, probe,
+  and handoff.
+- Experiment planning belongs here after STOP A; it must not pollute `FINAL_PROPOSAL.md`.
+- Every committed experiment must change a research decision. Paper-claim defense applies
+  only to paper-bearing experiments.
+- Never compare predictions against another model's output as ground truth.
+- Do not create paper claims, claim construction, red-team reviews, or paper-writing
+  artifacts in this skill.
+- Formal diagnostic execution, scientific interpretation, decision logging after results,
+  and paper-level claim/review belong to `/diagnostic-to-review`.
 
-## Composing with Other Skills
-
-```
-/idea-discovery "direction"          ← Workflow 1: find + refine + plan
-/experiment-bridge                   ← you are here (Workflow 1.5: implement + deploy)
-/auto-review-loop "topic"            ← Workflow 2: review + iterate
-/paper-writing "NARRATIVE_REPORT.md" ← Workflow 3: write the paper
-
-Or use /research-pipeline for the full end-to-end flow (includes this bridge).
-```
-
-## Stage-Chain Integration (Stage 2 Contract)
-
-For convergence-first pipeline runs, maintain:
-
-- `REVIEW/CODE_REVIEW.md` (required)
-- `REVIEW/CONSISTENCY_REPORT.md` (append when plan/code drift is found)
-
-Required cross-check template:
+## Composing With Other Skills
 
 ```text
-Given:
-- EXPERIMENT_PLAN.md
-- CODE
-Check:
-1. Does code implement the plan exactly?
-2. Any deviation from described method?
-3. Any silent logic bugs?
-Return:
-- mismatch list
-- critical bug list
+/idea-to-proposal      -> proposal candidate + STOP A
+/experiment-bridge     -> experiment plan + implementation + PLAN_CODE_AUDIT + STOP B
+/diagnostic-to-review  -> formal diagnostic + interpretation + decision log + conditional-required claim/review
+/paper-writing         -> manuscript after CLAIM_CONSTRUCTION exists
 ```
-
-Unresolved critical mismatches must block large-scale deployment.

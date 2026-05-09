@@ -102,11 +102,11 @@ into Innovation Spine (mechanism invention, analogy transfer, algorithm sketch t
 
 **Implementing official experiments (COMMITMENT mode):**
 ```text
-/research-pipeline "refine-logs/EXPERIMENT_PLAN.md"
+/experiment-bridge "refine-logs/FINAL_PROPOSAL.md"
 ```
 
-ORBIT routes through Validation Spine: HMBC matrix, null-result contract, component bundle,
-formalization, plan-code audit, cheapest valid diagnostic.
+ORBIT turns the approved proposal into experiment planning artifacts, implementation,
+plan-code audit, and limited probes before formal diagnostics.
 
 **From results to paper:**
 ```text
@@ -236,21 +236,29 @@ abandon.
 
 ```
 1. /idea-to-proposal "<keyword OR context.md OR draft-idea.md>"
-   Discovery → Grounding → Innovation → final refinement → experiment plan
-   ⏸ STOP A: review FINAL_PROPOSAL.md + EXPERIMENT_PLAN.md + EXPERIMENT_PLAN_EXEC.md together
-              (single combined "is this worth GPU?" decision)
+   Discovery → Grounding → Innovation → final proposal refinement
+   Outputs proposal only: FINAL_PROPOSAL.md, FINAL_PROPOSAL_SHORT.md, METHOD_SPEC.md
+   and key orbit-research grounding/innovation artifacts.
+   ⏸ STOP A: human asks "Is this proposal worth planning experiments for?"
 
-2. /experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"
-   Implementation + plan-code consistency loop (Stage 15)
-   ⏸ STOP B: review PLAN_CODE_AUDIT.md verdict — last gate before GPU spending
+2. /experiment-bridge "refine-logs/FINAL_PROPOSAL.md"
+   Experiment planning → implementation → PLAN_CODE_AUDIT.md → limited probe when mode allows
+   ⏸ STOP B: review EXPERIMENT_PLAN.md + EXPERIMENT_PLAN_EXEC.md +
+              PLAN_CODE_AUDIT.md + any probe reports before formal diagnostics
 
 3. /diagnostic-to-review "<diagnostic command OR manifest>"
-   /run-experiment (auto-routes single vs queue-batch) → /analyze-results →
-   /result-to-claim → /auto-review-loop
+   Formal /run-experiment → /analyze-results → RESULT_INTERPRETATION.md →
+   RESEARCH_DECISION_LOG.md → conditional-required /result-to-claim + /auto-review-loop
+   Local sanity/provenance/implementation/local-mechanism probes stop after
+   RESULT_INTERPRETATION.md + RESEARCH_DECISION_LOG.md.
+   Paper-bearing diagnostics must run /result-to-claim and /auto-review-loop,
+   producing CLAIM_CONSTRUCTION.md, RED_TEAM_REVIEW.md, and HUMAN_DECISION_NOTE.md.
    Aborts cleanly on any verdict-line bottleneck (FIX_BEFORE_GPU, claim_supported=no,
    irrecoverable review score, G14/G17 violations) — abort is awaiting_human_continue
    with clear next_action, never a silent failure
-   ⏸ STOP C: review CLAIM_CONSTRUCTION + RED_TEAM_REVIEW + HUMAN_DECISION_NOTE jointly
+   ⏸ STOP C: review RESULT_INTERPRETATION + RESEARCH_DECISION_LOG;
+              if paper-bearing, also review CLAIM_CONSTRUCTION +
+              RED_TEAM_REVIEW + HUMAN_DECISION_NOTE jointly
 
 4. /paper-writing "NARRATIVE_REPORT.md" — venue: ICLR, assurance: submission
    Paper writing chain (G16+G18 enforced — needs CLAIM_CONSTRUCTION.md from STOP C)
@@ -271,9 +279,9 @@ based on phase progress, artifact presence, and 24h staleness.
 ### Standard 4-stop end-to-end (recommended)
 
 ```text
-/idea-to-proposal "Discrete Diffusion VLA post-training"   # STOP A: review proposal + experiment plan
-/experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"        # STOP B: review PLAN_CODE_AUDIT
-/diagnostic-to-review "[diagnostic command]"               # STOP C: review claim + red-team
+/idea-to-proposal "Discrete Diffusion VLA post-training"   # STOP A: review proposal
+/experiment-bridge "refine-logs/FINAL_PROPOSAL.md"         # STOP B: plan + code + audit + probe
+/diagnostic-to-review "[diagnostic command]"               # STOP C: review decision; claim + red-team if paper-bearing
 /paper-writing "NARRATIVE_REPORT.md" — venue: ICLR         # STOP D: ship paper
 ```
 
@@ -282,16 +290,17 @@ For long notes where the idea is not settled yet, pass the file as context:
 `— input-mode: idea` only when the `.md` is already a committed method draft that should
 skip discovery.
 
-### Just want a proposal (no experiment plan yet)
+### Proposal only (default STOP A)
 
 ```text
-/idea-to-proposal "..." — stop-at-proposal: true
+/idea-to-proposal "..."
 ```
 
-Pauses at Phase 5 with FINAL_PROPOSAL.md + Discovery/Grounding/Innovation artifacts. Run
-`/experiment-plan` separately when ready.
+Pauses after `FINAL_PROPOSAL.md` + Discovery/Grounding/Innovation artifacts. Review STOP A,
+then run `/experiment-bridge "refine-logs/FINAL_PROPOSAL.md"` when the proposal is worth
+planning experiments for.
 
-### STOP A revision — proposal or experiment plan needs targeted fixes
+### STOP A revision — proposal needs targeted fixes
 
 ```text
 /proposal-revise "refine-logs/FINAL_PROPOSAL.md" \
@@ -301,8 +310,8 @@ Pauses at Phase 5 with FINAL_PROPOSAL.md + Discovery/Grounding/Innovation artifa
 
 After STOP A, if the user is dissatisfied with specific points, `/proposal-revise` accepts
 user-authored critique, classifies each point by which v1.3 stage owns the underlying
-decision, re-runs only the affected stages, then re-integrates via `/research-refine` (for
-proposal targets) or `/experiment-plan` (for plan targets). Anchor + simplicity checks
+decision, re-runs only the affected stages, then re-integrates via `/research-refine` for
+proposal targets. Anchor + simplicity checks
 catch revisions that drift from the original problem or add unnecessary complexity. Stops
 at `awaiting_human_continue` with a diff report. Run multiple rounds until satisfied;
 use `— fresh: true` to clear and start a different revision direction.
@@ -316,25 +325,25 @@ to the narrowest patch mode (`mechanism-only`, `diagnostic-branch-only`,
 ### Already have proposal, want experiment plan only
 
 ```text
-/experiment-plan "refine-logs/FINAL_PROPOSAL.md"
+/experiment-bridge "refine-logs/FINAL_PROPOSAL.md" — mode: plan-only
 ```
 
-This will read v1.3 grounding/innovation artifacts (assumption ledger, abstract task,
-algorithm tournament) when present and write a v1.3-aware `EXPERIMENT_PLAN.md` index
-plus `EXPERIMENT_PLAN_EXEC.md` for executable details.
+This reads v1.3 grounding/innovation artifacts when present and writes a v1.4-aware
+`EXPERIMENT_PLAN.md` index plus `EXPERIMENT_PLAN_EXEC.md` for executable details. Manual
+`/experiment-plan "refine-logs/FINAL_PROPOSAL.md"` still works, but the canonical wrapper
+after STOP A is `/experiment-bridge`.
 
-### From plan to running diagnostic (auto-routes solo vs queue)
+### From proposal approval to formal diagnostic
 
 ```text
-/experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"
-/run-experiment "[command OR manifest path OR grid spec]"
-/monitor-experiment "[run id or server]"
+/experiment-bridge "refine-logs/FINAL_PROPOSAL.md"     # STOP B: plan + implementation + audit + probe
+/diagnostic-to-review "[command OR manifest path]"      # formal diagnostic and interpretation
 ```
 
-`/run-experiment` auto-routes: ≤5 jobs runs inline, ≥10 jobs auto-delegates to
-`/experiment-queue`. Override with `— queue: true` / `— solo: true`. `/experiment-queue`
-itself defaults `max_parallel: auto` — when running on an exclusive 8-GPU box it parallels
-across all 8; on a shared box it conservatively uses only the truly idle GPUs.
+`/experiment-bridge` may run limited implementation-facing probes by calling
+`/run-experiment`, and those probes are ledgered. Formal diagnostic execution, scientific
+interpretation, decision logging, and paper-level claim/review belong to
+`/diagnostic-to-review`.
 
 Before scale-up: `PLAN_CODE_AUDIT.md` must be `MATCHES_PLAN` or scoped `PARTIAL_MISMATCH`;
 `DIAGNOSTIC_RUN_AUDIT.md` must be `PASS` (or `TINY_RUN_AUDIT.md` if v1.0 alias).
@@ -342,17 +351,27 @@ Every launched run appends provenance to `orbit-research/RUN_LEDGER.jsonl`, incl
 failed/OOM/timeout/no-result runs, exact commands, configs, logs, result files, and
 audit verdicts.
 
+### Migration note
+
+Pre-patch `/idea-to-proposal` generated experiment plans. In the new flow, experiment
+planning moves to `/experiment-bridge` after STOP A. Existing `EXPERIMENT_PLAN.md` files
+remain readable, but new canonical runs generate them in `/experiment-bridge`.
+
 ### From results to claims (chained)
 
 ```text
 /diagnostic-to-review "[diagnostic command OR manifest]"
 ```
 
-Runs run-experiment → analyze-results → result-to-claim → auto-review-loop as one chain;
-aborts cleanly with awaiting_human_continue + next_action on any bottleneck. Failed,
-mixed, or surprising diagnostics write `orbit-research/RESEARCH_DECISION_LOG.md` first,
-then route to a local patch, diagnostic change, failure-to-innovation, scoped
-proposal-revise, or archive decision.
+Runs run-experiment → analyze-results, then applies conditional-required
+`/result-to-claim` + `/auto-review-loop`: not triggered for local diagnostics, but
+required for paper-bearing diagnostics. Sanity, provenance, implementation, and local
+mechanism probes stop after `RESULT_INTERPRETATION.md` +
+`orbit-research/RESEARCH_DECISION_LOG.md`. Diagnostics that affect paper-level claim
+scope must produce `CLAIM_CONSTRUCTION.md`, `RED_TEAM_REVIEW.md`, and
+`HUMAN_DECISION_NOTE.md` for STOP C. Failed, mixed, or surprising diagnostics write the
+decision log first, then route to a local patch, diagnostic change,
+failure-to-innovation, scoped proposal-revise, or archive decision.
 
 Or invoke each individually:
 
@@ -399,9 +418,10 @@ Full degradation contract: each skill's "ARIS / Sub-skill Unavailability" sectio
 ## Important Files
 
 - `skills/research-pipeline/SKILL.md` — v1.3 routing orchestrator
-- `skills/idea-to-proposal/SKILL.md` — STOP A: from area/idea to proposal + experiment plan (no GPU)
+- `skills/idea-to-proposal/SKILL.md` — STOP A: from area/context/idea to proposal only
+- `skills/experiment-bridge/SKILL.md` — STOP B: experiment planning + implementation + plan-code audit + limited probe when mode allows
 - `skills/proposal-revise/SKILL.md` — STOP A revision loop: targeted edits driven by user critique
-- `skills/diagnostic-to-review/SKILL.md` — STOP C: chains run → analyze → claim → review
+- `skills/diagnostic-to-review/SKILL.md` — STOP C: chains run → analyze, then conditional-required claim + review for paper-bearing diagnostics
 - `skills/shared-references/research-agent-pipeline.md` — canonical 0–25 stage map + 19 hard gates
 - `skills/shared-references/research-harness-prompts.md` — per-stage canonical prompts
 - `skills/shared-references/innovation-loops.md` — Stages 8/9/10/18.5 procedures + Codex collaborative mode

@@ -1,11 +1,11 @@
 ---
 name: diagnostic-to-review
-description: "ORBIT v1.4 thin pipeline that chains the post-implementation segment: /run-experiment (Stage 16/17 with auto-routing to /experiment-queue if needed) → /analyze-results (Stage 18), then conditionally /result-to-claim (Stage 21) → /auto-review-loop (Stage 23) only when the diagnostic affects paper-level claim scope. Runs the happy path automatically for paper-bearing diagnostics; stops after interpretation + decision log for sanity, provenance, and mechanism probes. Aborts are NOT errors — they are awaiting_human_continue states with clear next_action so the user can decide."
+description: "ORBIT v1.4 thin pipeline that chains the post-implementation segment: /run-experiment (Stage 16/17 with auto-routing to /experiment-queue if needed) → /analyze-results (Stage 18), then conditional-required /result-to-claim (Stage 21) → /auto-review-loop (Stage 23): not triggered for local diagnostics, but required for paper-bearing diagnostics. Runs the happy path automatically for paper-bearing diagnostics; stops after interpretation + decision log for sanity, provenance, implementation, and local mechanism probes. Aborts are NOT errors — they are awaiting_human_continue states with clear next_action so the user can decide."
 argument-hint: [diagnostic-command OR manifest-path OR grid-spec]
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, mcp__codex__codex, mcp__codex__codex-reply
 ---
 
-# /diagnostic-to-review — v1.4 Run → Analyze → Optional Claim → Review
+# /diagnostic-to-review — v1.4 Run → Analyze → Conditional-Required Claim → Review
 
 Chain the post-implementation segment for: **$ARGUMENTS**
 
@@ -17,6 +17,17 @@ invokes it once after `/experiment-bridge` returned `MATCHES_PLAN`; this skill t
 until either the diagnostic-only path has a clean interpretation + decision log, the
 paper-bearing happy path completes, or a verdict-line gate aborts the chain and surfaces a
 clear "what's blocking + what to decide" report.
+
+Ownership boundary:
+- This skill owns formal diagnostic execution via `/run-experiment`.
+- This skill owns scientific `RESULT_INTERPRETATION.md`.
+- This skill owns `RESEARCH_DECISION_LOG.md` routing after results.
+- This skill owns `CLAIM_CONSTRUCTION.md` for paper-level claims through
+  `/result-to-claim`.
+- This skill owns `RED_TEAM_REVIEW.md` through `/auto-review-loop`.
+- `/result-to-claim` and `/auto-review-loop` are conditional-required, not discretionary:
+  not triggered for local/sanity/probe diagnostics, but mandatory for paper-bearing
+  diagnostics.
 
 **Scope boundary:**
 - Starts after `PLAN_CODE_AUDIT.md` exists with verdict = `MATCHES_PLAN` (or scoped
@@ -39,11 +50,12 @@ Input:  diagnostic command / manifest / grid
            OR     if signs of metric/data fraud per experiment-integrity protocol
 
   Phase 3: Claim relevance gate
-           If sanity/provenance/mechanism-only: stop after RESULT_INTERPRETATION +
-           RESEARCH_DECISION_LOG.
-           If paper-level claim scope is affected: /result-to-claim
+           If sanity/provenance/implementation/local-mechanism: stop after
+           RESULT_INTERPRETATION + RESEARCH_DECISION_LOG.
+           If paper-level claim scope is affected: /result-to-claim is mandatory.
 
   Phase 4: /auto-review-loop "<scope>" — difficulty: hard
+           Mandatory when Phase 3 ran /result-to-claim; skipped for local diagnostics.
            ABORT if reviewer score < ABORT_REVIEW_SCORE after MAX_ROUNDS
            OR     if G14 (positive framing after tie/failure) detected
            OR     if G17 (post-hoc reframing as pre-planned) detected
@@ -92,7 +104,9 @@ Before Phase 1 starts, verify:
    diagnostic. If `CRITICAL_MISMATCH` or `ERROR` → refuse to start; route user back to
    `/experiment-bridge` to fix code and re-audit.
 2. **G8 prereq**: `orbit-research/NULL_RESULT_CONTRACT.md` exists (the diagnostic must
-   know what positive/null/tie means). If absent → refuse; route to `/experiment-plan`.
+   know what positive/null/tie means). If absent → refuse; route to
+   `/experiment-bridge "refine-logs/FINAL_PROPOSAL.md" — mode: plan-only` or a focused
+   `/experiment-plan` patch if the plan already exists.
 3. **G9 prereq**: `orbit-research/COMPONENT_BUNDLE_LADDER.md` exists (or run is a single-
    component baseline reproduction with explicit declaration). If neither → refuse.
 4. **`$ARGUMENTS` parses** as either a single command, a manifest path, or a grid spec
@@ -130,7 +144,7 @@ Schema:
   ],
   "diagnostic_run_id": "<from RUN_EXPERIMENT_STATE>",
   "review_thread_id": "<Codex thread id from auto-review-loop>",
-  "notes": "Optional"
+  "notes": "Free-form notes"
 }
 ```
 
@@ -245,7 +259,7 @@ If no metric result exists, still write `RESULT_INTERPRETATION.md` from
 `no_result`, `oom`, `timeout`, `killed`, or `failed`; then write/update
 `RESEARCH_DECISION_LOG.md` before routing. Do not skip straight to proposal revision.
 
-### Phase 3: Claim Relevance Gate — optional `/result-to-claim`
+### Phase 3: Claim Relevance Gate — conditional-required `/result-to-claim`
 
 Do not invoke `/result-to-claim` after every diagnostic. First classify the run's purpose
 from `DIAGNOSTIC_EXPERIMENT_PLAN.md`, `EXPERIMENT_PLAN_EXEC.md`, and
@@ -260,7 +274,8 @@ Stop after `RESULT_INTERPRETATION.md` + `RESEARCH_DECISION_LOG.md` when the diag
   claim scope yet
 - benchmark plumbing, data availability, or evaluator validity checking
 
-Invoke `/result-to-claim` only when the result affects paper-level claim scope, such as:
+For any diagnostic that affects paper-level claim scope, `/result-to-claim` is mandatory,
+such as:
 
 - a main benchmark or ablation intended to support a paper claim
 - a critical hypothesis whose truth changes `FINAL_PROPOSAL` status or claim wording
@@ -306,13 +321,17 @@ needed` fields are binding for recovery routing:
 when the human explicitly chooses to abandon the current problem/method and restart
 discovery.
 
-### Phase 4: Red-team — `/auto-review-loop`
+### Phase 4: Red-team — conditional-required `/auto-review-loop`
 
 ```bash
 /auto-review-loop "<scope: e.g. 'method Y on benchmark X claim chain'>" — difficulty: hard
 ```
 
-Runs review → fix → re-review iterations per Stage 23. Writes `orbit-research/RED_TEAM_REVIEW.md`.
+Do not run this phase for sanity, provenance, implementation, or local mechanism probes
+that stopped after `RESULT_INTERPRETATION.md` + `RESEARCH_DECISION_LOG.md`. When Phase 3
+ran `/result-to-claim` because the diagnostic affects paper-level claim scope,
+`/auto-review-loop` is mandatory. Together Phase 3 and Phase 4 produce
+`CLAIM_CONSTRUCTION.md`, `RED_TEAM_REVIEW.md`, and `HUMAN_DECISION_NOTE.md` for STOP C.
 
 **Abort triggers:**
 
@@ -337,7 +356,7 @@ Write `orbit-research/PIPELINE_SUMMARY.md`:
 
 - Input: $ARGUMENTS
 - Completed: <ISO timestamp>
-- Outcome: HAPPY_PATH | ABORTED:<reason>
+- Outcome: DIAGNOSTIC_ONLY | PAPER_BEARING | ABORTED:<reason>
 
 ## Artifact map
 
@@ -355,17 +374,21 @@ Write `orbit-research/PIPELINE_SUMMARY.md`:
 - orbit-research/HUMAN_DECISION_NOTE.md
 - orbit-research/NEGATIVE_RESULT_STRATEGY.md  (if tie/failure)
 
-### Phase 4 — Red-team (Stage 23)
+### Phase 4 — Red-team (Stage 23, only if paper-level claim scope is affected)
 - orbit-research/RED_TEAM_REVIEW.md  (final score: <N>/10)
 
 ## Next steps (NOT run by this skill)
 
-If happy path:
+If diagnostic-only:
+1. Review RESULT_INTERPRETATION.md + RESEARCH_DECISION_LOG.md.
+2. Decide: continue, local patch, change diagnostic, re-read literature, or archive.
+
+If paper-bearing:
 1. Review CLAIM_CONSTRUCTION.md + RED_TEAM_REVIEW.md + HUMAN_DECISION_NOTE.md jointly
    — STOP C in the 4-stop HITL flow.
 2. Decide: scale-up to full grid OR write paper now OR pivot.
 3. For paper writing: /paper-writing "NARRATIVE_REPORT.md" — venue: ICLR, assurance: submission
-   (G16 + G18 enforced — CLAIM_CONSTRUCTION.md must exist; this skill produced it.)
+   (G16 + G18 enforced — CLAIM_CONSTRUCTION.md must exist.)
 4. For scale-up: /run-experiment "<full grid manifest>" → re-runs this pipeline with
    bigger N. SCALEUP_DECISION.md must end with PROCEED + HUMAN_DECISION_NOTE per G15+G19.
 

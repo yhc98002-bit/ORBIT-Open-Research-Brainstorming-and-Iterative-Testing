@@ -12,9 +12,9 @@
 
 ## Proposal Status
 
-**Status**: SPECULATIVE
-**Allowed values**: SPECULATIVE / DIAGNOSTIC_READY / SUPPORTED / REFRAMED / ARCHIVED
-**Evidence basis**: [What evidence currently supports this status; "proposal only" is valid for SPECULATIVE]
+**Status**: PROPOSAL_READY
+**Allowed values**: PROPOSAL_READY / EXPERIMENT_PLAN_READY / SCALE_READY / SUPPORTED / REFRAMED / ARCHIVED
+**Evidence basis**: [What evidence currently supports this status; "proposal only" is valid for PROPOSAL_READY]
 **Next gate**: [Cheapest diagnostic / implementation audit / human decision]
 **Last status change**: [YYYY-MM-DD, reason]
 

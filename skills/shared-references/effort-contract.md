@@ -90,7 +90,7 @@ User can override independently:
 
 | Skill | Dimension | lite | balanced | max | beast |
 |-------|-----------|------|----------|-----|-------|
-| experiment-bridge | scope | sanity + main | main + basic ablation | + top ablation + robustness | full suite + cross-validation |
+| experiment-bridge | scope | plan + audit only | plan + audit + one smoke probe | + dataloader/metric/tiny-overfit probes | full STOP B bridge; formal diagnostics still route to diagnostic-to-review |
 | run-experiment | launches | smoke + main | smoke + multi-seed | + dry run + manifest | full config + multi-GPU parallel |
 | monitor-experiment | depth | latest log | log + JSON | + W&B + anomaly | real-time + auto-alert + trend |
 | analyze-results | findings | 3 | 5 | 8 | full-dimensional + stat tests |

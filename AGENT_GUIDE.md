@@ -171,12 +171,12 @@ stages. Sub-skills enforce their own v1.3 gates even when invoked directly.
 | Workflow | Invoke | Input | Output | When to use |
 |----------|--------|-------|--------|-------------|
 | Stages 1–3: Discovery | `/idea-discovery "direction"` | research direction | SEED_FRAMING.md, LITERATURE_MAP.md, PROBLEM_REFRAMING.md, PROBLEM_SELECTION.md | Frame problem and pick candidate |
-| Stages 4–7 + 8–10: Grounding + Innovation | `/research-refine` then `/experiment-plan` | problem + rough method | ASSUMPTION_LEDGER, ABSTRACT_TASK_MECHANISM, BASELINE_CEILING, MECHANISM_IDEATION, ANALOGY_TRANSFER, ALGORITHM_TOURNAMENT, FINAL_PROPOSAL.md, EXPERIMENT_PLAN.md | Turn idea into diagnosable design with innovation candidates |
-| Stages 11–15: Validation prerequisites | continued in `/experiment-plan` + `/experiment-bridge` | proposal + plan | CONTROL_DESIGN, NULL_RESULT_CONTRACT, COMPONENT_BUNDLE_LADDER, ALGORITHMIC_FORMALIZATION, PLAN_CODE_AUDIT.md (verdict line) | Implement and verify code matches v1.3 contract |
-| Stages 16–17: Diagnostic + Audit | `/run-experiment "diagnostic command"` | diagnostic command | DIAGNOSTIC_EXPERIMENT_PLAN, DIAGNOSTIC_RUN_REPORT, DIAGNOSTIC_RUN_AUDIT.md (verdict line) | Cheapest valid diagnostic before scale-up |
+| Stages 4–7 + 8–10: Grounding + Innovation | `/idea-to-proposal` or `/research-refine` | problem + rough method | ASSUMPTION_LEDGER, ABSTRACT_TASK_MECHANISM, BASELINE_CEILING, MECHANISM_IDEATION, ANALOGY_TRANSFER, ALGORITHM_TOURNAMENT, FINAL_PROPOSAL.md | STOP A: decide whether the proposal is worth experiment planning |
+| Stages 11–15: Validation prerequisites | `/experiment-bridge "refine-logs/FINAL_PROPOSAL.md"` | approved proposal | EXPERIMENT_PLAN.md, EXPERIMENT_PLAN_EXEC.md, CONTROL_DESIGN, NULL_RESULT_CONTRACT, COMPONENT_BUNDLE_LADDER, ALGORITHMIC_FORMALIZATION, PLAN_CODE_AUDIT.md (verdict line) | STOP B: plan, implement, audit, and run a limited probe when mode allows before formal diagnostics |
+| Stages 16–17: Diagnostic + Audit | `/diagnostic-to-review "diagnostic command"` | diagnostic command | DIAGNOSTIC_EXPERIMENT_PLAN, DIAGNOSTIC_RUN_REPORT, DIAGNOSTIC_RUN_AUDIT.md (verdict line), RESULT_INTERPRETATION.md, RESEARCH_DECISION_LOG.md | Formal diagnostic execution and interpretation before scale-up |
 | Stage 20: Scale | `/experiment-queue` or `/run-experiment` | manifest | LOGS/, EXPERIMENT_TRACKER.md, SCALEUP_DECISION.md | Full sweep after diagnostic passes + HUMAN_DECISION_NOTE |
-| Stages 18, 21–22: Interpret + Claim | `/analyze-results` then `/result-to-claim` | logs + results | RESULT_INTERPRETATION.md, CLAIM_CONSTRUCTION.md, NEGATIVE_RESULT_STRATEGY.md, HUMAN_DECISION_NOTE.md | Decide what claim the data supports |
-| Stage 23: Red-team Loop | `/auto-review-loop` | project state | RED_TEAM_REVIEW.md, AUTO_REVIEW.md | Iterative adversarial review before paper |
+| Stages 18, 21–22: Interpret + Claim | `/analyze-results` then conditional-required `/result-to-claim` | logs + results | RESULT_INTERPRETATION.md, CLAIM_CONSTRUCTION.md, NEGATIVE_RESULT_STRATEGY.md, HUMAN_DECISION_NOTE.md | Local diagnostics stop after interpretation + decision log; paper-bearing diagnostics must map results to claims |
+| Stage 23: Red-team Loop | conditional-required `/auto-review-loop` | project state | RED_TEAM_REVIEW.md, AUTO_REVIEW.md | Required for paper-bearing diagnostics after `/result-to-claim`; not triggered for local diagnostics |
 | Stage 24: Paper writing | `/paper-writing "NARRATIVE_REPORT.md"` | narrative report | paper/, PAPER_IMPROVEMENT_LOG.md, PAPER_CLAIM_AUDIT, CITATION_AUDIT | Draft paper after CLAIM_CONSTRUCTION + RED_TEAM_REVIEW exist (G16, G18) |
 | Rebuttal (W4) | `/rebuttal "paper/ + reviews"` | paper + reviews | PASTE_READY.txt | Reviews received |
 
@@ -184,9 +184,10 @@ stages. Sub-skills enforce their own v1.3 gates even when invoked directly.
 
 | Skill | What it does |
 |-------|-------------|
-| `/idea-to-proposal "<keyword OR context.md OR idea.md>"` | STOP A: keyword/context/idea → proposal + experiment plan, no GPU. Context `.md` still runs discovery; explicit idea `.md` skips to refinement. |
+| `/idea-to-proposal "<keyword OR context.md OR idea.md>"` | STOP A: keyword/context/idea → proposal only. Context `.md` still runs discovery; explicit idea `.md` skips to refinement. |
+| `/experiment-bridge "refine-logs/FINAL_PROPOSAL.md"` | STOP B: approved proposal → experiment plan + implementation + PLAN_CODE_AUDIT + limited probe when mode allows |
 | `/proposal-revise "<target>" — critiques: "..."` | STOP A revision loop: targeted critique-driven edits |
-| `/diagnostic-to-review "<diagnostic command>"` | STOP C: chains run → analyze → claim → review |
+| `/diagnostic-to-review "<diagnostic command>"` | STOP C: chains run → analyze, then conditional-required claim + review. Not triggered for local diagnostics; required for paper-bearing diagnostics. |
 | `/alphaxiv "arxiv-id"` | LLM-optimized single-paper summary |
 | `/research-lit "topic"` | Question-driven literature map (Stage 1) |
 | `/idea-creator "direction"` | Brainstorm + rank ideas |
@@ -268,7 +269,7 @@ migration appendix.
 ## Cross-Model Protocol
 
 - **Executor** (Claude/Codex): writes code, runs experiments, drafts papers.
-- **Reviewer** (Codex GPT-5.5 xhigh, optionally GPT-5.5 Pro via Oracle): critiques,
+- **Reviewer** (Codex GPT-5.5 xhigh, with GPT-5.5 Pro via Oracle when configured): critiques,
   scores, demands revisions.
 - Executor and reviewer must be different model families.
 - Reviewer independence: pass file paths only, never executor summaries or interpretations.
@@ -340,7 +341,7 @@ Read these before invoking review-related skills:
 - `skills/shared-references/venue-checklists.md` — venue formatting
 - `skills/shared-references/assurance-contract.md` — paper-writing audit gate schema
 
-## Research Wiki (Optional)
+## Research Wiki (When Present)
 
 If `research-wiki/` exists in the project:
 

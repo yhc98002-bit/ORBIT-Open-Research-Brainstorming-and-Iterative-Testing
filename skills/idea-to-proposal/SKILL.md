@@ -1,40 +1,40 @@
 ---
 name: idea-to-proposal
-description: "ORBIT v1.3 thin pipeline from a research-area keyword, a long context .md, OR a draft idea .md file all the way to a v1.3-complete proposal AND experiment plan — everything you need before touching GPU. Chains existing /idea-discovery for keywords and context docs, or /research-refine only for explicit draft ideas, then runs Stage 4/5/7 (Grounding) + Stage 8/9/10 (Innovation, Codex collaborative) + a final /research-refine pass that integrates the tentative sketch winner + /experiment-plan to produce EXPERIMENT_PLAN + Validation prereqs. Outputs FINAL_PROPOSAL.md, EXPERIMENT_PLAN.md, plus the v1.3 Discovery/Grounding/Innovation artifact set. Does NOT touch GPU. Use when user says \"领域到proposal\", \"出proposal\", \"想法到方案\", \"idea-to-proposal\", \"proposal pipeline\", \"从领域跑到方案\", or wants the full pre-implementation package in one call."
+description: "ORBIT v1.4 proposal wrapper that turns a research-area keyword, long context .md, or draft idea .md into an approved-proposal candidate. Runs Discovery, Grounding, Innovation, and final proposal refinement, then stops before experiment planning. Outputs FINAL_PROPOSAL.md, FINAL_PROPOSAL_SHORT.md, METHOD_SPEC.md when useful, and the Discovery/Grounding/Innovation artifact set. Does NOT write canonical EXPERIMENT_PLAN.md by default, implement code, run experiments, or touch GPU. Use when user says \"领域到proposal\", \"出proposal\", \"想法到方案\", \"idea-to-proposal\", \"proposal pipeline\", or \"从领域跑到方案\"."
 argument-hint: [research-area-keyword OR path/to/context.md OR path/to/draft-idea.md]
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, mcp__codex__codex, mcp__codex__codex-reply
 ---
 
-# /idea-to-proposal — v1.3 Discovery → Grounding → Innovation → Proposal → Experiment Plan
+# /idea-to-proposal — v1.4 Discovery → Grounding → Innovation → Proposal
 
-Run a v1.3-complete pre-implementation pipeline for: **$ARGUMENTS**
+Run a proposal-generation pipeline for: **$ARGUMENTS**
 
 ## Overview
 
-This skill chains existing skills + the v1.3 Grounding, Innovation, and Validation-prereq
-phases into one pipeline. It produces:
-- a problem-anchored proposal (FINAL_PROPOSAL.md)
-- the v1.3 artifact set: assumption ledger, abstract task / mechanism, baseline ceiling,
-  mechanism ideation, analogy transfer, algorithm sketch tournament
-- a decision-driven experiment plan (EXPERIMENT_PLAN.md) with control design, null-result
-  contract, component bundle ladder, algorithmic formalization, diagnostic experiment plan
+This skill chains existing skills plus the ORBIT Grounding and Innovation phases into a
+proposal wrapper. It produces:
+- a problem-anchored proposal bundle (`FINAL_PROPOSAL.md`, `FINAL_PROPOSAL_SHORT.md`,
+  and `METHOD_SPEC.md` when useful)
+- the Discovery/Grounding/Innovation artifact set: problem selection, assumption ledger,
+  abstract task / mechanism, baseline ceiling, mechanism ideation, analogy transfer, and
+  algorithm sketch tournament
+- a short pipeline summary for STOP A
 
-**Scope boundary** — this skill stops *before* GPU. It produces every artifact required
-for `/experiment-bridge` to start writing code, but does not write code itself, does not
-run any experiment, does not write a paper. To take the plan further, hand off to
-`/experiment-bridge` (Stage 15) or `/research-pipeline` from Stage 15 onward.
+**Scope boundary** — this skill stops before experiment planning. It does not write
+canonical `EXPERIMENT_PLAN.md` or `EXPERIMENT_PLAN_EXEC.md` by default, does not implement
+code, does not run any experiment, and does not write a paper. After STOP A, hand the
+approved proposal to `/experiment-bridge "refine-logs/FINAL_PROPOSAL.md"`.
 
 ```
-Input:          Phase 1 (Discovery)      Phase 2 (Grounding)   Phase 3 (Innovation, Codex collab)   Phase 4               Phase 5      Phase 6
+Input:          Phase 1 (Discovery)      Phase 2 (Grounding)   Phase 3 (Innovation, Codex collab)   Phase 4               Phase 5
 keyword ──────► /idea-discovery ────┐
 context .md ──► /idea-discovery ────┤
-draft idea .md ─► /research-refine ─┴► Stage 4 → 5 → 7 ─────► Stage 8 → 9 → 10 ─────────────────► /research-refine ──► PIPELINE_   ──► /experiment-plan
-                                      (assumption,            (mechanism, analogy,                 final pass            SUMMARY        Stage 11/12/13/14/16
-                                       abstract, baseline)     sketch tournament)                  (winner integrated)                  prereqs
-                                                                                                                                        │
-                                                                                                                                        ▼
-                                                                                                                              ⏸ STOP awaiting_human_continue
-                                                                                                                              (or earlier with --stop-at-proposal)
+draft idea .md ─► /research-refine ─┴► Stage 4 → 5 → 7 ─────► Stage 8 → 9 → 10 ─────────────────► /research-refine ──► PIPELINE_
+                                      (assumption,            (mechanism, analogy,                 final pass            SUMMARY
+                                       abstract, baseline)     sketch tournament)                  (winner integrated)
+                                                                                                                       │
+                                                                                                                       ▼
+                                                                                                             ⏸ STOP A: human-review-proposal
 ```
 
 ## Constants
@@ -67,12 +67,11 @@ draft idea .md ─► /research-refine ─┴► Stage 4 → 5 → 7 ───�
   Override with `— difficulty: <level>`. Forwarded verbatim to `/research-refine`.
 - **STOP_AT_GROUNDING = false** — if `true`, skip Phase 3 and Phase 4 (produce only the
   Grounding artifacts on top of Phase 1 output).
-- **STOP_AT_PROPOSAL = false** — if `true`, skip Phase 6 (do NOT invoke `/experiment-plan`).
-  Stops at Phase 5 with `awaiting_human_continue` after producing FINAL_PROPOSAL +
-  v1.3 Discovery/Grounding/Innovation artifacts only. Conservative users who want to review
-  the proposal before committing to an experiment plan use this. Default is to chain
-  through Phase 6 because the experiment plan still costs no GPU and gives the user one
-  combined STOP point with everything pre-implementation in hand.
+- **WITH_EXPERIMENT_PLAN = false** — legacy compatibility only. Default `false` stops at
+  STOP A after proposal refinement. If the user explicitly passes
+  `— with-experiment-plan: true` or `— legacy-full-preimplementation: true`, the skill may
+  invoke `/experiment-plan` after STOP A semantics, but this path is not recommended for
+  new canonical ORBIT runs.
 
 ## Load First
 
@@ -104,12 +103,12 @@ Written at every phase boundary with overwrite semantics. Schema:
                                           //   phase-0-intake, phase-0-5-literature-prefetch,
                                           //   phase-1-discovery, phase-2-grounding,
                                           //   phase-3-innovation, phase-4-final-refinement,
-                                          //   phase-5-summary, phase-6-experiment-plan)
+                                          //   phase-5-summary)
   "input_mode": "keyword" | "context" | "idea",      // detected at Phase 0
   "input_value": "$ARGUMENTS",           // verbatim
   "status": "in_progress" | "awaiting_human_continue" | "completed",
   "next_action": "phase-4-final-refinement",        // for same-skill resume
-  "next_skill_hint": "/research-pipeline OR /experiment-plan",  // for downstream after Phase 5
+  "next_skill_hint": "/experiment-bridge \"refine-logs/FINAL_PROPOSAL.md\"",  // downstream after STOP A
   "timestamp": "<ISO 8601 UTC>",
   "artifact_inventory": [               // every output produced so far
     "orbit-research/PROBLEM_SELECTION.md",
@@ -121,7 +120,7 @@ Written at every phase boundary with overwrite semantics. Schema:
     "orbit-research/ALGORITHM_TOURNAMENT.md",
     "refine-logs/FINAL_PROPOSAL.md"
   ],
-  "notes": "Optional — e.g. mode-detection rationale, Codex unavailability events"
+  "notes": "Free-form notes — e.g. mode-detection rationale, Codex unavailability events"
 }
 ```
 
@@ -142,9 +141,12 @@ Apply the canonical decision tree from `continuation-contract.md`:
    - `timestamp < 24h` → resume from `STATE.phase + 1`. For each phase ≤ STATE.phase,
      apply the artifact-presence skip rule (next section).
 5. If `status = "awaiting_human_continue"`:
-   - Same skill being re-invoked (this case) → ask "continue past human checkpoint?"
-     Default yes under AUTO_PROCEED. On yes, transition to `in_progress` and resume.
-   - (Downstream skill case is handled by `/research-pipeline` Stage 0.)
+   - This is the designed STOP A terminal state. Re-invoking the same skill without
+     `— fresh: true` or `— from-phase:` should summarize the existing proposal artifacts
+     and return the next skill hint:
+     `/experiment-bridge "refine-logs/FINAL_PROPOSAL.md"`.
+   - Downstream invocation of `/experiment-bridge` is treated as the human's approval to
+     continue after STOP A.
 
 ### Idempotent phase skip
 
@@ -161,7 +163,6 @@ the STATE entry says this phase completed. If both hold, skip the phase and log
 | phase-3-innovation | `orbit-research/MECHANISM_IDEATION.md` + `ANALOGY_TRANSFER.md` + `ALGORITHM_TOURNAMENT.md` |
 | phase-4-final-refinement | `refine-logs/FINAL_PROPOSAL.md` updated (mtime > Phase 1's write) |
 | phase-5-summary | `orbit-research/PIPELINE_SUMMARY.md` |
-| phase-6-experiment-plan | `refine-logs/EXPERIMENT_PLAN.md` + `orbit-research/CONTROL_DESIGN.md` + `NULL_RESULT_CONTRACT.md` + `COMPONENT_BUNDLE_LADDER.md` + `ALGORITHMIC_FORMALIZATION.md` + `DIAGNOSTIC_EXPERIMENT_PLAN.md` |
 
 If artifact present but STATE entry missing/older, replay phase with a "refreshing
 inconsistent state" warning.
@@ -174,13 +175,15 @@ inconsistent state" warning.
 | `— fresh: true` | Delete STATE first; ignore existing artifacts; run from Phase 0 |
 | `— from-phase: <N>` | Force start from the specified phase (1–5) |
 | `— human checkpoint: true` | Pause at every phase boundary (write `awaiting_human_continue` after each), not just at Phase 5 |
-| `— no-checkpoint: true` | Skip the Phase 6 `awaiting_human_continue` exit; transition straight to `completed` |
-| `STOP_AT_GROUNDING: true` | Skip Phase 3 + Phase 4 + Phase 6; produce only Grounding artifacts; awaiting_human_continue at Phase 5 |
-| `STOP_AT_PROPOSAL: true` | Skip Phase 6; produce proposal + Discovery/Grounding/Innovation artifacts only; awaiting_human_continue at Phase 5 |
+| `— no-checkpoint: true` | Skip the STOP A `awaiting_human_continue` exit; transition straight to `completed` |
+| `STOP_AT_GROUNDING: true` | Skip Phase 3 + Phase 4; produce only Grounding artifacts; awaiting_human_continue at Phase 5 |
+| `STOP_AT_PROPOSAL: true` | Legacy no-op alias. Proposal-only is now the default behavior. |
+| `— with-experiment-plan: true` | Legacy explicit opt-in: after proposal summary, invoke `/experiment-plan` and add planning artifacts. Not recommended for new canonical ORBIT runs. |
+| `— legacy-full-preimplementation: true` | Alias for `— with-experiment-plan: true`. |
 | `— arxiv download: <bool>` | When `true`, run **Phase 0.5 (Literature Pre-fetch)** before Phase 1: delegates to `/research-lit` to populate `papers/` and `research-wiki/papers/` so downstream skills (especially `/research-refine`'s "Check `papers/` first" step in Phase 1c, and the Stage-4/5/7 grounding harness prompts in Phase 2) have local PDFs to scan. Default `false` (preserves prior behavior — grounding runs off whatever the LLM already knows). Without this flag, the literature pre-fetch is skipped silently. |
 | `— sources: <list>` | Comma-separated source list for Phase 0.5. Subset of: `arxiv`, `web`, `semantic-scholar`, `deepxiv`, `exa`, `alphaxiv`, `local`, `all`. Default `arxiv`. Forwarded verbatim to `/research-lit — sources: <list>`. Has no effect if `— arxiv download: false`. |
 | `— arxiv max download: <N>` | Cap on PDFs downloaded by Phase 0.5. Default `LITERATURE_PRE_FETCH_MAX_DEFAULT = 10`. Forwarded to `/research-lit — max download: <N>`. |
-| `— venue: <name>` | Target venue (e.g. `iclr`, `icml`, `neurips`, `cvpr`, `naacl`). Recorded in `PIPELINE_INTAKE.md` and forwarded as `— venue: <name>` to `/research-refine`, `/research-pipeline`, and `/experiment-plan` so their reviewer prompts can name the venue specifically rather than the hardcoded "top venue". Default: unset. |
+| `— venue: <name>` | Target venue (e.g. `iclr`, `icml`, `neurips`, `cvpr`, `naacl`). Recorded in `PIPELINE_INTAKE.md` and forwarded as `— venue: <name>` to `/research-refine` so reviewer prompts can name the venue specifically rather than the hardcoded "top venue". Default: unset. |
 | `— effort: <level>` | Codex effort level: `low`, `medium`, `high`, `xhigh`, or `max` (alias for `xhigh`). Sets the per-call `model_reasoning_effort` for Codex MCP invocations across this skill (overrides `CODEX_REVIEW_EFFORT = xhigh` constant for this run). The actual effort honored is subject to Codex MCP environment availability — if the requested level is unavailable, Codex falls back to the next lower available level and the fallback (e.g. `gpt-5.2 high`) is logged in `STATE.notes`. |
 | `— difficulty: <level>` | Calibrates the downstream `/research-refine` (Phase 1c idea-mode + Phase 4 final refinement) reviewer behavior + READY threshold + MAX_ROUNDS. Three levels (mirror upstream `/auto-review-loop` + `/research-pipeline`): `medium` (default) = standard reviewer + ≥9.0 / 5 rounds; `hard` = stricter reviewer + ≥9.5 / 7 rounds; `nightmare` = `hard` + reject-by-default per-dimension veto (every dimension ≥ 8) + ≥9.5 / 7 rounds. Forwarded verbatim as `— difficulty: <level>` to `/research-refine` (which honors it natively per its own `REVIEWER_DIFFICULTY` constant). |
 | `— input-mode: keyword\|context\|idea` | Override Phase 0 input classification. Use `context` for long notes/background `.md` files that should still run `/idea-discovery`; use `idea` only for an already committed method/direction draft that should skip discovery and go straight to `/research-refine`. |
@@ -230,6 +233,7 @@ Write a one-line classifier note to `orbit-research/PIPELINE_INTAKE.md`:
 `orbit-research/PIPELINE_INTAKE.md` AND in the STATE block below. Flags
 recognised by this skill (see Override flags table above for full list):
 `AUTO_PROCEED`, `human checkpoint`, `STOP_AT_GROUNDING`, `STOP_AT_PROPOSAL`,
+`with-experiment-plan`, `legacy-full-preimplementation`,
 `arxiv download`, `sources`, `arxiv max download`, `venue`, `effort`,
 `difficulty`, `input-mode`, `context`, `idea`, `from-phase`, `resume`, `fresh`,
 `no-checkpoint`.
@@ -376,17 +380,17 @@ Invoke the existing Workflow 1, forwarding the parsed flags:
     — difficulty: <parsed_flags.difficulty>
 ```
 
-(`/idea-discovery` itself internally calls `/research-refine-pipeline` →
-`/research-refine`; the flags propagate through that chain. Omit any flag
-whose parsed value is null / default.)
+(`/idea-discovery` itself refines the selected idea through `/research-refine`; the flags
+propagate to adversarial refinement. Omit any flag whose parsed value is null / default.)
 
 This produces:
 - `idea-stage/IDEA_REPORT.md` (ranked candidates)
-- `refine-logs/FINAL_PROPOSAL.md` (top idea, refined via `/research-refine-pipeline`)
-- `refine-logs/EXPERIMENT_PLAN.md` (preliminary — will be **regenerated** when the user
-  later commits to the Validation Spine; do NOT treat as canonical)
-- `refine-logs/EXPERIMENT_TRACKER.md`
+- `refine-logs/FINAL_PROPOSAL.md` (top idea, refined via `/research-refine`)
 - `orbit-research/PROBLEM_SELECTION.md`
+
+If legacy sub-skills emit `refine-logs/EXPERIMENT_PLAN.md` as a side effect, do not list
+it as a canonical `/idea-to-proposal` output. Mark it as legacy/pre-STOP-A and let
+`/experiment-bridge` reuse or refresh it after the human approves STOP A.
 
 When `/idea-discovery` reaches its post-Phase-2 user checkpoint, pass through with the
 top-ranked candidate unless the user passed `— human checkpoint: true`.
@@ -419,11 +423,11 @@ choosing one.
 
 This produces the same artifact set as keyword-mode:
 - `idea-stage/IDEA_REPORT.md` (ranked candidates)
-- `refine-logs/FINAL_PROPOSAL.md` (top idea, refined via `/research-refine-pipeline`)
-- `refine-logs/EXPERIMENT_PLAN.md` (preliminary — will be **regenerated** when the user
-  later commits to the Validation Spine; do NOT treat as canonical)
-- `refine-logs/EXPERIMENT_TRACKER.md`
+- `refine-logs/FINAL_PROPOSAL.md` (top idea, refined via `/research-refine`)
 - `orbit-research/PROBLEM_SELECTION.md`
+
+If legacy sub-skills emit an experiment plan as a side effect, treat it as legacy context,
+not as the canonical post-STOP-A plan.
 
 When `/idea-discovery` reaches its post-Phase-2 user checkpoint, pass through with the
 top-ranked candidate unless the user passed `— human checkpoint: true`.
@@ -629,8 +633,11 @@ Keep `FINAL_PROPOSAL.md` readable. Put dense assumption tracing in
 `orbit-research/ASSUMPTION_LEDGER.md`, implementation detail in `METHOD_SPEC.md`, and
 decision history in `orbit-research/RESEARCH_DECISION_LOG.md`.
 
-At this phase the proposal status remains `SPECULATIVE`: the method has been refined and
-grounded, but no diagnostic evidence has validated the central hypotheses yet.
+At this phase the proposal status should be `PROPOSAL_READY`: the proposal is coherent
+enough for STOP A human review. Use `EXPERIMENT_PLAN_READY` only after
+`/experiment-bridge` has written `EXPERIMENT_PLAN_EXEC.md` and completed the plan/code
+bridge checks. Do not over-repeat that the proposal is still hypothesis-bearing; preserve
+uncertainty once in `## Critical Hypotheses` and `ASSUMPTION_LEDGER.md`.
 
 If Codex flags a serious problem with the winner sketch, the integrated proposal MAY pick
 an alternate from `ALGORITHM_TOURNAMENT.md` instead — record this in the proposal's
@@ -681,108 +688,44 @@ Write `orbit-research/PIPELINE_SUMMARY.md`:
 - orbit-research/ANALOGY_TRANSFER.md       — cross-domain analogies
 - orbit-research/ALGORITHM_TOURNAMENT.md   — tentative preferred sketch + alternates
 
-### Validation Prereqs (Phase 6 — pre-implementation, no GPU)
-- refine-logs/EXPERIMENT_PLAN.md           — experiment-plan index (v1.3-aware)
-- refine-logs/EXPERIMENT_PLAN_EXEC.md      — claim map, blocks, run order, gates, budget
-- orbit-research/CONTROL_DESIGN.md         — required controls
-- orbit-research/NULL_RESULT_CONTRACT.md   — what null/tie/fail means
-- orbit-research/COMPONENT_BUNDLE_LADDER.md — progressive component / bundle order
-- orbit-research/ALGORITHMIC_FORMALIZATION.md — pseudocode + loss + update rule
-- orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md — cheapest valid diagnostic spec
+## STOP A
 
-(Skipped if --stop-at-proposal: true.)
+Human review question:
 
-## Next steps (NOT run by this skill — first GPU touch begins here)
+> Is this proposal worth planning experiments for?
 
-1. /experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"
-   → implements code + writes PLAN_CODE_AUDIT.md (Stage 15 loop)
-   → STOP B in the 4-stop HITL flow: review PLAN_CODE_AUDIT verdict before GPU
+Review:
+- `refine-logs/FINAL_PROPOSAL.md`
+- `refine-logs/FINAL_PROPOSAL_SHORT.md`
+- `refine-logs/METHOD_SPEC.md` if present
+- the key `orbit-research/` Discovery/Grounding/Innovation artifacts above
+
+## Next steps (NOT run by this skill)
+
+1. /experiment-bridge "refine-logs/FINAL_PROPOSAL.md"
+   → turns the approved proposal into `EXPERIMENT_PLAN.md` and
+     `EXPERIMENT_PLAN_EXEC.md`
+   → implements code + writes `PLAN_CODE_AUDIT.md`
+   → may run limited implementation-facing probes
+   → STOP B: review plan + audit + probe reports before formal diagnostics
 
 2. /diagnostic-to-review "[diagnostic command OR manifest]"
-   → chains run-experiment → analyze-results → result-to-claim → auto-review-loop
-   → auto-routes single command vs queue-batch
-   → STOP C: any abort condition (verdict != PASS, claim_supported = no, etc.)
-              surfaces as awaiting_human_continue with clear next_action
+   → owns formal diagnostic execution, result interpretation, decision log, and
+     conditional-required claim/review for paper-bearing diagnostics
+   → STOP C: review claim/review/decision artifacts when paper-bearing
 
 3. /paper-writing "NARRATIVE_REPORT.md" — venue: ICLR
    → final paper writing (G16/G18 enforced — needs CLAIM_CONSTRUCTION.md)
-
-4. Or use /research-pipeline — Stage 0 reads IDEA_TO_PROPOSAL_STATE.json
-   awaiting_human_continue + artifact_inventory and routes directly to
-   Stage 15 (plan-code audit), skipping all the work this skill already did.
 ```
 
 **Write STATE** at end of Phase 5:
 
-If `STOP_AT_GROUNDING = true` OR `STOP_AT_PROPOSAL = true`:
-
 ```jsonc
 {
   "phase": "phase-5-summary",
-  "status": "awaiting_human_continue",     // designed checkpoint when STOP_AT_PROPOSAL set
-  "next_action": "human-must-confirm-then-call-/experiment-plan-or-/research-pipeline",
-  "next_skill_hint": "/experiment-plan OR /research-pipeline",
-  "timestamp": "<now>",
-  "artifact_inventory": [/* prior 9 v1.3 artifacts + orbit-research/PIPELINE_SUMMARY.md */]
-}
-```
-
-Otherwise (default — chain to Phase 6):
-
-```jsonc
-{
-  "phase": "phase-5-summary",
-  "status": "in_progress",
-  "next_action": "phase-6-experiment-plan",
-  "timestamp": "<now>",
-  "artifact_inventory": [/* prior + orbit-research/PIPELINE_SUMMARY.md */]
-}
-```
-
-### Phase 6: Validation Prereqs — invoke `/experiment-plan`
-
-**Skip this phase if `STOP_AT_PROPOSAL = true` or `STOP_AT_GROUNDING = true`.** Otherwise
-chain to `/experiment-plan` to produce the EXPERIMENT_PLAN.md index, EXPERIMENT_PLAN_EXEC.md,
-and Stage 11/12/13/14/16
-prerequisites. This still costs **zero GPU**; it is the final pre-implementation step.
-
-```bash
-/experiment-plan "refine-logs/FINAL_PROPOSAL.md"
-```
-
-`/experiment-plan` (T4-upgraded) reads the v1.3 grounding/innovation artifacts produced in
-Phases 2–4 (ASSUMPTION_LEDGER, ABSTRACT_TASK_MECHANISM, ALGORITHM_TOURNAMENT) and writes a
-v1.3-aware `refine-logs/EXPERIMENT_PLAN.md` index plus `refine-logs/EXPERIMENT_PLAN_EXEC.md`
-and:
-
-- `orbit-research/CONTROL_DESIGN.md`
-- `orbit-research/NULL_RESULT_CONTRACT.md`
-- `orbit-research/COMPONENT_BUNDLE_LADDER.md`
-- `orbit-research/ALGORITHMIC_FORMALIZATION.md`
-- `orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md`
-
-After `EXPERIMENT_PLAN_EXEC.md` is written and includes a diagnostic decision tree for the
-critical hypotheses, update `FINAL_PROPOSAL.md` and `FINAL_PROPOSAL_SHORT.md` status from
-`SPECULATIVE` to `DIAGNOSTIC_READY`. This means "ready for the first diagnostic gate", not
-"validated" or "supported".
-
-If `/experiment-plan` returns an unrecoverable error (proposal too vague, claim map
-unfillable, etc.), surface to user and write Phase 6 STATE with `status = "in_progress"` +
-`next_action = "experiment-plan-failed:<reason>"` so the user can fix and re-invoke.
-
-**Write final STATE** at end of Phase 6 with **`awaiting_human_continue`** (this is now
-the designed human checkpoint of this skill — combined STOP A: proposal index + experiment plan index + execution plan
-reviewed together):
-
-```jsonc
-{
-  "skill": "idea-to-proposal",
-  "phase": "phase-6-experiment-plan",
-  "input_mode": "keyword | context | idea",
-  "input_value": "$ARGUMENTS",
   "status": "awaiting_human_continue",
-  "next_action": "human-must-confirm-then-call-/experiment-bridge-or-/research-pipeline",
-  "next_skill_hint": "/experiment-bridge OR /research-pipeline",
+  "next_action": "human-review-proposal",
+  "next_skill_hint": "/experiment-bridge \"refine-logs/FINAL_PROPOSAL.md\"",
   "timestamp": "<now>",
   "artifact_inventory": [
     "orbit-research/PIPELINE_INTAKE.md",
@@ -793,55 +736,42 @@ reviewed together):
     "orbit-research/MECHANISM_IDEATION.md",
     "orbit-research/ANALOGY_TRANSFER.md",
     "orbit-research/ALGORITHM_TOURNAMENT.md",
-    "orbit-research/CONTROL_DESIGN.md",
-    "orbit-research/NULL_RESULT_CONTRACT.md",
-    "orbit-research/COMPONENT_BUNDLE_LADDER.md",
-    "orbit-research/ALGORITHMIC_FORMALIZATION.md",
-    "orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md",
     "orbit-research/PIPELINE_SUMMARY.md",
     "refine-logs/FINAL_PROPOSAL.md",
     "refine-logs/FINAL_PROPOSAL_SHORT.md",
-    "refine-logs/METHOD_SPEC.md",
-    "refine-logs/EXPERIMENT_PLAN.md",
-    "refine-logs/EXPERIMENT_PLAN_EXEC.md"
+    "refine-logs/METHOD_SPEC.md"
     // + idea-stage/IDEA_REPORT.md if keyword-mode or context-mode
   ]
 }
 ```
 
-`awaiting_human_continue` is the **deliberate** terminal state for this skill. The user
-inspects the artifacts (especially `FINAL_PROPOSAL.md` + `EXPERIMENT_PLAN.md` together —
-the combined "is this worth GPU?" decision point) and decides:
+`awaiting_human_continue` is the deliberate terminal state for this skill. The user
+inspects the proposal artifacts and decides:
 
-- **Continue to implementation** — invoke `/experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"`.
-  The next skill reads `IDEA_TO_PROPOSAL_STATE.json`, sees `awaiting_human_continue`, and
-  treats invocation as the human's "approve continue" signal.
-
-- **Continue via orchestrator** — invoke `/research-pipeline`. Stage 0 detects this STATE
-  and routes directly to Stage 15 (plan-code audit) skipping Discovery/Grounding/Innovation/
-  validation-prereqs, all of which are already done.
-
-- **Iterate experiment plan** — invoke `/experiment-plan "refine-logs/FINAL_PROPOSAL.md" — fresh: true`
-  to regenerate Phase 6 outputs only.
-
-- **Iterate proposal** — invoke `/idea-to-proposal "..." — fresh: true` (full rerun) or
-  manual edit `FINAL_PROPOSAL.md` then `/idea-to-proposal "..." — from-phase: 6` to
-  re-invoke just the experiment-plan phase on the edited proposal.
-
+- **Continue to experiment planning and implementation** — invoke
+  `/experiment-bridge "refine-logs/FINAL_PROPOSAL.md"`.
+- **Iterate proposal** — invoke `/proposal-revise` for targeted edits or
+  `/idea-to-proposal "..." — fresh: true` for a full rerun.
 - **Abandon** — leave it. STATE stays `awaiting_human_continue` indefinitely.
 
 To skip this checkpoint and run straight through to `completed`, pass `— no-checkpoint: true`.
 
-### Conservative variant (early STOP at proposal)
+### Legacy add-on: explicit experiment planning from this skill
 
-If you want to review the proposal *before* generating the experiment plan (the original
-5-stop flow), pass `— stop-at-proposal: true`. This gives you Phase 1–5 only; Phase 6 is
-not invoked. After your review, manually run `/experiment-plan` to get the validation
-prereqs.
+Pre-patch `/idea-to-proposal` generated experiment plans. In the new canonical flow,
+experiment planning moves to `/experiment-bridge` after STOP A. Existing
+`EXPERIMENT_PLAN.md` files remain readable, but new canonical runs generate them in
+`/experiment-bridge`.
+
+If the user explicitly passes `— with-experiment-plan: true` or
+`— legacy-full-preimplementation: true`, invoke `/experiment-plan "refine-logs/FINAL_PROPOSAL.md"`
+after writing the proposal summary. Mark the output as legacy compatibility in STATE
+notes and still recommend `/experiment-bridge "refine-logs/FINAL_PROPOSAL.md"` as the
+next canonical wrapper.
 
 ## ARIS / Sub-skill Unavailability
 
-For each delegated invocation (`/idea-discovery`, `/research-refine`, `/research-refine-pipeline`),
+For each delegated invocation (`/idea-discovery`, `/research-refine`),
 follow the standard fallback pattern:
 
 ```text
@@ -868,16 +798,17 @@ For Codex MCP unavailability during Phase 4 (final refinement adversarial review
 
 ## What This Skill Deliberately Does NOT Do
 
-- Does **not** invoke `/experiment-plan`, `/experiment-bridge`, `/run-experiment`,
-  `/experiment-queue`, `/result-to-claim`, `/auto-review-loop`, `/paper-writing`, or any
-  Validation Spine skill.
+- Does **not** invoke `/experiment-plan` in the canonical default path; that is allowed
+  only through the explicit legacy flags documented above.
+- Does **not** invoke `/experiment-bridge`, `/run-experiment`, `/experiment-queue`,
+  `/result-to-claim`, `/auto-review-loop`, `/paper-writing`, or any execution skill.
 - Does **not** write `CONTROL_DESIGN.md`, `NULL_RESULT_CONTRACT.md`,
   `COMPONENT_BUNDLE_LADDER.md`, `ALGORITHMIC_FORMALIZATION.md`, `PLAN_CODE_AUDIT.md`, or
-  any DIAGNOSTIC_RUN_*.md.
+  any DIAGNOSTIC_RUN_*.md in the canonical default path.
 - Does **not** touch GPUs.
 - Does **not** finalise method commitment — Stage 10's pick is explicitly tentative
-  (`TENTATIVE_PREFERRED_SKETCH_ID`); convergence happens at Stage 11 HMBC, run by
-  `/research-pipeline` or `/experiment-plan`.
+  (`TENTATIVE_PREFERRED_SKETCH_ID`); experiment planning and implementation happen after
+  STOP A through `/experiment-bridge`.
 
 ## Output Protocols
 

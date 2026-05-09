@@ -46,7 +46,7 @@ artifacts should remain English unless the user explicitly opts into Chinese art
 | /analyze-results | Full | Result analysis follows artifact language setting; default English |
 | /auto-review-loop | Partial | AUTO_REVIEW.md follows artifact language setting; reviewer prompts stay English |
 | /experiment-plan | Full | EXPERIMENT_PLAN.md follows artifact language setting; default English |
-| /experiment-bridge | Full | EXPERIMENT_RESULTS.md follows artifact language setting; default English |
+| /experiment-bridge | Full | EXPERIMENT_PLAN.md, PLAN_CODE_AUDIT.md, and probe summaries follow artifact language setting; default English |
 | /research-refine | Full | FINAL_PROPOSAL.md follows artifact language setting; default English |
 | /research-refine-pipeline | Full | orbit-research/PIPELINE_SUMMARY.md follows artifact language setting; default English |
 | /research-pipeline | Full | Inherits from sub-skills |

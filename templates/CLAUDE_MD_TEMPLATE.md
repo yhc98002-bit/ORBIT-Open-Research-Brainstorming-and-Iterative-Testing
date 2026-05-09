@@ -6,7 +6,7 @@
 stage: idle          # idle | idea-discovery | implementation | training | review | paper
 idea: ""             # Current idea title (one line)
 contract: ""         # Path to research_contract.md (e.g., idea-stage/docs/research_contract.md)
-proposal_status: ""  # SPECULATIVE | DIAGNOSTIC_READY | SUPPORTED | REFRAMED | ARCHIVED
+proposal_status: ""  # PROPOSAL_READY | EXPERIMENT_PLAN_READY | SCALE_READY | SUPPORTED | REFRAMED | ARCHIVED
 decision_log: ""     # Path to orbit-research/RESEARCH_DECISION_LOG.md when diagnostics route a decision
 run_ledger: "orbit-research/RUN_LEDGER.jsonl"
 current_branch: ""   # Git branch for this idea

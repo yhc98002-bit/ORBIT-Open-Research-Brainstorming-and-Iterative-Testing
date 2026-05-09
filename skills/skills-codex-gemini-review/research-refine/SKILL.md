@@ -29,7 +29,7 @@ User input (PROBLEM + vague APPROACH)
   -> Phase 4 (Codex, same Gemini thread): Re-evaluate revised proposal
   -> Repeat Phase 3-4 until OVERALL SCORE >= 9 or MAX_ROUNDS reached
   -> Phase 5: Save full history to refine-logs/
-  -> Optional handoff: /experiment-plan for a detailed execution-ready experiment roadmap
+  -> STOP A handoff: /experiment-bridge "refine-logs/FINAL_PROPOSAL.md"
 ```
 
 ## Constants
@@ -639,7 +639,7 @@ If the final verdict is not READY, still write the best current index, short pro
 ...
 
 ## Next Steps
-- If READY: proceed to `/experiment-plan` for an experiment-plan index plus execution plan, then `/experiment-bridge`
+- If READY: proceed to `/experiment-bridge "refine-logs/FINAL_PROPOSAL.md"` for experiment planning, implementation, and plan-code audit
 - If REVISE: manually address the remaining mechanism weaknesses, then re-run `/research-refine`
 - If RETHINK: revisit the core mechanism, possibly with `/idea-creator`
 ```
@@ -676,7 +676,7 @@ Full report: refine-logs/REFINEMENT_REPORT.md
 Proposal index: refine-logs/FINAL_PROPOSAL.md
 Short proposal: refine-logs/FINAL_PROPOSAL_SHORT.md
 Method spec: refine-logs/METHOD_SPEC.md
-Suggested next step: /experiment-plan
+Suggested next step: /experiment-bridge "refine-logs/FINAL_PROPOSAL.md"
 ```
 
 ## Output Protocols
@@ -713,17 +713,16 @@ This skill sits between idea discovery and execution:
 /idea-creator "direction"       -> candidate ideas
 /research-refine "PROBLEM: ... | APPROACH: ..."  <- you are here
 /experiment-plan                -> detailed experiment roadmap
-/run-experiment                 -> execute the chosen method
-/auto-review-loop               -> iterate on results and paper
+/experiment-bridge              -> experiment planning + implementation + plan-code audit + STOP B
+/diagnostic-to-review           -> formal diagnostic + interpretation + conditional-required claim/review
 ```
 
 Typical flow:
 
 1. `/idea-creator` or local reading gives you a problem and a vague method direction
 2. `/research-refine` turns that into an anchored, elegant, frontier-aware method plan
-3. `/experiment-plan` turns the final proposal into an experiment-plan index plus execution plan
-4. `/research-refine-pipeline` is the one-shot wrapper when the user wants both stages in a single request
-5. `/run-experiment` executes the chosen runs
-6. Later loops operate on results, not just ideas
+3. `/experiment-bridge` turns the approved proposal into an experiment plan, implements code, and writes `PLAN_CODE_AUDIT.md`
+4. `/diagnostic-to-review` executes formal diagnostics and routes results
+5. Later loops operate on results, not just ideas
 
 This skill also works standalone if you already know the problem and just need the method to become concrete.

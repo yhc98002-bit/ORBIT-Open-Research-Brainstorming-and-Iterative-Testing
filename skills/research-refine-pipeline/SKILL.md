@@ -133,7 +133,7 @@ that points to `orbit-research/PIPELINE_SUMMARY.md`.
 
 ## Final Deliverables
 - Proposal: `refine-logs/FINAL_PROPOSAL.md`
-- Proposal status: [SPECULATIVE / DIAGNOSTIC_READY / SUPPORTED / REFRAMED / ARCHIVED]
+- Proposal status: [PROPOSAL_READY / EXPERIMENT_PLAN_READY / SCALE_READY / SUPPORTED / REFRAMED / ARCHIVED]
 - Critical hypotheses: `refine-logs/FINAL_PROPOSAL_SHORT.md` / `orbit-research/ASSUMPTION_LEDGER.md`
 - Review summary: `refine-logs/REVIEW_SUMMARY.md`
 - Experiment plan: `refine-logs/EXPERIMENT_PLAN.md`

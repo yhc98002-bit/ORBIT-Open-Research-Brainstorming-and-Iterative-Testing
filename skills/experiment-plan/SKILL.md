@@ -1,6 +1,6 @@
 ---
 name: experiment-plan
-description: 'Turn a refined research proposal or method idea into a detailed, decision-driven experiment roadmap. Use after `research-refine`, or when the user asks for a detailed experiment plan, ablation matrix, evaluation protocol, run order, compute budget, or paper-ready validation that supports the core problem, novelty, simplicity, and any LLM / VLM / Diffusion / RL-based contribution.'
+description: 'Turn an approved research proposal or method idea into a detailed, decision-driven experiment roadmap. Normally called by `/experiment-bridge` after STOP A, or manually when the user already has an approved proposal and asks for a detailed experiment plan, ablation matrix, evaluation protocol, run order, compute budget, or validation roadmap.'
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent
 ---
 
@@ -17,7 +17,11 @@ Refine and concretize: **$ARGUMENTS**
 
 ## Overview
 
-Use this skill after the method is stable enough that the next question becomes: **what exact experiments should we run, in what order, to change the next research decision?** If the user wants the full chain in one request, prefer `/research-refine-pipeline`.
+Use this skill after STOP A, when the proposal is approved enough that the next question
+becomes: **what exact experiments should we run, in what order, to change the next
+research decision?** In the canonical ORBIT flow, `/experiment-bridge` calls this skill
+before implementation and plan-code audit. Users may still invoke it manually when they
+already have an approved proposal.
 
 The goal is not to generate a giant benchmark wishlist. The goal is to turn a proposal into a **decision -> evidence target -> run order** roadmap that supports four things:
 
@@ -63,8 +67,8 @@ Run `mkdir -p orbit-research/`. Before writing or finalizing
 - `orbit-research/ALGORITHMIC_FORMALIZATION.md`
 - `orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md`  *(v1.0 alias accepted: `TINY_RUN_PLAN.md`)*
 
-If the project came through `/idea-to-proposal` or `/research-pipeline` Discovery+Grounding+Innovation,
-these v1.3 artifacts will already exist (read them; do not regenerate):
+If the project came through `/idea-to-proposal` Discovery+Grounding+Innovation, these
+v1.3 artifacts will already exist (read them; do not regenerate):
 
 - `orbit-research/PROBLEM_SELECTION.md`
 - `orbit-research/ASSUMPTION_LEDGER.md`
@@ -112,9 +116,9 @@ Read the most relevant existing files first if they exist:
 
 **v1.3 continuation hints (read if present):**
 - `orbit-research/IDEA_TO_PROPOSAL_STATE.json` — if `status = "awaiting_human_continue"`,
-  treat the user's invocation of this skill as the human's "approve continue" signal per
-  `shared-references/continuation-contract.md` cross-skill resume rules. Do not redo
-  Discovery / Grounding / Innovation.
+  treat the user's invocation of `/experiment-bridge` or this skill as the human's
+  "approve continue" signal per `shared-references/continuation-contract.md` cross-skill
+  resume rules. Do not redo Discovery / Grounding / Innovation.
 
 Extract from the proposal-side files:
 
@@ -410,7 +414,7 @@ Keep the tracker compact and execution-oriented.
 #### Step 5.5: Present a Brief Summary to the User
 
 ```
-Experiment plan ready.
+Planning artifacts ready.
 
 Index: refine-logs/EXPERIMENT_PLAN.md
 Execution plan: refine-logs/EXPERIMENT_PLAN_EXEC.md
@@ -450,7 +454,8 @@ First runs to launch:
 ```
 /research-refine-pipeline -> one-shot method + experiment planning
 /research-refine   -> method and claim refinement
-/experiment-plan   -> detailed experiment roadmap
-/run-experiment    -> execute the runs
-/auto-review-loop  -> react to results and iterate on the paper
+/idea-to-proposal  -> proposal candidate + STOP A
+/experiment-bridge -> calls this skill, then implementation + PLAN_CODE_AUDIT + STOP B
+/experiment-plan   -> standalone approved-proposal-to-roadmap mode
+/diagnostic-to-review -> formal diagnostic + interpretation + decision log + conditional-required claim/review
 ```

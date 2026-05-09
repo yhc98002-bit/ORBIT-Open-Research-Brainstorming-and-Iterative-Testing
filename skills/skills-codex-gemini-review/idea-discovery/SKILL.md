@@ -14,11 +14,14 @@ Orchestrate a complete idea discovery workflow for: **$ARGUMENTS**
 This skill chains sub-skills into a single automated pipeline:
 
 ```
-/research-lit → /idea-creator → /novelty-check → /research-review → /research-refine-pipeline
-  (survey)      (brainstorm)    (verify novel)    (critical feedback)  (refine method + plan experiments)
+/research-lit → /idea-creator → /novelty-check → /research-review → /research-refine
+  (survey)      (brainstorm)    (verify novel)    (critical feedback)  (refine proposal)
 ```
 
-Each phase builds on the previous one's output. The final deliverables are a validated `idea-stage/IDEA_REPORT.md` with ranked ideas, plus a refined proposal (`refine-logs/FINAL_PROPOSAL.md`) and experiment plan (`refine-logs/EXPERIMENT_PLAN.md`) for the top idea.
+Each phase builds on the previous one's output. The final deliverables are a validated
+`idea-stage/IDEA_REPORT.md` with ranked ideas plus a refined proposal
+(`refine-logs/FINAL_PROPOSAL.md`) for the top idea. Experiment planning happens later in
+`/experiment-bridge` after STOP A.
 
 ## Constants
 
@@ -127,36 +130,36 @@ For the surviving top idea(s), get brutal feedback:
 
 **Update `idea-stage/IDEA_REPORT.md`** with reviewer feedback and revised plan.
 
-### Phase 4.5: Method Refinement + Experiment Planning
+### Phase 4.5: Method Refinement
 
-After review, refine the top idea into a concrete proposal and plan experiments:
+After review, refine the top idea into a concrete proposal:
 
 ```
-/research-refine-pipeline "[top idea description + pilot results + reviewer feedback]"
+/research-refine "[top idea description + pilot results + reviewer feedback]"
 ```
 
 **What this does:**
 - Freeze a **Problem Anchor** to prevent scope drift
 - Iteratively refine the method via Gemini review (up to 5 rounds, until score ≥ 9)
-- Generate a claim-driven experiment roadmap with ablations, budgets, and run order
-- Output: `refine-logs/FINAL_PROPOSAL.md`, `refine-logs/EXPERIMENT_PLAN.md`, `refine-logs/EXPERIMENT_TRACKER.md`
+- Output: `refine-logs/FINAL_PROPOSAL.md`, `refine-logs/FINAL_PROPOSAL_SHORT.md`, and
+  `refine-logs/METHOD_SPEC.md` when useful
 
 **🚦 Checkpoint:** Present the refined proposal summary:
 
 ```
-🔬 Method refined and experiment plan ready:
+Method refined and proposal ready:
 - Problem anchor: [anchored problem]
 - Method thesis: [one sentence]
 - Dominant contribution: [what's new]
-- Must-run experiments: [N blocks]
-- First 3 runs to launch: [list]
 
-Proceed to implementation? Or adjust the proposal?
+Proceed to STOP A review, then /experiment-bridge if approved? Or adjust the proposal?
 ```
 
 - **User approves** (or AUTO_PROCEED=true) → proceed to Final Report.
 - **User requests changes** → pass feedback to `/research-refine` for another round.
-- **Lite mode:** If reviewer score < 6 or pilot was weak, run `/research-refine` only (skip `/experiment-plan`) and note remaining risks in the report.
+- **Legacy full-planning mode:** If the user explicitly asks for the old one-shot
+  proposal+plan package, use `/research-refine-pipeline`; otherwise keep planning in
+  `/experiment-bridge` after STOP A.
 
 ### Phase 5: Final Report
 
@@ -167,7 +170,7 @@ Finalize `idea-stage/IDEA_REPORT.md` with all accumulated information:
 
 **Direction**: $ARGUMENTS
 **Date**: [today]
-**Pipeline**: research-lit → idea-creator → novelty-check → research-review → research-refine-pipeline
+**Pipeline**: research-lit → idea-creator → novelty-check → research-review → research-refine
 
 ## Executive Summary
 [2-3 sentences: best idea, key evidence, recommended next step]
@@ -182,7 +185,7 @@ Finalize `idea-stage/IDEA_REPORT.md` with all accumulated information:
 - Pilot: POSITIVE (+X%)
 - Novelty: CONFIRMED (closest: [paper], differentiation: [what's different])
 - Reviewer score: X/10
-- Next step: implement full experiment → /auto-review-loop
+- Next step: STOP A review, then `/experiment-bridge "refine-logs/FINAL_PROPOSAL.md"`
 
 ### Idea 2: [title] — BACKUP
 ...
@@ -192,19 +195,17 @@ Finalize `idea-stage/IDEA_REPORT.md` with all accumulated information:
 
 ## Refined Proposal
 - Proposal: `refine-logs/FINAL_PROPOSAL.md`
-- Experiment plan: `refine-logs/EXPERIMENT_PLAN.md`
-- Tracker: `refine-logs/EXPERIMENT_TRACKER.md`
 
 ## Next Steps
-- [ ] /run-experiment to deploy experiments from the plan
-- [ ] /auto-review-loop to iterate until submission-ready
+- [ ] /experiment-bridge "refine-logs/FINAL_PROPOSAL.md" after STOP A approval
+- [ ] /diagnostic-to-review after STOP B
 - [ ] Or invoke /research-pipeline for the complete end-to-end flow
 ```
 
 ## Output Protocols
 
 > Follow these shared protocols for all output files:
-> - **[Output Versioning Protocol](../../shared-references/output-versioning.md)** — write timestamped file first, then copy to fixed name
+> - **[Output Versioning Protocol](../../shared-references/output-versioning.md)** — follow selective milestone timestamping rules
 > - **[Output Manifest Protocol](../../shared-references/output-manifest.md)** — log every output to MANIFEST.md
 > - **[Output Language Protocol](../../shared-references/output-language.md)** — respect the project's language setting
 
@@ -225,9 +226,9 @@ Finalize `idea-stage/IDEA_REPORT.md` with all accumulated information:
 After this pipeline produces a validated top idea:
 
 ```
-/idea-discovery "direction"         ← you are here (Workflow 1, includes method refinement + experiment planning)
-/run-experiment                     ← deploy experiments from the plan
-/auto-review-loop "top idea"        ← Workflow 2: iterate until submission-ready
+/idea-discovery "direction"         ← you are here (Workflow 1, includes method refinement)
+/experiment-bridge "refine-logs/FINAL_PROPOSAL.md"  ← STOP B plan + implement + audit
+/diagnostic-to-review "<diagnostic command>"         ← formal diagnostic + review routing
 
 Or use /research-pipeline for the full end-to-end flow.
 ```
