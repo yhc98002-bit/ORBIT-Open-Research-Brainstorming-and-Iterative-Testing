@@ -1,11 +1,16 @@
 ---
 name: "research-refine"
-description: "Turn a vague research direction into a problem-anchored, elegant, frontier-aware, implementation-oriented method plan via iterative GPT-5.5 review. Use when the user says \"refine my approach\", \"\u5e2e\u6211\u7ec6\u5316\u65b9\u6848\", \"decompose this problem\", \"\u6253\u78e8idea\", \"refine research plan\", \"\u7ec6\u5316\u7814\u7a76\u65b9\u6848\", or wants a concrete research method that stays simple, focused, and top-venue ready instead of a vague or overbuilt idea."
+description: "Turn a vague research direction into a problem-anchored, elegant, frontier-aware, implementation-oriented method plan via iterative GPT-5.5 review. Use when the user says \"refine my approach\", \"\u5e2e\u6211\u7ec6\u5316\u65b9\u6848\", \"decompose this problem\", \"\u6253\u78e8idea\", \"refine research plan\", \"\u7ec6\u5316\u7814\u7a76\u65b9\u6848\", or wants a concrete research method with a publishable normal-paper route instead of a vague or overbuilt idea."
 ---
 
 # Research Refine: Problem-Anchored, Elegant, Frontier-Aware Plan Refinement
 
 Refine and concretize: **$ARGUMENTS**
+
+Load `../shared-references/research-posture.md` before refining. Default to
+`paper_mode: normal`, `novelty_policy: positioning-first`, and collaborator review before
+STOP A. Do not apply breakthrough-only or adversarial acceptance standards unless the
+user explicitly requests them or the workflow is after STOP C.
 
 ## Overview
 
@@ -125,7 +130,7 @@ Check `papers/` and `literature/` first. Read only the relevant parts needed to 
 - What training objectives, representations, or interfaces are reusable?
 - What details distinguish a real method from a renamed high-level idea?
 
-If local material is insufficient, search recent top-venue/arXiv work online. Focus on **method sections, training setup, and failure modes**, not just abstracts.
+If local material is insufficient, search recent venue/arXiv work online. Focus on **method sections, training setup, and failure modes**, not just abstracts.
 
 #### Step 1.2: Identify the Technical Gap
 
@@ -135,7 +140,7 @@ Do not stop at generic research questions. Make the gap operational:
 2. **Why naive fixes are insufficient**: larger context, more data, prompting, memory bank, or stacking more modules.
 3. **Smallest adequate intervention**: what is the least additional mechanism that could plausibly fix the bottleneck?
 4. **Frontier-native alternative**: is there a more current route using foundation-model-era primitives that better matches the bottleneck?
-5. **Core technical claim**: what exact mechanism claim could survive top-venue scrutiny?
+5. **Core technical claim**: what exact mechanism claim could survive normal paper scrutiny?
 6. **Required evidence**: what minimum proof is needed to defend that claim?
 
 #### Step 1.3: Choose the Sharpest Route
@@ -296,7 +301,7 @@ spawn_agent:
   model: REVIEWER_MODEL
   reasoning_effort: xhigh
   message: |
-    You are a senior ML reviewer for a top venue (NeurIPS/ICML/ICLR).
+    You are a constructive senior ML research collaborator and paper director for a normal ML venue target (NeurIPS/ICML/ICLR-style expectations without breakthrough-only assumptions).
     This is an early-stage, method-first research proposal.
 
     Your job is NOT to reward extra modules, contribution sprawl, or a giant benchmark checklist.
@@ -334,7 +339,7 @@ spawn_agent:
 
     6. **Validation Focus**: Are the proposed experiments minimal but sufficient to validate the core claims? Is there unnecessary experimental bloat?
 
-    7. **Venue Readiness**: If executed well, would the contribution feel sharp and timely enough for a top venue?
+    7. **Paper-Mode Fit**: If executed well, would the contribution survive as a normal / benchmark / reproduction-plus / system / focused mechanism paper?
 
     **OVERALL SCORE** (1-10): Weighted toward Problem Fidelity, Method Specificity, Contribution Quality, and Frontier Leverage.
     Use this weighting: Problem Fidelity 15%, Method Specificity 25%, Contribution Quality 25%, Frontier Leverage 15%, Feasibility 10%, Validation Focus 5%, Venue Readiness 5%.

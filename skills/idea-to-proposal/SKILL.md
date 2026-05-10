@@ -44,7 +44,14 @@ draft idea .md ─► /research-refine ─┴► Stage 4 → 5 → 7 ───�
 - **OUTPUT_ROOT_V13 = `orbit-research/`** — v1.3 grounding + innovation artifacts.
 - **OUTPUT_ROOT_PROPOSAL = `refine-logs/`** — the existing FINAL_PROPOSAL.md location.
 - **CODEX_REVIEW_MODEL = `gpt-5.5`**, **CODEX_REVIEW_EFFORT = `xhigh`**.
-- **CODEX_INNOVATION_MODE** — `COLLABORATIVE` for Phase 3 (Stages 8/9/10); `ADVERSARIAL`
+- **PAPER_MODE = `normal`** — Default to a normal publishable AI paper; breakthrough
+  mode is explicit opt-in only.
+- **NOVELTY_POLICY = `positioning-first`** — Similar/concurrent work is classified and
+  positioned before any proposal rewrite or abandonment.
+- **REVIEW_POSTURE = `collaborator` before STOP A** — Early review preserves promising
+  directions and proposes survival routes. Use adversarial posture only after STOP C or
+  explicit user request.
+- **CODEX_INNOVATION_MODE** — `COLLABORATIVE` for Phase 3 (Stages 8/9/10); `CALIBRATION`
   for the Phase 4 final refinement review.
 - **AUTO_PROCEED = true** — chain phases without prompting unless user passes
   `— human checkpoint: true`.
@@ -62,10 +69,10 @@ draft idea .md ─► /research-refine ─┴► Stage 4 → 5 → 7 ───�
   levels (mirrors `/auto-review-loop`'s `REVIEWER_DIFFICULTY` and
   `/research-pipeline`'s `REVIEWER_DIFFICULTY` so the same flag string propagates):
   - `medium` (default): standard reviewer prompt; SCORE_THRESHOLD = 9, MAX_ROUNDS = 5.
-  - `hard`: stricter reviewer (push back on sprawl, frontier-leverage incompleteness,
-    unfocused validation); SCORE_THRESHOLD = 9.5, MAX_ROUNDS = 7.
-  - `nightmare`: `hard` + reject-by-default per-dimension veto (every individual
-    dimension must score ≥ 8 for READY); SCORE_THRESHOLD = 9.5, MAX_ROUNDS = 7.
+  - `hard`: stricter collaborator review (push back on sprawl, weak mechanism
+    specificity, unfocused validation); SCORE_THRESHOLD = 9.5, MAX_ROUNDS = 7.
+  - `nightmare`: before STOP A, interpret as strong collaborator review unless the user
+    explicitly requests adversarial review; adversarial veto semantics belong after STOP C.
   Override with `— difficulty: <level>`. Forwarded verbatim to `/research-refine`.
 - **STOP_AT_GROUNDING = false** — if `true`, skip Phase 3 and Phase 4 (produce only the
   Grounding artifacts on top of Phase 1 output).
@@ -91,6 +98,8 @@ draft idea .md ─► /research-refine ─┴► Stage 4 → 5 → 7 ───�
 - `shared-references/reviewer-independence.md`
 - `shared-references/document-hygiene.md` — keep `FINAL_PROPOSAL` readable; route
   uncertainty and audit history to the correct artifacts
+- `shared-references/research-posture.md` — normal paper mode, positioning-first novelty,
+  collaborator review before STOP A, concurrent-work watchlist, and proposal stability
 
 ## State Persistence (Continuation Contract)
 
@@ -188,9 +197,9 @@ inconsistent state" warning.
 | `— arxiv download: <bool>` | When `true`, run **Phase 0.5 (Literature Pre-fetch)** before Phase 1: delegates to `/research-lit` to populate `papers/` and `research-wiki/papers/` so downstream skills (especially `/research-refine`'s "Check `papers/` first" step in Phase 1c, and the Stage-4/5/7 grounding harness prompts in Phase 2) have local PDFs to scan. Default `false` (preserves prior behavior — grounding runs off whatever the LLM already knows). Without this flag, the literature pre-fetch is skipped silently. |
 | `— sources: <list>` | Comma-separated source list for Phase 0.5. Subset of: `arxiv`, `web`, `semantic-scholar`, `deepxiv`, `exa`, `alphaxiv`, `local`, `all`. Default `arxiv`. Forwarded verbatim to `/research-lit — sources: <list>`. Has no effect if `— arxiv download: false`. |
 | `— arxiv max download: <N>` | Cap on PDFs downloaded by Phase 0.5. Default `LITERATURE_PRE_FETCH_MAX_DEFAULT = 10`. Forwarded to `/research-lit — max download: <N>`. |
-| `— venue: <name>` | Target venue (e.g. `iclr`, `icml`, `neurips`, `cvpr`, `naacl`). Recorded in `PIPELINE_INTAKE.md` and forwarded as `— venue: <name>` to `/research-refine` so reviewer prompts can name the venue specifically rather than the hardcoded "top venue". Default: unset. |
+| `— venue: <name>` | Target venue (e.g. `iclr`, `icml`, `neurips`, `cvpr`, `naacl`). Recorded in `PIPELINE_INTAKE.md` and forwarded as `— venue: <name>` to `/research-refine` so reviewer prompts can name the venue specifically rather than using a generic venue phrase. Default: unset. |
 | `— effort: <level>` | Codex effort level: `low`, `medium`, `high`, `xhigh`, or `max` (alias for `xhigh`). Sets the per-call `model_reasoning_effort` for Codex MCP invocations across this skill (overrides `CODEX_REVIEW_EFFORT = xhigh` constant for this run). The actual effort honored is subject to Codex MCP environment availability — if the requested level is unavailable, Codex falls back to the next lower available level and the fallback (e.g. `gpt-5.2 high`) is logged in `STATE.notes`. |
-| `— difficulty: <level>` | Calibrates the downstream `/research-refine` (Phase 1c idea-mode + Phase 4 final refinement) reviewer behavior + READY threshold + MAX_ROUNDS. Three levels (mirror upstream `/auto-review-loop` + `/research-pipeline`): `medium` (default) = standard reviewer + ≥9.0 / 5 rounds; `hard` = stricter reviewer + ≥9.5 / 7 rounds; `nightmare` = `hard` + reject-by-default per-dimension veto (every dimension ≥ 8) + ≥9.5 / 7 rounds. Forwarded verbatim as `— difficulty: <level>` to `/research-refine` (which honors it natively per its own `REVIEWER_DIFFICULTY` constant). |
+| `— difficulty: <level>` | Calibrates downstream `/research-refine` strictness (Phase 1c idea-mode + Phase 4 final refinement) plus READY threshold and MAX_ROUNDS. Three levels: `medium` = standard collaborator review + ≥9.0 / 5 rounds; `hard` = stricter collaborator review + ≥9.5 / 7 rounds; `nightmare` before STOP A = strong collaborator review unless `— review-posture: adversarial` is explicit. Forwarded verbatim as `— difficulty: <level>` to `/research-refine`. |
 | `— input-mode: keyword\|context\|idea` | Override Phase 0 input classification. Use `context` for long notes/background `.md` files that should still run `/idea-discovery`; use `idea` only for an already committed method/direction draft that should skip discovery and go straight to `/research-refine`. |
 | `— context: true` | Alias for `— input-mode: context`. Explicitly treat a `.md` file as contextual material, not as a final idea. |
 | `— idea: true` | Alias for `— input-mode: idea`. Explicitly treat a `.md` file as a draft idea/method proposal and skip discovery. |
@@ -382,11 +391,14 @@ Invoke the existing Workflow 1, forwarding the parsed flags:
 /idea-discovery "$ARGUMENTS" \
     — venue: <parsed_flags.venue> \
     — effort: <parsed_flags.effort> \
-    — difficulty: <parsed_flags.difficulty>
+    — difficulty: <parsed_flags.difficulty> \
+    — paper-mode: normal \
+    — review-posture: collaborator
 ```
 
 (`/idea-discovery` itself refines the selected idea through `/research-refine`; the flags
-propagate to adversarial refinement. Omit any flag whose parsed value is null / default.)
+propagate to collaborator refinement before STOP A. Omit any flag whose parsed value is
+null / default.)
 
 This produces:
 - `idea-stage/IDEA_REPORT.md` (ranked candidates)
@@ -394,8 +406,9 @@ This produces:
 - `orbit-research/PROBLEM_SELECTION.md`
 
 When delegating to `/idea-discovery`, no experiments are run. Idea ranking
-comes from literature grounding, novelty, feasibility, mechanism plausibility,
-baseline/headroom reasoning, expected diagnostic clarity, and reviewer critique.
+comes from literature grounding, novelty posture, feasibility, mechanism plausibility,
+baseline/headroom reasoning, expected diagnostic clarity, paper-mode fit, and
+collaborator critique.
 
 If legacy sub-skills emit `refine-logs/EXPERIMENT_PLAN.md` as a side effect, do not list
 it as a canonical `/idea-to-proposal` output. Mark it as legacy/pre-STOP-A and let
@@ -457,7 +470,7 @@ parsed flags forwarded:
 ```
 
 (Forward `venue` / `effort` / `difficulty` so `/research-refine`'s reviewer
-prompt names the venue specifically rather than the hardcoded "top venue", and
+prompt names the venue specifically rather than a generic venue phrase, and
 so the Phase 4 READY threshold + MAX_ROUNDS match the user's difficulty
 calibration. Omit a flag if its parsed value is null / default.)
 
@@ -498,7 +511,8 @@ and stop; resume on next invocation.
 
 For each stage below, use the exact harness prompt from
 `shared-references/research-harness-prompts.md`. Read the proposal from Phase 1 as input
-context. Codex stays in adversarial mode here (Grounding is calibration, not invention).
+context. Codex performs calibration here; it should classify risks and assumptions
+without acting as an automatic rejection reviewer.
 
 #### Phase 2a — Stage 4: Assumption Ledger
 
@@ -591,8 +605,9 @@ falsifiability / integration cost. Mark a TENTATIVE_PREFERRED_SKETCH_ID for Phas
 Keep alternates with their scores.
 
 Codex on sketch quality is collaborative; on tournament adjudication Codex switches to
-adversarial (this is the one place inside innovation loops where Codex challenges Claude's
-pairwise picks — see `innovation-loops.md` §4 for the contract).
+calibration mode (this is the one place inside innovation loops where Codex challenges
+Claude's pairwise picks, but it must still preserve viable alternatives — see
+`innovation-loops.md` §4 for the contract).
 
 Write `orbit-research/ALGORITHM_TOURNAMENT.md` ending with the canonical line:
 
@@ -616,9 +631,10 @@ skill). The tentative pick is not a method commitment.
 }
 ```
 
-### Phase 4: Integrated Final Refinement (Codex ADVERSARIAL)
+### Phase 4: Integrated Final Refinement (Collaborator Calibration)
 
-Codex switches **back to adversarial mode**.
+Codex switches to **collaborator calibration** before STOP A. The goal is a clean
+proposal-worthy method and positioning route, not a hostile acceptance review.
 
 Feed the Phase 3c winner sketch back into `/research-refine`:
 
@@ -626,12 +642,15 @@ Feed the Phase 3c winner sketch back into `/research-refine`:
 /research-refine "refine-logs/FINAL_PROPOSAL.md + orbit-research/ALGORITHM_TOURNAMENT.md TENTATIVE_PREFERRED_SKETCH_ID + orbit-research/ABSTRACT_TASK_MECHANISM.md + orbit-research/ASSUMPTION_LEDGER.md" \
     — venue: <parsed_flags.venue> \
     — effort: <parsed_flags.effort> \
-    — difficulty: <parsed_flags.difficulty>
+    — difficulty: <parsed_flags.difficulty> \
+    — paper-mode: normal \
+    — review-posture: collaborator
 ```
 
-Forward `venue`, `effort`, and `difficulty` explicitly for this final adversarial
-refinement pass. Do not apply `hard` / `nightmare` difficulty to Stage 8/9/10 innovation
-loops; difficulty only calibrates adversarial review/refinement stages.
+Forward `venue`, `effort`, `difficulty`, `paper-mode`, and `review-posture` explicitly
+for this final refinement pass. Do not apply `hard` / `nightmare` difficulty to Stage
+8/9/10 innovation loops; before STOP A, difficulty calibrates strict collaborator review,
+not automatic acceptance-stage rejection review.
 
 Goal: regenerate `refine-logs/FINAL_PROPOSAL.md` so it (a) anchors on the Phase 1 problem,
 (b) declares the Phase 3c tentative sketch as the proposed method, (c) cites
@@ -705,6 +724,12 @@ Write `orbit-research/PIPELINE_SUMMARY.md`:
 Human review question:
 
 > Is this proposal worth formal experiment planning?
+
+If approved, record the freeze in `orbit-research/PROPOSAL_STABILITY.md`. After STOP A,
+ordinary related or concurrent work goes to
+`orbit-research/CONCURRENT_WORK_WATCHLIST.md`; reopen `FINAL_PROPOSAL.md` only for a
+`STRONG_BLOCKER`, explicit human instruction, or a result-backed decision in
+`RESEARCH_DECISION_LOG.md`.
 
 Review:
 - `refine-logs/FINAL_PROPOSAL.md`

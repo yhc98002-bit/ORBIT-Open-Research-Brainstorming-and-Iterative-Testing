@@ -16,6 +16,8 @@ Autonomously iterate: review → implement fixes → re-review, until the extern
 - REVIEW_DOC: `review-stage/AUTO_REVIEW.md` (cumulative log) *(fall back to `./AUTO_REVIEW.md` for legacy projects)*
 - **OUTPUT_DIR = `review-stage/`** — All review-stage outputs go here. Create the directory if it doesn't exist.
 - REVIEWER_MODEL = `gpt-5.5` — Model used via a secondary Codex agent. Must be an OpenAI model (e.g., `gpt-5.5`, `o3`, `gpt-4o`)
+- **PAPER_MODE = `normal`** — Parse `— paper-mode:` when present. Normal mode is judged
+  against a normal publishable-paper bar, not a breakthrough-only bar.
 - **HUMAN_CHECKPOINT = false** — When `true`, pause after each round's review (Phase B) and present the score + weaknesses to the user. Wait for user input before proceeding to Phase C. The user can: approve the suggested fixes, provide custom modification instructions, skip specific fixes, or stop the loop early. When `false` (default), the loop runs fully autonomously.
 - **COMPACT = false** — When `true`, (1) read `EXPERIMENT_LOG.md` and `findings.md` instead of parsing full logs on session recovery, (2) append key findings to `findings.md` after each round.
 
@@ -78,12 +80,12 @@ spawn_agent:
 
     Please act as a senior ML reviewer (NeurIPS/ICML level).
 
-    1. Score this work 1-10 for a top venue
+    1. Score this work 1-10 for the selected paper_mode (default normal publishable AI paper, not breakthrough-only)
     2. List remaining critical weaknesses (ranked by severity)
     3. For each weakness, specify the MINIMUM fix (experiment, analysis, or reframing)
     4. State clearly: is this READY for submission? Yes/No/Almost
 
-    Be brutally honest. If the work is ready, say so clearly.
+    Be rigorous, adversarial, and evidence-focused. If the work is ready, say so clearly.
 ```
 
 If this is round 2+, use `send_input` with the saved agent id to maintain continuity.

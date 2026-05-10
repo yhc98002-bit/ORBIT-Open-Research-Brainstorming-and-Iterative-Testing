@@ -123,7 +123,7 @@ curl -s "https://api.minimax.io/v1/chat/completions" \
       },
       {
         "role": "user",
-        "content": "[Round N/MAX_ROUNDS of autonomous review loop]\n\n[Full research context: claims, methods, results, known weaknesses]\n[Changes since last round, if any]\n[For round 2+: Summary of previous review feedback and what was addressed]\n\nPlease act as a senior ML reviewer (NeurIPS/ICML level).\n\n1. Score this work 1-10 for a top venue\n2. List remaining critical weaknesses (ranked by severity)\n3. For each weakness, specify the MINIMUM fix (experiment, analysis, or reframing)\n4. State clearly: is this READY for submission? Yes/No/Almost\n\nBe brutally honest. If the work is ready, say so clearly."
+        "content": "[Round N/MAX_ROUNDS of autonomous review loop]\n\n[Full research context: claims, methods, results, known weaknesses]\n[Changes since last round, if any]\n[For round 2+: Summary of previous review feedback and what was addressed]\n\nPlease act as a senior ML reviewer (NeurIPS/ICML level).\n\n1. Score this work 1-10 for a top venue\n2. List remaining critical weaknesses (ranked by severity)\n3. For each weakness, specify the MINIMUM fix (experiment, analysis, or reframing)\n4. State clearly: is this READY for submission? Yes/No/Almost\n\nBe rigorous, adversarial, and evidence-focused. If the work is ready, say so clearly."
       }
     ],
     "max_tokens": 4096
@@ -257,7 +257,7 @@ mcp__minimax-chat__minimax_chat:
     3. For each weakness, specify the MINIMUM fix
     4. State clearly: is this READY for submission? Yes/No/Almost
 
-    Be brutally honest. If the work is ready, say so clearly.
+    Be rigorous, adversarial, and evidence-focused. If the work is ready, say so clearly.
 ```
 
 **curl Fallback:**
@@ -274,7 +274,7 @@ curl -s "https://api.minimax.io/v1/chat/completions" \
       },
       {
         "role": "user",
-        "content": "[Round N/MAX_ROUNDS of autonomous review loop]\n\n## Previous Review Summary (Round N-1)\n- Previous Score: X/10\n- Previous Verdict: [ready/almost/not ready]\n- Previous Key Weaknesses: [list]\n\n## Changes Since Last Review\n1. [Action 1]: [result]\n2. [Action 2]: [result]\n3. [Action 3]: [result]\n\n## Updated Results\n[paste updated metrics/tables]\n\n## Current Research Context\n[brief summary of claims, methods, current state]\n\nPlease re-score and re-assess:\n1. Score this work 1-10 for a top venue\n2. List remaining critical weaknesses (ranked by severity)\n3. For each weakness, specify the MINIMUM fix\n4. State clearly: is this READY for submission? Yes/No/Almost\n\nBe brutally honest. If the work is ready, say so clearly."
+        "content": "[Round N/MAX_ROUNDS of autonomous review loop]\n\n## Previous Review Summary (Round N-1)\n- Previous Score: X/10\n- Previous Verdict: [ready/almost/not ready]\n- Previous Key Weaknesses: [list]\n\n## Changes Since Last Review\n1. [Action 1]: [result]\n2. [Action 2]: [result]\n3. [Action 3]: [result]\n\n## Updated Results\n[paste updated metrics/tables]\n\n## Current Research Context\n[brief summary of claims, methods, current state]\n\nPlease re-score and re-assess:\n1. Score this work 1-10 for a top venue\n2. List remaining critical weaknesses (ranked by severity)\n3. For each weakness, specify the MINIMUM fix\n4. State clearly: is this READY for submission? Yes/No/Almost\n\nBe rigorous, adversarial, and evidence-focused. If the work is ready, say so clearly."
       }
     ],
     "max_tokens": 4096

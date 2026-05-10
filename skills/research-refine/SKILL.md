@@ -1,6 +1,6 @@
 ---
 name: research-refine
-description: 'Turn a vague research direction into a problem-anchored, elegant, frontier-aware, implementation-oriented method plan via iterative GPT-5.5 xhigh review. Use when the user says "refine my approach", "帮我细化方案", "decompose this problem", "打磨idea", "refine research plan", "细化研究方案", or wants a concrete research method that stays simple, focused, and top-venue ready instead of a vague or overbuilt idea.'
+description: 'Turn a vague research direction into a problem-anchored, elegant, frontier-aware, implementation-oriented method plan via iterative GPT-5.5 xhigh review. Use when the user says "refine my approach", "帮我细化方案", "decompose this problem", "打磨idea", "refine research plan", "细化研究方案", or wants a concrete research method with a publishable normal-paper route instead of a vague or overbuilt idea.'
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, mcp__codex__codex, mcp__codex__codex-reply
 ---
 
@@ -49,24 +49,31 @@ User input (PROBLEM + vague APPROACH)
   and the fallback is logged in `STATE.notes`.
 - **VENUE = `""`** — Target venue name (e.g. `ICLR`, `NeurIPS`, `ICML`, `CVPR`, `ACL`,
   `AAAI`, `ACM`, `IEEE_CONF`, `IEEE_JOURNAL`). When set, Phase 2 / Phase 4 reviewer
-  prompts replace the hardcoded "top venue (NeurIPS/ICML/ICLR)" with the named venue
+  prompts replace the default normal-paper venue target with the named venue
   so the reviewer framing is concrete to the user's actual target. Override with
   `— venue: <name>`. Default empty (uses the hardcoded list). Mirrors
   `/research-pipeline`'s `VENUE` constant.
-- **REVIEWER_DIFFICULTY = `medium`** — How adversarial the Phase 2 / Phase 4 reviewer
+- **PAPER_MODE = `normal`** — Override with
+  `— paper-mode: <normal|breakthrough|benchmark|reproduction-plus|system|audit>`.
+  Normal mode does not require a completely new algorithmic breakthrough by default.
+- **REVIEW_POSTURE = `collaborator` before STOP A** — Override with
+  `— review-posture: <collaborator|adversarial>`. Use adversarial posture after STOP C
+  or when the user explicitly requests it.
+- **NOVELTY_POLICY = `positioning-first`** — Load
+  `shared-references/research-posture.md` before review/refinement.
+- **REVIEWER_DIFFICULTY = `medium`** — How strict the Phase 2 / Phase 4 reviewer
   is. Three levels (mirrors `/auto-review-loop`'s `REVIEWER_DIFFICULTY` so the user can
   pass the same `— difficulty:` flag through any wrapper skill — e.g. `/idea-to-proposal`,
   `/research-pipeline`):
   - `medium` (default): standard reviewer prompt; **SCORE_THRESHOLD = 9**,
     **MAX_ROUNDS = 5** (the historical defaults — backward-compatible).
-  - `hard`: stricter reviewer; **SCORE_THRESHOLD = 9.5**, **MAX_ROUNDS = 7**. The
-    reviewer is explicitly instructed to push back harder on contribution sprawl, weak
-    frontier leverage, and unfocused validation. Use when the proposal must clear an
-    extra-tough bar (e.g. an oral-track ICLR submission).
-  - `nightmare`: `hard` + reviewer adopts a *reject-by-default* stance — every
-    dimension must score ≥ 8 individually for READY, not just the overall ≥ 9.5. Same
-    threshold and round count as `hard` (9.5 / 7); the difference is reviewer tone +
-    per-dimension veto. Use when you want the proposal to survive a hostile PC review.
+  - `hard`: stricter collaborator before STOP A; **SCORE_THRESHOLD = 9.5**,
+    **MAX_ROUNDS = 7**. The reviewer pushes harder on contribution sprawl, weak
+    mechanism specificity, and unfocused validation while still providing survival
+    routes.
+  - `nightmare`: before STOP A, interpret as "strong collaborator review" unless the
+    user explicitly sets `— review-posture: adversarial` or the workflow is after STOP C.
+    In adversarial mode it adds per-dimension vetoes.
   Override with `— difficulty: <level>`.
 - **MAX_ROUNDS** — derived from `REVIEWER_DIFFICULTY`: `medium → 5`, `hard → 7`,
   `nightmare → 7`. Default 5 (medium).
@@ -81,21 +88,25 @@ User input (PROBLEM + vague APPROACH)
 
 ## ORBIT Refinement Gates
 
-These gates are always-on. Load `shared-references/research-agent-pipeline.md` and
-`shared-references/document-hygiene.md` before refining. Run `mkdir -p orbit-research/`.
-Do not refine directly from idea to method unless the following canonical artifacts exist
-or are created inside this run:
+These gates are always-on. Load `shared-references/research-agent-pipeline.md`,
+`shared-references/document-hygiene.md`, and `shared-references/research-posture.md`
+before refining. Run `mkdir -p orbit-research/`.
+
+Before STOP A, refine from the proposal-stage artifacts only:
 
 - `orbit-research/PROBLEM_SELECTION.md`
 - `orbit-research/ASSUMPTION_LEDGER.md`
 - `orbit-research/ABSTRACT_TASK_MECHANISM.md`  *(legacy alias accepted: `TASK_ONTOLOGY.md`)*
 - `orbit-research/BASELINE_CEILING.md`
-- `orbit-research/CONTROL_DESIGN.md`
-- `orbit-research/NULL_RESULT_CONTRACT.md`
-- `orbit-research/COMPONENT_BUNDLE_LADDER.md`  *(legacy alias accepted: `COMPONENT_LADDER.md`)*
 
-The method proposal must identify the simplest strong baseline, the highest-headroom regime,
-the intended mechanism, controls that isolate that mechanism, and the null-result meaning.
+Do not force full experiment-planning contracts before STOP A. `CONTROL_DESIGN.md`,
+`NULL_RESULT_CONTRACT.md`, and `COMPONENT_BUNDLE_LADDER.md` belong to
+`/experiment-bridge` after STOP A. Before STOP A, include only a candidate validation
+sketch, expected diagnostic, likely baseline/control needs, and null-result intuition.
+
+The method proposal must identify the simplest strong baseline, the highest-headroom
+regime, the intended mechanism, and the minimum evidence that would make the proposal
+worth formal experiment planning.
 
 > Override via argument if needed, e.g.
 > `/research-refine "problem | approach" — max rounds: 3 — threshold: 9 — venue: ICLR — difficulty: hard — effort: xhigh`.
@@ -135,7 +146,7 @@ Long-running refinement sessions may fail mid-way (e.g., API timeout, context co
 | `last_score` | number or null | Most recent overall score from reviewer |
 | `last_verdict` | string or null | Most recent verdict (READY / REVISE / RETHINK) |
 | `status` | `"in_progress"` / `"awaiting_human_continue"` / `"completed"` | Loop status — three-state enum per `shared-references/continuation-contract.md` |
-| `venue` | string (e.g. `"ICLR"`) or `""` | Target venue parsed from `— venue:` flag. Empty string = use hardcoded "top venue (NeurIPS/ICML/ICLR)" reviewer framing. |
+| `venue` | string (e.g. `"ICLR"`) or `""` | Target venue parsed from `— venue:` flag. Empty string = normal ML venue target without breakthrough-only assumptions. |
 | `difficulty` | `"medium"` / `"hard"` / `"nightmare"` | Reviewer difficulty parsed from `— difficulty:` flag. Drives `max_rounds_effective` + `score_threshold_effective` + reviewer prompt routing. Default `"medium"`. |
 | `effort` | `"low"` / `"medium"` / `"high"` / `"xhigh"` / `"max"` | Codex `model_reasoning_effort` parsed from `— effort:` flag (`max` = `xhigh`). Default `"xhigh"`. The actual effort honored is recorded in `STATE.notes` if Codex MCP fell back. |
 | `max_rounds_effective` | integer | The MAX_ROUNDS in effect for this run after `difficulty` derivation: `medium → 5`, `hard / nightmare → 7`. |
@@ -234,7 +245,7 @@ Check `papers/` and `literature/` first. Read only the relevant parts needed to 
 - What training objectives, representations, or interfaces are reusable?
 - What details distinguish a real method from a renamed high-level idea?
 
-If local material is insufficient, search recent top-venue/arXiv work online. Focus on **method sections, training setup, and failure modes**, not just abstracts.
+If local material is insufficient, search recent venue/arXiv work online. Focus on **method sections, training setup, and failure modes**, not just abstracts.
 
 #### Step 1.2: Identify the Technical Gap
 
@@ -244,7 +255,7 @@ Do not stop at generic research questions. Make the gap operational:
 2. **Why naive fixes are insufficient**: larger context, more data, prompting, memory bank, or stacking more modules.
 3. **Smallest adequate intervention**: what is the least additional mechanism that could plausibly fix the bottleneck?
 4. **Frontier-native alternative**: is there a more current route using foundation-model-era primitives that better matches the bottleneck?
-5. **Core technical claim**: what exact mechanism claim could survive top-venue scrutiny?
+5. **Core technical claim**: what exact mechanism claim could survive normal paper scrutiny?
 6. **Required evidence**: what minimum proof would support the candidate claim or change the next research decision?
 
 #### Step 1.3: Choose the Sharpest Route
@@ -400,21 +411,27 @@ Use this structure:
 
 Send the full proposal to GPT-5.5 for an **elegance-first, frontier-aware, method-first** review. The reviewer should spend most of the critique budget on the method itself, not on expanding the experiment menu.
 
-**Route by REVIEWER_DIFFICULTY** before composing the prompt:
-- `medium` (default): use the standard reviewer prompt below as-is.
-- `hard`: prepend the difficulty-escalation paragraph (see "REVIEWER_DIFFICULTY routing" subsection below) to the standard prompt; raise the verdict bar from "score ≥ 9" to "score ≥ 9.5"; allow up to MAX_ROUNDS = 7 rounds.
-- `nightmare`: same as `hard`, plus add the *reject-by-default per-dimension veto* clause (see routing subsection); reviewer must explicitly justify each dimension scoring < 8 even when overall ≥ 9.5.
+**Route by REVIEWER_DIFFICULTY and REVIEW_POSTURE** before composing the prompt:
+- `medium` (default): use the collaborator prompt below as-is.
+- `hard`: before STOP A, use stronger collaborator review and require survival routes;
+  raise the verdict bar from "score ≥ 9" to "score ≥ 9.5"; allow up to MAX_ROUNDS = 7
+  rounds.
+- `nightmare`: before STOP A, interpret as strong collaborator review unless the user
+  explicitly sets `— review-posture: adversarial` or the workflow is after STOP C. In
+  adversarial mode, add per-dimension vetoes.
 
 ```
 mcp__codex__codex:
   model: REVIEWER_MODEL
   config: {"model_reasoning_effort": REVIEWER_EFFORT}     // honors `— effort:` flag; default "xhigh"
   prompt: |
-    You are a senior ML reviewer for {VENUE_PHRASE}.
+    You are a constructive senior ML research collaborator and paper director for {VENUE_PHRASE}.
     This is an early-stage, method-first research proposal.
+    Default paper mode is {PAPER_MODE}. In normal mode, judge against a clean,
+    honest, publishable AI paper bar, not a breakthrough-only bar.
 
     [INSERT difficulty-escalation paragraph here when REVIEWER_DIFFICULTY ∈ {hard, nightmare}]
-    [INSERT per-dimension veto clause here when REVIEWER_DIFFICULTY = nightmare]
+    [INSERT per-dimension veto clause here only when REVIEW_POSTURE = adversarial]
 
     Your job is NOT to reward extra modules, contribution sprawl, or a giant benchmark checklist.
     Your job IS to stress-test whether the proposed method:
@@ -426,6 +443,9 @@ mcp__codex__codex:
     Review principles:
     - Prefer the smallest adequate mechanism over a larger system.
     - Penalize parallel contributions that make the paper feel unfocused.
+    - Similar work is not fatal by default; classify novelty risk and propose positioning.
+    - For every major criticism, include a survival route and the minimal evidence needed.
+    - Do not recommend abandonment unless a true STRONG_BLOCKER is present.
     - If a modern LLM / VLM / Diffusion / RL route would clearly produce a better paper, say so concretely.
     - If the proposal is already modern enough, do NOT force trendy components.
     - Do not ask for extra experiments unless they are needed to prove the core claims.
@@ -451,14 +471,15 @@ mcp__codex__codex:
 
     6. **Validation Focus**: Are the proposed experiments minimal but sufficient to validate the core claims? Is there unnecessary experimental bloat?
 
-    7. **Venue Readiness**: If executed well, would the contribution feel sharp and timely enough for {VENUE_PHRASE}?
+    7. **Paper-Mode Fit**: If executed well, would the contribution survive as a normal / benchmark / reproduction-plus / system / focused mechanism paper under {VENUE_PHRASE} expectations?
 
     **OVERALL SCORE** (1-10): Weighted toward Problem Fidelity, Method Specificity, Contribution Quality, and Frontier Leverage.
-    Use this weighting: Problem Fidelity 15%, Method Specificity 25%, Contribution Quality 25%, Frontier Leverage 15%, Feasibility 10%, Validation Focus 5%, Venue Readiness 5%.
+    Use this weighting: Problem Fidelity 15%, Method Specificity 25%, Contribution Quality 25%, Frontier Leverage 15%, Feasibility 10%, Validation Focus 5%, Paper-Mode Fit 5%.
 
     For each dimension scoring < 7, provide:
     - The specific weakness
     - A concrete fix at the method level (interface / loss / training recipe / integration point / deletion of unnecessary parts)
+    - A survival route, unless the issue is a true STRONG_BLOCKER
     - Priority: CRITICAL / IMPORTANT / MINOR
 
     Then add:
@@ -471,27 +492,29 @@ mcp__codex__codex:
     - READY: overall score >= SCORE_THRESHOLD, no meaningful drift, one focused dominant contribution, and no obvious complexity bloat remains
     - REVISE: the direction is promising but not yet at READY bar
     - RETHINK: the core mechanism or framing is still fundamentally off
-    [If REVIEWER_DIFFICULTY = nightmare, additionally REJECT (= REVISE) when any single dimension scores < 8 even if overall >= SCORE_THRESHOLD.]
+    [If REVIEW_POSTURE = adversarial and REVIEWER_DIFFICULTY = nightmare, additionally
+    return REVISE when any single dimension scores < 8 even if overall >= SCORE_THRESHOLD.]
 ```
 
 **Variable substitution before sending the prompt**:
-- `{VENUE_PHRASE}` = `VENUE` if `VENUE != ""` else `"a top venue (NeurIPS/ICML/ICLR)"`.
+- `{VENUE_PHRASE}` = `VENUE` if `VENUE != ""` else `"a normal ML venue target (NeurIPS/ICML/ICLR-style expectations without breakthrough-only assumptions)"`.
   Examples: `VENUE = "ICLR"` → `"ICLR"`; `VENUE = "IEEE_JOURNAL"` → `"IEEE_JOURNAL"`;
-  `VENUE = ""` → `"a top venue (NeurIPS/ICML/ICLR)"` (preserves historical wording).
+  `VENUE = ""` → `"a normal ML venue target (NeurIPS/ICML/ICLR-style expectations without breakthrough-only assumptions)"`.
 - `SCORE_THRESHOLD` = the difficulty-derived numeric threshold (medium = 9, hard /
   nightmare = 9.5).
 - `REVIEWER_EFFORT` = the effort level parsed from `— effort:` (default `xhigh`).
+- `PAPER_MODE` = parsed from `— paper-mode:` (default `normal`).
+- `REVIEW_POSTURE` = parsed from `— review-posture:` or inferred from stop boundary.
 
 ### REVIEWER_DIFFICULTY routing — escalation paragraphs
 
 Insert the relevant block(s) into the reviewer prompt depending on
 `REVIEWER_DIFFICULTY`:
 
-**For `hard` and `nightmare` — difficulty-escalation paragraph:**
+**For `hard` and `nightmare` before STOP A — strong collaborator paragraph:**
 
 ```
-DIFFICULTY: HARD. The paper is targeting an extra-tough bar (oral-track or
-flagship venue). Be more adversarial than the default. Specifically:
+DIFFICULTY: HARD. Apply a stronger collaborator review. Specifically:
 - Do not let "interesting" carry weight against "focused"; sprawl is the
   primary failure mode at this bar and must be flagged in the Verdict, not
   buried in Simplification Opportunities.
@@ -502,14 +525,15 @@ flagship venue). Be more adversarial than the default. Specifically:
   must be flagged CRITICAL — every claim must have a falsifiable predicate
   with a Cohen's-d threshold or equivalent.
 - Raise the verdict bar to overall score >= 9.5 for READY.
+- Still provide a positioning fix and survival route for every major concern.
 ```
 
-**For `nightmare` only — per-dimension veto clause (added after the difficulty paragraph):**
+**For adversarial `nightmare` only — per-dimension veto clause (added after STOP C or explicit request):**
 
 ```
-DIFFICULTY: NIGHTMARE. Adopt a reject-by-default stance. Every individual
+DIFFICULTY: NIGHTMARE with REVIEW_POSTURE = adversarial. Every individual
 dimension (Problem Fidelity, Method Specificity, Contribution Quality,
-Frontier Leverage, Feasibility, Validation Focus, Venue Readiness) must
+Frontier Leverage, Feasibility, Validation Focus, Paper-Mode Fit) must
 independently score >= 8 for READY — overall score >= 9.5 is necessary but
 not sufficient. If any single dimension is < 8, the verdict must be REVISE
 or RETHINK regardless of the overall score, and the reviewer must list the
@@ -536,7 +560,7 @@ Extract:
 - **Frontier Leverage**
 - **Feasibility**
 - **Validation Focus**
-- **Venue Readiness**
+- **Paper-Mode Fit**
 - **Overall score**
 - **Verdict**
 - **Drift Warning**
@@ -549,7 +573,7 @@ Update `refine-logs/score-history.md`:
 ```markdown
 # Score Evolution
 
-| Round | Problem Fidelity | Method Specificity | Contribution Quality | Frontier Leverage | Feasibility | Validation Focus | Venue Readiness | Overall | Verdict |
+| Round | Problem Fidelity | Method Specificity | Contribution Quality | Frontier Leverage | Feasibility | Validation Focus | Paper-Mode Fit | Overall | Verdict |
 |-------|------------------|--------------------|----------------------|-------------------|-------------|------------------|-----------------|---------|---------|
 | 1     | X                | X                  | X                    | X                 | X           | X                | X               | X       | REVISE  |
 ```
@@ -827,7 +851,7 @@ If the final verdict is not READY, still write the best current index, short pro
 
 ## Score Evolution
 
-| Round | Problem Fidelity | Method Specificity | Contribution Quality | Frontier Leverage | Feasibility | Validation Focus | Venue Readiness | Overall | Verdict |
+| Round | Problem Fidelity | Method Specificity | Contribution Quality | Frontier Leverage | Feasibility | Validation Focus | Paper-Mode Fit | Overall | Verdict |
 |-------|------------------|--------------------|----------------------|-------------------|-------------|------------------|-----------------|---------|---------|
 | 1     | ...              | ...                | ...                  | ...               | ...         | ...              | ...             | ...     | ...     |
 

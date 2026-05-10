@@ -20,6 +20,11 @@ This is a wrapper skill, not a code-only atomic step. It owns STOP B:
 5. run limited implementation-facing probes when mode allows;
 6. hand formal diagnostics to `/diagnostic-to-review`.
 
+Load `shared-references/research-posture.md`. Preserve the proposal's `paper_mode`
+(default `normal`) and design the smallest experiment package that can support the chosen
+contribution type. Normal-paper evidence does not need to prove a breakthrough, but it
+must isolate the claim actually being made.
+
 Canonical flow:
 
 ```text
@@ -130,6 +135,10 @@ The plan must be decision-driven:
 - candidate claims / evidence targets, not frozen paper claims
 - every committed experiment must change a research decision
 - paper-claim defense applies only to paper-bearing experiments
+- do not force breakthrough-level evidence when `paper_mode = normal`
+- allow normal-paper contribution types: empirical finding, method combination,
+  benchmark + baseline, reproduction-plus, system, or focused mechanism
+- controls must isolate the claim actually being made; null results must be interpretable
 - `EXPERIMENT_PLAN.md` stays a short index
 - `EXPERIMENT_PLAN_EXEC.md` contains the executable run order and
   `Decision Tree / Branch Table`

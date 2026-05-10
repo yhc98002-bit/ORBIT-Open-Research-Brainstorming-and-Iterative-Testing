@@ -13,6 +13,10 @@ Get a multi-round critical review of research work from an external LLM with max
 
 - REVIEWER_MODEL = `gpt-5.5` — Model used via Codex MCP. Must be an OpenAI model (e.g., `gpt-5.5`, `o3`, `gpt-4o`)
 - **REVIEWER_BACKEND = `codex`** — Default: Codex MCP (xhigh). Override with `— reviewer: oracle-pro` for GPT-5.5 Pro via Oracle MCP. See `shared-references/reviewer-routing.md`.
+- **PAPER_MODE = `normal`** — Default review target is a normal publishable AI paper,
+  not breakthrough-only.
+- **REVIEW_POSTURE = `collaborator` before STOP A/B; `adversarial` after STOP C** —
+  Load `shared-references/research-posture.md`.
 
 ## Context: $ARGUMENTS
 
@@ -25,6 +29,16 @@ Get a multi-round critical review of research work from an external LLM with max
 - This gives Claude Code access to `mcp__codex__codex` and `mcp__codex__codex-reply` tools
 
 ## Workflow
+
+### Review Posture Modes
+
+- **development / collaborator** (default before STOP A and STOP B): act as a
+  constructive research collaborator or paper director. Preserve promising ideas,
+  classify risks, propose positioning routes, and identify the minimum evidence needed.
+  Do not recommend abandonment unless a true `STRONG_BLOCKER` is present.
+- **acceptance / adversarial** (default after STOP C, result-to-claim,
+  auto-review-loop, and paper-writing): act as a senior adversarial reviewer. Stress-test
+  claims, evidence, baselines, controls, and overclaiming.
 
 ### Step 1: Gather Research Context
 Before calling the external reviewer, compile a comprehensive briefing:
@@ -40,12 +54,23 @@ mcp__codex__codex:
   config: {"model_reasoning_effort": "xhigh"}
   prompt: |
     [Full research context + specific questions]
-    Please act as a senior ML reviewer (NeurIPS/ICML level). Identify:
+    Use REVIEW_POSTURE from the current ORBIT stop boundary.
+
+    If before STOP A or STOP B:
+    You are a constructive research collaborator. Preserve promising ideas. Classify
+    risks, propose positioning routes, and help turn the idea into a normal publishable
+    paper. Do not simulate acceptance-stage red-team review unless explicitly asked. Do not recommend
+    abandonment unless a true STRONG_BLOCKER is present.
+
+    If after STOP C:
+    You are a senior adversarial reviewer. Stress-test claims, evidence, baselines,
+    controls, reproducibility, and overclaiming.
+
+    Identify:
     1. Logical gaps or unjustified claims
-    2. Missing experiments that would strengthen the story
-    3. Narrative weaknesses
-    4. Whether the contribution is sufficient for a top venue
-    Please be brutally honest.
+    2. Minimal evidence needed for the selected paper mode
+    3. Narrative weaknesses and positioning fixes
+    4. Whether the work can survive as normal / benchmark / reproduction-plus / system / audit
 ```
 
 ### Step 3: Iterative Dialogue (Rounds 2-N)
@@ -84,6 +109,9 @@ Update project memory/notes with key review conclusions.
 - ALWAYS use `config: {"model_reasoning_effort": "xhigh"}` for reviews
 - Send comprehensive context in Round 1 — the external model cannot read your files
 - Be honest about weaknesses — hiding them leads to worse feedback
+- Before STOP A/B, preserve promising ideas and include a survival route for every major
+  concern.
+- After STOP C, adversarial review is appropriate for paper-level claims.
 - Push back on criticisms you disagree with, but accept valid ones
 - Focus on ACTIONABLE feedback — "what experiment would fix this?"
 - Document the threadId for potential future resumption
@@ -91,8 +119,14 @@ Update project memory/notes with key review conclusions.
 
 ## Prompt Templates
 
-### For initial review:
-"I'm going to present a complete ML research project for your critical review. Please act as a senior ML reviewer (NeurIPS/ICML level)..."
+### For initial development review:
+"I'm going to present an early ML research direction. Please act as a constructive
+research collaborator. Preserve promising ideas, classify risks, propose positioning
+routes, and identify the minimal evidence needed for a normal publishable paper..."
+
+### For post-STOP-C acceptance review:
+"I'm going to present paper-level claims and evidence. Please act as a senior adversarial
+ML reviewer and stress-test claims, baselines, controls, reproducibility, and overclaiming..."
 
 ### For experiment design:
 "Please design the minimal additional experiment package that gives the highest acceptance lift per GPU week. Our compute: [describe]. Be very specific about configurations."

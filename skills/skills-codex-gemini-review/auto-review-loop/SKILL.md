@@ -18,6 +18,8 @@ Autonomously iterate: review → implement fixes → re-review, until the extern
 - REVIEW_DOC: `review-stage/AUTO_REVIEW.md` (cumulative log) *(fall back to `./AUTO_REVIEW.md` for legacy projects)*
 - **OUTPUT_DIR = `review-stage/`** — Directory for review output files.
 - **REVIEWER_MODEL = `gemini-review`** — Gemini reviewer invoked through the local `gemini-review` MCP bridge. Set `GEMINI_REVIEW_MODEL` if you need a specific Gemini model override.
+- **PAPER_MODE = `normal`** — Parse `— paper-mode:` when present. Normal mode is judged
+  against a normal publishable-paper bar, not a breakthrough-only bar.
 - **HUMAN_CHECKPOINT = false** — When `true`, pause after each round's review (Phase B) and present the score + weaknesses to the user. Wait for user input before proceeding to Phase C. The user can: approve the suggested fixes, provide custom modification instructions, skip specific fixes, or stop the loop early. When `false` (default), the loop runs fully autonomously.
 
 > 💡 Override: `/auto-review-loop "topic" — human checkpoint: true`
@@ -78,12 +80,12 @@ mcp__gemini-review__review_start:
 
     Please act as a senior ML reviewer (NeurIPS/ICML level).
 
-    1. Score this work 1-10 for a top venue
+    1. Score this work 1-10 for the selected paper_mode (default normal publishable AI paper, not breakthrough-only)
     2. List remaining critical weaknesses (ranked by severity)
     3. For each weakness, specify the MINIMUM fix (experiment, analysis, or reframing)
     4. State clearly: is this READY for submission? Yes/No/Almost
 
-    Be brutally honest. If the work is ready, say so clearly.
+    Be rigorous, adversarial, and evidence-focused. If the work is ready, say so clearly.
 ```
 
 After this start call, immediately save the returned `jobId` and poll `mcp__gemini-review__review_status` with a bounded `waitSeconds` until `done=true`. Treat the completed status payload's `response` as the reviewer output, and save the completed `threadId` for any follow-up round.

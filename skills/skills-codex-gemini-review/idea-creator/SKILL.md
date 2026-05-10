@@ -15,12 +15,21 @@ Given a broad research direction from the user, systematically generate, screen,
 concrete research ideas. This skill composes with `/research-lit`, `/novelty-check`, and
 `/research-review` to form a non-experimental idea discovery pipeline.
 
+Load `../shared-references/research-posture.md` before screening. Default to normal paper
+mode, positioning-first novelty, and collaborator review before STOP A.
+
 ## Constants
 
 - **NO_PRE_STOP_A_EXPERIMENTS = true** — ORBIT v1.4+ idea creation is non-experimental.
   Do not run experiments, do not use GPU, and do not call `/run-experiment` before STOP A.
-- **IDEA_RANKING_CRITERIA** — Literature grounding, novelty, feasibility, mechanism
-  plausibility, baseline/headroom, expected diagnostic clarity, and reviewer critique.
+- **PAPER_MODE = `normal`** — Breakthrough novelty is explicit opt-in only.
+- **NOVELTY_POLICY = `positioning-first`** — Related work is classified for positioning
+  before any idea is dropped.
+- **REVIEW_POSTURE = `collaborator`** — Before STOP A, review should preserve promising
+  directions and propose survival routes.
+- **IDEA_RANKING_CRITERIA** — Literature grounding, novelty posture, feasibility,
+  mechanism plausibility, baseline/headroom, expected diagnostic clarity, paper-mode fit,
+  and reviewer critique.
 - **REVIEWER_MODEL = `gemini-review`** — Gemini reviewer invoked through the local `gemini-review` MCP bridge for brainstorming and critique. Set `GEMINI_REVIEW_MODEL` if you need a specific Gemini model override.
 
 - **OUTPUT_DIR = `idea-stage/`** — Directory for idea output files.
@@ -76,17 +85,20 @@ mcp__gemini-review__review_start:
     1. One-sentence summary
     2. Core hypothesis (what you expect to find and why)
     3. Expected diagnostic after STOP A (what would be tested later?)
-    4. Expected contribution type: empirical finding / new method / theoretical result / diagnostic
+    4. Expected contribution type: empirical finding / method combination / benchmark + baseline / reproduction-plus / system / focused mechanism / theoretical result
     5. Risk level: LOW (likely works) / MEDIUM (50-50) / HIGH (speculative)
     6. Estimated effort: days / weeks / months
 
     Prioritize ideas that are:
     - Plausibly testable after formal planning with moderate compute
     - Likely to produce a clear positive OR negative result (both are publishable)
-    - Not "apply X to Y" unless the application reveals genuinely surprising insights
+    - Compatible with normal publishable AI paper mode; no breakthrough requirement by default
+    - Not eliminated merely because related work exists or the method is a simple combination
+    - "Apply X to Y" is acceptable when the setting, evidence, or finding would be interesting
     - Differentiated from the 10-15 papers above
 
-    Be creative but grounded. A great idea is one where the answer matters regardless of which way it goes.
+    Filter intelligently; preserve promising directions with viable positioning. A great
+    idea is one where the answer matters regardless of which way it goes.
 ```
 
 After this start call, immediately save the returned `jobId` and poll `mcp__gemini-review__review_status` with a bounded `waitSeconds` until `done=true`. Treat the completed status payload's `response` as the brainstorm output, and save the completed `threadId` for follow-up critique in Phase 4.
@@ -101,13 +113,18 @@ For each generated idea, quickly evaluate:
    - Implementation complexity
    - Skip ideas requiring excessive compute or unavailable datasets
 
-2. **Novelty quick-check**: For each idea, do 2-3 targeted searches to see if it's already been done. Full `/novelty-check` comes later for survivors.
+2. **Novelty quick-check**: For each idea, do 2-3 targeted searches and classify novelty
+   posture: CLEAR_SPACE / RELATED_BUT_DIFFERENT / CONCURRENT_WORK / WEAK_BLOCKER /
+   STRONG_BLOCKER / POSITIONING_TARGET / REPRODUCTION_TARGET. Full `/novelty-check`
+   comes later for survivors.
 
 3. **Impact estimation**: Would a reviewer care about the result?
    - "So what?" test: if the later diagnostic succeeds, does it change how people think?
    - Is the finding actionable or just interesting?
 
-Eliminate ideas that fail any of these. Typically 8-12 ideas reduce to 4-6.
+Eliminate only ideas that fail feasibility/diagnostic clarity or have a true
+`STRONG_BLOCKER`. Related-but-different ideas should be repositioned, not discarded.
+Typically 8-12 ideas reduce to 4-6.
 
 ### Phase 4: Deep Screening (for top ideas)
 
@@ -123,19 +140,21 @@ For each surviving idea, run a deeper evaluation:
        Here are our top ideas after filtering:
        [paste surviving ideas with novelty check results]
 
-       For each, play devil's advocate:
-       - What's the strongest objection a reviewer would raise?
+       For each, act as a constructive research collaborator:
+       - What's the strongest concern, and what positioning fix would address it?
        - What's the most likely failure mode?
-       - How would you rank these for a top venue submission?
+       - What minimum evidence would make this a normal publishable paper?
+       - Could it survive as method combination, empirical finding, benchmark + baseline,
+         reproduction-plus, system, or focused mechanism paper?
        - Which 2-3 would you actually work on?
    ```
 
    After this start call, immediately save the returned `jobId` and poll `mcp__gemini-review__review_status` with a bounded `waitSeconds` until `done=true`. Treat the completed status payload's `response` as the follow-up critique.
 
 3. **Combine rankings**: Merge your assessment with Gemini's ranking. Select top 2-3
-   ideas for proposal refinement using literature grounding, novelty, feasibility,
-   mechanism plausibility, baseline/headroom, expected diagnostic clarity, and reviewer
-   critique.
+   ideas for proposal refinement using literature grounding, novelty posture, feasibility,
+   mechanism plausibility, baseline/headroom, expected diagnostic clarity, paper-mode fit,
+   and collaborator critique.
 
 ### Phase 5: Decision-Ready Ranking (no experiments)
 
@@ -156,8 +175,8 @@ control design, null-result contract, experiment plan, and implementation contra
    - LOW: result would be ambiguous, uncontrolled, or mostly anecdotal.
 
 3. **Re-rank without execution**: Update the idea ranking from the combined literature,
-   novelty, feasibility, mechanism, baseline/headroom, diagnostic-clarity, and reviewer
-   evidence.
+   novelty posture, feasibility, mechanism, baseline/headroom, diagnostic-clarity,
+   paper-mode fit, and collaborator-review evidence.
 
 Do not use `/run-experiment`, `/monitor-experiment`, or GPU resources in this phase.
 
@@ -181,12 +200,12 @@ Write a structured report to `idea-stage/IDEA_REPORT.md`:
 - **Hypothesis**: [one sentence]
 - **Expected diagnostic after STOP A**: [what would be designed later in /experiment-bridge]
 - **Expected outcome pattern**: [what success/failure would look like later]
-- **Novelty**: X/10 — closest work: [paper]
+- **Novelty posture**: [class] — closest work: [paper] — positioning route: [route]
 - **Feasibility**: [compute, data, implementation estimates]
 - **Baseline/headroom**: [simple strong baseline and expected ceiling]
 - **Expected diagnostic clarity**: HIGH/MEDIUM/LOW
 - **Risk**: LOW/MEDIUM/HIGH
-- **Contribution type**: empirical / method / theory / diagnostic
+- **Contribution type**: empirical / method combination / benchmark + baseline / reproduction-plus / system / focused mechanism / theory
 - **Reviewer's likely objection**: [strongest counterargument]
 - **Why we should do this**: [1-2 sentences]
 
@@ -196,16 +215,16 @@ Write a structured report to `idea-stage/IDEA_REPORT.md`:
 ## Eliminated Ideas (for reference)
 | Idea | Reason eliminated |
 |------|-------------------|
-| ... | Already done by [paper] |
+| ... | Strong blocker: [paper] |
 | ... | Requires unavailable data or excessive compute |
 | ... | Result wouldn't be interesting either way |
 
 ## Ranking Rationale
-| Idea | Novelty | Feasibility | Baseline/headroom | Diagnostic clarity | Reviewer risk |
-|------|---------|-------------|-------------------|--------------------|---------------|
-| Idea 1 | CONFIRMED | HIGH | GOOD | HIGH | LOW |
-| Idea 2 | UNCLEAR | MEDIUM | MEDIUM | MEDIUM | MEDIUM |
-| Idea 3 | CONFLICTING | LOW | LOW | LOW | HIGH |
+| Idea | Novelty posture | Feasibility | Paper-mode fit | Baseline/headroom | Diagnostic clarity | Reviewer risk |
+|------|-----------------|-------------|----------------|-------------------|--------------------|---------------|
+| Idea 1 | CLEAR_SPACE | HIGH | normal | GOOD | HIGH | LOW |
+| Idea 2 | RELATED_BUT_DIFFERENT | MEDIUM | reproduction-plus | MEDIUM | MEDIUM | MEDIUM |
+| Idea 3 | WEAK_BLOCKER | LOW | unclear | LOW | LOW | HIGH |
 
 ## Suggested Execution Order
 1. Start with Idea 1 (best novelty/feasibility/diagnostic-clarity tradeoff)
@@ -230,11 +249,16 @@ Write a structured report to `idea-stage/IDEA_REPORT.md`:
 - **Large file handling**: If the Write tool fails due to file size, immediately retry using Bash (`cat << 'EOF' > file`) to write in chunks. Do NOT ask the user for permission — just do it silently.
 
 - The user provides a DIRECTION, not an idea. Your job is to generate the ideas.
-- Quantity first, quality second: brainstorm broadly, then filter ruthlessly.
+- Quantity first, quality second: brainstorm broadly, then filter intelligently; preserve
+  promising directions with viable positioning.
 - A good negative result is just as publishable as a positive one. Prioritize ideas where the answer matters regardless of direction.
-- Don't fall in love with any idea before screening it. Be willing to kill ideas.
+- Do not confuse plausible idea-selection evidence with experimental evidence.
+- Do not eliminate an idea merely because it is not a breakthrough, related work exists,
+  it is a simple combination, or it applies X to Y. Drop it only for infeasibility,
+  poor diagnostic clarity, or a true `STRONG_BLOCKER`.
 - Always estimate compute cost. An idea that needs excessive compute is not actionable for most researchers.
-- "Apply X to Y" is the lowest form of research idea. Push for deeper questions.
+- "Apply X to Y" needs a real setting/evidence/finding argument, but it is not
+  automatically disqualifying in normal paper mode.
 - Include eliminated ideas in the report — they save future time by documenting dead ends.
 - **If the user's direction is too broad (e.g., "NLP", "computer vision", "reinforcement learning"), STOP and ask them to narrow it.** A good direction is 1-2 sentences specifying the problem, domain, and constraint — e.g., "factorized gap in discrete diffusion LMs" or "sample efficiency of offline RL with image observations". Without sufficient specificity, generated ideas will be too vague to run experiments on.
 

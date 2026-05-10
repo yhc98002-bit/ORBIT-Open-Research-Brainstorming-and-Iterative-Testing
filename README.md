@@ -10,9 +10,16 @@ discovery; only explicit draft ideas skip directly to refinement.
 
 **STOP-A boundary note:** `/idea-to-proposal` and `/idea-discovery` are non-experimental
 in ORBIT v1.4+. They do not run experiments, do not use GPU, and do not call
-`/run-experiment`. Idea ranking before STOP A uses literature, novelty, feasibility,
-mechanism plausibility, baseline/headroom, expected diagnostic clarity, and reviewer
-critique.
+`/run-experiment`. Idea ranking before STOP A uses literature grounding, novelty posture,
+feasibility, mechanism plausibility, baseline/headroom, expected diagnostic clarity,
+paper-mode fit, and collaborator critique.
+
+**Default research posture:** ORBIT is not an automatic novelty veto. The default
+mode is a normal publishable AI paper: preserve promising ideas, classify related work,
+position rather than abandon, freeze the proposal after STOP A, and use adversarial review
+later when paper-level claims exist. Similar or concurrent work goes to
+`orbit-research/CONCURRENT_WORK_WATCHLIST.md` unless `/novelty-check` finds a true
+`STRONG_BLOCKER`.
 
 **Language note:** ORBIT's persistent research artifacts default to English even when the
 chat is in Chinese. Chinese templates are manual opt-in only.
@@ -44,7 +51,8 @@ v1.3 keeps the diagnostic discipline at commitment time and adds:
 - **cheapest valid diagnostic** instead of "always tiny run"
 - **component / minimal mechanism bundle ladder** instead of "always one component at a time"
 - **plan-code consistency loop** and **reviewer red-team loop** — explicit audit → fix → re-audit
-- **Codex collaborative mode** during innovation; adversarial mode at commitment gates
+- **Codex collaborative mode** during innovation; adversarial review for paper-level
+  claims and late commitment gates
 - explicit reuse of mature ARIS execution skills (`/auto-review-loop`, `/paper-writing`,
   `/auto-paper-improvement-loop`, `/paper-claim-audit`, `/citation-audit`,
   `/experiment-audit`, `/experiment-bridge`)
@@ -231,7 +239,8 @@ Stages 8, 9, 10, 18.5, and 19 each delegate to a named loop in
 
 Plus the **Collaborative Claude-Codex Innovation Mode** spec: during innovation loops
 Codex switches to no-veto, add-only mode (so it expands the candidate space rather than
-prunes it). Codex switches back to adversarial mode at commitment gates.
+prunes it). Before STOP A/B, review is collaborator-style; after STOP C, paper-level
+claim review is adversarial.
 
 ## Standard HITL Flow — 4 Stops
 
@@ -246,7 +255,7 @@ abandon.
    Discovery → Grounding → Innovation → final proposal refinement
    Outputs proposal only: FINAL_PROPOSAL.md, FINAL_PROPOSAL_SHORT.md, METHOD_SPEC.md
    and key orbit-research grounding/innovation artifacts.
-   ⏸ STOP A: human asks "Is this proposal worth formal experiment planning?"
+   ⏸ STOP A: collaborator review; human asks "Is this proposal worth formal experiment planning?"
 
 2. /experiment-bridge "refine-logs/FINAL_PROPOSAL.md"
    Experiment planning → implementation → PLAN_CODE_AUDIT.md → limited probe when mode allows
@@ -263,7 +272,7 @@ abandon.
    Aborts cleanly on any verdict-line bottleneck (FIX_BEFORE_GPU, claim_supported=no,
    irrecoverable review score, G14/G17 violations) — abort is awaiting_human_continue
    with clear next_action, never a silent failure
-   ⏸ STOP C: review RESULT_INTERPRETATION + RESEARCH_DECISION_LOG;
+   ⏸ STOP C: adversarial paper-claim review when paper-bearing; review RESULT_INTERPRETATION + RESEARCH_DECISION_LOG;
               if paper-bearing, also review CLAIM_CONSTRUCTION +
               RED_TEAM_REVIEW + HUMAN_DECISION_NOTE jointly
 
@@ -432,10 +441,13 @@ Full degradation contract: each skill's "ARIS / Sub-skill Unavailability" sectio
 - `skills/shared-references/research-agent-pipeline.md` — canonical 0–25 stage map + 19 hard gates
 - `skills/shared-references/research-harness-prompts.md` — per-stage canonical prompts
 - `skills/shared-references/innovation-loops.md` — Stages 8/9/10/18.5 procedures + Codex collaborative mode
+- `skills/shared-references/research-posture.md` — default normal-paper, positioning-first, proposal-stability policy
 - `skills/shared-references/semantic-code-audit.md` — Stage 15 plan-code audit + Stage 17 diagnostic-run audit
 - `skills/shared-references/continuation-contract.md` — STATE.json schema, three-state enum, cross-skill resume
 - `skills/shared-references/reviewer-routing.md` — Codex / Oracle reviewer defaults
 - `AGENT_GUIDE.md` — agent-facing routing index
+- `orbit-research/CONCURRENT_WORK_WATCHLIST.md` — related/concurrent work that should not destabilize proposals by default
+- `orbit-research/PROPOSAL_STABILITY.md` — STOP A freeze record and proposal reopen rules
 
 ## Design Principles
 

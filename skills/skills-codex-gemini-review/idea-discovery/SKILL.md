@@ -28,9 +28,15 @@ Each phase builds on the previous one's output. The final deliverables are a ran
 - **NO_PRE_STOP_A_EXPERIMENTS = true** — ORBIT v1.4+ idea discovery is non-experimental.
   Do not run experiments, do not use GPU, and do not call `/run-experiment` before STOP A.
   Formal experiment planning begins in `/experiment-bridge` after STOP A.
-- **IDEA_RANKING_CRITERIA** — Rank by literature grounding, novelty, feasibility,
-  mechanism plausibility, baseline/headroom reasoning, expected diagnostic clarity, and
-  reviewer critique.
+- **PAPER_MODE = `normal`** — Default to normal publishable AI paper mode; breakthrough
+  mode is explicit opt-in only.
+- **NOVELTY_POLICY = `positioning-first`** — Similar work is classified for positioning
+  before any idea is discarded.
+- **REVIEW_POSTURE = `collaborator`** — Before STOP A, reviewers act as constructive
+  collaborators, not automatic rejection gatekeepers.
+- **IDEA_RANKING_CRITERIA** — Rank by literature grounding, novelty posture, feasibility,
+  mechanism plausibility, baseline/headroom reasoning, expected diagnostic clarity,
+  paper-mode fit, and reviewer critique.
 - **AUTO_PROCEED = true** — If user doesn't respond at a checkpoint, automatically proceed with the best option after presenting results. Set to `false` to always wait for explicit user confirmation.
 - **OUTPUT_DIR = `idea-stage/`** — All idea-stage outputs go here. Create the directory if it doesn't exist.
 - **REVIEWER_MODEL = `gemini-review`** — Gemini reviewer invoked through the local `gemini-review` MCP bridge. Passed to the reviewer-aware sub-skills installed by this overlay.
@@ -77,10 +83,10 @@ Invoke `/idea-creator` with the landscape context:
 
 **What this does:**
 - Brainstorm 8-12 concrete ideas via the Gemini-backed `/idea-creator` overlay
-- Filter by feasibility, compute cost, quick novelty search
-- Deep screen top ideas (full novelty check + devil's advocate)
-- Rank by literature grounding, novelty, feasibility, mechanism plausibility,
-  baseline/headroom, expected diagnostic clarity, and reviewer critique
+- Filter by feasibility, compute cost, quick novelty-posture search, and diagnostic clarity
+- Deep screen top ideas (full novelty positioning check + collaborator critique)
+- Rank by literature grounding, novelty posture, feasibility, mechanism plausibility,
+  baseline/headroom, expected diagnostic clarity, paper-mode fit, and reviewer critique
 - Output `idea-stage/IDEA_REPORT.md`
 
 No experiments are run in `/idea-discovery`. No GPU is used in `/idea-discovery`.
@@ -91,9 +97,9 @@ Formal experiment planning begins in `/experiment-bridge` after STOP A.
 ```
 💡 Generated X ideas, filtered to Y. Top results:
 
-1. [Idea 1] — Novelty: CONFIRMED; Feasibility: HIGH; Expected diagnostic clarity: HIGH; Reviewer risk: LOW
-2. [Idea 2] — Novelty: UNCLEAR; Feasibility: MEDIUM; Expected diagnostic clarity: MEDIUM; Reviewer risk: MEDIUM
-3. [Idea 3] — Novelty: CONFLICTING; Feasibility: LOW; Expected diagnostic clarity: LOW; Reviewer risk: HIGH
+1. [Idea 1] — Novelty posture: CLEAR_SPACE; Feasibility: HIGH; Expected diagnostic clarity: HIGH; Reviewer risk: LOW
+2. [Idea 2] — Novelty posture: RELATED_BUT_DIFFERENT; Feasibility: MEDIUM; Expected diagnostic clarity: MEDIUM; Reviewer risk: MEDIUM
+3. [Idea 3] — Novelty posture: WEAK_BLOCKER; Feasibility: LOW; Expected diagnostic clarity: LOW; Reviewer risk: HIGH
 
 Which ideas should I check further? Or should I regenerate with different constraints?
 (If no response, I'll proceed with the top-ranked ideas.)
@@ -119,20 +125,23 @@ check:
 - Check for concurrent work (last 3-6 months)
 - Identify closest existing work and differentiation points
 
-**Update `idea-stage/IDEA_REPORT.md`** with deep novelty results. Eliminate any idea that turns out to be already published.
+**Update `idea-stage/IDEA_REPORT.md`** with deep novelty positioning results. Eliminate
+an idea only if `/novelty-check` classifies a true `STRONG_BLOCKER` or if feasibility /
+diagnostic clarity fails. Route recent non-blocking work to
+`orbit-research/CONCURRENT_WORK_WATCHLIST.md`.
 
 ### Phase 4: External Critical Review
 
-For the surviving top idea(s), get brutal feedback:
+For the surviving top idea(s), get constructive collaborator feedback:
 
 ```
 /research-review "[top idea with hypothesis + literature/novelty/feasibility evidence]"
 ```
 
 **What this does:**
-- Gemini acts as a senior reviewer (NeurIPS/ICML level) via the local `gemini-review` MCP bridge
-- Scores the idea, identifies weaknesses, suggests minimum viable improvements
-- Provides concrete feedback on experimental design
+- Gemini acts as a constructive research collaborator before STOP A
+- Classifies risks, proposes positioning fixes, and identifies minimum evidence
+- Provides concrete feedback on the expected diagnostic design after STOP A
 
 **Update `idea-stage/IDEA_REPORT.md`** with reviewer feedback and revised plan.
 
@@ -179,7 +188,7 @@ Finalize `idea-stage/IDEA_REPORT.md` with all accumulated information:
 **Pipeline**: research-lit → idea-creator → novelty-check → research-review → research-refine
 
 ## Executive Summary
-[2-3 sentences: best idea, key literature/novelty/feasibility/reviewer basis, recommended next step]
+[2-3 sentences: best idea, key literature/novelty-posture/feasibility/reviewer basis, recommended next step]
 
 ## Literature Landscape
 [from Phase 1]
@@ -188,18 +197,19 @@ Finalize `idea-stage/IDEA_REPORT.md` with all accumulated information:
 [from Phase 2, updated with Phase 3-4 results]
 
 ### 🏆 Idea 1: [title] — RECOMMENDED
-- Novelty: CONFIRMED / UNCLEAR / CONFLICTING (closest: [paper], differentiation: [what's different])
+- Novelty posture: CLEAR_SPACE / RELATED_BUT_DIFFERENT / CONCURRENT_WORK / WEAK_BLOCKER / POSITIONING_TARGET / REPRODUCTION_TARGET / STRONG_BLOCKER
 - Feasibility: HIGH / MEDIUM / LOW
 - Reviewer score: X/10
 - Reviewer risk: LOW / MEDIUM / HIGH
 - Expected diagnostic: [what would be tested later in /experiment-bridge]
+- Paper-mode fit: normal / benchmark / reproduction-plus / system / focused mechanism / breakthrough
 - Next step: STOP A review, then `/experiment-bridge "refine-logs/FINAL_PROPOSAL.md"`
 
 ### Idea 2: [title] — BACKUP
 ...
 
 ## Eliminated Ideas
-[ideas killed at each phase, with reasons]
+[ideas rejected at each phase, with reasons; related-but-different ideas should be positioned unless a STRONG_BLOCKER exists]
 
 ## Refined Proposal
 - Proposal: `refine-logs/FINAL_PROPOSAL.md`
@@ -223,10 +233,14 @@ Finalize `idea-stage/IDEA_REPORT.md` with all accumulated information:
 
 - **Don't skip phases.** Each phase filters and validates — skipping leads to wasted effort later.
 - **Checkpoint between phases.** Briefly summarize what was found before moving on.
-- **Kill ideas early.** It's better to kill 10 bad ideas in Phase 3 than to implement one and fail.
+- **Preserve opportunity early.** It is better to reposition promising ideas than to
+  discard them prematurely for normal related work.
 - **Do not confuse plausible idea-selection evidence with experimental evidence.**
-- **Before STOP A, rank ideas by literature grounding, novelty, feasibility, mechanism
-  plausibility, baseline/headroom, and expected diagnostic clarity.**
+- **Before STOP A, rank ideas by literature grounding, novelty posture, feasibility,
+  mechanism plausibility, baseline/headroom, expected diagnostic clarity, and paper-mode
+  fit.**
+- **Do not abandon merely because related or concurrent work exists.** Use
+  `CONCURRENT_WORK_WATCHLIST.md` and positioning unless a true `STRONG_BLOCKER` is found.
 - **Experimental evidence begins only after `/experiment-bridge` defines a valid
   experiment plan and `/diagnostic-to-review` runs formal diagnostics.**
 - **Document everything.** Dead ends are just as valuable as successes for future reference.

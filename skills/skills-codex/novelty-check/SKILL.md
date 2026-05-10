@@ -5,23 +5,29 @@ description: "Verify research idea novelty against recent literature. Use when u
 
 # Novelty Check Skill
 
-Check whether a proposed method/idea has already been done in the literature: **$ARGUMENTS**
+Classify novelty risk and positioning routes for: **$ARGUMENTS**
 
 ## Constants
 
 - REVIEWER_MODEL = `gpt-5.5` — Model used via a secondary Codex agent. Must be an OpenAI model (e.g., `gpt-5.5`, `o3`, `gpt-4o`)
+- **NOVELTY_POLICY = `positioning-first`** — Load `../shared-references/research-posture.md`
+  before judging novelty. Similar work is not automatically fatal.
+- **CONCURRENT_WORK_WINDOW = `3 months`** — Recent work goes to
+  `orbit-research/CONCURRENT_WORK_WATCHLIST.md` by default.
 
 ## Instructions
 
-Given a method description, systematically verify its novelty:
+Given a method description, systematically classify its novelty posture:
 
 ### Phase A: Extract Key Claims
 1. Read the user's method description
-2. Identify 3-5 core technical claims that would need to be novel:
+2. Identify 3-5 central factual/method/benchmark/paper-bearing claims whose novelty matters:
    - What is the method?
    - What problem does it solve?
    - What is the mechanism?
    - What makes it different from obvious baselines?
+   - What contribution type is being attempted: normal method, empirical finding,
+     benchmark/baseline, reproduction-plus, system, focused mechanism, or breakthrough?
 
 ### Phase B: Multi-Source Literature Search
 For EACH core claim, search using ALL available sources:
@@ -38,7 +44,7 @@ For EACH core claim, search using ALL available sources:
 
 3. **Read abstracts**: For each potentially overlapping paper, WebFetch its abstract and related work section
 
-### Phase C: Cross-Model Verification
+### Phase C: Cross-Model Positioning Review
 Call REVIEWER_MODEL via `spawn_agent` (`spawn_agent`) with xhigh reasoning:
 ```
 reasoning_effort: xhigh
@@ -46,40 +52,67 @@ reasoning_effort: xhigh
 Prompt should include:
 - The proposed method description
 - All papers found in Phase B
-- Ask: "Is this method novel? What is the closest prior work? What is the delta?"
+- The default posture from `../shared-references/research-posture.md`
+- Ask:
+  "Classify novelty posture using CLEAR_SPACE / RELATED_BUT_DIFFERENT /
+  CONCURRENT_WORK / WEAK_BLOCKER / STRONG_BLOCKER / POSITIONING_TARGET /
+  REPRODUCTION_TARGET. What is the closest prior work, what overlaps, how reliable is
+  it, and what survival/positioning route remains?"
 
-### Phase D: Novelty Report
+### Phase D: Positioning Report
 Output a structured report:
 
 ```markdown
-## Novelty Check Report
+## Novelty Positioning Report
 
 ### Proposed Method
 [1-2 sentence description]
 
 ### Core Claims
-1. [Claim 1] — Novelty: HIGH/MEDIUM/LOW — Closest: [paper]
-2. [Claim 2] — Novelty: HIGH/MEDIUM/LOW — Closest: [paper]
+1. [Claim 1] — Novelty Posture: [class] — Closest: [paper] — Survival route: [route]
+2. [Claim 2] — Novelty Posture: [class] — Closest: [paper] — Survival route: [route]
 ...
 
 ### Closest Prior Work
-| Paper | Year | Venue | Overlap | Key Difference |
-|-------|------|-------|---------|----------------|
+| Paper | Date | Venue / Status | Overlap Dimensions | Reliability | Code/Data | Reproducible? | Novelty Posture |
+|-------|------|----------------|--------------------|-------------|-----------|---------------|-----------------|
 
-### Overall Novelty Assessment
+### Overall Novelty Posture
 - Score: X/10
-- Recommendation: PROCEED / PROCEED WITH CAUTION / ABANDON
+- Novelty Posture: CLEAR_SPACE / RELATED_BUT_DIFFERENT / CONCURRENT_WORK / WEAK_BLOCKER / STRONG_BLOCKER / POSITIONING_TARGET / REPRODUCTION_TARGET
+- Blocker strength: NONE / WEAK / STRONG
+- Strong blocker criteria met: YES / NO
 - Key differentiator: [what makes this unique, if anything]
 - Risk: [what a reviewer would cite as prior work]
+- Prior-work reliability: peer-reviewed / arXiv-only / recent concurrent / unpublished / partially open
+- Public detail: sufficient / partial / missing
+- Code/data availability: available / partial / unavailable
 
-### Suggested Positioning
-[How to frame the contribution to maximize novelty perception]
+### Positioning Route
+[How to frame the contribution without overclaiming]
+
+### Survival Route
+[For every non-strong-blocker, at least one viable route: narrower regime, stronger
+evidence, reproduction-plus, benchmark/baseline, system, mechanism analysis, or
+conditional empirical finding]
+
+### Concurrent Work Watchlist
+[If any work is from the last 3 months, add or recommend adding it to
+orbit-research/CONCURRENT_WORK_WATCHLIST.md. Do not rewrite the proposal unless it is a
+STRONG_BLOCKER.]
 ```
 
 ### Important Rules
-- Be BRUTALLY honest — false novelty claims waste months of research time
-- "Applying X to Y" is NOT novel unless the application reveals surprising insights
+- Be honest but opportunity-preserving. Your job is to classify novelty risk and find
+  viable positioning, not to kill promising ideas prematurely.
+- Do not recommend abandonment unless the `STRONG_BLOCKER` criteria in
+  `../shared-references/research-posture.md` are met.
+- For every non-strong-blocker, propose at least one positioning strategy.
+- "Applying X to Y" can be a valid normal-paper route when the setting, evidence, control
+  design, or finding is interesting and honest.
 - Check both the method AND the experimental setting for novelty
-- If the method is not novel but the FINDING would be, say so explicitly
-- Always check the most recent 6 months of arXiv — the field moves fast
-
+- If the method overlaps prior work but the FINDING would be differentiated, say so explicitly
+- Always check the most recent 6 months of arXiv; treat work from the last 3 months as
+  concurrent by default and add it to the watchlist
+- After STOP A, ordinary new related work should not destabilize a frozen proposal. Use
+  the watchlist unless the work is a `STRONG_BLOCKER`.

@@ -128,7 +128,7 @@ mcp__llm-chat__chat:
     3. For each weakness, specify the MINIMUM fix
     4. State clearly: is this READY for submission? Yes/No/Almost
 
-    Be brutally honest. If the work is ready, say so clearly.
+    Be rigorous, adversarial, and evidence-focused. If the work is ready, say so clearly.
 ```
 
 **If MCP NOT available:**
@@ -238,7 +238,7 @@ mcp__llm-chat__chat:
     3. For each weakness, specify the MINIMUM fix
     4. State clearly: is this READY for submission? Yes/No/Almost
 
-    Be brutally honest. If the work is ready, say so clearly.
+    Be rigorous, adversarial, and evidence-focused. If the work is ready, say so clearly.
 ```
 
 ## Output Protocols

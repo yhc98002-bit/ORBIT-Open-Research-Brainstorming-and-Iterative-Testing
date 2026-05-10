@@ -16,9 +16,29 @@ gates at commitment, and only then turn results into scoped, evidence-bound clai
 
 STOP A is a proposal boundary, not a formal validation boundary. Keyword/context discovery
 is non-experimental in ORBIT v1.4+: do not run experiments, do not use GPU, and do not call
-`/run-experiment` before STOP A. Rank ideas by literature grounding, novelty, feasibility,
-mechanism plausibility, baseline/headroom, expected diagnostic clarity, and reviewer
-critique.
+`/run-experiment` before STOP A. Rank ideas by literature grounding, novelty posture,
+feasibility, mechanism plausibility, baseline/headroom, expected diagnostic clarity,
+paper-mode fit, and collaborator critique.
+
+## Default Research Posture
+
+ORBIT is not an automatic novelty veto. Default posture is:
+
+```yaml
+paper_mode: normal
+novelty_policy: positioning-first
+pre_STOP_A_review_posture: collaborator
+post_STOP_C_review_posture: adversarial
+concurrent_work_window: 3 months
+proposal_stability_after_STOP_A: freeze_by_default
+strong_blocker_required_for_abandon: true
+```
+
+Before STOP A/B, preserve promising directions, classify related work, and propose
+positioning routes. Do not abandon or rewrite a proposal for ordinary similar/concurrent
+work; put it in `orbit-research/CONCURRENT_WORK_WATCHLIST.md` unless `/novelty-check`
+classifies it as `STRONG_BLOCKER`. After STOP C, use adversarial review for paper-level
+claims, evidence, baselines, controls, reproducibility, and overclaiming.
 
 ## How to Invoke Skills
 
@@ -41,7 +61,9 @@ The argument separator is em-dash `—`, not single `-`.
 — human checkpoint: true | false             # pause for approval (default: false)
 — AUTO_PROCEED: true | false                 # auto-continue at gates (default: true)
 — assurance: draft | submission              # paper-writing audit gate level
-— difficulty: medium | hard | nightmare      # reviewer adversarial level
+— difficulty: medium | hard | nightmare      # review strictness; before STOP A it is collaborator-style
+— paper-mode: normal | breakthrough | benchmark | reproduction-plus | system | audit
+— review-posture: collaborator | adversarial
 — venue: ICLR | NeurIPS | ICML | ...         # target venue
 — sources: web, zotero, deepxiv, ...         # literature sources
 — gpu: local | remote | vast | modal         # GPU backend
@@ -67,7 +89,7 @@ Grounding   → 4   Assumption Ledger
 
 Innovation  → 8   Mechanism Invention Loop              (Codex collaborative)
               9   Analogy / Cross-pollination Loop      (Codex collaborative)
-              10  Algorithm Sketch Tournament           (Codex collaborative; adversarial on adjudication)
+              10  Algorithm Sketch Tournament           (Codex collaborative; calibration on adjudication)
               18.5 Failure-to-Innovation Loop           (Codex collaborative)
 
 Validation  → 11  Hypothesis-Mechanism-Benchmark-Control Matrix
@@ -197,7 +219,7 @@ stages. Sub-skills enforce their own v1.3 gates even when invoked directly.
 | `/alphaxiv "arxiv-id"` | LLM-optimized single-paper summary |
 | `/research-lit "topic"` | Question-driven literature map (Stage 1) |
 | `/idea-creator "direction"` | Brainstorm + rank ideas |
-| `/novelty-check "idea"` | Verify against existing work |
+| `/novelty-check "idea"` | Positioning-first novelty analysis; classify related/concurrent work before any abandon/rewrite decision |
 | `/research-review "draft"` | Codex GPT-5.5 xhigh deep critique |
 | `/experiment-audit` | Cross-model integrity audit of eval code |
 | `/result-to-claim` | Verdict on whether results support claims |
@@ -226,6 +248,8 @@ both exist).
 | `orbit-research/SEED_FRAMING.md` | (was 0A) | research-pipeline / research-lit | research-refine, experiment-plan |
 | `orbit-research/LITERATURE_MAP.md` | — | research-lit, research-pipeline | idea-discovery, research-refine, Stage 19 re-read |
 | `orbit-research/PROBLEM_REFRAMING.md` | — | research-pipeline (Stage 2.5) | research-pipeline (Stage 3) |
+| `orbit-research/CONCURRENT_WORK_WATCHLIST.md` | — | novelty-check / idea-to-proposal | proposal-revise, related-work notes |
+| `orbit-research/PROPOSAL_STABILITY.md` | — | idea-to-proposal STOP A | novelty-check, proposal-revise, human decisions |
 | `orbit-research/PROBLEM_SELECTION.md` | — | idea-discovery, research-pipeline | research-refine, experiment-plan |
 | `orbit-research/ASSUMPTION_LEDGER.md` | — | research-pipeline (Stage 4) | downstream claim wording (G2), semantic-code-audit |
 | `orbit-research/ABSTRACT_TASK_MECHANISM.md` | (part of TASK_ONTOLOGY split) | research-pipeline (Stage 5) | innovation loops, experiment-bridge, semantic-code-audit |
@@ -285,9 +309,11 @@ migration appendix.
 
 ## Claude vs Codex Debate Nodes
 
-In v1.3, Codex switches mode based on stage. Innovation stages use **collaborative**
-mode (no veto, only adds candidates — see `skills/shared-references/innovation-loops.md`
-§7). Commitment / validation stages use **adversarial** mode.
+In v1.4, Codex switches mode based on stop boundary. Innovation stages use
+**collaborative** mode (no veto, only adds candidates — see
+`skills/shared-references/innovation-loops.md` §7). Before STOP A/B, review uses
+collaborator/calibration posture. After STOP C, paper-level claim review uses
+**adversarial** mode.
 
 **Innovation nodes (Codex collaborative — no debate, additive contribution):**
 
@@ -296,27 +322,27 @@ Stage 2.5  Problem Reframing Loop
 Stage 8    Mechanism Invention Loop
 Stage 9    Analogy / Cross-pollination Loop
 Stage 10   Algorithm Sketch Tournament  (collaborative on sketch quality;
-                                         adversarial only on tournament adjudication)
+                                         calibration on tournament adjudication)
 Stage 18.5 Failure-to-Innovation Loop
 ```
 
-**Adversarial debate nodes (Codex challenges; Claude defends or revises):**
+**Calibration / adversarial nodes (mode depends on stop boundary):**
 
 ```
-Stage 3   Problem Taste / Selection
+Stage 3   Problem Taste / Selection                         (collaborator before STOP A)
 Stage 6   Artifact-triggered Data / Environment / Benchmark Audit
-Stage 7   Baseline Ceiling / Headroom Audit
+Stage 7   Baseline Ceiling / Headroom Audit                  (positioning-first before STOP A)
 Stage 11  Hypothesis-Mechanism-Benchmark-Control Matrix
 Stage 12  Null-result Contract
 Stage 13  Progressive Component / Minimal Mechanism Bundle
 Stage 14  Algorithmic Formalization
 Stage 15  Plan-Code Consistency Loop
 Stage 17  Diagnostic Run Audit / Cheapest Valid Diagnostic
-Stage 21  Result-to-Claim Construction
-Stage 23  Reviewer Red-team Loop
+Stage 21  Result-to-Claim Construction                       (adversarial paper-claim review)
+Stage 23  Reviewer Red-team Loop                             (adversarial paper-claim review)
 ```
 
-Protocol (adversarial mode only):
+Protocol (adversarial mode only, normally after STOP C):
 
 ```
 Claude: propose → Codex: critique → Claude: revise → Codex: final objections →
