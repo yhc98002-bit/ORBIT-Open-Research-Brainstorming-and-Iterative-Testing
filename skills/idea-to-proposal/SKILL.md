@@ -203,12 +203,42 @@ inconsistent state" warning.
 | `— input-mode: keyword\|context\|idea` | Override Phase 0 input classification. Use `context` for long notes/background `.md` files that should still run `/idea-discovery`; use `idea` only for an already committed method/direction draft that should skip discovery and go straight to `/research-refine`. |
 | `— context: true` | Alias for `— input-mode: context`. Explicitly treat a `.md` file as contextual material, not as a final idea. |
 | `— idea: true` | Alias for `— input-mode: idea`. Explicitly treat a `.md` file as a draft idea/method proposal and skip discovery. |
+| `— codex-required: false` | **Default `true`.** Codex is load-bearing for Phase 3 (innovation) and Phase 4 (calibration); see `shared-references/codex-precondition.md`. With the default, a failed precondition or mid-run Codex error causes a **LOUD STOP** (STATE = `awaiting_user_action`, no artifacts written for the failed phase). Pass `false` to deliberately run in single-model mode; every Phase 3/Phase 4 artifact then carries a visible degraded-mode header at the top of the file. `AUTO_PROCEED` does not select this flag. |
 
 ## Workflow
 
 ### Phase 0: Detect Input Type and Initialise
 
-**Resume check first.** Apply the entry decision tree above. If resuming, skip to the
+**Codex precondition first.** Before *anything* else — before the resume check,
+before reading `$ARGUMENTS`, before `mkdir` — run the Codex availability probe
+from [`shared-references/codex-precondition.md`](../shared-references/codex-precondition.md) §3:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" setup --json
+```
+
+Parse the JSON. If `.ready && .codex.available && .auth.loggedIn` are not all
+true (or the helper script itself is missing / errors), apply the LOUD STOP
+protocol (§4 of that contract):
+
+- Write `orbit-research/IDEA_TO_PROPOSAL_STATE.json` with
+  `phase: "phase-0-precondition"`, `status: "awaiting_user_action"`,
+  `next_action: "fix-codex-then-reinvoke"`, and the full
+  `codex_unavailable_reason` block from §4.
+- Print the verbatim user-facing message from §4 (Codex required, remediation
+  steps, override flag).
+- Exit. Do not `mkdir`, do not write `PIPELINE_INTAKE.md`, do not invoke
+  `/idea-discovery` or `/research-refine`, do not run Phase 0.5 literature
+  pre-fetch.
+
+If the user passed `— codex-required: false`, the precondition still runs
+(for STATE logging) but a failure becomes a single warning + a degraded-mode
+header on every Phase 3/Phase 4 artifact (§6 of the contract).
+
+Log a successful precondition as a `codex_precondition` block in the Phase 0
+STATE (see Phase 0 STATE schema below).
+
+**Resume check second.** Apply the entry decision tree above. If resuming, skip to the
 phase indicated by `STATE.phase + 1` and continue from there (each downstream phase
 applies its own idempotent-skip check).
 
@@ -250,7 +280,7 @@ recognised by this skill (see Override flags table above for full list):
 `with-experiment-plan`, `legacy-full-preimplementation`,
 `arxiv download`, `sources`, `arxiv max download`, `venue`, `effort`,
 `difficulty`, `input-mode`, `context`, `idea`, `from-phase`, `resume`, `fresh`,
-`no-checkpoint`.
+`no-checkpoint`, `codex-required`.
 
 Unknown flags are recorded in `PIPELINE_INTAKE.md` with a `⚠️ unknown flag —
 will not be honored` annotation rather than silently dropped. **This is a
@@ -273,12 +303,42 @@ unknown — never silently captured-but-ignored.**
     "arxiv_max_download": 10,
     "venue": null,                        // forwarded to downstream reviewer prompts
     "effort": "xhigh",                    // CODEX_REVIEW_EFFORT for this run
-    "difficulty": "medium"                // /research-refine threshold + MAX_ROUNDS
+    "difficulty": "medium",               // /research-refine threshold + MAX_ROUNDS
+    "codex_required": true                // §6 of codex-precondition.md; false = degraded-mode opt-in
+  },
+  "codex_precondition": {                 // result of the entry-time check; see codex-precondition.md §3
+    "checked_at": "<ISO 8601>",
+    "ready": true,
+    "codex_cli_version": "<from .codex.detail>",
+    "auth_method": "<from .auth.authMethod>",
+    "session_runtime_mode": "<from .sessionRuntime.mode>"
   },
   "status": "in_progress",
   "next_action": "phase-0-5-literature-prefetch | phase-1-discovery",   // depends on arxiv_download
   "timestamp": "<now>",
   "artifact_inventory": ["orbit-research/PIPELINE_INTAKE.md"]
+}
+```
+
+If the Phase 0 precondition failed and `— codex-required: false` was NOT
+passed, STATE looks like this instead (and the skill exits without writing
+`PIPELINE_INTAKE.md`):
+
+```jsonc
+{
+  "skill": "idea-to-proposal",
+  "phase": "phase-0-precondition",
+  "status": "awaiting_user_action",
+  "next_action": "fix-codex-then-reinvoke",
+  "codex_unavailable_reason": {
+    "ready": false,
+    "codex_available": false,
+    "auth_logged_in": false,
+    "detail": "<raw .detail string from the failing field>",
+    "raw_setup_json": "<entire JSON for debugging>"
+  },
+  "timestamp": "<ISO 8601>",
+  "artifact_inventory": []
 }
 ```
 
@@ -821,17 +881,56 @@ FINAL_PROPOSAL.md):
   Escalate — do not silently produce an incomplete proposal.
 ```
 
-For Codex MCP unavailability during Phase 3 (Innovation):
-- The collaborative-mode addition is **enrichment**, not load-bearing. Mark each affected
-  artifact with `## Codex collaborative additions: NOT_AVAILABLE (codex_mcp_unreachable)`
-  and continue. Do not block the pipeline.
-- For Phase 3c tournament adjudication (where Codex is adversarial), if Codex is down,
-  proceed with Claude's pairwise picks but mark `ABSTAIN_REASONS: codex_mcp_unreachable —
-  tournament adjudication is single-model only this round`.
+## Codex Unavailability — LOUD STOP, not silent skip
 
-For Codex MCP unavailability during Phase 4 (final refinement adversarial review):
-- Skip Codex review, mark proposal `## Phase 4 review: SKIPPED (codex_mcp_unreachable)`,
-  and continue. The integrated FINAL_PROPOSAL.md still gets written.
+**Policy change (was: silent fallback; now: precondition halt).**
+Codex is the load-bearing collaborator/adversary that prevents single-AI
+local optima during Phase 3 (innovation) and Phase 4 (final refinement
+calibration). Producing a proposal *without* Codex contribution and then
+quietly continuing is exactly the failure mode this skill exists to avoid;
+the user only discovered it post-hoc by reading STATE notes.
+
+This skill therefore follows the **Codex Precondition + Loud-Stop Contract**
+in [`shared-references/codex-precondition.md`](../shared-references/codex-precondition.md):
+
+1. **Phase 0 precondition (§3 of that contract).** Before any artifact is
+   written, run:
+
+   ```bash
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" setup --json
+   ```
+
+   Verify `.ready && .codex.available && .auth.loggedIn`. Log the result in
+   STATE under `codex_precondition`. If the check fails, apply §4 of the
+   contract:
+   - Write STATE with `status: "awaiting_user_action"`,
+     `next_action: "fix-codex-then-reinvoke"`, and the full
+     `codex_unavailable_reason` block.
+   - Surface the verbatim user-facing message from §4 (`/codex:setup`,
+     `claude mcp add -s user codex -- codex mcp-server`, and the
+     `— codex-required: false` override).
+   - **Stop the skill.** Do not run Phase 0.5 literature pre-fetch, do not
+     invoke `/idea-discovery`, do not write `PIPELINE_INTAKE.md`.
+
+2. **Mid-run Codex call failures (§5 of that contract).** If a
+   `mcp__codex__codex` invocation fails during Phase 3 or Phase 4
+   (network, auth-expired, sandbox rejection, etc.), the skill writes
+   STATE `status: "awaiting_user_action"` with `codex_call_failure`,
+   prints the same loud message naming the failing phase, and stops.
+   Upstream artifacts that were already written stay on disk; the next
+   invocation resumes from the failed phase. A `## Codex collaborative
+   additions: NOT_AVAILABLE` substitute is **not** an acceptable output.
+
+3. **Override.** A user who explicitly wants a degraded run can pass
+   `— codex-required: false`. Every Phase 3/Phase 4 artifact then carries
+   the visible degraded-mode header at the top of the file (per §6 of the
+   contract). `AUTO_PROCEED` does not select this override; it must come
+   from the user.
+
+The previous silent-fallback policy (mark
+`NOT_AVAILABLE (codex_mcp_unreachable)` and continue; skip Phase 4 review
+with `SKIPPED`; emit `ABSTAIN_REASONS: codex_mcp_unreachable` for the
+tournament) is **deprecated** and must not be applied by this skill.
 
 ## What This Skill Deliberately Does NOT Do
 

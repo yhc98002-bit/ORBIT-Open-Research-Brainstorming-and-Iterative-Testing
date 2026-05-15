@@ -328,6 +328,34 @@ But adversarial review is the wrong shape for invention. During innovation loops
 **does not veto**. It contributes. The mode switch happens at Stages 8, 9, 10, and 18.5;
 Codex switches back to adversarial at Stages 11, 14, 15, 17, 21, and 23.
 
+### §7.0 Precondition: Codex must be available before any innovation stage runs
+
+Every stage in §§2–6 invokes `mcp__codex__codex`. Codex is **load-bearing** for
+innovation: the whole point of the collaborative pass is to prevent single-AI
+local optima, so a Claude-only run is not a valid degraded output — it is a
+silent regression to the failure mode this section exists to fix.
+
+Therefore, before entering any innovation loop, the orchestrator MUST apply
+the **Codex Precondition Contract** in
+[`shared-references/codex-precondition.md`](codex-precondition.md):
+
+1. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" setup --json`
+   and verify `.ready && .codex.available && .auth.loggedIn`.
+2. If the check fails, **LOUD STOP** per §4 of that contract:
+   - Write STATE `status: "awaiting_user_action"` with `codex_unavailable_reason`.
+   - Surface the user-facing remediation message verbatim.
+   - **Do not** produce single-model `## Codex collaborative additions:
+     NOT_AVAILABLE` artifacts. That was the prior silent-skip behavior and is
+     deprecated.
+3. If a Codex MCP call **fails mid-loop** (network/auth/sandbox), apply §5
+   of that contract (same loud-stop semantics; STATE preserves the failed
+   phase so re-invocation resumes from it).
+
+Override only: pass `— codex-required: false` in `$ARGUMENTS` to deliberately
+run the loop without Codex; every affected artifact then carries the visible
+degraded-mode header from §6 of the precondition contract. This flag is
+opt-in only and is never selected by AUTO_PROCEED.
+
 ### Mode switching rule (orchestrator-side)
 
 ```

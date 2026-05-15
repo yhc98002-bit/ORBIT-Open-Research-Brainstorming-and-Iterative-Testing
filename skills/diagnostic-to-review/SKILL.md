@@ -201,7 +201,16 @@ valid ledgered diagnostic event.
 | `DIAGNOSTIC_RUN_AUDIT.verdict = REDESIGN_EXPERIMENT` AND G12 regime check passed (regime DID preserve mechanism preconditions) | `redesign-diagnostic` | `/experiment-plan` (redesign Stage 16 plan) |
 | `DIAGNOSTIC_RUN_AUDIT.verdict = REDESIGN_EXPERIMENT` AND G12 regime check failed (regime DID NOT preserve mechanism preconditions) | `regime-mismatch-not-mechanism-failure` | `/experiment-plan` (redesign diagnostic to a regime where mechanism could in principle manifest) — do NOT kill the mechanism |
 | `DIAGNOSTIC_RUN_AUDIT.verdict = ERROR` AND reason = `regime_check_unanswerable` | `human-must-judge-regime` | manual review — escalate to HUMAN_DECISION_REQUIRED |
-| `DIAGNOSTIC_RUN_AUDIT.verdict = ERROR` AND reason = `codex_mcp_unavailable` AND this is a scale-up | `codex-down-block-scale-up` | wait for Codex; user explicit acknowledgement to override |
+
+Codex unavailability is **not** an abort trigger at this stage — it is
+handled earlier by the Phase 0 precondition (see
+[`shared-references/codex-precondition.md`](../shared-references/codex-precondition.md)
+and the "For Codex MCP unavailability" section below). A run that reaches
+this table has already passed the precondition; if Codex then fails
+mid-Phase-1, the LOUD STOP in §5 of the precondition contract takes over
+and `DIAGNOSTIC_RUN_AUDIT.verdict` is **not** written for the failed
+phase. The previous `codex_mcp_unavailable` abort row was the silent-skip
+this skill no longer supports.
 
 If verdict = `PASS` → write Phase 1 STATE (`status: in_progress`, `next_action: phase-2-analyze`)
 and continue to Phase 2.
@@ -428,13 +437,34 @@ If load-bearing for a hard gate (e.g. /auto-review-loop for Stage 23 + paper-wri
   Escalate — do not silently produce an incomplete review.
 ```
 
-For Codex MCP unavailability:
-- Phase 1 audit → `DIAGNOSTIC_RUN_AUDIT.verdict = ERROR (codex_mcp_unavailable)` →
-  advisory at diagnostic, blocks at scale-up per G11.
-- Phase 4 review → `RED_TEAM_REVIEW.md` header marked `⚠️ degraded: codex_mcp_unreachable, single-model review only`.
-  Does not abort the chain (Phase 5 still writes pipeline summary), but the next caller
-  (`/paper-writing` Phase 5.5/5.8) will see the degradation note and may block at the
+For Codex MCP unavailability, this skill follows the **Codex Precondition +
+Loud-Stop Contract** in
+[`shared-references/codex-precondition.md`](../shared-references/codex-precondition.md):
+
+- **Phase 0 precondition.** Codex availability is checked at skill entry
+  (§3 of the contract). Phase 1 (diagnostic audit) and Phase 4 (red-team
+  review) both depend on independent Codex judgment; a single-model
+  "audit" or "red-team" is exactly the silent regression the contract
+  removes. A failed precondition stops at `phase-0-precondition` with
+  `status: "awaiting_user_action"` *before* Phase 1's audit verdict is
+  written.
+- **Mid-run failure (§5 of the contract).** A failing Codex call during
+  Phase 1 audit or Phase 4 red-team review triggers a LOUD STOP: STATE
+  `status: "awaiting_user_action"`, no `DIAGNOSTIC_RUN_AUDIT` verdict or
+  `RED_TEAM_REVIEW.md` produced for the failed phase, loud user-facing
+  remediation message. Phase 5 pipeline summary is **not** written under
+  these conditions — the chain stops where the audit/review was supposed
+  to live.
+- **Override.** `— codex-required: false` opts into a degraded single-model
+  run; `DIAGNOSTIC_RUN_AUDIT` and `RED_TEAM_REVIEW.md` carry the §6 visible
+  header at the top of the file, and the next caller (`/paper-writing`
+  Phase 5.5/5.8) will see the degraded-mode header and may block at the
   submission gate.
+
+The previous behavior — `DIAGNOSTIC_RUN_AUDIT.verdict = ERROR (codex_mcp_unavailable)`
+treated as "advisory at diagnostic" and a `⚠️ degraded` header on `RED_TEAM_REVIEW.md`
+that "does not abort the chain" — is **deprecated**. An audit/review that
+silently degrades is not an audit/review.
 
 ## What This Skill Deliberately Does NOT Do
 

@@ -301,12 +301,27 @@ stage:
 - "experiment design needs full rebuild" → defer to a separate `/experiment-plan` invocation
   in Phase 3 rather than patching here.
 
-**Codex unavailability:**
-- Innovation re-runs (Stage 8/9/10): mark the artifact's "Codex collaborative additions"
-  section `NOT_AVAILABLE (codex_mcp_unreachable)` and continue (advisory).
-- Adversarial re-runs (Stage 11/14 etc.): single-model fallback; flag in REVISION_REPORT.md.
-- Critique items that REQUIRE Codex (e.g. semantic audit verdict change) and Codex is down:
-  mark `addressed = "rejected: codex_mcp_unreachable"` and surface to user.
+**Codex unavailability — LOUD STOP, not silent fallback:**
+Follow [`shared-references/codex-precondition.md`](../shared-references/codex-precondition.md).
+A Phase 1 critique item that triggers an innovation re-run or an adversarial
+re-run requires Codex to participate; producing a single-model substitute
+silently is exactly the failure mode the precondition contract removes.
+
+- If the Phase 0 precondition already failed, this skill should not have
+  reached Phase 1 — it would have stopped at `phase-0-precondition` with
+  `status: "awaiting_user_action"`.
+- If a Codex call fails mid-Phase-1 (§5 of the precondition contract):
+  capture the error, update STATE with `status: "awaiting_user_action"`
+  and `codex_call_failure`, surface the verbatim user-facing remediation
+  message, and stop. Already-revised critique items keep their updates;
+  the failing critique item gets `addressed = "blocked: codex_call_failure"`
+  in `REVISION_REPORT.md` so the user can resume after Codex is fixed.
+- The previous behavior (`NOT_AVAILABLE (codex_mcp_unreachable)` /
+  `rejected: codex_mcp_unreachable` / single-model fallback flagged in
+  REVISION_REPORT.md) is **deprecated** and must not be applied.
+- Override: `— codex-required: false` opts into the degraded single-model
+  mode; every artifact then carries the visible degraded-mode header per
+  §6 of the precondition contract.
 
 **Write STATE** at end of Phase 1 with updated `artifact_inventory` listing every
 `orbit-research/<file>.md` that changed.
@@ -440,12 +455,28 @@ gap analysis as additional context. Increment `STATE.round`.
 If `SCORE_DELTA` is positive across all addressed items OR `round = MAX_ROUNDS` → proceed
 to Phase 4.
 
-**Codex unavailability in Phase 3:**
-- `/research-refine` and `/experiment-plan` invocations still run (they have their own
-  Codex unavailability handling).
-- The Codex re-evaluation step is skipped; mark each critique
-  `addressed = "yes (codex_re_eval skipped)"` and write
-  `Phase 3 Codex re-eval: SKIPPED (codex_mcp_unreachable)` in REVISION_REPORT.md.
+**Codex unavailability in Phase 3 — LOUD STOP, not silent skip:**
+Phase 3 is where Codex *re-evaluates* whether the addressed critique items
+actually moved `SCORE_DELTA`. Skipping this re-evaluation makes the loop
+termination condition unverifiable and is exactly the silent-skip the
+precondition contract prohibits.
+
+- The Phase 0 precondition (§3 of
+  [`shared-references/codex-precondition.md`](../shared-references/codex-precondition.md))
+  applies to this skill too; a failed precondition stops at
+  `phase-0-precondition` before Phase 1 starts.
+- If a Codex re-evaluation call fails mid-Phase-3: capture the error, set
+  STATE `status: "awaiting_user_action"` with `codex_call_failure`, write
+  what is verifiable so far into `REVISION_REPORT.md` under a clearly
+  marked "## Phase 3 Codex re-eval — interrupted" section, surface the
+  loud message, and stop. Do not advance `round` and do not declare the
+  revision converged.
+- The previous behavior (`addressed = "yes (codex_re_eval skipped)"` /
+  `Phase 3 Codex re-eval: SKIPPED (codex_mcp_unreachable)`) is
+  **deprecated** and must not be applied.
+- Override: `— codex-required: false` opts into a degraded run where Phase 3
+  re-evaluation falls back to a Claude-only score and `REVISION_REPORT.md`
+  carries the visible degraded-mode header at the top of the file.
 
 **Write STATE** at end of Phase 3.
 
@@ -545,14 +576,23 @@ If load-bearing for the revision (e.g. /research-refine for proposal target):
   Escalate — do not silently produce a half-revised artifact.
 ```
 
-Codex MCP unavailability per the three-tier degradation in
-`shared-references/continuation-contract.md`:
+Codex MCP unavailability follows the **Codex Precondition + Loud-Stop
+Contract** in [`shared-references/codex-precondition.md`](../shared-references/codex-precondition.md):
 
-| Tier | Where in this skill |
-|---|---|
-| Advisory | Phase 1 Stage 8/9/10 collaborative additions; Phase 3 Codex re-eval |
-| Block pending human ack | None at this skill's gates (no scale-up, no commitment irreversible) |
-| Load-bearing degradation | Phase 1 critique items requiring semantic Codex audit (mark `rejected: codex_mcp_unreachable`) |
+- **Phase 0 precondition.** Check Codex availability at skill entry (§3 of
+  the contract); LOUD STOP at `phase-0-precondition` if unavailable.
+- **Mid-run failure.** Any failing `mcp__codex__codex` call during Phase 1
+  innovation re-runs, Phase 1 adversarial re-runs, or Phase 3 re-evaluation
+  triggers §5 of the contract: STATE `status: "awaiting_user_action"`,
+  loud user-facing message, no single-model substitute artifact.
+- **Override.** `— codex-required: false` opts into degraded single-model
+  mode with the §6 visible header on every affected artifact.
+
+The previous three-tier degradation table (Advisory / Block pending human ack
+/ Load-bearing degradation) is **deprecated** for Codex availability — every
+tier collapses to "LOUD STOP unless `— codex-required: false`". The cited
+"three-tier degradation in continuation-contract.md" never existed; the
+reference was stale.
 
 ## What This Skill Deliberately Does NOT Do
 
