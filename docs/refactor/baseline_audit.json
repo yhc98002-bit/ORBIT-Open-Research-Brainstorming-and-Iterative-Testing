@@ -29,16 +29,20 @@
     ".agents/skills/idea-discovery-robot/SKILL.md",
     ".agents/skills/idea-discovery/SKILL.md",
     ".agents/skills/idea-to-proposal/SKILL.md",
+    ".agents/skills/import-codex-review/SKILL.md",
     ".agents/skills/invention-structuring/SKILL.md",
     ".agents/skills/jurisdiction-format/SKILL.md",
     ".agents/skills/mermaid-diagram/SKILL.md",
     ".agents/skills/meta-optimize/SKILL.md",
     ".agents/skills/monitor-experiment/SKILL.md",
     ".agents/skills/novelty-check/SKILL.md",
+    ".agents/skills/orbit-status/SKILL.md",
     ".agents/skills/overleaf-sync/SKILL.md",
     ".agents/skills/paper-claim-audit/SKILL.md",
     ".agents/skills/paper-compile/SKILL.md",
+    ".agents/skills/paper-draft/SKILL.md",
     ".agents/skills/paper-figure/SKILL.md",
+    ".agents/skills/paper-from-claims/SKILL.md",
     ".agents/skills/paper-illustration-image2/SKILL.md",
     ".agents/skills/paper-illustration/SKILL.md",
     ".agents/skills/paper-plan/SKILL.md",
@@ -68,6 +72,7 @@
     ".agents/skills/semantic-scholar/SKILL.md",
     ".agents/skills/serverless-modal/SKILL.md",
     ".agents/skills/specification-writing/SKILL.md",
+    ".agents/skills/submission-package/SKILL.md",
     ".agents/skills/system-profile/SKILL.md",
     ".agents/skills/training-check/SKILL.md",
     ".agents/skills/vast-gpu/SKILL.md",
@@ -101,16 +106,20 @@
     "skills/idea-discovery-robot/SKILL.md",
     "skills/idea-discovery/SKILL.md",
     "skills/idea-to-proposal/SKILL.md",
+    "skills/import-codex-review/SKILL.md",
     "skills/invention-structuring/SKILL.md",
     "skills/jurisdiction-format/SKILL.md",
     "skills/mermaid-diagram/SKILL.md",
     "skills/meta-optimize/SKILL.md",
     "skills/monitor-experiment/SKILL.md",
     "skills/novelty-check/SKILL.md",
+    "skills/orbit-status/SKILL.md",
     "skills/overleaf-sync/SKILL.md",
     "skills/paper-claim-audit/SKILL.md",
     "skills/paper-compile/SKILL.md",
+    "skills/paper-draft/SKILL.md",
     "skills/paper-figure/SKILL.md",
+    "skills/paper-from-claims/SKILL.md",
     "skills/paper-illustration-image2/SKILL.md",
     "skills/paper-illustration/SKILL.md",
     "skills/paper-plan/SKILL.md",
@@ -191,16 +200,20 @@
     "skills/skills-codex/idea-discovery-robot/SKILL.md",
     "skills/skills-codex/idea-discovery/SKILL.md",
     "skills/skills-codex/idea-to-proposal/SKILL.md",
+    "skills/skills-codex/import-codex-review/SKILL.md",
     "skills/skills-codex/invention-structuring/SKILL.md",
     "skills/skills-codex/jurisdiction-format/SKILL.md",
     "skills/skills-codex/mermaid-diagram/SKILL.md",
     "skills/skills-codex/meta-optimize/SKILL.md",
     "skills/skills-codex/monitor-experiment/SKILL.md",
     "skills/skills-codex/novelty-check/SKILL.md",
+    "skills/skills-codex/orbit-status/SKILL.md",
     "skills/skills-codex/overleaf-sync/SKILL.md",
     "skills/skills-codex/paper-claim-audit/SKILL.md",
     "skills/skills-codex/paper-compile/SKILL.md",
+    "skills/skills-codex/paper-draft/SKILL.md",
     "skills/skills-codex/paper-figure/SKILL.md",
+    "skills/skills-codex/paper-from-claims/SKILL.md",
     "skills/skills-codex/paper-illustration-image2/SKILL.md",
     "skills/skills-codex/paper-illustration/SKILL.md",
     "skills/skills-codex/paper-plan/SKILL.md",
@@ -230,11 +243,13 @@
     "skills/skills-codex/semantic-scholar/SKILL.md",
     "skills/skills-codex/serverless-modal/SKILL.md",
     "skills/skills-codex/specification-writing/SKILL.md",
+    "skills/skills-codex/submission-package/SKILL.md",
     "skills/skills-codex/system-profile/SKILL.md",
     "skills/skills-codex/training-check/SKILL.md",
     "skills/skills-codex/vast-gpu/SKILL.md",
     "skills/skills-codex/writing-systems-papers/SKILL.md",
     "skills/specification-writing/SKILL.md",
+    "skills/submission-package/SKILL.md",
     "skills/system-profile/SKILL.md",
     "skills/training-check/SKILL.md",
     "skills/vast-gpu/SKILL.md",
@@ -298,20 +313,20 @@
       "words": 1625
     },
     {
-      "bytes": 25890,
-      "lines": 560,
+      "bytes": 27179,
+      "lines": 580,
       "path": "skills/auto-review-loop/SKILL.md",
-      "sha256": "65d94ab893c7434d0f7888fb0abea46a4efa6dd80c75a816e9eefa98c26d592c",
+      "sha256": "9621ea70d4aed71f976fe6f020700901686635ffe7aeacf4f1db09026f13633a",
       "skill": "auto-review-loop",
-      "words": 3537
+      "words": 3692
     },
     {
-      "bytes": 16035,
-      "lines": 334,
+      "bytes": 17388,
+      "lines": 369,
       "path": "skills/citation-audit/SKILL.md",
-      "sha256": "63510d05b80abbeeb946bdae7c8975443c9054ca9db001a6728f9bc640b4279b",
+      "sha256": "2ba9e0fb77f2484d65fcbb83279f4cb0cbbfa049c2ff838320c3e98eefde6137",
       "skill": "citation-audit",
-      "words": 2071
+      "words": 2221
     },
     {
       "bytes": 10128,
@@ -338,12 +353,12 @@
       "words": 973
     },
     {
-      "bytes": 27497,
-      "lines": 514,
+      "bytes": 17893,
+      "lines": 461,
       "path": "skills/diagnostic-to-review/SKILL.md",
-      "sha256": "274b15247802173408bf1dd4931374ef2f2d47ccd2ee4c66dce47981812e2eae",
+      "sha256": "5494404fb065da04cf74360c77e48bd70b290f61850dc81fef6f6f22ad2f5481",
       "skill": "diagnostic-to-review",
-      "words": 3372
+      "words": 1884
     },
     {
       "bytes": 12920,
@@ -378,12 +393,12 @@
       "words": 1392
     },
     {
-      "bytes": 12779,
-      "lines": 315,
+      "bytes": 11387,
+      "lines": 258,
       "path": "skills/experiment-bridge/SKILL.md",
-      "sha256": "18abff2862fad9b3558862aa947483b37124a033d2483f1598a240382e36bdad",
+      "sha256": "db6e527090db5c5ce4820e465d7feb3c6e17ffe2aa0cd4613cb57ee1afc571f6",
       "skill": "experiment-bridge",
-      "words": 1483
+      "words": 1226
     },
     {
       "bytes": 22903,
@@ -418,12 +433,12 @@
       "words": 740
     },
     {
-      "bytes": 9601,
-      "lines": 241,
+      "bytes": 10426,
+      "lines": 264,
       "path": "skills/figure-spec/SKILL.md",
-      "sha256": "96a7edceeba5dd60ae2e5ae1cb93438ecad6b1f79edbb3431b75d49a3a7b3501",
+      "sha256": "80fd4f52da06657f5e803f409af4c44d377b14552c11d24c00a8d1d5e4672873",
       "skill": "figure-spec",
-      "words": 1288
+      "words": 1370
     },
     {
       "bytes": 9259,
@@ -466,12 +481,20 @@
       "words": 2524
     },
     {
-      "bytes": 49873,
-      "lines": 969,
+      "bytes": 47008,
+      "lines": 904,
       "path": "skills/idea-to-proposal/SKILL.md",
-      "sha256": "eb603d2bd30f10d9dca111eaabeaff0c7e4fb53038a8b0fdaf0ea686479d0de0",
+      "sha256": "da6f716497b2c9fb1d5d71d059a27c28afa5c6f1d065356004b3266473f21ef8",
       "skill": "idea-to-proposal",
-      "words": 5972
+      "words": 5491
+    },
+    {
+      "bytes": 2296,
+      "lines": 71,
+      "path": "skills/import-codex-review/SKILL.md",
+      "sha256": "d7ff89048e1a6ed734f598d931db2ad9d6471ddcee7f2afc1e611a4227b9a23e",
+      "skill": "import-codex-review",
+      "words": 280
     },
     {
       "bytes": 6734,
@@ -490,12 +513,12 @@
       "words": 963
     },
     {
-      "bytes": 16390,
-      "lines": 419,
+      "bytes": 17235,
+      "lines": 442,
       "path": "skills/mermaid-diagram/SKILL.md",
-      "sha256": "8655dca39759d40546aff5c23b0b7036684741fd6469f7b30d41e6b2901f4f7e",
+      "sha256": "38c322b1f1d87313d82c3353463bcc4b3338234344e6d6a8c701cfb603029f21",
       "skill": "mermaid-diagram",
-      "words": 2368
+      "words": 2462
     },
     {
       "bytes": 11071,
@@ -522,6 +545,14 @@
       "words": 752
     },
     {
+      "bytes": 956,
+      "lines": 28,
+      "path": "skills/orbit-status/SKILL.md",
+      "sha256": "98f8dec79d0876556a29c7684def8a9179343f1fd1ebd5e3580634b0e343ba7c",
+      "skill": "orbit-status",
+      "words": 129
+    },
+    {
       "bytes": 12907,
       "lines": 257,
       "path": "skills/overleaf-sync/SKILL.md",
@@ -530,12 +561,12 @@
       "words": 1811
     },
     {
-      "bytes": 12723,
-      "lines": 328,
+      "bytes": 15018,
+      "lines": 367,
       "path": "skills/paper-claim-audit/SKILL.md",
-      "sha256": "76528eea0d44075707bf3142dcf641cd96cf6cb33107bf200ba502ec99aa7d42",
+      "sha256": "453a5bab6ad98c5a642c26919b125078250bd6839459c5705ff3eb6fac8caddc",
       "skill": "paper-claim-audit",
-      "words": 1647
+      "words": 1923
     },
     {
       "bytes": 10068,
@@ -546,36 +577,52 @@
       "words": 1489
     },
     {
-      "bytes": 11613,
-      "lines": 280,
+      "bytes": 2218,
+      "lines": 63,
+      "path": "skills/paper-draft/SKILL.md",
+      "sha256": "857fab480b75a1bce9783a42f98889111ab02f0b6f9700e7622246a322656303",
+      "skill": "paper-draft",
+      "words": 300
+    },
+    {
+      "bytes": 12595,
+      "lines": 305,
       "path": "skills/paper-figure/SKILL.md",
-      "sha256": "7dad660b2b81fa1f5de67d500d237fbd2b24b98eed4c2e2a5fb695a112957964",
+      "sha256": "9988ededfaadb0217782a5f0b2d6318b710d6cb605c7809c729914fccfdf715e",
       "skill": "paper-figure",
-      "words": 1551
+      "words": 1657
     },
     {
-      "bytes": 16953,
-      "lines": 357,
+      "bytes": 3282,
+      "lines": 81,
+      "path": "skills/paper-from-claims/SKILL.md",
+      "sha256": "482e9b7b9096ea61ebceb34efd8a07ca794177b3ca1162594dc835a13f69c75a",
+      "skill": "paper-from-claims",
+      "words": 412
+    },
+    {
+      "bytes": 17771,
+      "lines": 379,
       "path": "skills/paper-illustration-image2/SKILL.md",
-      "sha256": "7ed6877d2bd833f195389aa88bd909827d0681839ff517a393cc1f2234f79563",
+      "sha256": "620e2c495a89f7320ccf9b268ba03e1b08db31c46a7f6f47ca2874bda225482f",
       "skill": "paper-illustration-image2",
-      "words": 1892
+      "words": 1973
     },
     {
-      "bytes": 30220,
-      "lines": 692,
+      "bytes": 31071,
+      "lines": 715,
       "path": "skills/paper-illustration/SKILL.md",
-      "sha256": "81ecdfab7ec708b165d33e7acbbd777caced793425ef8093d478788520bca986",
+      "sha256": "c310488299beb49697c19039de73a08d9b2c3f7badd87ed1cd77b81b3ce89ae8",
       "skill": "paper-illustration",
-      "words": 3466
+      "words": 3555
     },
     {
-      "bytes": 14207,
-      "lines": 297,
+      "bytes": 14546,
+      "lines": 302,
       "path": "skills/paper-plan/SKILL.md",
-      "sha256": "ddd54bcb9141cc383c0df95c9bb93c798170b405b1bdddc6aaf35f88d47750bf",
+      "sha256": "ee96ac1ea6563a1386999cdc6580bf94dd3fe920ecb474d73c8b40adbd962c26",
       "skill": "paper-plan",
-      "words": 1968
+      "words": 2015
     },
     {
       "bytes": 49205,
@@ -594,20 +641,20 @@
       "words": 2793
     },
     {
-      "bytes": 27416,
-      "lines": 549,
+      "bytes": 27899,
+      "lines": 557,
       "path": "skills/paper-write/SKILL.md",
-      "sha256": "3c3e6411957d73682670e6ccff97408a5e171e2bbe0ae1acaf695762a2eb0f0f",
+      "sha256": "82fb5249b9c483274b777d54c6083da929768afeba90fbad767228bfbd9efc49",
       "skill": "paper-write",
-      "words": 3694
+      "words": 3748
     },
     {
-      "bytes": 34405,
-      "lines": 731,
+      "bytes": 1951,
+      "lines": 47,
       "path": "skills/paper-writing/SKILL.md",
-      "sha256": "0a16d0d03689f6669bb186b168e9cddb2f9263d1900e75bfae3ef16ba1abcfc9",
+      "sha256": "ae9769e8b0f01001df2da3fe3bd8af9764531762d57b4add6ed6cd0264612079",
       "skill": "paper-writing",
-      "words": 4481
+      "words": 240
     },
     {
       "bytes": 5765,
@@ -698,20 +745,20 @@
       "words": 269
     },
     {
-      "bytes": 21194,
-      "lines": 380,
+      "bytes": 22388,
+      "lines": 412,
       "path": "skills/research-lit/SKILL.md",
-      "sha256": "b9e5cda5c3824459bb289bb726d68098ad57840033e3694274c42b9e81eff73d",
+      "sha256": "e98f6370b9ce2fc52bd73c29d1ace79a9ed0ad4b078f3612c564706a84f2dfaa",
       "skill": "research-lit",
-      "words": 2889
+      "words": 3022
     },
     {
-      "bytes": 33244,
-      "lines": 707,
+      "bytes": 34065,
+      "lines": 722,
       "path": "skills/research-pipeline/SKILL.md",
-      "sha256": "1cecd736bb1888114c8188fb3ed99753a10d8057ef88aeebcc3381e382c48aee",
+      "sha256": "114cd0749ec5e68873dba19c2364ad7ae9646d5ffcedff5496ffb5f6274f841e",
       "skill": "research-pipeline",
-      "words": 4018
+      "words": 4099
     },
     {
       "bytes": 8191,
@@ -722,12 +769,12 @@
       "words": 1069
     },
     {
-      "bytes": 47902,
-      "lines": 985,
+      "bytes": 31418,
+      "lines": 625,
       "path": "skills/research-refine/SKILL.md",
-      "sha256": "39d4d1c1ffaea9eb3668068585b8f9f8a1fc1a31cf4e0eb515176831a0330d7f",
+      "sha256": "1966cf51246ef36c283379c2c32235909e461209fe1c432b55553ab89edff9bb",
       "skill": "research-refine",
-      "words": 6481
+      "words": 4062
     },
     {
       "bytes": 6912,
@@ -746,12 +793,12 @@
       "words": 2136
     },
     {
-      "bytes": 13456,
-      "lines": 275,
+      "bytes": 16849,
+      "lines": 346,
       "path": "skills/result-to-claim/SKILL.md",
-      "sha256": "51bcb19e7eb644c250d27bc7f925ea06b0c3e986e674cd5c99e7445e52bee27f",
+      "sha256": "7e7bd46551081734429b911985ce2b5e43f64334ad723124b546aaba7cc30489",
       "skill": "result-to-claim",
-      "words": 1723
+      "words": 2067
     },
     {
       "bytes": 22709,
@@ -762,12 +809,12 @@
       "words": 3044
     },
     {
-      "bytes": 10553,
-      "lines": 229,
+      "bytes": 11464,
+      "lines": 256,
       "path": "skills/semantic-scholar/SKILL.md",
-      "sha256": "19349e54d4968907beed5776d5b3122eca25d5c579242d0a020198332b5c018a",
+      "sha256": "068a978a1a3cdade48be467db78ec6d5a76704f8c7b29f1bf1800016346c3a89",
       "skill": "semantic-scholar",
-      "words": 1354
+      "words": 1457
     },
     {
       "bytes": 12441,
@@ -784,6 +831,14 @@
       "sha256": "0fabd6eb915410adc8c2a86364b47f6f35a2012b3075c834366e4c52646675d9",
       "skill": "specification-writing",
       "words": 1115
+    },
+    {
+      "bytes": 2861,
+      "lines": 80,
+      "path": "skills/submission-package/SKILL.md",
+      "sha256": "0f0ed962ef7ba44997dd8edaf1af629a8337fe9b14846c797fe17d2a821c9fd5",
+      "skill": "submission-package",
+      "words": 345
     },
     {
       "bytes": 4557,
@@ -819,8 +874,8 @@
     }
   ],
   "counts": {
-    "all_skill_md": 239,
-    "canonical_skill_md": 72,
+    "all_skill_md": 254,
+    "canonical_skill_md": 77,
     "mirror_roots_checked": 4
   },
   "entry_candidates": {
@@ -840,6 +895,38 @@
       },
       {
         "category": "ambiguous_candidate",
+        "internal_score": 0,
+        "path": "skills/import-codex-review/SKILL.md",
+        "public_score": 0,
+        "signals": [],
+        "skill": "import-codex-review"
+      },
+      {
+        "category": "ambiguous_candidate",
+        "internal_score": 0,
+        "path": "skills/orbit-status/SKILL.md",
+        "public_score": 0,
+        "signals": [],
+        "skill": "orbit-status"
+      },
+      {
+        "category": "ambiguous_candidate",
+        "internal_score": 0,
+        "path": "skills/paper-draft/SKILL.md",
+        "public_score": 0,
+        "signals": [],
+        "skill": "paper-draft"
+      },
+      {
+        "category": "ambiguous_candidate",
+        "internal_score": 0,
+        "path": "skills/paper-from-claims/SKILL.md",
+        "public_score": 0,
+        "signals": [],
+        "skill": "paper-from-claims"
+      },
+      {
+        "category": "ambiguous_candidate",
         "internal_score": 3,
         "path": "skills/proposal-revise/SKILL.md",
         "public_score": 3,
@@ -850,6 +937,14 @@
           "known internal/subskill name"
         ],
         "skill": "proposal-revise"
+      },
+      {
+        "category": "ambiguous_candidate",
+        "internal_score": 0,
+        "path": "skills/submission-package/SKILL.md",
+        "public_score": 0,
+        "signals": [],
+        "skill": "submission-package"
       }
     ],
     "internal_subskill_candidate": [
@@ -1254,12 +1349,10 @@
       },
       {
         "category": "public_entry_candidate",
-        "internal_score": 2,
+        "internal_score": 0,
         "path": "skills/diagnostic-to-review/SKILL.md",
-        "public_score": 4,
+        "public_score": 3,
         "signals": [
-          "description contains 'conditional-required'",
-          "description contains 'pipeline'",
           "known public-entry name"
         ],
         "skill": "diagnostic-to-review"
@@ -1436,11 +1529,8 @@
         "category": "public_entry_candidate",
         "internal_score": 0,
         "path": "skills/paper-writing/SKILL.md",
-        "public_score": 7,
+        "public_score": 4,
         "signals": [
-          "description contains 'full '",
-          "description contains 'pipeline'",
-          "description contains 'use when user says'",
           "description contains 'workflow'",
           "known public-entry name"
         ],
@@ -1651,44 +1741,28 @@
       "words": 6320
     },
     {
-      "bytes": 47902,
-      "lines": 985,
-      "path": "skills/research-refine/SKILL.md",
-      "sha256": "39d4d1c1ffaea9eb3668068585b8f9f8a1fc1a31cf4e0eb515176831a0330d7f",
-      "skill": "research-refine",
-      "words": 6481
-    },
-    {
-      "bytes": 49873,
-      "lines": 969,
+      "bytes": 47008,
+      "lines": 904,
       "path": "skills/idea-to-proposal/SKILL.md",
-      "sha256": "eb603d2bd30f10d9dca111eaabeaff0c7e4fb53038a8b0fdaf0ea686479d0de0",
+      "sha256": "da6f716497b2c9fb1d5d71d059a27c28afa5c6f1d065356004b3266473f21ef8",
       "skill": "idea-to-proposal",
-      "words": 5972
+      "words": 5491
     },
     {
-      "bytes": 34405,
-      "lines": 731,
-      "path": "skills/paper-writing/SKILL.md",
-      "sha256": "0a16d0d03689f6669bb186b168e9cddb2f9263d1900e75bfae3ef16ba1abcfc9",
-      "skill": "paper-writing",
-      "words": 4481
-    },
-    {
-      "bytes": 33244,
-      "lines": 707,
+      "bytes": 34065,
+      "lines": 722,
       "path": "skills/research-pipeline/SKILL.md",
-      "sha256": "1cecd736bb1888114c8188fb3ed99753a10d8057ef88aeebcc3381e382c48aee",
+      "sha256": "114cd0749ec5e68873dba19c2364ad7ae9646d5ffcedff5496ffb5f6274f841e",
       "skill": "research-pipeline",
-      "words": 4018
+      "words": 4099
     },
     {
-      "bytes": 30220,
-      "lines": 692,
+      "bytes": 31071,
+      "lines": 715,
       "path": "skills/paper-illustration/SKILL.md",
-      "sha256": "81ecdfab7ec708b165d33e7acbbd777caced793425ef8093d478788520bca986",
+      "sha256": "c310488299beb49697c19039de73a08d9b2c3f7badd87ed1cd77b81b3ce89ae8",
       "skill": "paper-illustration",
-      "words": 3466
+      "words": 3555
     },
     {
       "bytes": 31806,
@@ -1707,6 +1781,22 @@
       "words": 4118
     },
     {
+      "bytes": 31418,
+      "lines": 625,
+      "path": "skills/research-refine/SKILL.md",
+      "sha256": "1966cf51246ef36c283379c2c32235909e461209fe1c432b55553ab89edff9bb",
+      "skill": "research-refine",
+      "words": 4062
+    },
+    {
+      "bytes": 27179,
+      "lines": 580,
+      "path": "skills/auto-review-loop/SKILL.md",
+      "sha256": "9621ea70d4aed71f976fe6f020700901686635ffe7aeacf4f1db09026f13633a",
+      "skill": "auto-review-loop",
+      "words": 3692
+    },
+    {
       "bytes": 19253,
       "lines": 570,
       "path": "skills/paper-slides/SKILL.md",
@@ -1715,28 +1805,12 @@
       "words": 2793
     },
     {
-      "bytes": 25890,
-      "lines": 560,
-      "path": "skills/auto-review-loop/SKILL.md",
-      "sha256": "65d94ab893c7434d0f7888fb0abea46a4efa6dd80c75a816e9eefa98c26d592c",
-      "skill": "auto-review-loop",
-      "words": 3537
-    },
-    {
-      "bytes": 27416,
-      "lines": 549,
+      "bytes": 27899,
+      "lines": 557,
       "path": "skills/paper-write/SKILL.md",
-      "sha256": "3c3e6411957d73682670e6ccff97408a5e171e2bbe0ae1acaf695762a2eb0f0f",
+      "sha256": "82fb5249b9c483274b777d54c6083da929768afeba90fbad767228bfbd9efc49",
       "skill": "paper-write",
-      "words": 3694
-    },
-    {
-      "bytes": 27497,
-      "lines": 514,
-      "path": "skills/diagnostic-to-review/SKILL.md",
-      "sha256": "274b15247802173408bf1dd4931374ef2f2d47ccd2ee4c66dce47981812e2eae",
-      "skill": "diagnostic-to-review",
-      "words": 3372
+      "words": 3748
     },
     {
       "bytes": 22709,
@@ -1771,6 +1845,22 @@
       "words": 3103
     },
     {
+      "bytes": 17893,
+      "lines": 461,
+      "path": "skills/diagnostic-to-review/SKILL.md",
+      "sha256": "5494404fb065da04cf74360c77e48bd70b290f61850dc81fef6f6f22ad2f5481",
+      "skill": "diagnostic-to-review",
+      "words": 1884
+    },
+    {
+      "bytes": 17235,
+      "lines": 442,
+      "path": "skills/mermaid-diagram/SKILL.md",
+      "sha256": "38c322b1f1d87313d82c3353463bcc4b3338234344e6d6a8c701cfb603029f21",
+      "skill": "mermaid-diagram",
+      "words": 2462
+    },
+    {
       "bytes": 17652,
       "lines": 433,
       "path": "skills/experiment-queue/SKILL.md",
@@ -1779,20 +1869,20 @@
       "words": 2449
     },
     {
-      "bytes": 16390,
-      "lines": 419,
-      "path": "skills/mermaid-diagram/SKILL.md",
-      "sha256": "8655dca39759d40546aff5c23b0b7036684741fd6469f7b30d41e6b2901f4f7e",
-      "skill": "mermaid-diagram",
-      "words": 2368
-    },
-    {
       "bytes": 16375,
       "lines": 417,
       "path": "skills/research-wiki/SKILL.md",
       "sha256": "2f822fd2e1372336f240fe6f9fe8166100056b13e2f06a45f3abe2850f096a6c",
       "skill": "research-wiki",
       "words": 2136
+    },
+    {
+      "bytes": 22388,
+      "lines": 412,
+      "path": "skills/research-lit/SKILL.md",
+      "sha256": "e98f6370b9ce2fc52bd73c29d1ace79a9ed0ad4b078f3612c564706a84f2dfaa",
+      "skill": "research-lit",
+      "words": 3022
     },
     {
       "bytes": 18977,
@@ -1909,19 +1999,6 @@
         },
         {
           "category": "docs_shared_references_templates",
-          "exists": true,
-          "mention_count": 1,
-          "path": "mcp-servers/codex-image2/README.md",
-          "raw_mentions": [
-            "mcp-servers/codex-image2/README.md"
-          ],
-          "skill_count": 1,
-          "skills": [
-            "paper-writing"
-          ]
-        },
-        {
-          "category": "docs_shared_references_templates",
           "exists": false,
           "mention_count": 1,
           "path": "paper-writing/SKILL.md",
@@ -1962,16 +2039,15 @@
         {
           "category": "docs_shared_references_templates",
           "exists": false,
-          "mention_count": 4,
+          "mention_count": 3,
           "path": "shared-references/assurance-contract.md",
           "raw_mentions": [
             "/shared-references/assurance-contract.md"
           ],
-          "skill_count": 4,
+          "skill_count": 3,
           "skills": [
             "citation-audit",
             "paper-claim-audit",
-            "paper-writing",
             "proof-checker"
           ]
         },
@@ -1992,22 +2068,23 @@
         {
           "category": "docs_shared_references_templates",
           "exists": false,
-          "mention_count": 15,
+          "mention_count": 14,
           "path": "shared-references/codex-precondition.md",
           "raw_mentions": [
             "/shared-references/codex-precondition.md"
           ],
-          "skill_count": 3,
+          "skill_count": 4,
           "skills": [
             "diagnostic-to-review",
             "idea-to-proposal",
-            "proposal-revise"
+            "proposal-revise",
+            "research-pipeline"
           ]
         },
         {
           "category": "docs_shared_references_templates",
           "exists": false,
-          "mention_count": 16,
+          "mention_count": 15,
           "path": "shared-references/continuation-contract.md",
           "raw_mentions": [
             "/shared-references/continuation-contract.md"
@@ -2061,15 +2138,14 @@
         {
           "category": "docs_shared_references_templates",
           "exists": false,
-          "mention_count": 4,
+          "mention_count": 2,
           "path": "shared-references/helper-resolution.md",
           "raw_mentions": [
             "/shared-references/helper-resolution.md"
           ],
-          "skill_count": 2,
+          "skill_count": 1,
           "skills": [
-            "figure-spec",
-            "paper-writing"
+            "figure-spec"
           ]
         },
         {
@@ -2109,17 +2185,16 @@
         {
           "category": "docs_shared_references_templates",
           "exists": false,
-          "mention_count": 17,
+          "mention_count": 15,
           "path": "shared-references/output-language.md",
           "raw_mentions": [
             "/shared-references/output-language.md"
           ],
-          "skill_count": 17,
+          "skill_count": 15,
           "skills": [
             "auto-review-loop",
             "auto-review-loop-llm",
             "auto-review-loop-minimax",
-            "diagnostic-to-review",
             "experiment-bridge",
             "experiment-plan",
             "grant-proposal",
@@ -2129,7 +2204,6 @@
             "idea-to-proposal",
             "meta-optimize",
             "paper-plan",
-            "paper-writing",
             "proposal-revise",
             "research-refine",
             "research-refine-pipeline"
@@ -2138,17 +2212,16 @@
         {
           "category": "docs_shared_references_templates",
           "exists": false,
-          "mention_count": 17,
+          "mention_count": 15,
           "path": "shared-references/output-manifest.md",
           "raw_mentions": [
             "/shared-references/output-manifest.md"
           ],
-          "skill_count": 17,
+          "skill_count": 15,
           "skills": [
             "auto-review-loop",
             "auto-review-loop-llm",
             "auto-review-loop-minimax",
-            "diagnostic-to-review",
             "experiment-bridge",
             "experiment-plan",
             "grant-proposal",
@@ -2158,7 +2231,6 @@
             "idea-to-proposal",
             "meta-optimize",
             "paper-plan",
-            "paper-writing",
             "proposal-revise",
             "research-refine",
             "research-refine-pipeline"
@@ -2167,17 +2239,16 @@
         {
           "category": "docs_shared_references_templates",
           "exists": false,
-          "mention_count": 17,
+          "mention_count": 15,
           "path": "shared-references/output-versioning.md",
           "raw_mentions": [
             "/shared-references/output-versioning.md"
           ],
-          "skill_count": 17,
+          "skill_count": 15,
           "skills": [
             "auto-review-loop",
             "auto-review-loop-llm",
             "auto-review-loop-minimax",
-            "diagnostic-to-review",
             "experiment-bridge",
             "experiment-plan",
             "grant-proposal",
@@ -2187,7 +2258,6 @@
             "idea-to-proposal",
             "meta-optimize",
             "paper-plan",
-            "paper-writing",
             "proposal-revise",
             "research-refine",
             "research-refine-pipeline"
@@ -2269,12 +2339,12 @@
         {
           "category": "docs_shared_references_templates",
           "exists": false,
-          "mention_count": 20,
+          "mention_count": 18,
           "path": "shared-references/research-agent-pipeline.md",
           "raw_mentions": [
             "/shared-references/research-agent-pipeline.md"
           ],
-          "skill_count": 15,
+          "skill_count": 14,
           "skills": [
             "analyze-results",
             "auto-review-loop",
@@ -2284,7 +2354,6 @@
             "idea-discovery",
             "idea-to-proposal",
             "monitor-experiment",
-            "paper-writing",
             "proposal-revise",
             "research-lit",
             "research-pipeline",
@@ -2296,19 +2365,18 @@
         {
           "category": "docs_shared_references_templates",
           "exists": false,
-          "mention_count": 14,
+          "mention_count": 13,
           "path": "shared-references/research-harness-prompts.md",
           "raw_mentions": [
             "/shared-references/research-harness-prompts.md"
           ],
-          "skill_count": 10,
+          "skill_count": 9,
           "skills": [
             "auto-review-loop",
             "diagnostic-to-review",
             "experiment-plan",
             "idea-discovery",
             "idea-to-proposal",
-            "paper-writing",
             "proposal-revise",
             "research-lit",
             "research-pipeline",
@@ -2361,19 +2429,18 @@
         {
           "category": "docs_shared_references_templates",
           "exists": false,
-          "mention_count": 11,
+          "mention_count": 10,
           "path": "shared-references/reviewer-independence.md",
           "raw_mentions": [
             "/shared-references/reviewer-independence.md"
           ],
-          "skill_count": 10,
+          "skill_count": 9,
           "skills": [
             "auto-review-loop",
             "citation-audit",
             "experiment-audit",
             "idea-to-proposal",
             "paper-claim-audit",
-            "paper-writing",
             "proof-checker",
             "proposal-revise",
             "research-pipeline",
@@ -2418,7 +2485,7 @@
         {
           "category": "docs_shared_references_templates",
           "exists": false,
-          "mention_count": 7,
+          "mention_count": 8,
           "path": "shared-references/semantic-code-audit.md",
           "raw_mentions": [
             "/shared-references/semantic-code-audit.md"
@@ -2496,19 +2563,6 @@
         {
           "category": "docs_shared_references_templates",
           "exists": true,
-          "mention_count": 2,
-          "path": "skills/research-pipeline/SKILL.md",
-          "raw_mentions": [
-            "skills/research-pipeline/SKILL.md"
-          ],
-          "skill_count": 1,
-          "skills": [
-            "paper-writing"
-          ]
-        },
-        {
-          "category": "docs_shared_references_templates",
-          "exists": true,
           "mention_count": 3,
           "path": "skills/shared-references/research-agent-pipeline.md",
           "raw_mentions": [
@@ -2539,7 +2593,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 8,
+          "mention_count": 7,
           "path": "ABSTRACT_TASK_MECHANISM.md",
           "raw_mentions": [
             "ABSTRACT_TASK_MECHANISM.md"
@@ -2556,15 +2610,13 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 7,
+          "mention_count": 1,
           "path": "AGENT_DECISION_RECOMMENDATION.md",
           "raw_mentions": [
             "AGENT_DECISION_RECOMMENDATION.md"
           ],
-          "skill_count": 3,
+          "skill_count": 1,
           "skills": [
-            "diagnostic-to-review",
-            "paper-writing",
             "research-pipeline"
           ]
         },
@@ -2586,7 +2638,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 9,
+          "mention_count": 8,
           "path": "ALGORITHM_TOURNAMENT.md",
           "raw_mentions": [
             "ALGORITHM_TOURNAMENT.md"
@@ -2631,15 +2683,14 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 13,
+          "mention_count": 11,
           "path": "ASSUMPTION_LEDGER.md",
           "raw_mentions": [
             "ASSUMPTION_LEDGER.md"
           ],
-          "skill_count": 5,
+          "skill_count": 4,
           "skills": [
             "experiment-plan",
-            "idea-to-proposal",
             "proposal-revise",
             "research-doc-hygiene",
             "research-pipeline"
@@ -2680,7 +2731,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 5,
+          "mention_count": 4,
           "path": "BASELINE_CEILING.md",
           "raw_mentions": [
             "BASELINE_CEILING.md"
@@ -2696,49 +2747,59 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 4,
+          "mention_count": 3,
           "path": "CITATION_AUDIT.md",
           "raw_mentions": [
             "CITATION_AUDIT.md"
           ],
-          "skill_count": 2,
+          "skill_count": 1,
           "skills": [
-            "citation-audit",
-            "paper-writing"
+            "citation-audit"
           ]
         },
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 4,
+          "mention_count": 3,
           "path": "CLAIMS_FROM_RESULTS.md",
           "raw_mentions": [
             "CLAIMS_FROM_RESULTS.md"
           ],
-          "skill_count": 2,
+          "skill_count": 1,
           "skills": [
-            "auto-review-loop",
             "paper-plan"
           ]
         },
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 20,
+          "mention_count": 15,
           "path": "CLAIM_CONSTRUCTION.md",
           "raw_mentions": [
             "CLAIM_CONSTRUCTION.md"
           ],
-          "skill_count": 9,
+          "skill_count": 8,
           "skills": [
             "auto-review-loop",
             "diagnostic-to-review",
-            "experiment-bridge",
             "idea-to-proposal",
             "paper-write",
             "proposal-revise",
             "research-doc-hygiene",
             "research-pipeline",
+            "result-to-claim"
+          ]
+        },
+        {
+          "category": "likely_generated_runtime",
+          "exists": false,
+          "mention_count": 2,
+          "path": "CLAIM_LEDGER.md",
+          "raw_mentions": [
+            "CLAIM_LEDGER.md"
+          ],
+          "skill_count": 1,
+          "skills": [
             "result-to-claim"
           ]
         },
@@ -2820,14 +2881,13 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 2,
+          "mention_count": 1,
           "path": "DIAGNOSTIC_EXPERIMENT_PLAN.md",
           "raw_mentions": [
             "DIAGNOSTIC_EXPERIMENT_PLAN.md"
           ],
-          "skill_count": 2,
+          "skill_count": 1,
           "skills": [
-            "diagnostic-to-review",
             "proposal-revise"
           ]
         },
@@ -2847,14 +2907,14 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 11,
+          "mention_count": 10,
           "path": "DIAGNOSTIC_RUN_AUDIT.md",
           "raw_mentions": [
             "DIAGNOSTIC_RUN_AUDIT.md"
           ],
           "skill_count": 3,
           "skills": [
-            "diagnostic-to-review",
+            "experiment-bridge",
             "research-pipeline",
             "run-experiment"
           ]
@@ -2862,14 +2922,14 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 8,
+          "mention_count": 7,
           "path": "DIAGNOSTIC_RUN_REPORT.md",
           "raw_mentions": [
             "DIAGNOSTIC_RUN_REPORT.md"
           ],
           "skill_count": 2,
           "skills": [
-            "diagnostic-to-review",
+            "experiment-bridge",
             "run-experiment"
           ]
         },
@@ -2907,14 +2967,13 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 22,
+          "mention_count": 18,
           "path": "EXPERIMENT_PLAN.md",
           "raw_mentions": [
             "EXPERIMENT_PLAN.md"
           ],
-          "skill_count": 7,
+          "skill_count": 6,
           "skills": [
-            "diagnostic-to-review",
             "experiment-bridge",
             "experiment-plan",
             "idea-to-proposal",
@@ -2926,14 +2985,13 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 19,
+          "mention_count": 13,
           "path": "EXPERIMENT_PLAN_EXEC.md",
           "raw_mentions": [
             "EXPERIMENT_PLAN_EXEC.md"
           ],
-          "skill_count": 7,
+          "skill_count": 6,
           "skills": [
-            "diagnostic-to-review",
             "experiment-bridge",
             "experiment-plan",
             "idea-to-proposal",
@@ -2999,14 +3057,13 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 33,
+          "mention_count": 22,
           "path": "FINAL_PROPOSAL.md",
           "raw_mentions": [
             "FINAL_PROPOSAL.md"
           ],
-          "skill_count": 11,
+          "skill_count": 10,
           "skills": [
-            "diagnostic-to-review",
             "experiment-bridge",
             "experiment-plan",
             "grant-proposal",
@@ -3035,14 +3092,13 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 14,
+          "mention_count": 7,
           "path": "FINAL_PROPOSAL_SHORT.md",
           "raw_mentions": [
             "FINAL_PROPOSAL_SHORT.md"
           ],
-          "skill_count": 5,
+          "skill_count": 4,
           "skills": [
-            "diagnostic-to-review",
             "experiment-bridge",
             "idea-to-proposal",
             "research-doc-hygiene",
@@ -3078,15 +3134,14 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 15,
+          "mention_count": 11,
           "path": "HUMAN_DECISION_NOTE.md",
           "raw_mentions": [
             "HUMAN_DECISION_NOTE.md"
           ],
-          "skill_count": 4,
+          "skill_count": 3,
           "skills": [
             "diagnostic-to-review",
-            "paper-writing",
             "research-pipeline",
             "result-to-claim"
           ]
@@ -3107,16 +3162,14 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 2,
+          "mention_count": 1,
           "path": "IDEA_CANDIDATES.md",
           "raw_mentions": [
-            "/IDEA_CANDIDATES.md",
-            "IDEA_CANDIDATES.md"
+            "/IDEA_CANDIDATES.md"
           ],
-          "skill_count": 2,
+          "skill_count": 1,
           "skills": [
-            "paper-plan",
-            "result-to-claim"
+            "paper-plan"
           ]
         },
         {
@@ -3207,12 +3260,12 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 14,
+          "mention_count": 13,
           "path": "MANIFEST.md",
           "raw_mentions": [
             "MANIFEST.md"
           ],
-          "skill_count": 14,
+          "skill_count": 13,
           "skills": [
             "auto-review-loop",
             "auto-review-loop-llm",
@@ -3225,7 +3278,6 @@
             "idea-discovery-robot",
             "meta-optimize",
             "paper-plan",
-            "paper-writing",
             "research-refine",
             "research-refine-pipeline"
           ]
@@ -3248,7 +3300,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 9,
+          "mention_count": 6,
           "path": "METHOD_SPEC.md",
           "raw_mentions": [
             "METHOD_SPEC.md"
@@ -3276,22 +3328,21 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 21,
+          "mention_count": 13,
           "path": "NARRATIVE_REPORT.md",
           "raw_mentions": [
             "NARRATIVE_REPORT.md"
           ],
-          "skill_count": 11,
+          "skill_count": 10,
           "skills": [
             "auto-review-loop",
-            "diagnostic-to-review",
             "experiment-audit",
             "figure-spec",
             "grant-proposal",
             "idea-to-proposal",
             "paper-claim-audit",
+            "paper-draft",
             "paper-plan",
-            "paper-writing",
             "patent-pipeline",
             "research-pipeline"
           ]
@@ -3299,7 +3350,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 2,
+          "mention_count": 3,
           "path": "NEGATIVE_RESULT_STRATEGY.md",
           "raw_mentions": [
             "NEGATIVE_RESULT_STRATEGY.md"
@@ -3339,14 +3390,13 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 7,
+          "mention_count": 6,
           "path": "NULL_RESULT_CONTRACT.md",
           "raw_mentions": [
             "NULL_RESULT_CONTRACT.md"
           ],
-          "skill_count": 6,
+          "skill_count": 5,
           "skills": [
-            "diagnostic-to-review",
             "experiment-plan",
             "idea-to-proposal",
             "proposal-revise",
@@ -3371,19 +3421,6 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 1,
-          "path": "PAPER_DRAFT.md",
-          "raw_mentions": [
-            "PAPER_DRAFT.md"
-          ],
-          "skill_count": 1,
-          "skills": [
-            "paper-writing"
-          ]
-        },
-        {
-          "category": "likely_generated_runtime",
-          "exists": false,
           "mention_count": 4,
           "path": "PAPER_ID}.md",
           "raw_mentions": [
@@ -3397,34 +3434,32 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 6,
+          "mention_count": 5,
           "path": "PAPER_IMPROVEMENT_LOG.md",
           "raw_mentions": [
             "PAPER_IMPROVEMENT_LOG.md"
           ],
-          "skill_count": 2,
+          "skill_count": 1,
           "skills": [
-            "auto-paper-improvement-loop",
-            "paper-writing"
+            "auto-paper-improvement-loop"
           ]
         },
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 19,
+          "mention_count": 9,
           "path": "PAPER_PLAN.md",
           "raw_mentions": [
             "PAPER_PLAN.md"
           ],
-          "skill_count": 7,
+          "skill_count": 6,
           "skills": [
             "experiment-audit",
             "figure-spec",
             "paper-claim-audit",
             "paper-figure",
             "paper-plan",
-            "paper-write",
-            "paper-writing"
+            "paper-write"
           ]
         },
         {
@@ -3443,7 +3478,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 12,
+          "mention_count": 11,
           "path": "PLAN_CODE_AUDIT.md",
           "raw_mentions": [
             "PLAN_CODE_AUDIT.md"
@@ -3555,15 +3590,14 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 6,
+          "mention_count": 5,
           "path": "PROOF_AUDIT.md",
           "raw_mentions": [
             "PROOF_AUDIT.md"
           ],
-          "skill_count": 3,
+          "skill_count": 2,
           "skills": [
             "auto-paper-improvement-loop",
-            "paper-writing",
             "proof-checker"
           ]
         },
@@ -3609,7 +3643,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 17,
+          "mention_count": 10,
           "path": "RED_TEAM_REVIEW.md",
           "raw_mentions": [
             "RED_TEAM_REVIEW.md"
@@ -3618,7 +3652,7 @@
           "skills": [
             "auto-review-loop",
             "diagnostic-to-review",
-            "paper-writing",
+            "paper-draft",
             "proposal-revise",
             "research-doc-hygiene",
             "research-pipeline",
@@ -3655,7 +3689,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 17,
+          "mention_count": 11,
           "path": "RESEARCH_DECISION_LOG.md",
           "raw_mentions": [
             "RESEARCH_DECISION_LOG.md"
@@ -3672,7 +3706,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 10,
+          "mention_count": 6,
           "path": "RESULT_INTERPRETATION.md",
           "raw_mentions": [
             "RESULT_INTERPRETATION.md"
@@ -3689,19 +3723,6 @@
           "category": "likely_generated_runtime",
           "exists": false,
           "mention_count": 1,
-          "path": "REVIEW/CLAIM_CHECK.md",
-          "raw_mentions": [
-            "REVIEW/CLAIM_CHECK.md"
-          ],
-          "skill_count": 1,
-          "skills": [
-            "paper-writing"
-          ]
-        },
-        {
-          "category": "likely_generated_runtime",
-          "exists": false,
-          "mention_count": 1,
           "path": "REVIEW/CONSISTENCY_REPORT.md",
           "raw_mentions": [
             "REVIEW/CONSISTENCY_REPORT.md"
@@ -3709,19 +3730,6 @@
           "skill_count": 1,
           "skills": [
             "idea-discovery"
-          ]
-        },
-        {
-          "category": "likely_generated_runtime",
-          "exists": false,
-          "mention_count": 1,
-          "path": "REVIEW/FINAL_CONSENSUS.md",
-          "raw_mentions": [
-            "REVIEW/FINAL_CONSENSUS.md"
-          ],
-          "skill_count": 1,
-          "skills": [
-            "paper-writing"
           ]
         },
         {
@@ -3792,14 +3800,39 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
+          "mention_count": 4,
+          "path": "RUN_AUDIT.md",
+          "raw_mentions": [
+            "RUN_AUDIT.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "diagnostic-to-review"
+          ]
+        },
+        {
+          "category": "likely_generated_runtime",
+          "exists": false,
           "mention_count": 3,
+          "path": "RUN_REPORT.md",
+          "raw_mentions": [
+            "RUN_REPORT.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "diagnostic-to-review"
+          ]
+        },
+        {
+          "category": "likely_generated_runtime",
+          "exists": false,
+          "mention_count": 1,
           "path": "SCALEUP_DECISION.md",
           "raw_mentions": [
             "SCALEUP_DECISION.md"
           ],
-          "skill_count": 2,
+          "skill_count": 1,
           "skills": [
-            "diagnostic-to-review",
             "research-pipeline"
           ]
         },
@@ -3840,6 +3873,19 @@
           "skill_count": 1,
           "skills": [
             "paper-slides"
+          ]
+        },
+        {
+          "category": "likely_generated_runtime",
+          "exists": false,
+          "mention_count": 4,
+          "path": "STOP_C_REVIEW.md",
+          "raw_mentions": [
+            "STOP_C_REVIEW.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "diagnostic-to-review"
           ]
         },
         {
@@ -3947,15 +3993,30 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 3,
+          "mention_count": 2,
           "path": "_RUN_CARD.md",
           "raw_mentions": [
             "_RUN_CARD.md"
           ],
-          "skill_count": 2,
+          "skill_count": 1,
           "skills": [
-            "experiment-bridge",
             "experiment-plan"
+          ]
+        },
+        {
+          "category": "likely_generated_runtime",
+          "exists": false,
+          "mention_count": 9,
+          "path": "claims/CLAIM_LEDGER.md",
+          "raw_mentions": [
+            "claims/CLAIM_LEDGER.md"
+          ],
+          "skill_count": 4,
+          "skills": [
+            "auto-review-loop",
+            "diagnostic-to-review",
+            "paper-claim-audit",
+            "result-to-claim"
           ]
         },
         {
@@ -3969,6 +4030,75 @@
           "skill_count": 1,
           "skills": [
             "dse-loop"
+          ]
+        },
+        {
+          "category": "likely_generated_runtime",
+          "exists": false,
+          "mention_count": 3,
+          "path": "experiment/EXPERIMENT_PLAN.md",
+          "raw_mentions": [
+            "experiment/EXPERIMENT_PLAN.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "experiment-bridge"
+          ]
+        },
+        {
+          "category": "likely_generated_runtime",
+          "exists": false,
+          "mention_count": 4,
+          "path": "experiment/EXPERIMENT_PLAN_EXEC.md",
+          "raw_mentions": [
+            "experiment/EXPERIMENT_PLAN_EXEC.md"
+          ],
+          "skill_count": 2,
+          "skills": [
+            "diagnostic-to-review",
+            "experiment-bridge"
+          ]
+        },
+        {
+          "category": "likely_generated_runtime",
+          "exists": false,
+          "mention_count": 4,
+          "path": "experiment/HEADROOM_NOTE.md",
+          "raw_mentions": [
+            "experiment/HEADROOM_NOTE.md"
+          ],
+          "skill_count": 2,
+          "skills": [
+            "diagnostic-to-review",
+            "experiment-bridge"
+          ]
+        },
+        {
+          "category": "likely_generated_runtime",
+          "exists": false,
+          "mention_count": 5,
+          "path": "experiment/PROBE_AUDIT.md",
+          "raw_mentions": [
+            "experiment/PROBE_AUDIT.md"
+          ],
+          "skill_count": 2,
+          "skills": [
+            "diagnostic-to-review",
+            "experiment-bridge"
+          ]
+        },
+        {
+          "category": "likely_generated_runtime",
+          "exists": false,
+          "mention_count": 6,
+          "path": "experiment/PROBE_REPORT.md",
+          "raw_mentions": [
+            "experiment/PROBE_REPORT.md"
+          ],
+          "skill_count": 2,
+          "skills": [
+            "diagnostic-to-review",
+            "experiment-bridge"
           ]
         },
         {
@@ -4060,20 +4190,21 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 1,
+          "mention_count": 2,
           "path": "orbit-research/*.md",
           "raw_mentions": [
             "orbit-research/*.md"
           ],
-          "skill_count": 1,
+          "skill_count": 2,
           "skills": [
+            "idea-to-proposal",
             "research-pipeline"
           ]
         },
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 11,
+          "mention_count": 9,
           "path": "orbit-research/ABSTRACT_TASK_MECHANISM.md",
           "raw_mentions": [
             "orbit-research/ABSTRACT_TASK_MECHANISM.md"
@@ -4090,14 +4221,13 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 5,
+          "mention_count": 3,
           "path": "orbit-research/AGENT_DECISION_RECOMMENDATION.md",
           "raw_mentions": [
             "orbit-research/AGENT_DECISION_RECOMMENDATION.md"
           ],
-          "skill_count": 3,
+          "skill_count": 2,
           "skills": [
-            "diagnostic-to-review",
             "research-pipeline",
             "result-to-claim"
           ]
@@ -4105,7 +4235,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 6,
+          "mention_count": 5,
           "path": "orbit-research/ALGORITHMIC_FORMALIZATION.md",
           "raw_mentions": [
             "orbit-research/ALGORITHMIC_FORMALIZATION.md"
@@ -4121,7 +4251,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 11,
+          "mention_count": 9,
           "path": "orbit-research/ALGORITHM_TOURNAMENT.md",
           "raw_mentions": [
             "orbit-research/ALGORITHM_TOURNAMENT.md"
@@ -4138,7 +4268,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 9,
+          "mention_count": 8,
           "path": "orbit-research/ANALOGY_TRANSFER.md",
           "raw_mentions": [
             "orbit-research/ANALOGY_TRANSFER.md"
@@ -4167,7 +4297,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 18,
+          "mention_count": 15,
           "path": "orbit-research/ASSUMPTION_LEDGER.md",
           "raw_mentions": [
             "orbit-research/ASSUMPTION_LEDGER.md"
@@ -4188,7 +4318,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 10,
+          "mention_count": 9,
           "path": "orbit-research/BASELINE_CEILING.md",
           "raw_mentions": [
             "orbit-research/BASELINE_CEILING.md"
@@ -4205,17 +4335,16 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 15,
+          "mention_count": 11,
           "path": "orbit-research/CLAIM_CONSTRUCTION.md",
           "raw_mentions": [
             "orbit-research/CLAIM_CONSTRUCTION.md"
           ],
-          "skill_count": 7,
+          "skill_count": 6,
           "skills": [
             "diagnostic-to-review",
             "paper-plan",
             "paper-write",
-            "paper-writing",
             "research-pipeline",
             "research-refine",
             "result-to-claim"
@@ -4256,7 +4385,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 7,
+          "mention_count": 6,
           "path": "orbit-research/CONTROL_DESIGN.md",
           "raw_mentions": [
             "orbit-research/CONTROL_DESIGN.md"
@@ -4273,7 +4402,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 6,
+          "mention_count": 5,
           "path": "orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md",
           "raw_mentions": [
             "orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md"
@@ -4289,7 +4418,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 9,
+          "mention_count": 8,
           "path": "orbit-research/DIAGNOSTIC_RUN_AUDIT.md",
           "raw_mentions": [
             "orbit-research/DIAGNOSTIC_RUN_AUDIT.md"
@@ -4306,7 +4435,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 9,
+          "mention_count": 8,
           "path": "orbit-research/DIAGNOSTIC_RUN_REPORT.md",
           "raw_mentions": [
             "orbit-research/DIAGNOSTIC_RUN_REPORT.md"
@@ -4336,7 +4465,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 7,
+          "mention_count": 9,
           "path": "orbit-research/HUMAN_DECISION_NOTE.md",
           "raw_mentions": [
             "orbit-research/HUMAN_DECISION_NOTE.md"
@@ -4345,7 +4474,7 @@
           "skills": [
             "diagnostic-to-review",
             "experiment-queue",
-            "paper-writing",
+            "paper-draft",
             "research-pipeline",
             "result-to-claim"
           ]
@@ -4353,7 +4482,20 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 3,
+          "mention_count": 1,
+          "path": "orbit-research/HUMAN_DECISION_NOTE.template.md",
+          "raw_mentions": [
+            "orbit-research/HUMAN_DECISION_NOTE.template.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "diagnostic-to-review"
+          ]
+        },
+        {
+          "category": "likely_generated_runtime",
+          "exists": false,
+          "mention_count": 4,
           "path": "orbit-research/LITERATURE_MAP.md",
           "raw_mentions": [
             "orbit-research/LITERATURE_MAP.md"
@@ -4380,7 +4522,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 10,
+          "mention_count": 9,
           "path": "orbit-research/MECHANISM_IDEATION.md",
           "raw_mentions": [
             "orbit-research/MECHANISM_IDEATION.md"
@@ -4409,17 +4551,16 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 9,
+          "mention_count": 8,
           "path": "orbit-research/NEGATIVE_RESULT_STRATEGY.md",
           "raw_mentions": [
             "orbit-research/NEGATIVE_RESULT_STRATEGY.md"
           ],
-          "skill_count": 6,
+          "skill_count": 5,
           "skills": [
             "diagnostic-to-review",
             "paper-plan",
             "paper-write",
-            "paper-writing",
             "research-pipeline",
             "result-to-claim"
           ]
@@ -4427,17 +4568,16 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 12,
+          "mention_count": 10,
           "path": "orbit-research/NULL_RESULT_CONTRACT.md",
           "raw_mentions": [
             "orbit-research/NULL_RESULT_CONTRACT.md"
           ],
-          "skill_count": 7,
+          "skill_count": 6,
           "skills": [
             "diagnostic-to-review",
             "experiment-bridge",
             "experiment-plan",
-            "paper-writing",
             "research-pipeline",
             "research-refine",
             "result-to-claim"
@@ -4446,14 +4586,13 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 4,
+          "mention_count": 3,
           "path": "orbit-research/PAPER_IMPROVEMENT_LOG.md",
           "raw_mentions": [
             "orbit-research/PAPER_IMPROVEMENT_LOG.md"
           ],
-          "skill_count": 2,
+          "skill_count": 1,
           "skills": [
-            "paper-writing",
             "research-pipeline"
           ]
         },
@@ -4473,7 +4612,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 14,
+          "mention_count": 10,
           "path": "orbit-research/PIPELINE_SUMMARY.md",
           "raw_mentions": [
             "orbit-research/PIPELINE_SUMMARY.md"
@@ -4489,7 +4628,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 9,
+          "mention_count": 10,
           "path": "orbit-research/PLAN_CODE_AUDIT.md",
           "raw_mentions": [
             "orbit-research/PLAN_CODE_AUDIT.md"
@@ -4551,7 +4690,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 13,
+          "mention_count": 11,
           "path": "orbit-research/RED_TEAM_REVIEW.md",
           "raw_mentions": [
             "orbit-research/RED_TEAM_REVIEW.md"
@@ -4569,18 +4708,17 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 9,
+          "mention_count": 7,
           "path": "orbit-research/RESEARCH_DECISION_LOG.md",
           "raw_mentions": [
             "/orbit-research/RESEARCH_DECISION_LOG.md",
             "orbit-research/RESEARCH_DECISION_LOG.md"
           ],
-          "skill_count": 6,
+          "skill_count": 5,
           "skills": [
             "diagnostic-to-review",
             "experiment-bridge",
             "experiment-plan",
-            "idea-to-proposal",
             "proposal-revise",
             "research-refine"
           ]
@@ -4588,7 +4726,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 9,
+          "mention_count": 7,
           "path": "orbit-research/RESULT_INTERPRETATION.md",
           "raw_mentions": [
             "orbit-research/RESULT_INTERPRETATION.md"
@@ -4634,6 +4772,19 @@
           "category": "likely_generated_runtime",
           "exists": false,
           "mention_count": 1,
+          "path": "orbit-research/STOP_C_REVIEW.md",
+          "raw_mentions": [
+            "orbit-research/STOP_C_REVIEW.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "diagnostic-to-review"
+          ]
+        },
+        {
+          "category": "likely_generated_runtime",
+          "exists": false,
+          "mention_count": 1,
           "path": "orbit-research/TINY_RUN_AUDIT.md",
           "raw_mentions": [
             "orbit-research/TINY_RUN_AUDIT.md"
@@ -4647,26 +4798,66 @@
           "category": "likely_generated_runtime",
           "exists": false,
           "mention_count": 1,
-          "path": "paper/PAPER_CLAIM_AUDIT.md",
+          "path": "paper/CITATION_AUDIT.md",
           "raw_mentions": [
-            "paper/PAPER_CLAIM_AUDIT.md"
+            "paper/CITATION_AUDIT.md"
           ],
           "skill_count": 1,
           "skills": [
-            "paper-claim-audit"
+            "submission-package"
           ]
         },
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 1,
-          "path": "paper/PAPER_IMPROVEMENT_LOG.md",
+          "mention_count": 2,
+          "path": "paper/CLAIM_TRACE.md",
           "raw_mentions": [
-            "paper/PAPER_IMPROVEMENT_LOG.md"
+            "paper/CLAIM_TRACE.md"
           ],
           "skill_count": 1,
           "skills": [
-            "paper-writing"
+            "paper-from-claims"
+          ]
+        },
+        {
+          "category": "likely_generated_runtime",
+          "exists": false,
+          "mention_count": 2,
+          "path": "paper/DRAFT.md",
+          "raw_mentions": [
+            "paper/DRAFT.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "paper-draft"
+          ]
+        },
+        {
+          "category": "likely_generated_runtime",
+          "exists": false,
+          "mention_count": 2,
+          "path": "paper/PAPER_CLAIM_AUDIT.md",
+          "raw_mentions": [
+            "paper/PAPER_CLAIM_AUDIT.md"
+          ],
+          "skill_count": 2,
+          "skills": [
+            "paper-claim-audit",
+            "submission-package"
+          ]
+        },
+        {
+          "category": "likely_generated_runtime",
+          "exists": false,
+          "mention_count": 2,
+          "path": "paper/PAPER_PLAN.md",
+          "raw_mentions": [
+            "paper/PAPER_PLAN.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "paper-from-claims"
           ]
         },
         {
@@ -4680,6 +4871,19 @@
           "skill_count": 1,
           "skills": [
             "proof-checker"
+          ]
+        },
+        {
+          "category": "likely_generated_runtime",
+          "exists": false,
+          "mention_count": 1,
+          "path": "paper/TODOS.md",
+          "raw_mentions": [
+            "paper/TODOS.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "paper-draft"
           ]
         },
         {
@@ -4877,6 +5081,33 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
+          "mention_count": 5,
+          "path": "proposal/METHOD_SPEC.md",
+          "raw_mentions": [
+            "proposal/METHOD_SPEC.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "idea-to-proposal"
+          ]
+        },
+        {
+          "category": "likely_generated_runtime",
+          "exists": false,
+          "mention_count": 10,
+          "path": "proposal/PROPOSAL.md",
+          "raw_mentions": [
+            "proposal/PROPOSAL.md"
+          ],
+          "skill_count": 2,
+          "skills": [
+            "idea-to-proposal",
+            "paper-draft"
+          ]
+        },
+        {
+          "category": "likely_generated_runtime",
+          "exists": false,
           "mention_count": 1,
           "path": "rebuttal/FOLLOWUP_LOG.md",
           "raw_mentions": [
@@ -5020,7 +5251,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 25,
+          "mention_count": 21,
           "path": "refine-logs/EXPERIMENT_PLAN.md",
           "raw_mentions": [
             "refine-logs/EXPERIMENT_PLAN.md"
@@ -5040,7 +5271,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 9,
+          "mention_count": 6,
           "path": "refine-logs/EXPERIMENT_PLAN_EXEC.md",
           "raw_mentions": [
             "refine-logs/EXPERIMENT_PLAN_EXEC.md"
@@ -5069,7 +5300,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 10,
+          "mention_count": 9,
           "path": "refine-logs/EXPERIMENT_TRACKER.md",
           "raw_mentions": [
             "refine-logs/EXPERIMENT_TRACKER.md"
@@ -5098,14 +5329,13 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 65,
+          "mention_count": 51,
           "path": "refine-logs/FINAL_PROPOSAL.md",
           "raw_mentions": [
             "refine-logs/FINAL_PROPOSAL.md"
           ],
           "skill_count": 14,
           "skills": [
-            "diagnostic-to-review",
             "experiment-bridge",
             "experiment-plan",
             "grant-proposal",
@@ -5113,6 +5343,7 @@
             "idea-discovery",
             "idea-discovery-robot",
             "idea-to-proposal",
+            "paper-draft",
             "patent-pipeline",
             "proposal-revise",
             "research-doc-hygiene",
@@ -5306,19 +5537,6 @@
           "category": "likely_generated_runtime",
           "exists": false,
           "mention_count": 1,
-          "path": "refine-logs/round-N-refinement.md",
-          "raw_mentions": [
-            "refine-logs/round-N-refinement.md"
-          ],
-          "skill_count": 1,
-          "skills": [
-            "research-refine"
-          ]
-        },
-        {
-          "category": "likely_generated_runtime",
-          "exists": false,
-          "mention_count": 1,
           "path": "refine-logs/round-N-review.md",
           "raw_mentions": [
             "refine-logs/round-N-review.md"
@@ -5415,6 +5633,19 @@
         {
           "category": "other",
           "exists": false,
+          "mention_count": 3,
+          "path": "HUMAN_DECISION_NOTE.template.md",
+          "raw_mentions": [
+            "HUMAN_DECISION_NOTE.template.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "diagnostic-to-review"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
           "mention_count": 1,
           "path": "REBUTTAL_DRAFT_rich.md",
           "raw_mentions": [
@@ -5468,6 +5699,19 @@
         {
           "category": "other",
           "exists": false,
+          "mention_count": 1,
+          "path": "anchor_simplicity_revision.md",
+          "raw_mentions": [
+            "anchor_simplicity_revision.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "research-refine"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
           "mention_count": 3,
           "path": "background.md",
           "raw_mentions": [
@@ -5495,6 +5739,19 @@
         {
           "category": "other",
           "exists": false,
+          "mention_count": 1,
+          "path": "claim_relevance.md",
+          "raw_mentions": [
+            "claim_relevance.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "diagnostic-to-review"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
           "mention_count": 2,
           "path": "claims.md",
           "raw_mentions": [
@@ -5508,13 +5765,14 @@
         {
           "category": "other",
           "exists": false,
-          "mention_count": 6,
+          "mention_count": 7,
           "path": "codex-precondition.md",
           "raw_mentions": [
             "codex-precondition.md"
           ],
-          "skill_count": 4,
+          "skill_count": 5,
           "skills": [
+            "diagnostic-to-review",
             "experiment-queue",
             "idea-to-proposal",
             "research-pipeline",
@@ -5619,20 +5877,7 @@
         {
           "category": "other",
           "exists": false,
-          "mention_count": 1,
-          "path": "experiment-integrity.md",
-          "raw_mentions": [
-            "experiment-integrity.md"
-          ],
-          "skill_count": 1,
-          "skills": [
-            "diagnostic-to-review"
-          ]
-        },
-        {
-          "category": "other",
-          "exists": false,
-          "mention_count": 11,
+          "mention_count": 10,
           "path": "findings.md",
           "raw_mentions": [
             "findings.md"
@@ -5662,6 +5907,32 @@
         {
           "category": "other",
           "exists": false,
+          "mention_count": 1,
+          "path": "grounding_pack.md",
+          "raw_mentions": [
+            "grounding_pack.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "idea-to-proposal"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "implementation_scope.md",
+          "raw_mentions": [
+            "implementation_scope.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "experiment-bridge"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
           "mention_count": 4,
           "path": "index.md",
           "raw_mentions": [
@@ -5676,16 +5947,54 @@
         {
           "category": "other",
           "exists": false,
-          "mention_count": 15,
+          "mention_count": 1,
+          "path": "initial_proposal.md",
+          "raw_mentions": [
+            "initial_proposal.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "research-refine"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 11,
           "path": "innovation-loops.md",
           "raw_mentions": [
             "innovation-loops.md"
           ],
-          "skill_count": 3,
+          "skill_count": 2,
           "skills": [
-            "idea-to-proposal",
             "proposal-revise",
             "research-pipeline"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "innovation_loops.md",
+          "raw_mentions": [
+            "innovation_loops.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "idea-to-proposal"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "integrated_final_refinement.md",
+          "raw_mentions": [
+            "integrated_final_refinement.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "idea-to-proposal"
           ]
         },
         {
@@ -5811,6 +6120,266 @@
           "category": "other",
           "exists": false,
           "mention_count": 1,
+          "path": "planning_contract.md",
+          "raw_mentions": [
+            "planning_contract.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "experiment-bridge"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "probe_headroom.md",
+          "raw_mentions": [
+            "probe_headroom.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "experiment-bridge"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "problem_anchor.md",
+          "raw_mentions": [
+            "problem_anchor.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "research-refine"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "prompts/*.md",
+          "raw_mentions": [
+            "prompts/*.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "research-pipeline"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "prompts/anchor_simplicity_revision.md",
+          "raw_mentions": [
+            "prompts/anchor_simplicity_revision.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "research-refine"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "prompts/claim_relevance.md",
+          "raw_mentions": [
+            "prompts/claim_relevance.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "diagnostic-to-review"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "prompts/grounding_pack.md",
+          "raw_mentions": [
+            "prompts/grounding_pack.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "idea-to-proposal"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "prompts/implementation_scope.md",
+          "raw_mentions": [
+            "prompts/implementation_scope.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "experiment-bridge"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "prompts/initial_proposal.md",
+          "raw_mentions": [
+            "prompts/initial_proposal.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "research-refine"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "prompts/innovation_loops.md",
+          "raw_mentions": [
+            "prompts/innovation_loops.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "idea-to-proposal"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "prompts/integrated_final_refinement.md",
+          "raw_mentions": [
+            "prompts/integrated_final_refinement.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "idea-to-proposal"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "prompts/planning_contract.md",
+          "raw_mentions": [
+            "prompts/planning_contract.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "experiment-bridge"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "prompts/probe_headroom.md",
+          "raw_mentions": [
+            "prompts/probe_headroom.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "experiment-bridge"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "prompts/problem_anchor.md",
+          "raw_mentions": [
+            "prompts/problem_anchor.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "research-refine"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "prompts/red_team_review.md",
+          "raw_mentions": [
+            "prompts/red_team_review.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "diagnostic-to-review"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "prompts/result_interpretation.md",
+          "raw_mentions": [
+            "prompts/result_interpretation.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "diagnostic-to-review"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "prompts/reviewer_critique.md",
+          "raw_mentions": [
+            "prompts/reviewer_critique.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "research-refine"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "prompts/routing_decision.md",
+          "raw_mentions": [
+            "prompts/routing_decision.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "paper-writing"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "prompts/semantic_plan_code_audit.md",
+          "raw_mentions": [
+            "prompts/semantic_plan_code_audit.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "experiment-bridge"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "prompts/stop_c_review.md",
+          "raw_mentions": [
+            "prompts/stop_c_review.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "diagnostic-to-review"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
           "path": "publications.md",
           "raw_mentions": [
             "publications.md"
@@ -5865,6 +6434,19 @@
           "category": "other",
           "exists": false,
           "mention_count": 1,
+          "path": "red_team_review.md",
+          "raw_mentions": [
+            "red_team_review.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "diagnostic-to-review"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
           "path": "research-agent-pipeline.md",
           "raw_mentions": [
             "research-agent-pipeline.md"
@@ -5900,6 +6482,48 @@
           "skills": [
             "idea-creator",
             "research-wiki"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 8,
+          "path": "response.md",
+          "raw_mentions": [
+            "response.md"
+          ],
+          "skill_count": 4,
+          "skills": [
+            "auto-review-loop",
+            "diagnostic-to-review",
+            "idea-to-proposal",
+            "import-codex-review"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "result_interpretation.md",
+          "raw_mentions": [
+            "result_interpretation.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "diagnostic-to-review"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "reviewer_critique.md",
+          "raw_mentions": [
+            "reviewer_critique.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "research-refine"
           ]
         },
         {
@@ -5996,6 +6620,19 @@
         {
           "category": "other",
           "exists": false,
+          "mention_count": 1,
+          "path": "routing_decision.md",
+          "raw_mentions": [
+            "routing_decision.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "paper-writing"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
           "mention_count": 2,
           "path": "score-history.md",
           "raw_mentions": [
@@ -6018,6 +6655,19 @@
           "skills": [
             "experiment-plan",
             "research-pipeline"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "semantic_plan_code_audit.md",
+          "raw_mentions": [
+            "semantic_plan_code_audit.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "experiment-bridge"
           ]
         },
         {
@@ -6057,6 +6707,19 @@
           "skill_count": 1,
           "skills": [
             "jurisdiction-format"
+          ]
+        },
+        {
+          "category": "other",
+          "exists": false,
+          "mention_count": 1,
+          "path": "stop_c_review.md",
+          "raw_mentions": [
+            "stop_c_review.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "diagnostic-to-review"
           ]
         },
         {
@@ -6207,19 +6870,6 @@
       },
       {
         "category": "docs_shared_references_templates",
-        "exists": true,
-        "mention_count": 1,
-        "path": "mcp-servers/codex-image2/README.md",
-        "raw_mentions": [
-          "mcp-servers/codex-image2/README.md"
-        ],
-        "skill_count": 1,
-        "skills": [
-          "paper-writing"
-        ]
-      },
-      {
-        "category": "docs_shared_references_templates",
         "exists": false,
         "mention_count": 1,
         "path": "paper-writing/SKILL.md",
@@ -6260,16 +6910,15 @@
       {
         "category": "docs_shared_references_templates",
         "exists": false,
-        "mention_count": 4,
+        "mention_count": 3,
         "path": "shared-references/assurance-contract.md",
         "raw_mentions": [
           "/shared-references/assurance-contract.md"
         ],
-        "skill_count": 4,
+        "skill_count": 3,
         "skills": [
           "citation-audit",
           "paper-claim-audit",
-          "paper-writing",
           "proof-checker"
         ]
       },
@@ -6290,22 +6939,23 @@
       {
         "category": "docs_shared_references_templates",
         "exists": false,
-        "mention_count": 15,
+        "mention_count": 14,
         "path": "shared-references/codex-precondition.md",
         "raw_mentions": [
           "/shared-references/codex-precondition.md"
         ],
-        "skill_count": 3,
+        "skill_count": 4,
         "skills": [
           "diagnostic-to-review",
           "idea-to-proposal",
-          "proposal-revise"
+          "proposal-revise",
+          "research-pipeline"
         ]
       },
       {
         "category": "docs_shared_references_templates",
         "exists": false,
-        "mention_count": 16,
+        "mention_count": 15,
         "path": "shared-references/continuation-contract.md",
         "raw_mentions": [
           "/shared-references/continuation-contract.md"
@@ -6359,15 +7009,14 @@
       {
         "category": "docs_shared_references_templates",
         "exists": false,
-        "mention_count": 4,
+        "mention_count": 2,
         "path": "shared-references/helper-resolution.md",
         "raw_mentions": [
           "/shared-references/helper-resolution.md"
         ],
-        "skill_count": 2,
+        "skill_count": 1,
         "skills": [
-          "figure-spec",
-          "paper-writing"
+          "figure-spec"
         ]
       },
       {
@@ -6407,17 +7056,16 @@
       {
         "category": "docs_shared_references_templates",
         "exists": false,
-        "mention_count": 17,
+        "mention_count": 15,
         "path": "shared-references/output-language.md",
         "raw_mentions": [
           "/shared-references/output-language.md"
         ],
-        "skill_count": 17,
+        "skill_count": 15,
         "skills": [
           "auto-review-loop",
           "auto-review-loop-llm",
           "auto-review-loop-minimax",
-          "diagnostic-to-review",
           "experiment-bridge",
           "experiment-plan",
           "grant-proposal",
@@ -6427,7 +7075,6 @@
           "idea-to-proposal",
           "meta-optimize",
           "paper-plan",
-          "paper-writing",
           "proposal-revise",
           "research-refine",
           "research-refine-pipeline"
@@ -6436,17 +7083,16 @@
       {
         "category": "docs_shared_references_templates",
         "exists": false,
-        "mention_count": 17,
+        "mention_count": 15,
         "path": "shared-references/output-manifest.md",
         "raw_mentions": [
           "/shared-references/output-manifest.md"
         ],
-        "skill_count": 17,
+        "skill_count": 15,
         "skills": [
           "auto-review-loop",
           "auto-review-loop-llm",
           "auto-review-loop-minimax",
-          "diagnostic-to-review",
           "experiment-bridge",
           "experiment-plan",
           "grant-proposal",
@@ -6456,7 +7102,6 @@
           "idea-to-proposal",
           "meta-optimize",
           "paper-plan",
-          "paper-writing",
           "proposal-revise",
           "research-refine",
           "research-refine-pipeline"
@@ -6465,17 +7110,16 @@
       {
         "category": "docs_shared_references_templates",
         "exists": false,
-        "mention_count": 17,
+        "mention_count": 15,
         "path": "shared-references/output-versioning.md",
         "raw_mentions": [
           "/shared-references/output-versioning.md"
         ],
-        "skill_count": 17,
+        "skill_count": 15,
         "skills": [
           "auto-review-loop",
           "auto-review-loop-llm",
           "auto-review-loop-minimax",
-          "diagnostic-to-review",
           "experiment-bridge",
           "experiment-plan",
           "grant-proposal",
@@ -6485,7 +7129,6 @@
           "idea-to-proposal",
           "meta-optimize",
           "paper-plan",
-          "paper-writing",
           "proposal-revise",
           "research-refine",
           "research-refine-pipeline"
@@ -6567,12 +7210,12 @@
       {
         "category": "docs_shared_references_templates",
         "exists": false,
-        "mention_count": 20,
+        "mention_count": 18,
         "path": "shared-references/research-agent-pipeline.md",
         "raw_mentions": [
           "/shared-references/research-agent-pipeline.md"
         ],
-        "skill_count": 15,
+        "skill_count": 14,
         "skills": [
           "analyze-results",
           "auto-review-loop",
@@ -6582,7 +7225,6 @@
           "idea-discovery",
           "idea-to-proposal",
           "monitor-experiment",
-          "paper-writing",
           "proposal-revise",
           "research-lit",
           "research-pipeline",
@@ -6594,19 +7236,18 @@
       {
         "category": "docs_shared_references_templates",
         "exists": false,
-        "mention_count": 14,
+        "mention_count": 13,
         "path": "shared-references/research-harness-prompts.md",
         "raw_mentions": [
           "/shared-references/research-harness-prompts.md"
         ],
-        "skill_count": 10,
+        "skill_count": 9,
         "skills": [
           "auto-review-loop",
           "diagnostic-to-review",
           "experiment-plan",
           "idea-discovery",
           "idea-to-proposal",
-          "paper-writing",
           "proposal-revise",
           "research-lit",
           "research-pipeline",
@@ -6659,19 +7300,18 @@
       {
         "category": "docs_shared_references_templates",
         "exists": false,
-        "mention_count": 11,
+        "mention_count": 10,
         "path": "shared-references/reviewer-independence.md",
         "raw_mentions": [
           "/shared-references/reviewer-independence.md"
         ],
-        "skill_count": 10,
+        "skill_count": 9,
         "skills": [
           "auto-review-loop",
           "citation-audit",
           "experiment-audit",
           "idea-to-proposal",
           "paper-claim-audit",
-          "paper-writing",
           "proof-checker",
           "proposal-revise",
           "research-pipeline",
@@ -6716,7 +7356,7 @@
       {
         "category": "docs_shared_references_templates",
         "exists": false,
-        "mention_count": 7,
+        "mention_count": 8,
         "path": "shared-references/semantic-code-audit.md",
         "raw_mentions": [
           "/shared-references/semantic-code-audit.md"
@@ -6794,19 +7434,6 @@
       {
         "category": "docs_shared_references_templates",
         "exists": true,
-        "mention_count": 2,
-        "path": "skills/research-pipeline/SKILL.md",
-        "raw_mentions": [
-          "skills/research-pipeline/SKILL.md"
-        ],
-        "skill_count": 1,
-        "skills": [
-          "paper-writing"
-        ]
-      },
-      {
-        "category": "docs_shared_references_templates",
-        "exists": true,
         "mention_count": 3,
         "path": "skills/shared-references/research-agent-pipeline.md",
         "raw_mentions": [
@@ -6835,7 +7462,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 8,
+        "mention_count": 7,
         "path": "ABSTRACT_TASK_MECHANISM.md",
         "raw_mentions": [
           "ABSTRACT_TASK_MECHANISM.md"
@@ -6852,15 +7479,13 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 7,
+        "mention_count": 1,
         "path": "AGENT_DECISION_RECOMMENDATION.md",
         "raw_mentions": [
           "AGENT_DECISION_RECOMMENDATION.md"
         ],
-        "skill_count": 3,
+        "skill_count": 1,
         "skills": [
-          "diagnostic-to-review",
-          "paper-writing",
           "research-pipeline"
         ]
       },
@@ -6882,7 +7507,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 9,
+        "mention_count": 8,
         "path": "ALGORITHM_TOURNAMENT.md",
         "raw_mentions": [
           "ALGORITHM_TOURNAMENT.md"
@@ -6927,15 +7552,14 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 13,
+        "mention_count": 11,
         "path": "ASSUMPTION_LEDGER.md",
         "raw_mentions": [
           "ASSUMPTION_LEDGER.md"
         ],
-        "skill_count": 5,
+        "skill_count": 4,
         "skills": [
           "experiment-plan",
-          "idea-to-proposal",
           "proposal-revise",
           "research-doc-hygiene",
           "research-pipeline"
@@ -6976,7 +7600,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 5,
+        "mention_count": 4,
         "path": "BASELINE_CEILING.md",
         "raw_mentions": [
           "BASELINE_CEILING.md"
@@ -6992,49 +7616,59 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 4,
+        "mention_count": 3,
         "path": "CITATION_AUDIT.md",
         "raw_mentions": [
           "CITATION_AUDIT.md"
         ],
-        "skill_count": 2,
+        "skill_count": 1,
         "skills": [
-          "citation-audit",
-          "paper-writing"
+          "citation-audit"
         ]
       },
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 4,
+        "mention_count": 3,
         "path": "CLAIMS_FROM_RESULTS.md",
         "raw_mentions": [
           "CLAIMS_FROM_RESULTS.md"
         ],
-        "skill_count": 2,
+        "skill_count": 1,
         "skills": [
-          "auto-review-loop",
           "paper-plan"
         ]
       },
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 20,
+        "mention_count": 15,
         "path": "CLAIM_CONSTRUCTION.md",
         "raw_mentions": [
           "CLAIM_CONSTRUCTION.md"
         ],
-        "skill_count": 9,
+        "skill_count": 8,
         "skills": [
           "auto-review-loop",
           "diagnostic-to-review",
-          "experiment-bridge",
           "idea-to-proposal",
           "paper-write",
           "proposal-revise",
           "research-doc-hygiene",
           "research-pipeline",
+          "result-to-claim"
+        ]
+      },
+      {
+        "category": "likely_generated_runtime",
+        "exists": false,
+        "mention_count": 2,
+        "path": "CLAIM_LEDGER.md",
+        "raw_mentions": [
+          "CLAIM_LEDGER.md"
+        ],
+        "skill_count": 1,
+        "skills": [
           "result-to-claim"
         ]
       },
@@ -7116,14 +7750,13 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 2,
+        "mention_count": 1,
         "path": "DIAGNOSTIC_EXPERIMENT_PLAN.md",
         "raw_mentions": [
           "DIAGNOSTIC_EXPERIMENT_PLAN.md"
         ],
-        "skill_count": 2,
+        "skill_count": 1,
         "skills": [
-          "diagnostic-to-review",
           "proposal-revise"
         ]
       },
@@ -7143,14 +7776,14 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 11,
+        "mention_count": 10,
         "path": "DIAGNOSTIC_RUN_AUDIT.md",
         "raw_mentions": [
           "DIAGNOSTIC_RUN_AUDIT.md"
         ],
         "skill_count": 3,
         "skills": [
-          "diagnostic-to-review",
+          "experiment-bridge",
           "research-pipeline",
           "run-experiment"
         ]
@@ -7158,14 +7791,14 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 8,
+        "mention_count": 7,
         "path": "DIAGNOSTIC_RUN_REPORT.md",
         "raw_mentions": [
           "DIAGNOSTIC_RUN_REPORT.md"
         ],
         "skill_count": 2,
         "skills": [
-          "diagnostic-to-review",
+          "experiment-bridge",
           "run-experiment"
         ]
       },
@@ -7203,14 +7836,13 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 22,
+        "mention_count": 18,
         "path": "EXPERIMENT_PLAN.md",
         "raw_mentions": [
           "EXPERIMENT_PLAN.md"
         ],
-        "skill_count": 7,
+        "skill_count": 6,
         "skills": [
-          "diagnostic-to-review",
           "experiment-bridge",
           "experiment-plan",
           "idea-to-proposal",
@@ -7222,14 +7854,13 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 19,
+        "mention_count": 13,
         "path": "EXPERIMENT_PLAN_EXEC.md",
         "raw_mentions": [
           "EXPERIMENT_PLAN_EXEC.md"
         ],
-        "skill_count": 7,
+        "skill_count": 6,
         "skills": [
-          "diagnostic-to-review",
           "experiment-bridge",
           "experiment-plan",
           "idea-to-proposal",
@@ -7295,14 +7926,13 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 33,
+        "mention_count": 22,
         "path": "FINAL_PROPOSAL.md",
         "raw_mentions": [
           "FINAL_PROPOSAL.md"
         ],
-        "skill_count": 11,
+        "skill_count": 10,
         "skills": [
-          "diagnostic-to-review",
           "experiment-bridge",
           "experiment-plan",
           "grant-proposal",
@@ -7331,14 +7961,13 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 14,
+        "mention_count": 7,
         "path": "FINAL_PROPOSAL_SHORT.md",
         "raw_mentions": [
           "FINAL_PROPOSAL_SHORT.md"
         ],
-        "skill_count": 5,
+        "skill_count": 4,
         "skills": [
-          "diagnostic-to-review",
           "experiment-bridge",
           "idea-to-proposal",
           "research-doc-hygiene",
@@ -7374,15 +8003,14 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 15,
+        "mention_count": 11,
         "path": "HUMAN_DECISION_NOTE.md",
         "raw_mentions": [
           "HUMAN_DECISION_NOTE.md"
         ],
-        "skill_count": 4,
+        "skill_count": 3,
         "skills": [
           "diagnostic-to-review",
-          "paper-writing",
           "research-pipeline",
           "result-to-claim"
         ]
@@ -7403,16 +8031,14 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 2,
+        "mention_count": 1,
         "path": "IDEA_CANDIDATES.md",
         "raw_mentions": [
-          "/IDEA_CANDIDATES.md",
-          "IDEA_CANDIDATES.md"
+          "/IDEA_CANDIDATES.md"
         ],
-        "skill_count": 2,
+        "skill_count": 1,
         "skills": [
-          "paper-plan",
-          "result-to-claim"
+          "paper-plan"
         ]
       },
       {
@@ -7503,12 +8129,12 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 14,
+        "mention_count": 13,
         "path": "MANIFEST.md",
         "raw_mentions": [
           "MANIFEST.md"
         ],
-        "skill_count": 14,
+        "skill_count": 13,
         "skills": [
           "auto-review-loop",
           "auto-review-loop-llm",
@@ -7521,7 +8147,6 @@
           "idea-discovery-robot",
           "meta-optimize",
           "paper-plan",
-          "paper-writing",
           "research-refine",
           "research-refine-pipeline"
         ]
@@ -7544,7 +8169,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 9,
+        "mention_count": 6,
         "path": "METHOD_SPEC.md",
         "raw_mentions": [
           "METHOD_SPEC.md"
@@ -7572,22 +8197,21 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 21,
+        "mention_count": 13,
         "path": "NARRATIVE_REPORT.md",
         "raw_mentions": [
           "NARRATIVE_REPORT.md"
         ],
-        "skill_count": 11,
+        "skill_count": 10,
         "skills": [
           "auto-review-loop",
-          "diagnostic-to-review",
           "experiment-audit",
           "figure-spec",
           "grant-proposal",
           "idea-to-proposal",
           "paper-claim-audit",
+          "paper-draft",
           "paper-plan",
-          "paper-writing",
           "patent-pipeline",
           "research-pipeline"
         ]
@@ -7595,7 +8219,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 2,
+        "mention_count": 3,
         "path": "NEGATIVE_RESULT_STRATEGY.md",
         "raw_mentions": [
           "NEGATIVE_RESULT_STRATEGY.md"
@@ -7635,14 +8259,13 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 7,
+        "mention_count": 6,
         "path": "NULL_RESULT_CONTRACT.md",
         "raw_mentions": [
           "NULL_RESULT_CONTRACT.md"
         ],
-        "skill_count": 6,
+        "skill_count": 5,
         "skills": [
-          "diagnostic-to-review",
           "experiment-plan",
           "idea-to-proposal",
           "proposal-revise",
@@ -7667,19 +8290,6 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 1,
-        "path": "PAPER_DRAFT.md",
-        "raw_mentions": [
-          "PAPER_DRAFT.md"
-        ],
-        "skill_count": 1,
-        "skills": [
-          "paper-writing"
-        ]
-      },
-      {
-        "category": "likely_generated_runtime",
-        "exists": false,
         "mention_count": 4,
         "path": "PAPER_ID}.md",
         "raw_mentions": [
@@ -7693,34 +8303,32 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 6,
+        "mention_count": 5,
         "path": "PAPER_IMPROVEMENT_LOG.md",
         "raw_mentions": [
           "PAPER_IMPROVEMENT_LOG.md"
         ],
-        "skill_count": 2,
+        "skill_count": 1,
         "skills": [
-          "auto-paper-improvement-loop",
-          "paper-writing"
+          "auto-paper-improvement-loop"
         ]
       },
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 19,
+        "mention_count": 9,
         "path": "PAPER_PLAN.md",
         "raw_mentions": [
           "PAPER_PLAN.md"
         ],
-        "skill_count": 7,
+        "skill_count": 6,
         "skills": [
           "experiment-audit",
           "figure-spec",
           "paper-claim-audit",
           "paper-figure",
           "paper-plan",
-          "paper-write",
-          "paper-writing"
+          "paper-write"
         ]
       },
       {
@@ -7739,7 +8347,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 12,
+        "mention_count": 11,
         "path": "PLAN_CODE_AUDIT.md",
         "raw_mentions": [
           "PLAN_CODE_AUDIT.md"
@@ -7851,15 +8459,14 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 6,
+        "mention_count": 5,
         "path": "PROOF_AUDIT.md",
         "raw_mentions": [
           "PROOF_AUDIT.md"
         ],
-        "skill_count": 3,
+        "skill_count": 2,
         "skills": [
           "auto-paper-improvement-loop",
-          "paper-writing",
           "proof-checker"
         ]
       },
@@ -7905,7 +8512,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 17,
+        "mention_count": 10,
         "path": "RED_TEAM_REVIEW.md",
         "raw_mentions": [
           "RED_TEAM_REVIEW.md"
@@ -7914,7 +8521,7 @@
         "skills": [
           "auto-review-loop",
           "diagnostic-to-review",
-          "paper-writing",
+          "paper-draft",
           "proposal-revise",
           "research-doc-hygiene",
           "research-pipeline",
@@ -7951,7 +8558,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 17,
+        "mention_count": 11,
         "path": "RESEARCH_DECISION_LOG.md",
         "raw_mentions": [
           "RESEARCH_DECISION_LOG.md"
@@ -7968,7 +8575,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 10,
+        "mention_count": 6,
         "path": "RESULT_INTERPRETATION.md",
         "raw_mentions": [
           "RESULT_INTERPRETATION.md"
@@ -7985,19 +8592,6 @@
         "category": "likely_generated_runtime",
         "exists": false,
         "mention_count": 1,
-        "path": "REVIEW/CLAIM_CHECK.md",
-        "raw_mentions": [
-          "REVIEW/CLAIM_CHECK.md"
-        ],
-        "skill_count": 1,
-        "skills": [
-          "paper-writing"
-        ]
-      },
-      {
-        "category": "likely_generated_runtime",
-        "exists": false,
-        "mention_count": 1,
         "path": "REVIEW/CONSISTENCY_REPORT.md",
         "raw_mentions": [
           "REVIEW/CONSISTENCY_REPORT.md"
@@ -8005,19 +8599,6 @@
         "skill_count": 1,
         "skills": [
           "idea-discovery"
-        ]
-      },
-      {
-        "category": "likely_generated_runtime",
-        "exists": false,
-        "mention_count": 1,
-        "path": "REVIEW/FINAL_CONSENSUS.md",
-        "raw_mentions": [
-          "REVIEW/FINAL_CONSENSUS.md"
-        ],
-        "skill_count": 1,
-        "skills": [
-          "paper-writing"
         ]
       },
       {
@@ -8088,14 +8669,39 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
+        "mention_count": 4,
+        "path": "RUN_AUDIT.md",
+        "raw_mentions": [
+          "RUN_AUDIT.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "diagnostic-to-review"
+        ]
+      },
+      {
+        "category": "likely_generated_runtime",
+        "exists": false,
         "mention_count": 3,
+        "path": "RUN_REPORT.md",
+        "raw_mentions": [
+          "RUN_REPORT.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "diagnostic-to-review"
+        ]
+      },
+      {
+        "category": "likely_generated_runtime",
+        "exists": false,
+        "mention_count": 1,
         "path": "SCALEUP_DECISION.md",
         "raw_mentions": [
           "SCALEUP_DECISION.md"
         ],
-        "skill_count": 2,
+        "skill_count": 1,
         "skills": [
-          "diagnostic-to-review",
           "research-pipeline"
         ]
       },
@@ -8136,6 +8742,19 @@
         "skill_count": 1,
         "skills": [
           "paper-slides"
+        ]
+      },
+      {
+        "category": "likely_generated_runtime",
+        "exists": false,
+        "mention_count": 4,
+        "path": "STOP_C_REVIEW.md",
+        "raw_mentions": [
+          "STOP_C_REVIEW.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "diagnostic-to-review"
         ]
       },
       {
@@ -8243,15 +8862,30 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 3,
+        "mention_count": 2,
         "path": "_RUN_CARD.md",
         "raw_mentions": [
           "_RUN_CARD.md"
         ],
-        "skill_count": 2,
+        "skill_count": 1,
         "skills": [
-          "experiment-bridge",
           "experiment-plan"
+        ]
+      },
+      {
+        "category": "likely_generated_runtime",
+        "exists": false,
+        "mention_count": 9,
+        "path": "claims/CLAIM_LEDGER.md",
+        "raw_mentions": [
+          "claims/CLAIM_LEDGER.md"
+        ],
+        "skill_count": 4,
+        "skills": [
+          "auto-review-loop",
+          "diagnostic-to-review",
+          "paper-claim-audit",
+          "result-to-claim"
         ]
       },
       {
@@ -8265,6 +8899,75 @@
         "skill_count": 1,
         "skills": [
           "dse-loop"
+        ]
+      },
+      {
+        "category": "likely_generated_runtime",
+        "exists": false,
+        "mention_count": 3,
+        "path": "experiment/EXPERIMENT_PLAN.md",
+        "raw_mentions": [
+          "experiment/EXPERIMENT_PLAN.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "experiment-bridge"
+        ]
+      },
+      {
+        "category": "likely_generated_runtime",
+        "exists": false,
+        "mention_count": 4,
+        "path": "experiment/EXPERIMENT_PLAN_EXEC.md",
+        "raw_mentions": [
+          "experiment/EXPERIMENT_PLAN_EXEC.md"
+        ],
+        "skill_count": 2,
+        "skills": [
+          "diagnostic-to-review",
+          "experiment-bridge"
+        ]
+      },
+      {
+        "category": "likely_generated_runtime",
+        "exists": false,
+        "mention_count": 4,
+        "path": "experiment/HEADROOM_NOTE.md",
+        "raw_mentions": [
+          "experiment/HEADROOM_NOTE.md"
+        ],
+        "skill_count": 2,
+        "skills": [
+          "diagnostic-to-review",
+          "experiment-bridge"
+        ]
+      },
+      {
+        "category": "likely_generated_runtime",
+        "exists": false,
+        "mention_count": 5,
+        "path": "experiment/PROBE_AUDIT.md",
+        "raw_mentions": [
+          "experiment/PROBE_AUDIT.md"
+        ],
+        "skill_count": 2,
+        "skills": [
+          "diagnostic-to-review",
+          "experiment-bridge"
+        ]
+      },
+      {
+        "category": "likely_generated_runtime",
+        "exists": false,
+        "mention_count": 6,
+        "path": "experiment/PROBE_REPORT.md",
+        "raw_mentions": [
+          "experiment/PROBE_REPORT.md"
+        ],
+        "skill_count": 2,
+        "skills": [
+          "diagnostic-to-review",
+          "experiment-bridge"
         ]
       },
       {
@@ -8356,20 +9059,21 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 1,
+        "mention_count": 2,
         "path": "orbit-research/*.md",
         "raw_mentions": [
           "orbit-research/*.md"
         ],
-        "skill_count": 1,
+        "skill_count": 2,
         "skills": [
+          "idea-to-proposal",
           "research-pipeline"
         ]
       },
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 11,
+        "mention_count": 9,
         "path": "orbit-research/ABSTRACT_TASK_MECHANISM.md",
         "raw_mentions": [
           "orbit-research/ABSTRACT_TASK_MECHANISM.md"
@@ -8386,14 +9090,13 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 5,
+        "mention_count": 3,
         "path": "orbit-research/AGENT_DECISION_RECOMMENDATION.md",
         "raw_mentions": [
           "orbit-research/AGENT_DECISION_RECOMMENDATION.md"
         ],
-        "skill_count": 3,
+        "skill_count": 2,
         "skills": [
-          "diagnostic-to-review",
           "research-pipeline",
           "result-to-claim"
         ]
@@ -8401,7 +9104,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 6,
+        "mention_count": 5,
         "path": "orbit-research/ALGORITHMIC_FORMALIZATION.md",
         "raw_mentions": [
           "orbit-research/ALGORITHMIC_FORMALIZATION.md"
@@ -8417,7 +9120,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 11,
+        "mention_count": 9,
         "path": "orbit-research/ALGORITHM_TOURNAMENT.md",
         "raw_mentions": [
           "orbit-research/ALGORITHM_TOURNAMENT.md"
@@ -8434,7 +9137,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 9,
+        "mention_count": 8,
         "path": "orbit-research/ANALOGY_TRANSFER.md",
         "raw_mentions": [
           "orbit-research/ANALOGY_TRANSFER.md"
@@ -8463,7 +9166,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 18,
+        "mention_count": 15,
         "path": "orbit-research/ASSUMPTION_LEDGER.md",
         "raw_mentions": [
           "orbit-research/ASSUMPTION_LEDGER.md"
@@ -8484,7 +9187,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 10,
+        "mention_count": 9,
         "path": "orbit-research/BASELINE_CEILING.md",
         "raw_mentions": [
           "orbit-research/BASELINE_CEILING.md"
@@ -8501,17 +9204,16 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 15,
+        "mention_count": 11,
         "path": "orbit-research/CLAIM_CONSTRUCTION.md",
         "raw_mentions": [
           "orbit-research/CLAIM_CONSTRUCTION.md"
         ],
-        "skill_count": 7,
+        "skill_count": 6,
         "skills": [
           "diagnostic-to-review",
           "paper-plan",
           "paper-write",
-          "paper-writing",
           "research-pipeline",
           "research-refine",
           "result-to-claim"
@@ -8552,7 +9254,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 7,
+        "mention_count": 6,
         "path": "orbit-research/CONTROL_DESIGN.md",
         "raw_mentions": [
           "orbit-research/CONTROL_DESIGN.md"
@@ -8569,7 +9271,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 6,
+        "mention_count": 5,
         "path": "orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md",
         "raw_mentions": [
           "orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md"
@@ -8585,7 +9287,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 9,
+        "mention_count": 8,
         "path": "orbit-research/DIAGNOSTIC_RUN_AUDIT.md",
         "raw_mentions": [
           "orbit-research/DIAGNOSTIC_RUN_AUDIT.md"
@@ -8602,7 +9304,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 9,
+        "mention_count": 8,
         "path": "orbit-research/DIAGNOSTIC_RUN_REPORT.md",
         "raw_mentions": [
           "orbit-research/DIAGNOSTIC_RUN_REPORT.md"
@@ -8632,7 +9334,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 7,
+        "mention_count": 9,
         "path": "orbit-research/HUMAN_DECISION_NOTE.md",
         "raw_mentions": [
           "orbit-research/HUMAN_DECISION_NOTE.md"
@@ -8641,7 +9343,7 @@
         "skills": [
           "diagnostic-to-review",
           "experiment-queue",
-          "paper-writing",
+          "paper-draft",
           "research-pipeline",
           "result-to-claim"
         ]
@@ -8649,7 +9351,20 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 3,
+        "mention_count": 1,
+        "path": "orbit-research/HUMAN_DECISION_NOTE.template.md",
+        "raw_mentions": [
+          "orbit-research/HUMAN_DECISION_NOTE.template.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "diagnostic-to-review"
+        ]
+      },
+      {
+        "category": "likely_generated_runtime",
+        "exists": false,
+        "mention_count": 4,
         "path": "orbit-research/LITERATURE_MAP.md",
         "raw_mentions": [
           "orbit-research/LITERATURE_MAP.md"
@@ -8676,7 +9391,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 10,
+        "mention_count": 9,
         "path": "orbit-research/MECHANISM_IDEATION.md",
         "raw_mentions": [
           "orbit-research/MECHANISM_IDEATION.md"
@@ -8705,17 +9420,16 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 9,
+        "mention_count": 8,
         "path": "orbit-research/NEGATIVE_RESULT_STRATEGY.md",
         "raw_mentions": [
           "orbit-research/NEGATIVE_RESULT_STRATEGY.md"
         ],
-        "skill_count": 6,
+        "skill_count": 5,
         "skills": [
           "diagnostic-to-review",
           "paper-plan",
           "paper-write",
-          "paper-writing",
           "research-pipeline",
           "result-to-claim"
         ]
@@ -8723,17 +9437,16 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 12,
+        "mention_count": 10,
         "path": "orbit-research/NULL_RESULT_CONTRACT.md",
         "raw_mentions": [
           "orbit-research/NULL_RESULT_CONTRACT.md"
         ],
-        "skill_count": 7,
+        "skill_count": 6,
         "skills": [
           "diagnostic-to-review",
           "experiment-bridge",
           "experiment-plan",
-          "paper-writing",
           "research-pipeline",
           "research-refine",
           "result-to-claim"
@@ -8742,14 +9455,13 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 4,
+        "mention_count": 3,
         "path": "orbit-research/PAPER_IMPROVEMENT_LOG.md",
         "raw_mentions": [
           "orbit-research/PAPER_IMPROVEMENT_LOG.md"
         ],
-        "skill_count": 2,
+        "skill_count": 1,
         "skills": [
-          "paper-writing",
           "research-pipeline"
         ]
       },
@@ -8769,7 +9481,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 14,
+        "mention_count": 10,
         "path": "orbit-research/PIPELINE_SUMMARY.md",
         "raw_mentions": [
           "orbit-research/PIPELINE_SUMMARY.md"
@@ -8785,7 +9497,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 9,
+        "mention_count": 10,
         "path": "orbit-research/PLAN_CODE_AUDIT.md",
         "raw_mentions": [
           "orbit-research/PLAN_CODE_AUDIT.md"
@@ -8847,7 +9559,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 13,
+        "mention_count": 11,
         "path": "orbit-research/RED_TEAM_REVIEW.md",
         "raw_mentions": [
           "orbit-research/RED_TEAM_REVIEW.md"
@@ -8865,18 +9577,17 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 9,
+        "mention_count": 7,
         "path": "orbit-research/RESEARCH_DECISION_LOG.md",
         "raw_mentions": [
           "/orbit-research/RESEARCH_DECISION_LOG.md",
           "orbit-research/RESEARCH_DECISION_LOG.md"
         ],
-        "skill_count": 6,
+        "skill_count": 5,
         "skills": [
           "diagnostic-to-review",
           "experiment-bridge",
           "experiment-plan",
-          "idea-to-proposal",
           "proposal-revise",
           "research-refine"
         ]
@@ -8884,7 +9595,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 9,
+        "mention_count": 7,
         "path": "orbit-research/RESULT_INTERPRETATION.md",
         "raw_mentions": [
           "orbit-research/RESULT_INTERPRETATION.md"
@@ -8930,6 +9641,19 @@
         "category": "likely_generated_runtime",
         "exists": false,
         "mention_count": 1,
+        "path": "orbit-research/STOP_C_REVIEW.md",
+        "raw_mentions": [
+          "orbit-research/STOP_C_REVIEW.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "diagnostic-to-review"
+        ]
+      },
+      {
+        "category": "likely_generated_runtime",
+        "exists": false,
+        "mention_count": 1,
         "path": "orbit-research/TINY_RUN_AUDIT.md",
         "raw_mentions": [
           "orbit-research/TINY_RUN_AUDIT.md"
@@ -8943,26 +9667,66 @@
         "category": "likely_generated_runtime",
         "exists": false,
         "mention_count": 1,
-        "path": "paper/PAPER_CLAIM_AUDIT.md",
+        "path": "paper/CITATION_AUDIT.md",
         "raw_mentions": [
-          "paper/PAPER_CLAIM_AUDIT.md"
+          "paper/CITATION_AUDIT.md"
         ],
         "skill_count": 1,
         "skills": [
-          "paper-claim-audit"
+          "submission-package"
         ]
       },
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 1,
-        "path": "paper/PAPER_IMPROVEMENT_LOG.md",
+        "mention_count": 2,
+        "path": "paper/CLAIM_TRACE.md",
         "raw_mentions": [
-          "paper/PAPER_IMPROVEMENT_LOG.md"
+          "paper/CLAIM_TRACE.md"
         ],
         "skill_count": 1,
         "skills": [
-          "paper-writing"
+          "paper-from-claims"
+        ]
+      },
+      {
+        "category": "likely_generated_runtime",
+        "exists": false,
+        "mention_count": 2,
+        "path": "paper/DRAFT.md",
+        "raw_mentions": [
+          "paper/DRAFT.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "paper-draft"
+        ]
+      },
+      {
+        "category": "likely_generated_runtime",
+        "exists": false,
+        "mention_count": 2,
+        "path": "paper/PAPER_CLAIM_AUDIT.md",
+        "raw_mentions": [
+          "paper/PAPER_CLAIM_AUDIT.md"
+        ],
+        "skill_count": 2,
+        "skills": [
+          "paper-claim-audit",
+          "submission-package"
+        ]
+      },
+      {
+        "category": "likely_generated_runtime",
+        "exists": false,
+        "mention_count": 2,
+        "path": "paper/PAPER_PLAN.md",
+        "raw_mentions": [
+          "paper/PAPER_PLAN.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "paper-from-claims"
         ]
       },
       {
@@ -8976,6 +9740,19 @@
         "skill_count": 1,
         "skills": [
           "proof-checker"
+        ]
+      },
+      {
+        "category": "likely_generated_runtime",
+        "exists": false,
+        "mention_count": 1,
+        "path": "paper/TODOS.md",
+        "raw_mentions": [
+          "paper/TODOS.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "paper-draft"
         ]
       },
       {
@@ -9173,6 +9950,33 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
+        "mention_count": 5,
+        "path": "proposal/METHOD_SPEC.md",
+        "raw_mentions": [
+          "proposal/METHOD_SPEC.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "idea-to-proposal"
+        ]
+      },
+      {
+        "category": "likely_generated_runtime",
+        "exists": false,
+        "mention_count": 10,
+        "path": "proposal/PROPOSAL.md",
+        "raw_mentions": [
+          "proposal/PROPOSAL.md"
+        ],
+        "skill_count": 2,
+        "skills": [
+          "idea-to-proposal",
+          "paper-draft"
+        ]
+      },
+      {
+        "category": "likely_generated_runtime",
+        "exists": false,
         "mention_count": 1,
         "path": "rebuttal/FOLLOWUP_LOG.md",
         "raw_mentions": [
@@ -9316,7 +10120,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 25,
+        "mention_count": 21,
         "path": "refine-logs/EXPERIMENT_PLAN.md",
         "raw_mentions": [
           "refine-logs/EXPERIMENT_PLAN.md"
@@ -9336,7 +10140,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 9,
+        "mention_count": 6,
         "path": "refine-logs/EXPERIMENT_PLAN_EXEC.md",
         "raw_mentions": [
           "refine-logs/EXPERIMENT_PLAN_EXEC.md"
@@ -9365,7 +10169,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 10,
+        "mention_count": 9,
         "path": "refine-logs/EXPERIMENT_TRACKER.md",
         "raw_mentions": [
           "refine-logs/EXPERIMENT_TRACKER.md"
@@ -9394,14 +10198,13 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 65,
+        "mention_count": 51,
         "path": "refine-logs/FINAL_PROPOSAL.md",
         "raw_mentions": [
           "refine-logs/FINAL_PROPOSAL.md"
         ],
         "skill_count": 14,
         "skills": [
-          "diagnostic-to-review",
           "experiment-bridge",
           "experiment-plan",
           "grant-proposal",
@@ -9409,6 +10212,7 @@
           "idea-discovery",
           "idea-discovery-robot",
           "idea-to-proposal",
+          "paper-draft",
           "patent-pipeline",
           "proposal-revise",
           "research-doc-hygiene",
@@ -9602,19 +10406,6 @@
         "category": "likely_generated_runtime",
         "exists": false,
         "mention_count": 1,
-        "path": "refine-logs/round-N-refinement.md",
-        "raw_mentions": [
-          "refine-logs/round-N-refinement.md"
-        ],
-        "skill_count": 1,
-        "skills": [
-          "research-refine"
-        ]
-      },
-      {
-        "category": "likely_generated_runtime",
-        "exists": false,
-        "mention_count": 1,
         "path": "refine-logs/round-N-review.md",
         "raw_mentions": [
           "refine-logs/round-N-review.md"
@@ -9709,6 +10500,19 @@
       {
         "category": "other",
         "exists": false,
+        "mention_count": 3,
+        "path": "HUMAN_DECISION_NOTE.template.md",
+        "raw_mentions": [
+          "HUMAN_DECISION_NOTE.template.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "diagnostic-to-review"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
         "mention_count": 1,
         "path": "REBUTTAL_DRAFT_rich.md",
         "raw_mentions": [
@@ -9762,6 +10566,19 @@
       {
         "category": "other",
         "exists": false,
+        "mention_count": 1,
+        "path": "anchor_simplicity_revision.md",
+        "raw_mentions": [
+          "anchor_simplicity_revision.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "research-refine"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
         "mention_count": 3,
         "path": "background.md",
         "raw_mentions": [
@@ -9789,6 +10606,19 @@
       {
         "category": "other",
         "exists": false,
+        "mention_count": 1,
+        "path": "claim_relevance.md",
+        "raw_mentions": [
+          "claim_relevance.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "diagnostic-to-review"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
         "mention_count": 2,
         "path": "claims.md",
         "raw_mentions": [
@@ -9802,13 +10632,14 @@
       {
         "category": "other",
         "exists": false,
-        "mention_count": 6,
+        "mention_count": 7,
         "path": "codex-precondition.md",
         "raw_mentions": [
           "codex-precondition.md"
         ],
-        "skill_count": 4,
+        "skill_count": 5,
         "skills": [
+          "diagnostic-to-review",
           "experiment-queue",
           "idea-to-proposal",
           "research-pipeline",
@@ -9913,20 +10744,7 @@
       {
         "category": "other",
         "exists": false,
-        "mention_count": 1,
-        "path": "experiment-integrity.md",
-        "raw_mentions": [
-          "experiment-integrity.md"
-        ],
-        "skill_count": 1,
-        "skills": [
-          "diagnostic-to-review"
-        ]
-      },
-      {
-        "category": "other",
-        "exists": false,
-        "mention_count": 11,
+        "mention_count": 10,
         "path": "findings.md",
         "raw_mentions": [
           "findings.md"
@@ -9956,6 +10774,32 @@
       {
         "category": "other",
         "exists": false,
+        "mention_count": 1,
+        "path": "grounding_pack.md",
+        "raw_mentions": [
+          "grounding_pack.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "idea-to-proposal"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "implementation_scope.md",
+        "raw_mentions": [
+          "implementation_scope.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "experiment-bridge"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
         "mention_count": 4,
         "path": "index.md",
         "raw_mentions": [
@@ -9970,16 +10814,54 @@
       {
         "category": "other",
         "exists": false,
-        "mention_count": 15,
+        "mention_count": 1,
+        "path": "initial_proposal.md",
+        "raw_mentions": [
+          "initial_proposal.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "research-refine"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 11,
         "path": "innovation-loops.md",
         "raw_mentions": [
           "innovation-loops.md"
         ],
-        "skill_count": 3,
+        "skill_count": 2,
         "skills": [
-          "idea-to-proposal",
           "proposal-revise",
           "research-pipeline"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "innovation_loops.md",
+        "raw_mentions": [
+          "innovation_loops.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "idea-to-proposal"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "integrated_final_refinement.md",
+        "raw_mentions": [
+          "integrated_final_refinement.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "idea-to-proposal"
         ]
       },
       {
@@ -10105,6 +10987,266 @@
         "category": "other",
         "exists": false,
         "mention_count": 1,
+        "path": "planning_contract.md",
+        "raw_mentions": [
+          "planning_contract.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "experiment-bridge"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "probe_headroom.md",
+        "raw_mentions": [
+          "probe_headroom.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "experiment-bridge"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "problem_anchor.md",
+        "raw_mentions": [
+          "problem_anchor.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "research-refine"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "prompts/*.md",
+        "raw_mentions": [
+          "prompts/*.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "research-pipeline"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "prompts/anchor_simplicity_revision.md",
+        "raw_mentions": [
+          "prompts/anchor_simplicity_revision.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "research-refine"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "prompts/claim_relevance.md",
+        "raw_mentions": [
+          "prompts/claim_relevance.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "diagnostic-to-review"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "prompts/grounding_pack.md",
+        "raw_mentions": [
+          "prompts/grounding_pack.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "idea-to-proposal"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "prompts/implementation_scope.md",
+        "raw_mentions": [
+          "prompts/implementation_scope.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "experiment-bridge"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "prompts/initial_proposal.md",
+        "raw_mentions": [
+          "prompts/initial_proposal.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "research-refine"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "prompts/innovation_loops.md",
+        "raw_mentions": [
+          "prompts/innovation_loops.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "idea-to-proposal"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "prompts/integrated_final_refinement.md",
+        "raw_mentions": [
+          "prompts/integrated_final_refinement.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "idea-to-proposal"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "prompts/planning_contract.md",
+        "raw_mentions": [
+          "prompts/planning_contract.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "experiment-bridge"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "prompts/probe_headroom.md",
+        "raw_mentions": [
+          "prompts/probe_headroom.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "experiment-bridge"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "prompts/problem_anchor.md",
+        "raw_mentions": [
+          "prompts/problem_anchor.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "research-refine"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "prompts/red_team_review.md",
+        "raw_mentions": [
+          "prompts/red_team_review.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "diagnostic-to-review"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "prompts/result_interpretation.md",
+        "raw_mentions": [
+          "prompts/result_interpretation.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "diagnostic-to-review"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "prompts/reviewer_critique.md",
+        "raw_mentions": [
+          "prompts/reviewer_critique.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "research-refine"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "prompts/routing_decision.md",
+        "raw_mentions": [
+          "prompts/routing_decision.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "paper-writing"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "prompts/semantic_plan_code_audit.md",
+        "raw_mentions": [
+          "prompts/semantic_plan_code_audit.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "experiment-bridge"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "prompts/stop_c_review.md",
+        "raw_mentions": [
+          "prompts/stop_c_review.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "diagnostic-to-review"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
         "path": "publications.md",
         "raw_mentions": [
           "publications.md"
@@ -10159,6 +11301,19 @@
         "category": "other",
         "exists": false,
         "mention_count": 1,
+        "path": "red_team_review.md",
+        "raw_mentions": [
+          "red_team_review.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "diagnostic-to-review"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
         "path": "research-agent-pipeline.md",
         "raw_mentions": [
           "research-agent-pipeline.md"
@@ -10194,6 +11349,48 @@
         "skills": [
           "idea-creator",
           "research-wiki"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 8,
+        "path": "response.md",
+        "raw_mentions": [
+          "response.md"
+        ],
+        "skill_count": 4,
+        "skills": [
+          "auto-review-loop",
+          "diagnostic-to-review",
+          "idea-to-proposal",
+          "import-codex-review"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "result_interpretation.md",
+        "raw_mentions": [
+          "result_interpretation.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "diagnostic-to-review"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "reviewer_critique.md",
+        "raw_mentions": [
+          "reviewer_critique.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "research-refine"
         ]
       },
       {
@@ -10290,6 +11487,19 @@
       {
         "category": "other",
         "exists": false,
+        "mention_count": 1,
+        "path": "routing_decision.md",
+        "raw_mentions": [
+          "routing_decision.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "paper-writing"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
         "mention_count": 2,
         "path": "score-history.md",
         "raw_mentions": [
@@ -10312,6 +11522,19 @@
         "skills": [
           "experiment-plan",
           "research-pipeline"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "semantic_plan_code_audit.md",
+        "raw_mentions": [
+          "semantic_plan_code_audit.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "experiment-bridge"
         ]
       },
       {
@@ -10351,6 +11574,19 @@
         "skill_count": 1,
         "skills": [
           "jurisdiction-format"
+        ]
+      },
+      {
+        "category": "other",
+        "exists": false,
+        "mention_count": 1,
+        "path": "stop_c_review.md",
+        "raw_mentions": [
+          "stop_c_review.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "diagnostic-to-review"
         ]
       },
       {
@@ -10397,16 +11633,16 @@
       }
     ],
     "summary": {
-      "distinct_paths": 288,
-      "docs_shared_references_templates": 43,
-      "likely_generated_runtime": 193,
-      "other": 52
+      "distinct_paths": 334,
+      "docs_shared_references_templates": 41,
+      "likely_generated_runtime": 207,
+      "other": 86
     }
   },
   "mirror_drift": [
     {
-      "canonical_count": 72,
-      "common_count": 72,
+      "canonical_count": 77,
+      "common_count": 77,
       "drifted": [
         {
           "canonical_path": "skills/auto-paper-improvement-loop/SKILL.md",
@@ -10416,46 +11652,11 @@
           "skill": "auto-paper-improvement-loop"
         },
         {
-          "canonical_path": "skills/auto-review-loop/SKILL.md",
-          "canonical_sha256": "65d94ab893c7434d0f7888fb0abea46a4efa6dd80c75a816e9eefa98c26d592c",
-          "mirror_path": ".agents/skills/auto-review-loop/SKILL.md",
-          "mirror_sha256": "8f5075059ec318d680ad780a20b81a77b3ce46b3225499d151989c48680ff6e1",
-          "skill": "auto-review-loop"
-        },
-        {
           "canonical_path": "skills/novelty-check/SKILL.md",
           "canonical_sha256": "4578902507b633b3237b066b9811259b966fd5ebe1078f3ab304ca18d4e71238",
           "mirror_path": ".agents/skills/novelty-check/SKILL.md",
           "mirror_sha256": "c89f03e5b37870519a9eb3a41971a3b7dd4f2e9b39c7fc26d18800e8d06368a5",
           "skill": "novelty-check"
-        },
-        {
-          "canonical_path": "skills/paper-figure/SKILL.md",
-          "canonical_sha256": "7dad660b2b81fa1f5de67d500d237fbd2b24b98eed4c2e2a5fb695a112957964",
-          "mirror_path": ".agents/skills/paper-figure/SKILL.md",
-          "mirror_sha256": "c07ab4e8c0abafe59938509d8d6ce78d91085d21b94467720aac5039c68235e4",
-          "skill": "paper-figure"
-        },
-        {
-          "canonical_path": "skills/paper-plan/SKILL.md",
-          "canonical_sha256": "ddd54bcb9141cc383c0df95c9bb93c798170b405b1bdddc6aaf35f88d47750bf",
-          "mirror_path": ".agents/skills/paper-plan/SKILL.md",
-          "mirror_sha256": "4b1a616d71f41de2290e7f3ad966b82879bb6ede53fc9386ba4f5be35e87c9ba",
-          "skill": "paper-plan"
-        },
-        {
-          "canonical_path": "skills/paper-write/SKILL.md",
-          "canonical_sha256": "3c3e6411957d73682670e6ccff97408a5e171e2bbe0ae1acaf695762a2eb0f0f",
-          "mirror_path": ".agents/skills/paper-write/SKILL.md",
-          "mirror_sha256": "67d561335a148e6cb05415407e9f8c7e1869a3d6011cc45bd1260e5469228b06",
-          "skill": "paper-write"
-        },
-        {
-          "canonical_path": "skills/research-refine/SKILL.md",
-          "canonical_sha256": "39d4d1c1ffaea9eb3668068585b8f9f8a1fc1a31cf4e0eb515176831a0330d7f",
-          "mirror_path": ".agents/skills/research-refine/SKILL.md",
-          "mirror_sha256": "fab213a741c34846fd9e2065341ab557fbf37ac5aff29fc64c44ff9d1aceab38",
-          "skill": "research-refine"
         },
         {
           "canonical_path": "skills/research-review/SKILL.md",
@@ -10465,7 +11666,7 @@
           "skill": "research-review"
         }
       ],
-      "drifted_count": 8,
+      "drifted_count": 3,
       "exists": true,
       "extra": [],
       "extra_count": 0,
@@ -10474,6 +11675,7 @@
         "alphaxiv",
         "analyze-results",
         "arxiv",
+        "auto-review-loop",
         "auto-review-loop-llm",
         "auto-review-loop-minimax",
         "citation-audit",
@@ -10497,18 +11699,25 @@
         "idea-discovery",
         "idea-discovery-robot",
         "idea-to-proposal",
+        "import-codex-review",
         "invention-structuring",
         "jurisdiction-format",
         "mermaid-diagram",
         "meta-optimize",
         "monitor-experiment",
+        "orbit-status",
         "overleaf-sync",
         "paper-claim-audit",
         "paper-compile",
+        "paper-draft",
+        "paper-figure",
+        "paper-from-claims",
         "paper-illustration",
         "paper-illustration-image2",
+        "paper-plan",
         "paper-poster",
         "paper-slides",
+        "paper-write",
         "paper-writing",
         "patent-novelty-check",
         "patent-pipeline",
@@ -10523,6 +11732,7 @@
         "research-doc-hygiene",
         "research-lit",
         "research-pipeline",
+        "research-refine",
         "research-refine-pipeline",
         "research-wiki",
         "result-to-claim",
@@ -10530,20 +11740,21 @@
         "semantic-scholar",
         "serverless-modal",
         "specification-writing",
+        "submission-package",
         "system-profile",
         "training-check",
         "vast-gpu",
         "writing-systems-papers"
       ],
-      "identical_count": 64,
-      "mirror_count": 72,
+      "identical_count": 74,
+      "mirror_count": 77,
       "mirror_root": ".agents/skills",
       "missing": [],
       "missing_count": 0
     },
     {
-      "canonical_count": 72,
-      "common_count": 72,
+      "canonical_count": 77,
+      "common_count": 77,
       "drifted": [],
       "drifted_count": 0,
       "exists": true,
@@ -10579,16 +11790,20 @@
         "idea-discovery",
         "idea-discovery-robot",
         "idea-to-proposal",
+        "import-codex-review",
         "invention-structuring",
         "jurisdiction-format",
         "mermaid-diagram",
         "meta-optimize",
         "monitor-experiment",
         "novelty-check",
+        "orbit-status",
         "overleaf-sync",
         "paper-claim-audit",
         "paper-compile",
+        "paper-draft",
         "paper-figure",
+        "paper-from-claims",
         "paper-illustration",
         "paper-illustration-image2",
         "paper-plan",
@@ -10618,19 +11833,20 @@
         "semantic-scholar",
         "serverless-modal",
         "specification-writing",
+        "submission-package",
         "system-profile",
         "training-check",
         "vast-gpu",
         "writing-systems-papers"
       ],
-      "identical_count": 72,
-      "mirror_count": 72,
+      "identical_count": 77,
+      "mirror_count": 77,
       "mirror_root": "skills/skills-codex",
       "missing": [],
       "missing_count": 0
     },
     {
-      "canonical_count": 72,
+      "canonical_count": 77,
       "common_count": 15,
       "drifted": [
         {
@@ -10642,7 +11858,7 @@
         },
         {
           "canonical_path": "skills/auto-review-loop/SKILL.md",
-          "canonical_sha256": "65d94ab893c7434d0f7888fb0abea46a4efa6dd80c75a816e9eefa98c26d592c",
+          "canonical_sha256": "9621ea70d4aed71f976fe6f020700901686635ffe7aeacf4f1db09026f13633a",
           "mirror_path": "skills/skills-codex-gemini-review/auto-review-loop/SKILL.md",
           "mirror_sha256": "fc8f3061af608b7d2a9acffc22d694e6d6d64b03adfb04f1f1b014efc7725b48",
           "skill": "auto-review-loop"
@@ -10684,14 +11900,14 @@
         },
         {
           "canonical_path": "skills/paper-figure/SKILL.md",
-          "canonical_sha256": "7dad660b2b81fa1f5de67d500d237fbd2b24b98eed4c2e2a5fb695a112957964",
+          "canonical_sha256": "9988ededfaadb0217782a5f0b2d6318b710d6cb605c7809c729914fccfdf715e",
           "mirror_path": "skills/skills-codex-gemini-review/paper-figure/SKILL.md",
           "mirror_sha256": "71161d00a0e2d0d5ab19b88a7b77f115dea3a2e6086e85e55b0980707afad736",
           "skill": "paper-figure"
         },
         {
           "canonical_path": "skills/paper-plan/SKILL.md",
-          "canonical_sha256": "ddd54bcb9141cc383c0df95c9bb93c798170b405b1bdddc6aaf35f88d47750bf",
+          "canonical_sha256": "ee96ac1ea6563a1386999cdc6580bf94dd3fe920ecb474d73c8b40adbd962c26",
           "mirror_path": "skills/skills-codex-gemini-review/paper-plan/SKILL.md",
           "mirror_sha256": "f7ca04244eb7fadbfb1d4c8dc9497cbd730e05ebc6cc9e884d6bd984ecf64e8a",
           "skill": "paper-plan"
@@ -10712,21 +11928,21 @@
         },
         {
           "canonical_path": "skills/paper-write/SKILL.md",
-          "canonical_sha256": "3c3e6411957d73682670e6ccff97408a5e171e2bbe0ae1acaf695762a2eb0f0f",
+          "canonical_sha256": "82fb5249b9c483274b777d54c6083da929768afeba90fbad767228bfbd9efc49",
           "mirror_path": "skills/skills-codex-gemini-review/paper-write/SKILL.md",
           "mirror_sha256": "86ea4f1c15adafabe7e2f11e10d5a726242808d8e581bbeeed6eee894fbca90a",
           "skill": "paper-write"
         },
         {
           "canonical_path": "skills/paper-writing/SKILL.md",
-          "canonical_sha256": "0a16d0d03689f6669bb186b168e9cddb2f9263d1900e75bfae3ef16ba1abcfc9",
+          "canonical_sha256": "ae9769e8b0f01001df2da3fe3bd8af9764531762d57b4add6ed6cd0264612079",
           "mirror_path": "skills/skills-codex-gemini-review/paper-writing/SKILL.md",
           "mirror_sha256": "d3fbf9cfd607ef42d5656ceb8b595dc74a25a7a7693b627fb1afc35cfbf84fde",
           "skill": "paper-writing"
         },
         {
           "canonical_path": "skills/research-refine/SKILL.md",
-          "canonical_sha256": "39d4d1c1ffaea9eb3668068585b8f9f8a1fc1a31cf4e0eb515176831a0330d7f",
+          "canonical_sha256": "1966cf51246ef36c283379c2c32235909e461209fe1c432b55553ab89edff9bb",
           "mirror_path": "skills/skills-codex-gemini-review/research-refine/SKILL.md",
           "mirror_sha256": "a8f889b0f8eeb0ed747fcf8a32dcbdfa0cc7ab568d99ea39704b9303fdb1f441",
           "skill": "research-refine"
@@ -10771,14 +11987,18 @@
         "figure-spec",
         "formula-derivation",
         "idea-to-proposal",
+        "import-codex-review",
         "invention-structuring",
         "jurisdiction-format",
         "mermaid-diagram",
         "meta-optimize",
         "monitor-experiment",
+        "orbit-status",
         "overleaf-sync",
         "paper-claim-audit",
         "paper-compile",
+        "paper-draft",
+        "paper-from-claims",
         "paper-illustration",
         "paper-illustration-image2",
         "patent-novelty-check",
@@ -10801,15 +12021,16 @@
         "semantic-scholar",
         "serverless-modal",
         "specification-writing",
+        "submission-package",
         "system-profile",
         "training-check",
         "vast-gpu",
         "writing-systems-papers"
       ],
-      "missing_count": 57
+      "missing_count": 62
     },
     {
-      "canonical_count": 72,
+      "canonical_count": 77,
       "common_count": 8,
       "drifted": [
         {
@@ -10821,7 +12042,7 @@
         },
         {
           "canonical_path": "skills/auto-review-loop/SKILL.md",
-          "canonical_sha256": "65d94ab893c7434d0f7888fb0abea46a4efa6dd80c75a816e9eefa98c26d592c",
+          "canonical_sha256": "9621ea70d4aed71f976fe6f020700901686635ffe7aeacf4f1db09026f13633a",
           "mirror_path": "skills/skills-codex-claude-review/auto-review-loop/SKILL.md",
           "mirror_sha256": "8f5075059ec318d680ad780a20b81a77b3ce46b3225499d151989c48680ff6e1",
           "skill": "auto-review-loop"
@@ -10835,28 +12056,28 @@
         },
         {
           "canonical_path": "skills/paper-figure/SKILL.md",
-          "canonical_sha256": "7dad660b2b81fa1f5de67d500d237fbd2b24b98eed4c2e2a5fb695a112957964",
+          "canonical_sha256": "9988ededfaadb0217782a5f0b2d6318b710d6cb605c7809c729914fccfdf715e",
           "mirror_path": "skills/skills-codex-claude-review/paper-figure/SKILL.md",
           "mirror_sha256": "c07ab4e8c0abafe59938509d8d6ce78d91085d21b94467720aac5039c68235e4",
           "skill": "paper-figure"
         },
         {
           "canonical_path": "skills/paper-plan/SKILL.md",
-          "canonical_sha256": "ddd54bcb9141cc383c0df95c9bb93c798170b405b1bdddc6aaf35f88d47750bf",
+          "canonical_sha256": "ee96ac1ea6563a1386999cdc6580bf94dd3fe920ecb474d73c8b40adbd962c26",
           "mirror_path": "skills/skills-codex-claude-review/paper-plan/SKILL.md",
           "mirror_sha256": "4b1a616d71f41de2290e7f3ad966b82879bb6ede53fc9386ba4f5be35e87c9ba",
           "skill": "paper-plan"
         },
         {
           "canonical_path": "skills/paper-write/SKILL.md",
-          "canonical_sha256": "3c3e6411957d73682670e6ccff97408a5e171e2bbe0ae1acaf695762a2eb0f0f",
+          "canonical_sha256": "82fb5249b9c483274b777d54c6083da929768afeba90fbad767228bfbd9efc49",
           "mirror_path": "skills/skills-codex-claude-review/paper-write/SKILL.md",
           "mirror_sha256": "67d561335a148e6cb05415407e9f8c7e1869a3d6011cc45bd1260e5469228b06",
           "skill": "paper-write"
         },
         {
           "canonical_path": "skills/research-refine/SKILL.md",
-          "canonical_sha256": "39d4d1c1ffaea9eb3668068585b8f9f8a1fc1a31cf4e0eb515176831a0330d7f",
+          "canonical_sha256": "1966cf51246ef36c283379c2c32235909e461209fe1c432b55553ab89edff9bb",
           "mirror_path": "skills/skills-codex-claude-review/research-refine/SKILL.md",
           "mirror_sha256": "fab213a741c34846fd9e2065341ab557fbf37ac5aff29fc64c44ff9d1aceab38",
           "skill": "research-refine"
@@ -10905,14 +12126,18 @@
         "idea-discovery",
         "idea-discovery-robot",
         "idea-to-proposal",
+        "import-codex-review",
         "invention-structuring",
         "jurisdiction-format",
         "mermaid-diagram",
         "meta-optimize",
         "monitor-experiment",
+        "orbit-status",
         "overleaf-sync",
         "paper-claim-audit",
         "paper-compile",
+        "paper-draft",
+        "paper-from-claims",
         "paper-illustration",
         "paper-illustration-image2",
         "paper-poster",
@@ -10938,12 +12163,13 @@
         "semantic-scholar",
         "serverless-modal",
         "specification-writing",
+        "submission-package",
         "system-profile",
         "training-check",
         "vast-gpu",
         "writing-systems-papers"
       ],
-      "missing_count": 64
+      "missing_count": 69
     }
   ],
   "schema_version": 1
