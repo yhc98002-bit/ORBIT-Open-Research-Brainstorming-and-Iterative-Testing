@@ -266,6 +266,8 @@ MANIFEST_PATH="$PROJECT_ARIS_DIR/$MANIFEST_NAME"
 MANIFEST_PREV="$PROJECT_ARIS_DIR/$MANIFEST_PREV_NAME"
 LOCK_DIR="$PROJECT_ARIS_DIR/$LOCK_DIR_NAME"
 DOC_FILE="$PROJECT_PATH/$DOC_FILE_NAME"
+TOOLS_LINK="$PROJECT_ARIS_DIR/tools"
+TOOLS_TARGET="$ARIS_REPO/tools"
 
 # ─── S9: refuse if .aris / .claude / .claude/skills is itself a symlink ───────
 # (.aris and .claude/skills may not exist yet — only check if present.)
@@ -559,6 +561,31 @@ commit_manifest() {
     mv -f "$manifest_tmp" "$MANIFEST_PATH"
 }
 
+ensure_tools_link() {
+    [[ -d "$TOOLS_TARGET" ]] || return 0
+    if is_symlink "$TOOLS_LINK"; then
+        local cur; cur="$(read_link_target "$TOOLS_LINK")"
+        [[ "$cur" != /* ]] && cur="$(canonicalize "$(dirname "$TOOLS_LINK")/$cur")"
+        if [[ "$cur" == "$TOOLS_TARGET" ]]; then
+            return 0
+        fi
+        if [[ "$cur" == "$ARIS_REPO"/* ]]; then
+            rm -f "$TOOLS_LINK"
+            ln -s "$TOOLS_TARGET" "$TOOLS_LINK"
+            log "  ↻ .aris/tools"
+            return 0
+        fi
+        warn "S2: $TOOLS_LINK points outside aris-repo ($cur), leaving it untouched"
+        return 0
+    fi
+    if [[ -e "$TOOLS_LINK" ]]; then
+        warn "S4: $TOOLS_LINK already exists and is not a symlink, leaving it untouched"
+        return 0
+    fi
+    ln -s "$TOOLS_TARGET" "$TOOLS_LINK"
+    log "  + .aris/tools"
+}
+
 # ─── CLAUDE.md best-effort update (compare-and-swap) ──────────────────────────
 update_claude_doc() {
     local installed_names_file="$1"
@@ -665,6 +692,14 @@ do_uninstall() {
     done < "$manifest_data"
     rm -f "$manifest_data"
     if ! $DRY_RUN; then
+        if is_symlink "$TOOLS_LINK"; then
+            local cur; cur="$(read_link_target "$TOOLS_LINK")"
+            [[ "$cur" != /* ]] && cur="$(canonicalize "$(dirname "$TOOLS_LINK")/$cur")"
+            if [[ "$cur" == "$TOOLS_TARGET" ]]; then
+                rm -f "$TOOLS_LINK"
+                log "  - removed .aris/tools"
+            fi
+        fi
         # Keep .prev for forensics, remove current manifest
         [[ -f "$MANIFEST_PATH" ]] && mv -f "$MANIFEST_PATH" "$MANIFEST_PREV"
         log "  ✓ uninstalled (manifest preserved as $MANIFEST_PREV)"
@@ -731,8 +766,16 @@ if (( N_CONFLICT > 0 )); then
     # Apply --replace-link allowlist for symlink-to-other-repo-entry conflicts
     if [[ ${#REPLACE_LINK_NAMES[@]} -gt 0 ]]; then
         for n in "${REPLACE_LINK_NAMES[@]}"; do
-            sed -i.bak "s|^CONFLICT|$n|UPDATE_TARGET|$n|" "$PLAN_FILE" 2>/dev/null || true
-            rm -f "$PLAN_FILE.bak"
+            is_safe_name "$n" || die "unsafe --replace-link name: $n"
+            tmp_plan="$PLAN_FILE.replace.$$"
+            awk -F'|' -v OFS='|' -v n="$n" '
+                $1=="CONFLICT" && $3==n && $4 ~ /^symlink_to:/ {
+                    sub(/^symlink_to:/, "", $4)
+                    $1="UPDATE_TARGET"
+                }
+                { print }
+            ' "$PLAN_FILE" > "$tmp_plan"
+            mv -f "$tmp_plan" "$PLAN_FILE"
         done
         N_CONFLICT=$(grep -c '^CONFLICT|' "$PLAN_FILE" || true)
     fi
@@ -766,6 +809,7 @@ log ""
 log "Applying:"
 apply_plan "$PLAN_FILE" "$MANIFEST_TMP"
 commit_manifest "$MANIFEST_TMP"
+ensure_tools_link
 
 # Handle prefer-upstream legacy archive AFTER successful apply
 if [[ "$LEGACY_KIND" == "real_dir" && "$MIGRATE_COPY" == "prefer-upstream" ]]; then

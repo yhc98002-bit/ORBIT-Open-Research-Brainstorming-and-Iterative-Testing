@@ -57,11 +57,13 @@ cd Auto-claude-code-research-in-sleep
 
 # 方案 A：全局安装（所有项目可用）
 mkdir -p ~/.gemini/antigravity/skills
-cp -r skills/* ~/.gemini/antigravity/skills/
+find skills -mindepth 1 -maxdepth 1 -type d ! -name 'skills-codex*' \
+  -exec cp -r {} ~/.gemini/antigravity/skills/ \;
 
 # 方案 B：项目级安装（推荐，隔离性好）
 mkdir -p /path/to/your/project/.agents/skills
-cp -r skills/* /path/to/your/project/.agents/skills/
+find skills -mindepth 1 -maxdepth 1 -type d ! -name 'skills-codex*' \
+  -exec cp -r {} /path/to/your/project/.agents/skills/ \;
 ```
 
 > **重要：** Antigravity 从 `~/.gemini/antigravity/skills/`（全局）和 `<workspace>/.agents/skills/`（项目级）发现技能。Agent 启动时看到技能名称和描述，相关时加载完整 SKILL.md 内容。

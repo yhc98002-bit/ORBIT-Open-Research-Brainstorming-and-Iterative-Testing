@@ -2,17 +2,18 @@
 
 ## 1. 这个包是什么
 
-这是一个面向 **Codex** 的技能包目录，当前版本已经与主线 `skills/` 对齐：
+这是一个面向 **Codex** 的技能包目录，现在是主线顶层 `skills/` 的**全量镜像**：
 
-- 保留主线科研技能的同名同步集
-- 同步包含 `training-check`、`ablation-planner`、`result-to-claim`、`rebuttal`
-- 同步包含 `mermaid-diagram`
+- 由 `tools/sync_codex_mirror.py` 从顶层 `skills/` 生成
+- 包含每个带 `SKILL.md` 的顶层 skill 目录
 - 附带 `shared-references/`，但它**不计入 skill 数量**
+- Codex reviewer 差异不在这里维护，而在 `skills-codex-gemini-review/` 和
+  `skills-codex-claude-review/` overlay 中维护
 
 数量对比：
 
-- 主线 `skills/` 当前技能数：`39`
-- 本包技能数：`39`
+- 主线 `skills/` 当前技能数：`72`
+- 本包技能数：`72`
 - 另附支持目录：`shared-references/`
 
 本包路径结构是：
@@ -30,10 +31,10 @@ skills/skills-codex/
 
 ### 2.1 范围控制
 
-本包只保留：
+本包保留：
 
-- 主线 `skills/` 中已有的同名技能
-- 少量确实需要的资源目录
+- 主线 `skills/` 中所有带 `SKILL.md` 的同名技能
+- `shared-references/`
 
 因此，本包 **不包含**：
 
@@ -65,8 +66,12 @@ skills/skills-codex/
 ## 3. 如何安装
 
 ```bash
-mkdir -p ~/.codex/skills
-cp -a skills/skills-codex/* ~/.codex/skills/
+mkdir -p .agents/skills
+cp -a skills/skills-codex/* .agents/skills/
+
+# 可选 reviewer overlay，需在 base mirror 后安装：
+# cp -a skills/skills-codex-gemini-review/* .agents/skills/
+# cp -a skills/skills-codex-claude-review/* .agents/skills/
 ```
 
 ## 4. 安装时需要知道的边界

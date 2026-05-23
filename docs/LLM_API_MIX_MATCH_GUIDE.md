@@ -168,7 +168,7 @@ Claude Code 会自动：
 2. 参考 `auto-review-loop-llm` 的写法（MCP 优先 + curl fallback）
 3. 逐个改写到你本地的 `~/.claude/skills/` 目录
 
-> ⚠️ **注意：** 这只修改你本地的 skill 副本，不影响仓库原文件。想恢复默认？重新 `cp -r skills/* ~/.claude/skills/` 即可。
+> ⚠️ **注意：** 这只修改你本地的 skill 副本，不影响仓库原文件。想恢复默认？重新执行过滤 `skills-codex*` 的平铺复制即可。
 
 ---
 

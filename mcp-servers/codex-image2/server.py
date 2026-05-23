@@ -23,9 +23,6 @@ from pathlib import Path
 from typing import Any
 
 
-sys.stdout = os.fdopen(sys.stdout.fileno(), "wb", buffering=0)
-sys.stdin = os.fdopen(sys.stdin.fileno(), "rb", buffering=0)
-
 SERVER_NAME = os.environ.get("CODEX_IMAGE2_SERVER_NAME", "codex-image2")
 CODEX_BIN = os.environ.get("CODEX_IMAGE2_CODEX_BIN", "codex")
 DEFAULT_TIMEOUT_SEC = int(os.environ.get("CODEX_IMAGE2_TIMEOUT_SEC", "600"))
@@ -54,6 +51,14 @@ RUNS_DIR = STATE_DIR / "runs"
 TERMINAL_JOB_STATES = {"completed", "failed"}
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 _use_ndjson = False
+
+
+def configure_binary_stdio() -> None:
+    """Use binary stdio for MCP framing when running as a server."""
+    if "b" not in getattr(sys.stdout, "mode", ""):
+        sys.stdout = os.fdopen(sys.stdout.fileno(), "wb", buffering=0)
+    if "b" not in getattr(sys.stdin, "mode", ""):
+        sys.stdin = os.fdopen(sys.stdin.fileno(), "rb", buffering=0)
 
 
 def debug_log(message: str) -> None:
@@ -858,6 +863,8 @@ def handle_request(request: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def main() -> int:
+    configure_binary_stdio()
+
     if len(sys.argv) == 3 and sys.argv[1] == "--run-job":
         return run_async_job(sys.argv[2])
 

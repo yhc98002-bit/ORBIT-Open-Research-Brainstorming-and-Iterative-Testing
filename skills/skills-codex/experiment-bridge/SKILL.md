@@ -1,6 +1,8 @@
 ---
 name: experiment-bridge
 description: "ORBIT v1.4 STOP B wrapper. Turns an approved proposal into decision-driven experiment-plan artifacts, implements the planned code, runs semantic plan-code audit, and may run limited implementation-facing probes. Accepts FINAL_PROPOSAL.md, FINAL_PROPOSAL_SHORT.md, METHOD_SPEC.md, or existing legacy EXPERIMENT_PLAN.md. Does not create paper claims or run auto-review-loop; formal diagnostics and claim/review routing belong to /diagnostic-to-review."
+argument-hint: [approved-proposal-or-experiment-plan-path]
+allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, Skill, mcp__codex__codex, mcp__codex__codex-reply
 ---
 
 # /experiment-bridge — v1.4 Proposal → Plan → Code → Audit → Probe
@@ -17,6 +19,10 @@ This is a wrapper skill, not a code-only atomic step. It owns STOP B:
 4. run semantic plan-code audit and write `PLAN_CODE_AUDIT.md`;
 5. run limited implementation-facing probes when mode allows;
 6. hand formal diagnostics to `/diagnostic-to-review`.
+
+Version note: `v1.4` names this STOP B wrapper behavior. The underlying artifact names,
+stage numbers, and hard gates remain the ORBIT v1.3 contract in
+`../shared-references/research-agent-pipeline.md`.
 
 Load `../shared-references/research-posture.md`. Preserve the proposal's `paper_mode`
 (default `normal`) and design the smallest experiment package that can support the chosen
@@ -116,7 +122,8 @@ approval signal.
 
 Read `RESEARCH_DECISION_LOG.md` when present. If it says the failure type is
 `implementation/config issue`, patch only the local implementation/config surface it
-names. If it names another failure type, route to the indicated skill.
+names. If it names another failure type, do not broaden the implementation task; route to
+the indicated skill.
 
 ## Phase 1: Experiment Planning From The Approved Proposal
 
@@ -140,6 +147,17 @@ The plan must be decision-driven:
 - `EXPERIMENT_PLAN_EXEC.md` contains the executable run order and
   `Decision Tree / Branch Table`
 
+Planning must write or update:
+
+- `refine-logs/EXPERIMENT_PLAN.md`
+- `refine-logs/EXPERIMENT_PLAN_EXEC.md`
+- `refine-logs/EXPERIMENT_TRACKER.md`
+- `orbit-research/CONTROL_DESIGN.md`
+- `orbit-research/NULL_RESULT_CONTRACT.md`
+- `orbit-research/COMPONENT_BUNDLE_LADDER.md`
+- `orbit-research/ALGORITHMIC_FORMALIZATION.md`
+- `orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md`
+
 After `EXPERIMENT_PLAN_EXEC.md` exists and includes the decision tree, update only the
 proposal status block in `FINAL_PROPOSAL.md` / `FINAL_PROPOSAL_SHORT.md` to
 `EXPERIMENT_PLAN_READY` with evidence basis pointing to the plan artifacts. This means
@@ -161,60 +179,117 @@ extracting implementation details:
 - ORBIT planning artifacts listed above for controls, null-result interpretation,
   formalization, and diagnostic design
 
-Implement only what the plan requires: training/evaluation scripts, data loaders,
-baselines/controls, seeds, parseable outputs, logging paths, and launch configs.
+Implement only what the plan requires:
+
+- training/evaluation scripts with configurable arguments
+- dataset loaders and preprocessing
+- baseline/control variants named in the plan
+- fixed and controllable seeds
+- parseable JSON/CSV result output
+- logging paths and W&B integration when configured
+- config files or launch scripts needed by the diagnostic command
+
+Do not add unregistered experiments because they are interesting. Add them to the plan
+first or leave a note for a future plan patch.
 
 ## Phase 3: Semantic Plan-Code Audit
 
 Before any probe or formal diagnostic, run the semantic audit from
-`shared-references/semantic-code-audit.md`. Always write
-`orbit-research/PLAN_CODE_AUDIT.md` with a verdict line:
+`../shared-references/semantic-code-audit.md`. The audit checks whether code implements the
+intended algorithm, baselines, controls, ablations, datasets, splits, metrics, regimes,
+seeds, config defaults, and result files.
+
+Always write `orbit-research/PLAN_CODE_AUDIT.md` with a verdict line:
 
 ```text
 MATCHES_PLAN | PARTIAL_MISMATCH | CRITICAL_MISMATCH | ERROR
 ```
 
-`CRITICAL_MISMATCH` blocks probes and diagnostics until fixed. `ERROR` blocks formal
-diagnostics; a tiny implementation probe may proceed only when the error is audit-tool
-availability, not a known code/plan mismatch.
+Rules:
+
+- `MATCHES_PLAN` -> proceed to probe if mode allows.
+- `PARTIAL_MISMATCH` -> proceed only if the mismatch is scoped and irrelevant to the
+  immediate probe/formal diagnostic.
+- `CRITICAL_MISMATCH` -> fix and re-audit; do not run probes or diagnostics.
+- `ERROR` -> no formal diagnostic. A tiny implementation probe may proceed only if the
+  user requested probe mode and the error is audit-tool availability, not known code/plan
+  mismatch.
 
 If mode is `audit-only`, stop after writing `PLAN_CODE_AUDIT.md`.
 
 ## Phase 4: Limited Implementation-Facing Probe
 
 Probe runs are allowed by default in `probe` mode, but they are not paper evidence. They
-exist to validate implementation feasibility: environment, dataloader, metric parser,
-one-batch/tiny overfit, logging/result paths, or diagnostic command smoke test.
+exist to validate implementation feasibility:
 
-Probe runs may call `/run-experiment`. When they do, they must be ledgered through:
+- environment check
+- dataloader / metric parser sanity
+- one-batch or tiny overfit
+- logging / W&B / result path validation
+- diagnostic command smoke test
+- minimal local mechanism probe whose purpose is implementation readiness
 
-- `orbit-research/RUN_LEDGER.jsonl`
-- `orbit-research/DIAGNOSTIC_RUN_REPORT.md`
-- `orbit-research/DIAGNOSTIC_RUN_AUDIT.md`
+Probe runs may call `/run-experiment`. When they do, they must be ledgered through the
+standard run provenance path:
 
-Probe results must not directly create paper claims. Do not write
-`CLAIM_CONSTRUCTION.md`, do not run `/auto-review-loop`, and do not perform formal
-scientific result interpretation. If a probe unexpectedly affects paper-level claim
-scope, stop and hand off to `/diagnostic-to-review`.
+- append start/final entries to `orbit-research/RUN_LEDGER.jsonl`
+- write `orbit-research/DIAGNOSTIC_RUN_REPORT.md`
+- write `orbit-research/DIAGNOSTIC_RUN_AUDIT.md`
+
+Probe results must not directly create paper claims:
+
+- do not write `CLAIM_CONSTRUCTION.md`
+- do not run `/auto-review-loop`
+- do not perform formal scientific result interpretation beyond implementation/probe
+  status
+
+If a probe unexpectedly affects paper-level claim scope, stop and hand off to:
+
+```bash
+/diagnostic-to-review "<diagnostic command OR manifest>"
+```
 
 ## Phase 5: Handoff
 
-Write or update `orbit-research/PIPELINE_SUMMARY.md` with:
+Write or update `orbit-research/PIPELINE_SUMMARY.md`:
 
-- input and mode
-- proposal, plan, exec plan, audit, and probe report paths
-- STOP B review checklist
-- next command: `/diagnostic-to-review "<diagnostic command OR manifest>"`
+```markdown
+# /experiment-bridge Summary
+
+- Input: $ARGUMENTS
+- Mode: plan-only | audit-only | probe | full-bridge
+- Proposal: refine-logs/FINAL_PROPOSAL.md
+- Plan: refine-logs/EXPERIMENT_PLAN.md
+- Exec plan: refine-logs/EXPERIMENT_PLAN_EXEC.md
+- Audit: orbit-research/PLAN_CODE_AUDIT.md
+- Probe reports: [paths or NONE]
+
+## STOP B
+
+Review:
+- refine-logs/EXPERIMENT_PLAN.md
+- refine-logs/EXPERIMENT_PLAN_EXEC.md
+- orbit-research/PLAN_CODE_AUDIT.md
+- probe reports, if any
+
+Human question:
+Is this code/plan/probe status good enough for formal diagnostics?
+
+## Next
+
+/diagnostic-to-review "<diagnostic command OR manifest>"
+```
 
 If mode is `full-bridge`, call `/diagnostic-to-review` after writing the STOP B summary.
-Do not call `/auto-review-loop` directly.
+Do not call `/auto-review-loop` directly; `/diagnostic-to-review` owns conditional-required
+claim/review routing.
 
 ## Output Protocols
 
 > Follow these shared protocols for all output files:
-> - **[Output Versioning Protocol](../../shared-references/output-versioning.md)** — apply selective milestone timestamping rules
-> - **[Output Manifest Protocol](../../shared-references/output-manifest.md)** — log every output to MANIFEST.md
-> - **[Output Language Protocol](../../shared-references/output-language.md)** — respect the project's language setting
+> - **[Output Versioning Protocol](../shared-references/output-versioning.md)** — apply selective milestone timestamping rules
+> - **[Output Manifest Protocol](../shared-references/output-manifest.md)** — log every output to MANIFEST.md
+> - **[Output Language Protocol](../shared-references/output-language.md)** — respect the project's language setting
 
 ## Key Rules
 
@@ -223,7 +298,8 @@ Do not call `/auto-review-loop` directly.
 - Experiment planning belongs here after STOP A; it must not pollute `FINAL_PROPOSAL.md`.
 - Every committed experiment must change a research decision. Paper-claim defense applies
   only to paper-bearing experiments.
-- Never compare predictions against another model's output as ground truth.
+- Never compare predictions against another model's output as ground truth; use dataset
+  labels/targets or official eval scripts.
 - Do not create paper claims, claim construction, red-team reviews, or paper-writing
   artifacts in this skill.
 - Formal diagnostic execution, scientific interpretation, decision logging after results,

@@ -134,17 +134,32 @@ W&B, `EXPERIMENT_LOG.md`, etc. The argument separator is em-dash `—`, not sing
 
 ## Install
 
-Project-level install (recommended; avoids polluting global skills):
+Claude project-level install (recommended; avoids polluting global skills):
 
 ```bash
 bash tools/install_aris.sh
 ```
 
-Manual copy fallback:
+This creates flat per-skill symlinks under `.claude/skills/`, records the
+managed entries in `.aris/installed-skills.txt`, and links `.aris/tools/` to
+the repo helper scripts used by skills.
+
+Manual Claude copy fallback:
 
 ```bash
 mkdir -p .claude/skills
-cp -r skills/* .claude/skills/
+find skills -mindepth 1 -maxdepth 1 -type d ! -name 'skills-codex*' \
+  -exec cp -r {} .claude/skills/ \;
+```
+
+Codex skill mirror install is manual and flat:
+
+```bash
+mkdir -p .agents/skills
+cp -a skills/skills-codex/* .agents/skills/
+# Optional reviewer overlay, installed after the base mirror:
+# cp -a skills/skills-codex-gemini-review/* .agents/skills/
+# cp -a skills/skills-codex-claude-review/* .agents/skills/
 ```
 
 Codex reviewer requires Codex CLI / MCP:

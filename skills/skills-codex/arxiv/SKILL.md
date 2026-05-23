@@ -1,6 +1,8 @@
 ---
-name: "arxiv"
-description: "Search, download, and summarize academic papers from arXiv. Use when user says \"search arxiv\", \"download paper\", \"fetch arxiv\", \"arxiv search\", \"get paper pdf\", or wants to find and save papers from arXiv to the local paper library."
+name: arxiv
+description: Search, download, and summarize academic papers from arXiv. Use when user says "search arxiv", "download paper", "fetch arxiv", "arxiv search", "get paper pdf", or wants to find and save papers from arXiv to the local paper library.
+argument-hint: [query-or-arxiv-id]
+allowed-tools: Bash(*), Read, Write
 ---
 
 # arXiv Paper Search & Download
@@ -39,13 +41,23 @@ Locate the fetch script:
 
 ```bash
 SCRIPT=$(python3 -c "
+import os
 import pathlib
+repo = os.environ.get('ORBIT_REPO') or os.environ.get('ARIS_REPO')
+manifest = pathlib.Path('.aris/installed-skills.txt')
+if not repo and manifest.exists():
+    for line in manifest.read_text(errors='ignore').splitlines():
+        fields = line.split('\t')
+        if len(fields) >= 2 and fields[0] == 'repo_root':
+            repo = fields[1]
+            break
 candidates = [
     pathlib.Path('tools/arxiv_fetch.py'),
-    pathlib.Path.home() / '.codex' / 'skills' / 'arxiv' / 'arxiv_fetch.py',
+    pathlib.Path(repo) / 'tools' / 'arxiv_fetch.py' if repo else None,
+    pathlib.Path.home() / '.claude' / 'skills' / 'arxiv' / 'arxiv_fetch.py',
 ]
 for p in candidates:
-    if p.exists():
+    if p and p.exists():
         print(p)
         break
 " 2>/dev/null)
@@ -175,12 +187,57 @@ For each paper (downloaded or fetched by API):
 - **Local PDF**: papers/[ID].pdf (if downloaded)
 ```
 
-### Step 6: Final Output
+### Step 6: Update Research Wiki (if active)
+
+**Required when `research-wiki/` exists in the project**; skip silently
+otherwise. When the wiki dir exists, resolve `$WIKI_SCRIPT` per the
+canonical chain at
+[`../shared-references/wiki-helper-resolution.md`](../shared-references/wiki-helper-resolution.md)
+(Variant B — warn-and-skip), then ingest every paper returned by this
+invocation:
+
+```bash
+if [ -d research-wiki/ ]; then
+  cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" || exit 1
+  if [ -z "${ARIS_REPO:-}" ] && [ -f .aris/installed-skills.txt ]; then
+    ARIS_REPO=$(awk -F'\t' '$1=="repo_root"{print $2; exit}' .aris/installed-skills.txt 2>/dev/null) || true
+  fi
+  WIKI_SCRIPT=".aris/tools/research_wiki.py"
+  [ -f "$WIKI_SCRIPT" ] || WIKI_SCRIPT="tools/research_wiki.py"
+  if [ ! -f "$WIKI_SCRIPT" ]; then
+    if [ -n "${ORBIT_REPO:-}" ] && [ -f "$ORBIT_REPO/tools/research_wiki.py" ]; then
+      WIKI_SCRIPT="$ORBIT_REPO/tools/research_wiki.py"
+    elif [ -n "${ARIS_REPO:-}" ] && [ -f "$ARIS_REPO/tools/research_wiki.py" ]; then
+      WIKI_SCRIPT="$ARIS_REPO/tools/research_wiki.py"
+    fi
+  fi
+  [ -f "$WIKI_SCRIPT" ] || {
+    echo "WARN: research_wiki.py not found; arxiv results delivered, wiki ingest skipped. Fix: bash tools/install_aris.sh, export ORBIT_REPO/ARIS_REPO, or cp <ARIS-repo>/tools/research_wiki.py tools/." >&2
+    WIKI_SCRIPT=""
+  }
+  if [ -n "$WIKI_SCRIPT" ]; then
+    for each arxiv_id in results:
+        python3 "$WIKI_SCRIPT" ingest_paper research-wiki/ \
+            --arxiv-id "<arxiv_id>"
+  fi
+fi
+```
+
+The helper handles metadata fetch, slug, dedup, page creation, index
+rebuild, and log append in a single call — **do not handwrite
+`papers/<slug>.md`**. See
+[`../shared-references/integration-contract.md`](../shared-references/integration-contract.md)
+for the canonical-helper rule. Missed ingests can be backfilled later
+with `python3 "$WIKI_SCRIPT" sync research-wiki/ --arxiv-ids <id1>,<id2>,...`
+after resolving `$WIKI_SCRIPT` as above.
+
+### Step 7: Final Output
 
 Summarize what was done:
 
 - `Found N papers for "query"`
 - `Downloaded: papers/2301.07041.pdf (842 KB)` (for each download)
+- `Wiki-ingested N papers` (if `research-wiki/` was present)
 - Any warnings (rate limit hit, file too small, already exists)
 
 Suggest follow-up skills:
@@ -199,4 +256,3 @@ Suggest follow-up skills:
 - Handle both arXiv ID formats: new (`2301.07041`) and old (`cs/0601001`)
 - PAPER_DIR is created automatically if it does not exist
 - If the arXiv API is unreachable, report the error clearly and suggest using `/research-lit` with `- sources: web` as a fallback
-

@@ -12,7 +12,7 @@ Classify novelty risk and positioning routes for: **$ARGUMENTS**
 ## Constants
 
 - REVIEWER_MODEL = `gpt-5.5` — Model used via Codex MCP. Must be an OpenAI model (e.g., `gpt-5.5`, `o3`, `gpt-4o`)
-- **NOVELTY_POLICY = `positioning-first`** — Load `shared-references/research-posture.md`
+- **NOVELTY_POLICY = `positioning-first`** — Load `../shared-references/research-posture.md`
   before judging novelty. Similar work is not automatically fatal.
 - **CONCURRENT_WORK_WINDOW = `3 months`** — Recent work goes to
   `orbit-research/CONCURRENT_WORK_WATCHLIST.md` by default.
@@ -54,7 +54,7 @@ config: {"model_reasoning_effort": "xhigh"}
 Prompt should include:
 - The proposed method description
 - All papers found in Phase B
-- The default posture from `shared-references/research-posture.md`
+- The default posture from `../shared-references/research-posture.md`
 - Ask:
   "Classify novelty posture using CLEAR_SPACE / RELATED_BUT_DIFFERENT /
   CONCURRENT_WORK / WEAK_BLOCKER / STRONG_BLOCKER / POSITIONING_TARGET /
@@ -108,7 +108,7 @@ STRONG_BLOCKER.]
 - Be honest but opportunity-preserving. Your job is to classify novelty risk and find
   viable positioning, not to kill promising ideas prematurely.
 - Do not recommend abandonment unless the `STRONG_BLOCKER` criteria in
-  `shared-references/research-posture.md` are met.
+  `../shared-references/research-posture.md` are met.
 - For every non-strong-blocker, propose at least one positioning strategy.
 - "Applying X to Y" can be a valid normal-paper route when the setting, evidence, control
   design, or finding is interesting and honest.
@@ -121,4 +121,4 @@ STRONG_BLOCKER.]
 
 ## Review Tracing
 
-After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save the trace following `shared-references/review-tracing.md`. Use `tools/save_trace.sh` or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
+After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).

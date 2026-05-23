@@ -151,9 +151,18 @@ if [[ "$MISS_COUNT" -gt 0 ]]; then
     HINT_IDS=$(head -20 "$MISSING" | paste -sd, -)
     # Resolve helper path the same way the skills do (per
     # skills/shared-references/wiki-helper-resolution.md)
+    if [[ -z "${ARIS_REPO:-}" && -f ".aris/installed-skills.txt" ]]; then
+        ARIS_REPO="$(awk -F'\t' '$1=="repo_root"{print $2; exit}' .aris/installed-skills.txt 2>/dev/null || true)"
+    fi
     HINT_SCRIPT=".aris/tools/research_wiki.py"
     [[ -f "$HINT_SCRIPT" ]] || HINT_SCRIPT="tools/research_wiki.py"
-    [[ -f "$HINT_SCRIPT" ]] || { [[ -n "${ARIS_REPO:-}" ]] && HINT_SCRIPT="$ARIS_REPO/tools/research_wiki.py"; }
+    if [[ ! -f "$HINT_SCRIPT" ]]; then
+        if [[ -n "${ORBIT_REPO:-}" && -f "$ORBIT_REPO/tools/research_wiki.py" ]]; then
+            HINT_SCRIPT="$ORBIT_REPO/tools/research_wiki.py"
+        elif [[ -n "${ARIS_REPO:-}" && -f "$ARIS_REPO/tools/research_wiki.py" ]]; then
+            HINT_SCRIPT="$ARIS_REPO/tools/research_wiki.py"
+        fi
+    fi
     [[ -f "$HINT_SCRIPT" ]] || HINT_SCRIPT="<resolve-via-shared-ref>/research_wiki.py"
     echo "Backfill suggestion:" >&2
     echo "    python3 \"$HINT_SCRIPT\" sync $WIKI_ROOT --arxiv-ids $HINT_IDS" >&2

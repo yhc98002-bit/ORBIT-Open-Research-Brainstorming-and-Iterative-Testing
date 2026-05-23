@@ -1,6 +1,8 @@
 ---
-name: "idea-discovery"
-description: "Workflow 1: Full idea discovery pipeline. Orchestrates research-lit \u2192 idea-creator \u2192 novelty-check \u2192 research-review to go from a broad research direction to ranked, non-experimental idea candidates. Use when user says \\\"\u627eidea\u5168\u6d41\u7a0b\\\", \\\"idea discovery pipeline\\\", \\\"\u4ece\u96f6\u5f00\u59cb\u627e\u65b9\u5411\\\", or wants the complete idea exploration workflow."
+name: idea-discovery
+description: "Workflow 1: Full idea discovery pipeline. Orchestrates research-lit → idea-creator → novelty-check → research-review to go from a broad research direction to ranked, non-experimental idea candidates. Use when user says \"找idea全流程\", \"idea discovery pipeline\", \"从零开始找方向\", or wants the complete idea exploration workflow."
+argument-hint: [research-direction]
+allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, mcp__codex__codex, mcp__codex__codex-reply
 ---
 
 # Workflow 1: Idea Discovery Pipeline
@@ -36,15 +38,58 @@ Each phase builds on the previous one's output. The final deliverables are a ran
   mechanism plausibility, baseline/headroom reasoning, expected diagnostic clarity,
   paper-mode fit, and reviewer critique.
 - **AUTO_PROCEED = true** — If user doesn't respond at a checkpoint, automatically proceed with the best option after presenting results. Set to `false` to always wait for explicit user confirmation.
-- **REVIEWER_MODEL = `gpt-5.5`** — Model used via a secondary Codex agent. Must be an OpenAI model (e.g., `gpt-5.5`, `o3`, `gpt-4o`). Passed to sub-skills.
-- **ARXIV_DOWNLOAD = false** — When `true`, `/research-lit` downloads the top relevant arXiv PDFs during Phase 1. When `false` (default), only fetches metadata. Passed through to `/research-lit`.
-- **COMPACT = false** — When `true`, generate compact summary files for short-context sessions and downstream skills. Writes `idea-stage/IDEA_CANDIDATES.md`.
+- **REVIEWER_MODEL = `gpt-5.5`** — Model used via Codex MCP. ORBIT default is `gpt-5.5` with xhigh reasoning. Passed to sub-skills.
 - **OUTPUT_DIR = `idea-stage/`** — All idea-stage outputs go here. Create the directory if it doesn't exist.
-- **REF_PAPER = false** — Reference paper to base ideas on. Accepts a local PDF path, arXiv URL, or paper URL. When set, summarize it first and use it as idea-generation context.
+- **ARXIV_DOWNLOAD = false** — When `true`, `/research-lit` downloads the top relevant arXiv PDFs during Phase 1. When `false` (default), only fetches metadata. Passed through to `/research-lit`.
+- **COMPACT = false** — When `true`, generate compact summary files for short-context models and session recovery. Writes `idea-stage/IDEA_CANDIDATES.md` (top 3-5 ideas only) at the end of this workflow. Downstream skills read this instead of the full `idea-stage/IDEA_REPORT.md`.
+- **REF_PAPER = false** — Reference paper to base ideas on. Accepts: local PDF path, arXiv URL, or any paper URL. When set, the paper is summarized first (`idea-stage/REF_PAPER_SUMMARY.md`), then idea generation uses it as context. Combine with `base repo` for "improve this paper with this codebase" workflows.
+- **REVIEW_DIFFICULTY = `medium`** — Accept `— difficulty: <medium|hard|nightmare>`
+  or alias `— review-difficulty: <medium|hard|nightmare>`. Forward this only to
+  downstream adversarial review/refinement stages (`/research-refine`); do not apply
+  `hard` / `nightmare` to literature search, idea
+  generation, novelty checks, feasibility ranking, or innovation loops.
 
 > 💡 These are defaults. Override by telling the skill, e.g., `/idea-discovery "topic" — ref paper: https://arxiv.org/abs/2406.04329` or `/idea-discovery "topic" — compact: true`.
 
+## ORBIT Problem Selection Gate
+
+This gate is always-on. Before brainstorming, load:
+
+- `../shared-references/research-agent-pipeline.md`
+- `../shared-references/research-posture.md`
+- `../shared-references/research-harness-prompts.md` sections `0A`, `1`, and `0B`
+
+This workflow must explicitly separate three things:
+
+1. seed framing for broad areas
+2. question-driven literature mapping
+3. problem taste / problem selection
+
+Run `mkdir -p orbit-research/`. Before finalizing the top idea, write
+`orbit-research/PROBLEM_SELECTION.md` and evaluate each candidate by importance, audience,
+concreteness, novelty, feasibility, benchmark availability, baseline ceiling risk, expected
+headroom, diagnostic clarity, and paper survivability if the method fails or ties. End with
+`PROCEED`, `NARROW`, or `RETHINK`.
+
 ## Pipeline
+
+### Phase 0: Load Research Brief (if available)
+
+Before starting any other phase, check for a detailed research brief in the project:
+
+1. Look for `RESEARCH_BRIEF.md` in the project root (or path passed as `$ARGUMENTS`)
+2. If found, read it and extract:
+   - Problem statement and context
+   - Constraints (compute, data, timeline, venue)
+   - What the user already tried / what didn't work
+   - Domain knowledge and non-goals
+   - Existing results (if any)
+3. Use this as the primary context for all subsequent phases — it replaces the one-line prompt
+4. If both `RESEARCH_BRIEF.md` and a one-line `$ARGUMENTS` exist, merge them (brief takes priority for details, argument sets the direction)
+
+If no brief exists, proceed normally with `$ARGUMENTS` as the research direction.
+
+> 💡 Create a brief from the template: `cp templates/RESEARCH_BRIEF_TEMPLATE.md RESEARCH_BRIEF.md`
 
 ### Phase 0.5: Reference Paper Summary (when REF_PAPER is set)
 
@@ -52,12 +97,53 @@ Each phase builds on the previous one's output. The final deliverables are a ran
 
 Summarize the reference paper before searching the literature:
 
-1. **If arXiv URL** — invoke `/arxiv "ARXIV_ID" — download` to fetch the PDF, then read the first 5 pages.
-2. **If local PDF path** — read the PDF directly, focusing on the title, abstract, introduction, and method overview.
-3. **If other URL** — fetch the content and extract the method, results, and limitations.
-4. **Generate `idea-stage/REF_PAPER_SUMMARY.md`** with: what the paper did, key results, limitations/open questions, and plausible improvement directions.
+1. **If arXiv URL** (e.g., `https://arxiv.org/abs/2406.04329`):
+   - Invoke `/arxiv "ARXIV_ID" — download` to fetch the PDF
+   - Read the first 5 pages (title, abstract, intro, method overview)
 
-Use `idea-stage/REF_PAPER_SUMMARY.md` as additional context in both Phase 1 and Phase 2.
+2. **If local PDF path** (e.g., `papers/reference.pdf`):
+   - Read the PDF directly (first 5 pages)
+
+3. **If other URL**:
+   - Fetch and extract content via WebFetch
+
+4. **Generate `idea-stage/REF_PAPER_SUMMARY.md`**:
+
+```markdown
+# Reference Paper Summary
+
+**Title**: [paper title]
+**Authors**: [authors]
+**Venue**: [venue, year]
+
+## What They Did
+[2-3 sentences: core method and contribution]
+
+## Key Results
+[Main quantitative findings]
+
+## Limitations & Open Questions
+[What the paper didn't solve, acknowledged weaknesses, future work suggestions]
+
+## Potential Improvement Directions
+[Based on the limitations, what could be improved or extended?]
+
+## Codebase
+[If `base repo` is also set: link to the repo and note which parts correspond to the paper]
+```
+
+**🚦 Checkpoint:** Present the summary to the user:
+
+```
+📄 Reference paper summarized:
+- Title: [title]
+- Key limitation: [main gap]
+- Improvement directions: [2-3 bullets]
+
+Proceeding to literature survey with this as context.
+```
+
+Phase 1 and Phase 2 will use `idea-stage/REF_PAPER_SUMMARY.md` as additional context — `/research-lit` searches for related and competing work, `/idea-creator` generates ideas that build on or improve the reference paper.
 
 ### Phase 1: Literature Survey
 
@@ -88,14 +174,14 @@ Does this match your understanding? Should I adjust the scope before generating 
 
 ### Phase 2: Idea Generation + Filtering
 
-Invoke `/idea-creator` with the landscape context and `idea-stage/REF_PAPER_SUMMARY.md` if available:
+Invoke `/idea-creator` with the landscape context (and `idea-stage/REF_PAPER_SUMMARY.md` if available):
 
 ```
 /idea-creator "$ARGUMENTS"
 ```
 
 **What this does:**
-- If `idea-stage/REF_PAPER_SUMMARY.md` exists, include it as context so ideas explicitly build on, improve, or extend the reference paper
+- If `idea-stage/REF_PAPER_SUMMARY.md` exists, include it as context — ideas should build on, improve, or extend the reference paper
 - Brainstorm 8-12 concrete ideas via GPT-5.5 xhigh
 - Filter by feasibility, compute cost, quick novelty-posture search, and diagnostic clarity
 - Deep screen top ideas (full novelty positioning check + collaborator critique)
@@ -164,7 +250,8 @@ For the surviving top idea(s), get constructive collaborator feedback:
 After review, refine the top idea into a concrete proposal:
 
 ```
-/research-refine "[top idea description + literature/novelty/feasibility evidence + reviewer feedback]"
+/research-refine "[top idea description + literature/novelty/feasibility evidence + reviewer feedback]" \
+  — difficulty: <parsed difficulty or review-difficulty>
 ```
 
 **What this does:**
@@ -185,7 +272,8 @@ Proceed to STOP A review, then /experiment-bridge if approved? Or adjust the pro
 ```
 
 - **User approves** (or AUTO_PROCEED=true) → proceed to Final Report.
-- **User requests changes** → pass feedback to `/research-refine` for another round.
+- **User requests changes** → pass feedback to `/research-refine` for another round,
+  forwarding `— difficulty` / `— review-difficulty` if the user set it.
 - **Legacy full-planning mode:** If the user explicitly asks for the old one-shot
   proposal+plan package, use `/research-refine-pipeline`; otherwise keep planning in
   `/experiment-bridge` after STOP A.
@@ -256,12 +344,14 @@ Write `idea-stage/IDEA_CANDIDATES.md` — a lean summary of the top 3-5 survivin
 - Next step: /experiment-bridge "refine-logs/FINAL_PROPOSAL.md" or /research-refine
 ```
 
+This file is intentionally small (~30 lines) so downstream skills and session recovery can read it without loading the full `idea-stage/IDEA_REPORT.md` (~200+ lines).
+
 ## Output Protocols
 
 > Follow these shared protocols for all output files:
-> - **[Output Versioning Protocol](../../shared-references/output-versioning.md)** — follow selective milestone timestamping rules
-> - **[Output Manifest Protocol](../../shared-references/output-manifest.md)** — log every output to MANIFEST.md
-> - **[Output Language Protocol](../../shared-references/output-language.md)** — respect the project's language setting
+> - **[Output Versioning Protocol](../shared-references/output-versioning.md)** — apply selective milestone timestamping rules
+> - **[Output Manifest Protocol](../shared-references/output-manifest.md)** — log every output to MANIFEST.md
+> - **[Output Language Protocol](../shared-references/output-language.md)** — respect the project's language setting
 
 ## Key Rules
 
@@ -282,7 +372,7 @@ Write `idea-stage/IDEA_CANDIDATES.md` — a lean summary of the top 3-5 survivin
 - **Document everything.** Dead ends are just as valuable as successes for future reference.
 - **Be honest with the reviewer.** Include known risks, rejected ideas, and reviewer
   concerns in the review prompt.
-- **Feishu notifications are optional.** If `~/.codex/feishu.json` exists, send `checkpoint` at each phase transition and `pipeline_done` at final report. If absent/off, skip silently.
+- **Feishu notifications are optional.** If `~/.claude/feishu.json` exists, send `checkpoint` at each phase transition and `pipeline_done` at final report. If absent/off, skip silently.
 
 ## Composing with Workflow 2
 
@@ -298,14 +388,17 @@ Or use /research-pipeline for the full end-to-end flow.
 
 ## Stage-Chain Integration (Stage 0-1 Contract)
 
-When this skill is called by `/research-pipeline`, additionally emit normalized stage artifacts:
+This integration is always-on (no longer conditional on `/research-pipeline` invocation).
+Always emit these normalized stage artifacts so downstream skills (experiment-bridge,
+result-to-claim, paper-writing) can pick them up regardless of how the user enters the
+pipeline:
 
-- `PROBLEM.md`
-- `HYPOTHESIS.md`
-- `FINAL_PROPOSAL.md` (normalized from `refine-logs/FINAL_PROPOSAL.md`)
-- `REVIEW/CONSISTENCY_REPORT.md`
+- `PROBLEM.md` — distilled from idea-stage findings + refined problem anchor
+- `HYPOTHESIS.md` — hypothesis space, assumptions, and failure signals
+- `FINAL_PROPOSAL.md` — copy/normalize from `refine-logs/FINAL_PROPOSAL.md`
+- `REVIEW/CONSISTENCY_REPORT.md` — structured Stage-1 check report
 
-Mandatory check template:
+Use this mandatory check template before handing off to STOP A / experiment planning:
 
 ```text
 Check FINAL_PROPOSAL.md against PROBLEM_SELECTION.md and ASSUMPTION_LEDGER.md.

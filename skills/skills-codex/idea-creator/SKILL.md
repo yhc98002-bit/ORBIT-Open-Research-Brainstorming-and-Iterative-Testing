@@ -1,6 +1,8 @@
 ---
-name: "idea-creator"
-description: "Generate and rank research ideas given a broad direction. Use when user says \"\u627eidea\", \"brainstorm ideas\", \"generate research ideas\", \"what can we work on\", or wants to explore a research area for publishable directions."
+name: idea-creator
+description: Generate and rank research ideas given a broad direction. Use when user says "找idea", "brainstorm ideas", "generate research ideas", "what can we work on", or wants to explore a research area for publishable directions.
+argument-hint: [research-direction]
+allowed-tools: Bash(*), Read, Write, Grep, Glob, WebSearch, WebFetch, Agent, mcp__codex__codex, mcp__codex__codex-reply
 ---
 
 # Research Idea Creator
@@ -28,13 +30,57 @@ mode, positioning-first novelty, and collaborator review before STOP A.
 - **IDEA_RANKING_CRITERIA** — Literature grounding, novelty posture, feasibility,
   mechanism plausibility, baseline/headroom, expected diagnostic clarity, paper-mode fit,
   and reviewer critique.
-- **REVIEWER_MODEL = `gpt-5.5`** — Model used via a secondary Codex agent for brainstorming and review. Must be an OpenAI model (e.g., `gpt-5.5`, `o3`, `gpt-4o`).
+- **REVIEWER_MODEL = `gpt-5.5`** — Model used via Codex MCP for brainstorming and review. Must be an OpenAI model (e.g., `gpt-5.5`, `o3`, `gpt-4o`).
+- **REVIEWER_BACKEND = `codex`** — Default: Codex MCP (xhigh). Override with `— reviewer: oracle-pro` for GPT-5.5 Pro via Oracle MCP. See `../shared-references/reviewer-routing.md`.
 - **OUTPUT_DIR = `idea-stage/`** — All idea-stage outputs go here. Create the directory if it doesn't exist.
 
 > 💡 This skill does not run experiments. Formal experiment planning starts in
 > `/experiment-bridge` after STOP A.
 
 ## Workflow
+
+### Phase 0: Load Research Wiki (if active)
+
+**Skip this phase entirely if `research-wiki/` does not exist.**
+
+If `research-wiki/` exists, resolve the canonical helper using the
+shared resolution chain (see `../research-wiki/SKILL.md` for the
+contract):
+
+```bash
+cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" || exit 1
+if [ -z "${ARIS_REPO:-}" ] && [ -f .aris/installed-skills.txt ]; then
+  ARIS_REPO=$(awk -F'\t' '$1=="repo_root"{print $2; exit}' .aris/installed-skills.txt 2>/dev/null) || true
+fi
+WIKI_SCRIPT=".aris/tools/research_wiki.py"
+[ -f "$WIKI_SCRIPT" ] || WIKI_SCRIPT="tools/research_wiki.py"
+if [ ! -f "$WIKI_SCRIPT" ]; then
+  if [ -n "${ORBIT_REPO:-}" ] && [ -f "$ORBIT_REPO/tools/research_wiki.py" ]; then
+    WIKI_SCRIPT="$ORBIT_REPO/tools/research_wiki.py"
+  elif [ -n "${ARIS_REPO:-}" ] && [ -f "$ARIS_REPO/tools/research_wiki.py" ]; then
+    WIKI_SCRIPT="$ARIS_REPO/tools/research_wiki.py"
+  fi
+fi
+[ -f "$WIKI_SCRIPT" ] || {
+  echo "WARN: research_wiki.py not found at .aris/tools/, tools/, \$ORBIT_REPO/tools/, or \$ARIS_REPO/tools/." >&2
+  echo "      The idea-creation primary output (idea ranking) will still be produced." >&2
+  echo "      Wiki integration (load query_pack, write idea pages, add edges, rebuild query_pack) will be skipped." >&2
+  echo "      Fix: rerun 'bash tools/install_aris.sh', export ORBIT_REPO/ARIS_REPO, or 'cp <ARIS-repo>/tools/research_wiki.py tools/'." >&2
+  WIKI_SCRIPT=""
+}
+```
+
+```
+if research-wiki/query_pack.md exists AND is less than 7 days old:
+    Read query_pack.md and use it as initial landscape context:
+    - Treat listed gaps as priority search seeds
+    - Treat failed ideas as a banlist (do NOT regenerate similar ideas)
+    - Treat top papers as known prior work (do not re-search them)
+    Still run Phase 1 below for papers from the last 3-6 months (wiki may be stale)
+else if research-wiki/ exists but query_pack.md is stale or missing:
+    if [ -n "$WIKI_SCRIPT" ]: python3 "$WIKI_SCRIPT" rebuild_query_pack research-wiki/
+    Then read query_pack.md as above
+```
 
 ### Phase 1: Landscape Survey (5-10 min)
 
@@ -63,13 +109,13 @@ Map the research area to understand what exists and where the gaps are.
 
 ### Phase 2: Idea Generation (brainstorm with external LLM)
 
-Use a secondary Codex agent for divergent thinking:
+Use the external LLM via Codex MCP for divergent thinking:
 
 ```
-spawn_agent:
+mcp__codex__codex:
   model: REVIEWER_MODEL
-  reasoning_effort: xhigh
-  message: |
+  config: {"model_reasoning_effort": "xhigh"}
+  prompt: |
     You are a senior ML researcher brainstorming research ideas.
 
     Research direction: [user's direction]
@@ -100,7 +146,7 @@ spawn_agent:
     idea is one where the answer matters regardless of which way it goes.
 ```
 
-Save the agent id for follow-up.
+Save the threadId for follow-up.
 
 ### Phase 3: First-Pass Filtering
 
@@ -131,7 +177,7 @@ For each surviving idea, run a deeper evaluation:
 
 1. **Novelty check**: Use the `/novelty-check` workflow (multi-source search + GPT-5.5 cross-verification) for each idea
 
-2. **Critical review**: Use GPT-5.5 via `send_input` (same agent):
+2. **Critical review**: Use GPT-5.5 via `mcp__codex__codex-reply` (same thread):
    ```
    Here are our top ideas after filtering:
    [paste surviving ideas with novelty check results]
@@ -231,12 +277,49 @@ Write a structured report to `idea-stage/IDEA_REPORT.md`:
 - [ ] Use /diagnostic-to-review later for formal diagnostics and any paper-level evidence
 ```
 
+## Phase 7: Write Ideas to Research Wiki (if active)
+
+**Skip this phase entirely if `research-wiki/` does not exist.**
+
+This is critical for spiral learning — without it, `ideas/` stays empty and re-ideation has no memory.
+
+`$WIKI_SCRIPT` was resolved in Phase 0 above. If Phase 0 did not run
+(no `research-wiki/`), this phase is skipped. If Phase 0 ran but the
+resolution chain failed to find the helper (`$WIKI_SCRIPT` is empty),
+the page-write step still runs (idea pages are plain markdown the
+agent writes directly), but the edge / query-pack / log steps that
+require the helper are skipped with a single warning.
+
+```
+if research-wiki/ exists:
+    for each idea in recommended_ideas + eliminated_ideas:
+        1. Create page: research-wiki/ideas/<idea_id>.md
+           - node_id: idea:<id>
+           - stage: proposed (or: archived)
+           - outcome: unknown
+           - based_on: [paper:<slug>, ...]
+           - target_gaps: [gap:<id>, ...]
+           - Include: hypothesis, proposed method, expected outcome
+
+        2. Add edges (only if $WIKI_SCRIPT resolved):
+           [ -n "$WIKI_SCRIPT" ] && python3 "$WIKI_SCRIPT" add_edge research-wiki/ --from "idea:<id>" --to "paper:<slug>" --type inspired_by --evidence "..."
+           [ -n "$WIKI_SCRIPT" ] && python3 "$WIKI_SCRIPT" add_edge research-wiki/ --from "idea:<id>" --to "gap:<id>" --type addresses_gap --evidence "..."
+
+    Rebuild query pack (only if $WIKI_SCRIPT resolved):
+        [ -n "$WIKI_SCRIPT" ] && python3 "$WIKI_SCRIPT" rebuild_query_pack research-wiki/
+    Log (only if $WIKI_SCRIPT resolved):
+        [ -n "$WIKI_SCRIPT" ] && python3 "$WIKI_SCRIPT" log research-wiki/ "idea-creator wrote N ideas (M recommended, K eliminated)"
+
+    if [ -z "$WIKI_SCRIPT" ]:
+        echo "WARN: idea pages were written but edges / query_pack / log were skipped because research_wiki.py is unreachable (see Phase 0 warning above)." >&2
+```
+
 ## Output Protocols
 
 > Follow these shared protocols for all output files:
-> - **[Output Versioning Protocol](../../shared-references/output-versioning.md)** — follow selective milestone timestamping rules
-> - **[Output Manifest Protocol](../../shared-references/output-manifest.md)** — log every output to MANIFEST.md
-> - **[Output Language Protocol](../../shared-references/output-language.md)** — respect the project's language setting
+> - **[Output Versioning Protocol](../shared-references/output-versioning.md)** — apply selective milestone timestamping rules
+> - **[Output Manifest Protocol](../shared-references/output-manifest.md)** — log every output to MANIFEST.md
+> - **[Output Language Protocol](../shared-references/output-language.md)** — respect the project's language setting
 
 ## Key Rules
 
@@ -267,3 +350,7 @@ After this skill produces the ranked report:
 /experiment-bridge "refine-logs/FINAL_PROPOSAL.md" → plan + implement after STOP A
 /diagnostic-to-review "<command OR manifest>"       → formal diagnostics after STOP B
 ```
+
+## Review Tracing
+
+After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).

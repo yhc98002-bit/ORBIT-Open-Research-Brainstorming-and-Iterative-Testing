@@ -11,12 +11,12 @@
 仓库中当前存在：
 
 - **71 个顶层 skill**：位于 `skills/<skill-name>/SKILL.md`。
-- **40 个 `skills/skills-codex/` 镜像 skill**：面向 Codex CLI / Codex 使用场景的副本。
+- **72 个 `skills/skills-codex/` 镜像 skill**：面向 Codex CLI / Codex 使用场景的全量副本，由 `tools/sync_codex_mirror.py` 从顶层 `skills/` 同步生成。
 - **8 个 `skills/skills-codex-claude-review/` 镜像 skill**：偏 Claude-review 集成。
 - **15 个 `skills/skills-codex-gemini-review/` 镜像 skill**：偏 Gemini-review 集成。
 - **24 个 shared reference 文档**：位于 `skills/shared-references/`，定义跨 skill 的协议、审计、输出、reviewer 独立性、paper writing 原则等。
 
-顶层 `skills/` 是最完整、最主要的 skill 集合；`skills-codex*` 目录是面向不同执行/审稿环境的镜像或适配版本。维护时要避免只改顶层而漏改镜像副本，否则不同入口会出现行为不一致。
+顶层 `skills/` 是最完整、最主要的 skill 集合；`skills-codex/` 是全量镜像，`skills-codex-claude-review/` 与 `skills-codex-gemini-review/` 是 reviewer overlay。维护时先改顶层，再运行 `tools/sync_codex_mirror.py`，避免同名 skill 漂移。
 
 ---
 
@@ -633,7 +633,7 @@ paper/
    `/research-pipeline` 是总 orchestrator，但实际常用路径会直接调用 `/idea-to-proposal`、`/experiment-bridge`、`/diagnostic-to-review`、`/paper-writing`。文档和维护都应围绕这些入口组织。
 
 2. **镜像 skill 容易漂移。**  
-   仓库里有顶层 skill、`skills-codex`、`skills-codex-claude-review`、`skills-codex-gemini-review`。凡是涉及 artifact contract、template、pipeline 行为的改动，应该同步检查镜像副本。
+   仓库里有顶层 skill、`skills-codex`、`skills-codex-claude-review`、`skills-codex-gemini-review`。凡是涉及 artifact contract、template、pipeline 行为的改动，应该先改顶层并运行 `tools/sync_codex_mirror.py`，再检查 reviewer overlay 是否需要同步调整。
 
 3. **当前 proposal / experiment plan 已进入渐进式披露格式。**  
    下游应把 `FINAL_PROPOSAL.md` 和 `EXPERIMENT_PLAN.md` 当索引，而不是长文档。实现细节去 `METHOD_SPEC.md`，实验细节去 `EXPERIMENT_PLAN_EXEC.md`。

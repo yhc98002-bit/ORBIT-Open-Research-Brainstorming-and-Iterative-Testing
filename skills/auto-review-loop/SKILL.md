@@ -17,12 +17,16 @@ Autonomously iterate: review → implement fixes → re-review, until the extern
 - POSITIVE_THRESHOLD: score >= 6/10, or verdict contains "accept", "sufficient", "ready for submission"
 - REVIEW_DOC: `review-stage/AUTO_REVIEW.md` (cumulative log) *(fall back to `./AUTO_REVIEW.md` for legacy projects)*
 - REVIEWER_MODEL = `gpt-5.5` — Model used via Codex MCP for ORBIT review gates.
-- **REVIEWER_BACKEND = `codex`** — Default: Codex MCP (`gpt-5.5`, xhigh). Override with `— reviewer: oracle-pro` only if explicitly requested. See `shared-references/reviewer-routing.md`.
+- **REVIEWER_BACKEND = `codex`** — Default: Codex MCP (`gpt-5.5`, xhigh). Override with `— reviewer: oracle-pro` only if explicitly requested. See `../shared-references/reviewer-routing.md`.
 - **OUTPUT_DIR = `review-stage/`** — All review-stage outputs go here. Create the directory if it doesn't exist.
 - **PAPER_MODE = `normal`** — Parse `— paper-mode:` when present. Normal mode is judged
   against a normal publishable-paper bar, not a breakthrough-only bar.
 - **HUMAN_CHECKPOINT = false** — When `true`, pause after each round's review (Phase B) and present the score + weaknesses to the user. Wait for user input before proceeding to Phase C. The user can: approve the suggested fixes, provide custom modification instructions, skip specific fixes, or stop the loop early. When `false` (default), the loop runs fully autonomously.
 - **COMPACT = false** — When `true`, (1) read `EXPERIMENT_LOG.md` and `findings.md` instead of parsing full logs on session recovery, (2) append key findings to `findings.md` after each round.
+- **ORBIT_RED_TEAM_ONLY = false** — Set by `— orbit-red-team: true` when called from
+  `/diagnostic-to-review` Stage 23. In this mode the loop may review, weaken claims, and
+  write required-fix routing, but must not launch experiments, patch implementation, or
+  invoke `/result-to-claim`.
 - **REVIEWER_DIFFICULTY = medium** — Controls how adversarial the reviewer is. Three levels:
   - `medium` (default): Current behavior — MCP-based review, Claude controls what context GPT sees.
   - `hard`: Adds **Reviewer Memory** (GPT tracks its own suspicions across rounds) + **Debate Protocol** (Claude can rebut, GPT rules).
@@ -34,11 +38,11 @@ Autonomously iterate: review → implement fixes → re-review, until the extern
 
 This gate is always-on. Before starting any review round, load:
 
-- `shared-references/research-agent-pipeline.md` — v1.3 stage map and Stage 23 (Reviewer
+- `../shared-references/research-agent-pipeline.md` — v1.3 stage map and Stage 23 (Reviewer
   Red-team Loop) responsibilities
-- `shared-references/research-harness-prompts.md` — section `23` "Reviewer Red-team Loop"
+- `../shared-references/research-harness-prompts.md` — section `23` "Reviewer Red-team Loop"
   (v1.3 numbering; this is the v1.0 §14 prompt as renumbered + loop semantics added)
-- `shared-references/reviewer-independence.md`
+- `../shared-references/reviewer-independence.md`
 
 `/auto-review-loop` is also the ORBIT final reviewer red-team. It must attack problem
 importance, novelty, task definition, benchmark validity, baselines, controls, null-result
@@ -50,6 +54,13 @@ new algorithmic breakthrough.
 
 Run `mkdir -p orbit-research/`, then write or update `orbit-research/RED_TEAM_REVIEW.md` with
 top rejection risks, essential fixes, claims to weaken, and submit-readiness.
+The file must end with exactly one of:
+`READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED`.
+
+When `ORBIT_RED_TEAM_ONLY = true`, any required new experiment, code change, benchmark
+change, or Stage 11 redesign is recorded as a blocker and routed to the owning skill. Do
+not implement those fixes inside this review loop; STOP C exists so the human can decide
+whether to spend more compute or proceed with a narrowed claim.
 
 ## State Persistence (Compact Recovery)
 
@@ -70,7 +81,8 @@ Long-running loops may hit the context window limit, triggering automatic compac
 
 **Write this file at the end of every Phase E** (after documenting the round). Overwrite each time — only the latest state matters.
 
-**Three-state status enum** (per `shared-references/continuation-contract.md`):
+**Four-state status enum** (per `../shared-references/continuation-contract.md`; this loop
+normally uses the first, second, and last states):
 - `"in_progress"` — default during loop execution.
 - `"awaiting_human_continue"` — set when `HUMAN_CHECKPOINT = true` and the loop pauses
   for the user to review the round's score / weaknesses before authorising the next
@@ -80,6 +92,8 @@ Long-running loops may hit the context window limit, triggering automatic compac
   rules.
 - `"completed"` — set on positive assessment or max rounds reached. Future invocations
   without `— resume:` or `— fresh:` ask the user before overwriting.
+- `"awaiting_user_action"` — reserved for blocked external prerequisites such as Codex
+  auth/MCP setup failure; do not treat it as approval to continue.
 
 Old STATE files with only `in_progress` / `completed` still parse — `awaiting_human_continue`
 is additive.
@@ -365,6 +379,14 @@ After parsing the score, check if `~/.claude/feishu.json` exists and mode is not
 
 #### Phase C: Implement Fixes (if not stopping)
 
+If `ORBIT_RED_TEAM_ONLY = true`, do not run the implementation loop below for code,
+experiment, or benchmark changes. Instead:
+- apply only safe text-scope changes to claim wording, limitations, and review notes;
+- record all code/experiment fixes as required follow-up in `orbit-research/RED_TEAM_REVIEW.md`;
+- set the final RED_TEAM_REVIEW verdict to `REQUIRES_FIXES`, `REDESIGN_REQUIRED`, or
+  `HUMAN_DECISION_REQUIRED` unless the existing evidence is already defensible after claim
+  weakening.
+
 For each action item (highest priority first):
 
 1. **Code changes**: Write/modify experiment scripts, model code, analysis scripts
@@ -451,12 +473,20 @@ When loop ends (positive assessment or max rounds):
 2. Write final summary to `review-stage/AUTO_REVIEW.md`
 3. Update project notes with conclusions
 4. **Write method/pipeline description** to `review-stage/AUTO_REVIEW.md` under a `## Method Description` section — a concise 1-2 paragraph description of the final method, its architecture, and data flow. This serves as input for `/paper-illustration` in Workflow 3 (so it can generate architecture diagrams automatically).
-5. **Generate claims from results** — invoke `/result-to-claim` to convert experiment results from `review-stage/AUTO_REVIEW.md` into structured paper claims. Output: `CLAIMS_FROM_RESULTS.md`. This bridges Workflow 2 → Workflow 3 so `/paper-plan` can directly use validated claims instead of extracting them from scratch. If `/result-to-claim` is not available, skip silently.
+5. **Generate claims from results** — only when `ORBIT_RED_TEAM_ONLY = false`, invoke
+   `/result-to-claim` to convert experiment results from `review-stage/AUTO_REVIEW.md` into
+   structured paper claims. Output: `CLAIMS_FROM_RESULTS.md`. This bridges Workflow 2 →
+   Workflow 3 so `/paper-plan` can directly use validated claims instead of extracting
+   them from scratch. If `/result-to-claim` is not available, skip silently. When
+   `ORBIT_RED_TEAM_ONLY = true`, skip this step because `/diagnostic-to-review` already
+   ran `/result-to-claim` and owns `CLAIM_CONSTRUCTION.md`.
 6. If stopped at max rounds without positive assessment:
    - List remaining blockers
    - Estimate effort needed for each
    - Suggest whether to continue manually or pivot
-5. **Feishu notification** (if configured): Send `pipeline_done` with final score progression table
+7. End `orbit-research/RED_TEAM_REVIEW.md` with exactly one verdict token:
+   `READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED`.
+8. **Feishu notification** (if configured): Send `pipeline_done` with final score progression table
 
 ## Key Rules
 
@@ -496,14 +526,14 @@ mcp__codex__codex-reply:
 
 ## Review Tracing
 
-After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save the trace following `shared-references/review-tracing.md`. Use `tools/save_trace.sh` or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
+After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
 
 ## Stage-Chain Integration (ORBIT v1.3 Stage 23 — Reviewer Red-team Loop)
 
 This skill implements ORBIT v1.3 Stage 23 (Reviewer Red-team Loop). It is an **explicit
 loop**: review → fix → re-review until issues are addressed or explicitly accepted as
-residual risk. (See `shared-references/research-agent-pipeline.md` Stage 23 and
-`shared-references/research-harness-prompts.md` §23.) The loop output is
+residual risk. (See `../shared-references/research-agent-pipeline.md` Stage 23 and
+`../shared-references/research-harness-prompts.md` §23.) The loop output is
 `orbit-research/RED_TEAM_REVIEW.md`.
 
 In convergence-first mode, each completed round should keep these stage artifacts current:

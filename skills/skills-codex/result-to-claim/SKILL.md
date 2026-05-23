@@ -1,18 +1,58 @@
 ---
 name: result-to-claim
-description: "Use when experiments complete to judge what claims the results support, what they do not, and what evidence is still missing. A secondary Codex agent evaluates results against intended claims and routes to the next action (pivot, supplement, or confirm). Use after experiments finish - before writing the paper or running ablations."
-allowed-tools: Bash(*), Read, Grep, Glob, Write, Edit, Agent
+description: Use when experiments complete to judge what claims the results support, what they don't, and what evidence is still missing. Codex MCP evaluates results against intended claims and routes to next action (pivot, supplement, or confirm). Use after experiments finish — before writing the paper or running ablations.
+argument-hint: [experiment-description-or-wandb-run]
+allowed-tools: Bash(*), Read, Grep, Glob, Write, Edit, mcp__codex__codex, mcp__codex__codex-reply
 ---
 
 # Result-to-Claim Gate
 
-Experiments produce numbers; this gate decides what those numbers *mean*. Collect results from available sources, get an objective judgment, then route based on the verdict.
+Experiments produce numbers; this gate decides what those numbers *mean*. Collect results from available sources, get a Codex judgment, then auto-route based on the verdict.
 
 ## Context: $ARGUMENTS
 
-## Constants
+## ORBIT Claim Construction Gate
 
-- **REVIEWER_MODEL = `gpt-5.5`** - Used via a secondary Codex agent for objective claim assessment.
+This gate is always-on. Before paper writing, load:
+
+- `../shared-references/research-agent-pipeline.md` — v1.3 stage map and hard gates G14, G16, G17, G18, G19
+- `../shared-references/research-harness-prompts.md` sections `21`, `22`, and `25` (v1.3 numbering; old v1.0 sections `12`, `13`, `15` are mapped via the appendix)
+- `../shared-references/reviewer-independence.md`
+- `../shared-references/run-ledger.md` — verify evidence traces to ledgered `run_id`s
+
+Run `mkdir -p orbit-research/`. Always write or update:
+
+- `orbit-research/CLAIM_CONSTRUCTION.md` — claim → evidence → control → scope → limitation
+  chain (Stage 21). Required by G16 and G18 before `/paper-writing`.
+- `orbit-research/AGENT_DECISION_RECOMMENDATION.md` — short note summarizing what is
+  believed, what evidence supports it, what remains uncertain, agent's recommendation, and ending with one
+  of `PROCEED / NARROW / REDESIGN / RE-READ / CHANGE BENCHMARK / STOP / HUMAN_DECISION_REQUIRED`.
+  This is an agent recommendation, not a G15/G19 human gate artifact.
+- `orbit-research/NEGATIVE_RESULT_STRATEGY.md` if the method ties, fails, or only partially
+  supports the intended claim (Stage 22).
+
+Do **not** silently write `orbit-research/HUMAN_DECISION_NOTE.md` as if the user approved a
+high-risk transition. G15/G19 require a human-authored or human-confirmed note with final
+verdict `PROCEED` before scale-up, paper writing, or public release. If the user explicitly
+supplies that decision in the current request, write `HUMAN_DECISION_NOTE.md` and include a
+`Decision source:` line quoting/paraphrasing the user's approval.
+
+Use the claim → evidence → control → scope → limitation chain. Downgrade claims when
+evidence is partial. If the result is negative, evaluate whether the contribution can
+become benchmark diagnosis, baseline ceiling analysis, failure taxonomy, negative result,
+regime map, evaluation protocol, task ontology contribution, or controlled reproduction.
+
+**G14 inline check (mandatory):** if `orbit-research/NULL_RESULT_CONTRACT.md` triggered a
+tie or failure outcome, **refuse to write positive framing** in `CLAIM_CONSTRUCTION.md`
+or `RESULT_INTERPRETATION.md`. Frame the result honestly per Stage 22 — invoke
+`NEGATIVE_RESULT_STRATEGY.md` instead of forcing a success story. No exception.
+
+**G17 inline check (mandatory):** if a result is being framed post-hoc as "what we
+predicted" — i.e., the current claim emerged from `orbit-research/RESULT_INTERPRETATION.md`
+or `orbit-research/FAILURE_TO_INNOVATION.md` rather than from a pre-registered hypothesis
+in `orbit-research/CONTROL_DESIGN.md` — label it explicitly in `CLAIM_CONSTRUCTION.md` and
+in any downstream paper as **"exploratory finding, not pre-planned hypothesis."** Do NOT
+present post-hoc reframings as pre-planned hypotheses. No exception.
 
 ## When to Use
 
@@ -26,28 +66,33 @@ Experiments produce numbers; this gate decides what those numbers *mean*. Collec
 
 Gather experiment data from whatever sources are available in the project:
 
-1. **W&B** (preferred): `wandb.Api().run("<entity>/<project>/<run_id>").history()` - metrics, training curves, comparisons
-2. **`EXPERIMENT_LOG.md`** - full results table with baselines and verdicts
-3. **`EXPERIMENT_TRACKER.md`** - check which experiments are done vs still running
-4. **Log files** - `ssh server "tail -100 /path/to/training.log"` if no other source
-5. **`docs/research_contract.md`** or project notes - intended claims and experiment design
+1. **RUN_LEDGER.jsonl**: canonical run provenance, terminal status, result files, logs,
+   config, and `run_id`
+2. **W&B**: `wandb.Api().run("<entity>/<project>/<run_id>").history()` — metrics, training curves, comparisons
+3. **EXPERIMENT_LOG.md**: full results table with baselines and verdicts
+4. **EXPERIMENT_TRACKER.md**: check which experiments are DONE vs still running
+5. **Log files**: `ssh server "tail -100 /path/to/training.log"` if no other source
+6. **docs/research_contract.md**: intended claims and experiment design
 
 Assemble the key information:
-
 - What experiments were run (method, dataset, config)
 - Main metrics and baseline comparisons (deltas)
 - The intended claim these experiments were designed to test
 - Any known confounds or caveats
+- Ledger coverage: which `run_id`s support this claim, which expected runs failed/OOMed,
+  and whether any result file is orphaned or unledgered
 
-### Step 2: Secondary Codex Judgment
+### Step 2: Codex Judgment
 
-Send the collected results to a secondary Codex agent for objective evaluation:
+Send the collected results to Codex for objective evaluation:
 
-```text
-spawn_agent:
-  model: REVIEWER_MODEL
-  reasoning_effort: xhigh
-  message: |
+```
+mcp__codex__codex:
+  model: gpt-5.5
+  config: {"model_reasoning_effort": "xhigh"}
+  # Sandbox is set globally in ~/.codex/config.toml as sandbox_mode = "danger-full-access".
+  # Codex MCP per-call config does not accept a sandbox key — see ../shared-references/reviewer-routing.md.
+  prompt: |
     RESULT-TO-CLAIM EVALUATION
 
     I need you to judge whether experimental results support the intended claim.
@@ -55,13 +100,13 @@ spawn_agent:
     Intended claim: [the claim these experiments test]
 
     Experiments run:
-    [list experiments with method, dataset, metrics]
+    [list experiments with run_id, method, dataset, config, metrics]
 
     Results:
     [paste key numbers, comparison deltas, significance]
 
     Baselines:
-    [baseline numbers and sources - reproduced or from paper]
+    [baseline numbers and sources — reproduced or from paper]
 
     Known caveats:
     [any confounding factors, limited datasets, missing comparisons]
@@ -77,13 +122,12 @@ spawn_agent:
 
     Be honest. Do not inflate claims beyond what the data supports.
     A single positive result on one dataset does not support a general claim.
+    If the method ties or fails, do not force a positive story. Identify whether a negative-result contribution remains.
 ```
-
-If delegation is unavailable, run the same evaluation locally and mark the verdict `[pending external review]` instead of blocking the pipeline.
 
 ### Step 3: Parse and Normalize
 
-Extract structured fields from the response:
+Extract structured fields from Codex response:
 
 ```markdown
 - claim_supported: yes | partial | no
@@ -95,35 +139,137 @@ Extract structured fields from the response:
 - confidence: high | medium | low
 ```
 
+### Step 3.5: Check Experiment Integrity (if audit exists)
+
+**Skip this step if `EXPERIMENT_AUDIT.json` does not exist.**
+
+```
+if EXPERIMENT_AUDIT.json exists:
+    read integrity_status from file
+    attach to verdict output:
+        integrity_status: pass | warn | fail
+
+    if integrity_status == "fail":
+        block claim_supported=yes for affected claims unless the result is explicitly
+        marked proxy_evidence/invalid_evidence and excluded from primary support
+        downgrade confidence to "low" regardless of Codex judgment
+
+    if integrity_status == "warn":
+        append to verdict: "[INTEGRITY: WARN] — audit flagged potential issues"
+else:
+    integrity_status = "unavailable"
+    verdict is labeled "provisional — no integrity audit run"
+    (this does NOT block anything — pipeline continues normally)
+```
+
+See `../shared-references/experiment-integrity.md` for the full integrity protocol.
+
+If result files are not linked to `RUN_LEDGER.jsonl` run_ids, mark the evidence
+`provisional_unledgered` and do not use it as primary claim support until the provenance is
+reconciled.
+
 ### Step 4: Route Based on Verdict
 
-#### `no` - Claim not supported
+#### `no` — Claim not supported
 
-1. Record a postmortem in `findings.md`:
-   - What was tested, what failed, and hypotheses for why
-   - Constraints for future attempts (what **not** to try again)
-2. Update the project pipeline status in project notes
-3. Decide whether to pivot to the next idea from `IDEA_CANDIDATES.md` or try an alternative approach
+1. Record postmortem in findings.md (Research Findings section):
+   - What was tested, what failed, hypotheses for why
+   - Constraints for future attempts (what NOT to try again)
+2. Update CLAUDE.md Pipeline Status
+3. Decide whether to pivot to next idea from IDEA_CANDIDATES.md or try an alternative approach
 
-#### `partial` - Claim partially supported
+#### `partial` — Claim partially supported
 
-1. Update the working claim to reflect what **is** supported
-2. Record the gap in `findings.md`
+1. Update the working claim to reflect what IS supported
+2. Record the gap in findings.md
 3. Design and run supplementary experiments to fill evidence gaps
-4. Re-run `/result-to-claim` after supplementary experiments complete
-5. If the same claim gets multiple `partial` verdicts, record the analysis in `findings.md` and consider narrowing the claim scope or switching ideas
+4. Re-run result-to-claim after supplementary experiments complete
+5. **Multiple rounds of `partial` on the same claim** → record analysis in findings.md, consider whether to narrow the claim scope or switch ideas
 
-#### `yes` - Claim supported
+#### `yes` — Claim supported
 
-1. Record the confirmed claim in project notes
-2. If ablation studies are incomplete, trigger `/ablation-planner`
-3. If all evidence is in, move to paper writing
+1. Record confirmed claim in project notes
+2. If ablation studies are incomplete → trigger `/ablation-planner`
+3. If all evidence is in → ready for STOP C red-team and human decision; paper writing
+   still requires `RED_TEAM_REVIEW.md` ending `READY_FOR_PAPER` and
+   `HUMAN_DECISION_NOTE.md` ending `PROCEED`
+
+### Step 5: Update Research Wiki (if active)
+
+**Skip this step entirely if `research-wiki/` does not exist.**
+
+If `research-wiki/` exists, resolve `$WIKI_SCRIPT` per the canonical
+chain documented in
+[`../shared-references/wiki-helper-resolution.md`](../shared-references/wiki-helper-resolution.md)
+(Variant B — warn-and-skip for caller skills). The verdict / claim
+status / idea-outcome page edits below run on raw markdown and don't
+need the helper, but edges, query-pack rebuild, and the log line do.
+
+```bash
+cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" || exit 1
+if [ -z "${ARIS_REPO:-}" ] && [ -f .aris/installed-skills.txt ]; then
+  ARIS_REPO=$(awk -F'\t' '$1=="repo_root"{print $2; exit}' .aris/installed-skills.txt 2>/dev/null) || true
+fi
+WIKI_SCRIPT=".aris/tools/research_wiki.py"
+[ -f "$WIKI_SCRIPT" ] || WIKI_SCRIPT="tools/research_wiki.py"
+if [ ! -f "$WIKI_SCRIPT" ]; then
+  if [ -n "${ORBIT_REPO:-}" ] && [ -f "$ORBIT_REPO/tools/research_wiki.py" ]; then
+    WIKI_SCRIPT="$ORBIT_REPO/tools/research_wiki.py"
+  elif [ -n "${ARIS_REPO:-}" ] && [ -f "$ARIS_REPO/tools/research_wiki.py" ]; then
+    WIKI_SCRIPT="$ARIS_REPO/tools/research_wiki.py"
+  fi
+fi
+[ -f "$WIKI_SCRIPT" ] || {
+  echo "WARN: research_wiki.py not found; verdict will be reported but wiki edges/query-pack/log will be skipped. Fix: bash tools/install_aris.sh, export ORBIT_REPO/ARIS_REPO, or cp <ARIS-repo>/tools/research_wiki.py tools/." >&2
+  WIKI_SCRIPT=""
+}
+```
+
+```
+if research-wiki/ exists:
+    # 1. Create experiment page
+    Create research-wiki/experiments/<exp_id>.md with:
+      - node_id: exp:<id>
+      - idea_id: idea:<active_idea>
+      - date, hardware, duration, metrics
+      - verdict, confidence, reasoning summary
+
+    # 2. Update claim status (page edits run unconditionally; edges only if $WIKI_SCRIPT resolved)
+    for each claim resolved by this verdict:
+        if verdict == "yes":
+            Update claim page: status → supported
+            [ -n "$WIKI_SCRIPT" ] && python3 "$WIKI_SCRIPT" add_edge research-wiki/ --from "exp:<id>" --to "claim:<cid>" --type supports --evidence "<metric>"
+        elif verdict == "partial":
+            Update claim page: status → partial
+            [ -n "$WIKI_SCRIPT" ] && python3 "$WIKI_SCRIPT" add_edge research-wiki/ --from "exp:<id>" --to "claim:<cid>" --type supports --evidence "partial"
+        else:
+            Update claim page: status → invalidated
+            [ -n "$WIKI_SCRIPT" ] && python3 "$WIKI_SCRIPT" add_edge research-wiki/ --from "exp:<id>" --to "claim:<cid>" --type invalidates --evidence "<why>"
+
+    # 3. Update idea outcome (raw markdown, helper-free)
+    Update research-wiki/ideas/<idea_id>.md:
+      - outcome: positive | mixed | negative
+      - If negative: fill "Failure / Risk Notes" and "Lessons Learned"
+      - If positive: fill "Actual Outcome" and "Reusable Components"
+
+    # 4. Rebuild + log (only if $WIKI_SCRIPT resolved)
+    [ -n "$WIKI_SCRIPT" ] && python3 "$WIKI_SCRIPT" rebuild_query_pack research-wiki/
+    [ -n "$WIKI_SCRIPT" ] && python3 "$WIKI_SCRIPT" log research-wiki/ "result-to-claim: exp:<id> verdict=<verdict> for idea:<idea_id>"
+
+    # 5. Re-ideation suggestion
+    Count failed/partial ideas since last /idea-creator run.
+    If >= 3: print "💡 3+ ideas tested since last ideation. Consider re-running /idea-creator — the wiki now knows what doesn't work."
+```
 
 ## Rules
 
-- **The secondary Codex agent is the judge, not the local executor.** The local executor collects evidence and routes; the reviewer agent evaluates. This prevents post-hoc rationalization.
-- Do not inflate claims beyond what the data supports. If the verdict says `partial`, do not round up to `yes`.
+- **Codex is the judge, not CC.** CC collects evidence and routes; Codex evaluates. This prevents post-hoc rationalization.
+- Do not inflate claims beyond what the data supports. If Codex says "partial", do not round up to "yes".
 - A single positive result on one dataset does not support a general claim. Be honest about scope.
 - If `confidence` is low, treat the judgment as inconclusive and add experiments rather than committing to a claim.
-- If reviewer delegation is unavailable, make the best local judgment you can and mark it `[pending external review]`.
-- Always record the verdict and reasoning in `findings.md`, regardless of outcome.
+- If Codex MCP is unavailable (call fails), CC makes its own judgment and marks it `[pending Codex review]` — do not block the pipeline.
+- Always record the verdict and reasoning in findings.md, regardless of outcome.
+
+## Review Tracing
+
+After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).

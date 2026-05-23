@@ -9,15 +9,15 @@
 #   Project-level (Claude Code):
 #     bash tools/smart_update.sh --project <path> [--apply]
 #   Project-level (Codex CLI):
-#     bash tools/smart_update.sh --project <path> --target-subdir .agents/skills/aris [--apply]
+#     bash tools/smart_update.sh --project <path> --target-subdir .agents/skills [--apply]
 #   Custom paths:
 #     bash tools/smart_update.sh --upstream <path> --local <path> [--apply]
 #
 #   --apply: actually perform the updates (default: dry-run analysis only)
 #   --project <path>: project root — upstream from repo, local from <path>/<target-subdir>
 #   --target-subdir <relative>: project-mode skill subdirectory (default: .claude/skills)
-#                               common values: .claude/skills, .claude/skills/aris,
-#                                              .agents/skills, .agents/skills/aris
+#                               common values: .claude/skills, .agents/skills
+#                               deprecated nested values: .claude/skills/aris, .agents/skills/aris
 #                               must be a relative path
 #   --upstream <path>: explicit upstream skills directory
 #   --local <path>: explicit local skills directory
@@ -224,7 +224,7 @@ declare -a UPSTREAM_NAMES=()
 # Check each upstream skill
 for skill_dir in "$UPSTREAM_DIR"/*/; do
     skill_name=$(basename "$skill_dir")
-    [[ "$skill_name" == "skills-codex" ]] && continue  # skip codex mirror
+    [[ "$skill_name" == skills-codex* ]] && continue  # skip codex mirror/overlays
     [[ "$skill_name" == "shared-references" ]] && continue  # handled separately
 
     UPSTREAM_NAMES+=("$skill_name")
@@ -287,6 +287,7 @@ done
 # Check for local-only skills (not in upstream)
 for skill_dir in "$LOCAL_DIR"/*/; do
     skill_name=$(basename "$skill_dir")
+    [[ "$skill_name" == skills-codex* ]] && continue
     [[ "$skill_name" == "shared-references" ]] && continue
     found=false
     for uname in "${UPSTREAM_NAMES[@]:-}"; do

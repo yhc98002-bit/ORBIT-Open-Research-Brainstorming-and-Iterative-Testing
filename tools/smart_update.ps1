@@ -9,14 +9,15 @@
 #   Project-level (Claude Code):
 #     .\tools\smart_update.ps1 -ProjectPath <path> [-Apply]
 #   Project-level (Codex CLI):
-#     .\tools\smart_update.ps1 -ProjectPath <path> -TargetSubdir '.agents/skills/aris' [-Apply]
+#     .\tools\smart_update.ps1 -ProjectPath <path> -TargetSubdir '.agents/skills' [-Apply]
 #   Custom paths:
 #     .\tools\smart_update.ps1 -UpstreamPath <path> -LocalPath <path> [-Apply]
 #
 #   -Apply: actually perform the updates (default: dry-run analysis only)
 #   -ProjectPath: project root — upstream is always the repo's skills/; local targets <ProjectPath>/<TargetSubdir>
 #   -TargetSubdir: project-mode skill subdirectory (default: .claude/skills)
-#                  common: .claude/skills, .claude/skills/aris, .agents/skills, .agents/skills/aris
+#                  common: .claude/skills, .agents/skills
+#                  deprecated nested: .claude/skills/aris, .agents/skills/aris
 #                  must be a relative path
 #   -UpstreamPath: explicit upstream skills directory
 #   -LocalPath: explicit local skills directory
@@ -202,7 +203,7 @@ function Compare-SkillDirs {
     # Check each upstream skill
     foreach ($skillDir in Get-ChildItem -Path $SrcDir -Directory) {
         $skillName = $skillDir.Name
-        if ($skillName -eq 'skills-codex' -or $skillName -eq 'shared-references') { continue }
+        if ($skillName -like 'skills-codex*' -or $skillName -eq 'shared-references') { continue }
 
         [void]$result.UpstreamNames.Add($skillName)
 
@@ -252,7 +253,7 @@ function Compare-SkillDirs {
     # Check for local-only skills
     foreach ($skillDir in Get-ChildItem -Path $DstDir -Directory) {
         $skillName = $skillDir.Name
-        if ($skillName -eq 'shared-references') { continue }
+        if ($skillName -like 'skills-codex*' -or $skillName -eq 'shared-references') { continue }
         if (-not $result.UpstreamNames.Contains($skillName)) {
             $result.LocalOnly.Add($skillName)
         }

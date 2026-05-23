@@ -4,11 +4,12 @@ description: 'Turn a vague research direction into a problem-anchored, elegant, 
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, mcp__codex__codex, mcp__codex__codex-reply
 ---
 
-> **ORBIT v1.4 compatibility note:** This skill may still accept legacy v1.0 artifact
-> aliases (e.g. `TASK_ONTOLOGY.md`, `COMPONENT_LADDER.md`, `TINY_RUN_AUDIT.md`), but
-> new ORBIT refinement gates use the v1.4 canonical semantics defined in
+> **ORBIT compatibility note:** This skill may still accept legacy v1.0 artifact aliases
+> (e.g. `TASK_ONTOLOGY.md`, `COMPONENT_LADDER.md`, `TINY_RUN_AUDIT.md`), but new ORBIT
+> refinement gates use the v1.3 artifact/gate contract defined in
 > [`skills/shared-references/research-agent-pipeline.md`](../shared-references/research-agent-pipeline.md);
-> legacy names are read only as aliases.
+> v1.4 wrapper skills build on that contract without replacing it. Legacy names are read
+> only as aliases.
 
 # Research Refine: Problem-Anchored, Elegant, Frontier-Aware Plan Refinement
 
@@ -60,7 +61,7 @@ User input (PROBLEM + vague APPROACH)
   `— review-posture: <collaborator|adversarial>`. Use adversarial posture after STOP C
   or when the user explicitly requests it.
 - **NOVELTY_POLICY = `positioning-first`** — Load
-  `shared-references/research-posture.md` before review/refinement.
+  `../shared-references/research-posture.md` before review/refinement.
 - **REVIEWER_DIFFICULTY = `medium`** — How strict the Phase 2 / Phase 4 reviewer
   is. Three levels (mirrors `/auto-review-loop`'s `REVIEWER_DIFFICULTY` so the user can
   pass the same `— difficulty:` flag through any wrapper skill — e.g. `/idea-to-proposal`,
@@ -88,8 +89,8 @@ User input (PROBLEM + vague APPROACH)
 
 ## ORBIT Refinement Gates
 
-These gates are always-on. Load `shared-references/research-agent-pipeline.md`,
-`shared-references/document-hygiene.md`, and `shared-references/research-posture.md`
+These gates are always-on. Load `../shared-references/research-agent-pipeline.md`,
+`../shared-references/document-hygiene.md`, and `../shared-references/research-posture.md`
 before refining. Run `mkdir -p orbit-research/`.
 
 Before STOP A, refine from the proposal-stage artifacts only:
@@ -145,7 +146,7 @@ Long-running refinement sessions may fail mid-way (e.g., API timeout, context co
 | `threadId` | string or null | Reviewer thread ID for `codex-reply` continuity |
 | `last_score` | number or null | Most recent overall score from reviewer |
 | `last_verdict` | string or null | Most recent verdict (READY / REVISE / RETHINK) |
-| `status` | `"in_progress"` / `"awaiting_human_continue"` / `"completed"` | Loop status — three-state enum per `shared-references/continuation-contract.md` |
+| `status` | `"in_progress"` / `"awaiting_human_continue"` / `"awaiting_user_action"` / `"completed"` | Loop status — four-state enum per `../shared-references/continuation-contract.md` |
 | `venue` | string (e.g. `"ICLR"`) or `""` | Target venue parsed from `— venue:` flag. Empty string = normal ML venue target without breakthrough-only assumptions. |
 | `difficulty` | `"medium"` / `"hard"` / `"nightmare"` | Reviewer difficulty parsed from `— difficulty:` flag. Drives `max_rounds_effective` + `score_threshold_effective` + reviewer prompt routing. Default `"medium"`. |
 | `effort` | `"low"` / `"medium"` / `"high"` / `"xhigh"` / `"max"` | Codex `model_reasoning_effort` parsed from `— effort:` flag (`max` = `xhigh`). Default `"xhigh"`. The actual effort honored is recorded in `STATE.notes` if Codex MCP fell back. |
@@ -168,7 +169,7 @@ Long-running refinement sessions may fail mid-way (e.g., API timeout, context co
   set `"status": "completed"`.
 
 This is the v1.3 canonical contract; old STATE files with only `in_progress` / `completed`
-still parse — `awaiting_human_continue` is an additive third state.
+still parse. `awaiting_human_continue` and `awaiting_user_action` are additive states.
 
 ## Output Structure
 

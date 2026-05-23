@@ -1,408 +1,707 @@
 ---
-name: "research-pipeline"
-description: "Codex-CLI mirror of ORBIT v1.3 research-methodology routing harness. Routes by mode (EXPLORATION/INNOVATION/COMMITMENT) and risk (1-5) through 26 stages organised into four spines (Discovery/Grounding/Innovation/Validation). Innovation loops use Codex collaborative mode; commitment gates use Codex adversarial mode. Reuses ARIS execution skills. Use for 全流程/full pipeline/end-to-end research/ORBIT/ORBIT v1.3."
+name: research-pipeline
+description: "ORBIT v1.3 research-methodology routing harness built on ARIS skills. Routes by mode (EXPLORATION/INNOVATION/COMMITMENT) and risk (1-5) through 26 stages organised into four spines (Discovery/Grounding/Innovation/Validation). Innovation loops for divergent mechanism invention; artifact-triggered audits; cheapest valid diagnostic; verdict-line gates only at high-risk transitions. Reuses mature ARIS execution skills (/auto-review-loop, /paper-writing, /experiment-bridge, etc.) instead of reimplementing them. Use when user says 全流程/full pipeline/end-to-end research/从问题到论文/ORBIT/自动科研流水线/ORBIT v1.3."
+argument-hint: [research-area-or-problem-or-artifact-path]
+allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, mcp__codex__codex, mcp__codex__codex-reply
 ---
 
-# ORBIT v1.3 Research Pipeline (Codex CLI dispatch mirror)
+# ORBIT Research Pipeline — v1.3 Routing Orchestrator
 
-This is the Codex CLI dispatch mirror of `skills/research-pipeline/SKILL.md`. The two
-variants share the same v1.3 stage skeleton so behaviour is consistent across CLIs. The
-canonical contracts (stage definitions, harness prompts, gate rules, audit prompts) live
-in `skills/shared-references/` — read those first.
+Run the v1.3 research-methodology workflow for: **$ARGUMENTS**
 
-End-to-end research workflow for: **$ARGUMENTS**
+This is the ORBIT control skill. It does **not** force every stage on every request. It
+routes by user input shape, mode, and risk, and only enforces hard gates before high-risk
+irreversible transitions. It preserves and reuses mature ARIS execution skills (do not
+reimplement them).
 
 ## Load First
+
+Before executing the pipeline, read:
 
 - `../shared-references/research-agent-pipeline.md` — v1.3 canonical stage map, hard gates G0–G19
 - `../shared-references/research-harness-prompts.md` — per-stage canonical prompt
 - `../shared-references/innovation-loops.md` — Stages 8/9/10/18.5 procedures + Codex collaborative mode
 - `../shared-references/semantic-code-audit.md` — Stage 15 plan-code audit + Stage 17 diagnostic-run audit
+- `../shared-references/continuation-contract.md` — STATE.json schema, four-state enum, cross-skill resume rules (used by Stage 0 routing)
 - `../shared-references/reviewer-independence.md`
 - `../shared-references/reviewer-routing.md`
 
 ## Constants
 
-- **OUTPUT_ROOT = `orbit-research/`** — v1.3 artifacts.
-- **CLAUDE_EFFORT = `max`** — default planning/writing depth for the convergence pipeline.
-- **CODEX_REVIEW_MODEL = `gpt-5.5`** — default Codex reviewer.
-- **CODEX_REVIEW_EFFORT = `xhigh`** — mandatory for review gates.
-- **CODEX_SANDBOX_MODE = `danger-full-access`** — set globally in `~/.codex/config.toml`.
-- **CODEX_INNOVATION_MODE** — `COLLABORATIVE` at Stages 8, 9, 10, 18.5; `ADVERSARIAL` everywhere else.
-- **MAX_DEBATE_ROUNDS = 2**
-- **AUTO_PROCEED = false** for irreversible actions (GPU scale-up, paper, stop).
-- **AUTO_WRITE = false** — if true, run `/paper-writing` after CLAIM_CONSTRUCTION + RED_TEAM_REVIEW gates pass.
-- **VENUE = `ICLR`**.
-- **HUMAN_CHECKPOINT = false** — if true, pause at major spine boundaries.
+- **OUTPUT_ROOT = `orbit-research/`** — v1.3 artifacts live here unless the project already
+  has a better convention.
+- **CODEX_REVIEW_MODEL = `gpt-5.5`** — Default Codex reviewer for ORBIT.
+- **CODEX_REVIEW_EFFORT = `xhigh`** — Mandatory for all ORBIT review gates.
+- **CODEX_SANDBOX_MODE = `danger-full-access`** — Set globally in `~/.codex/config.toml`,
+  not per call. Codex MCP `config` only accepts `model_reasoning_effort`; do not try to
+  pass `sandbox` per call.
+- **REVIEWER_INDEPENDENCE = on** — Pass file paths and objective, not executor summaries.
+- **CODEX_INNOVATION_MODE** — `COLLABORATIVE` at Stages 8, 9, 10, 18.5 (use template in
+  `innovation-loops.md` §7.1); `ADVERSARIAL` everywhere else (use templates in
+  `semantic-code-audit.md` and `research-harness-prompts.md`).
+- **MAX_DEBATE_ROUNDS = 2** — Prevent infinite Claude vs Codex debate loops.
+- **AUTO_WRITE = false** — If true, run `/paper-writing` after CLAIM_CONSTRUCTION and
+  RED_TEAM_REVIEW gates pass.
+- **VENUE = `ICLR`** — Used when paper writing is enabled.
+- **AUTO_PROCEED = false** for irreversible actions: GPU scale-up, final paper claims,
+  stopping a project.
 
-## Stage Map (v1.3 — same as Claude variant)
+## Canonical Outputs (v1.3)
+
+Create or update these artifacts as the project progresses. Producers emit v1.3 names
+only; consumers (this orchestrator, experiment-queue, semantic audit) accept v1.0 aliases
+where noted, preferring v1.3 if both exist.
 
 ```text
-Stage 0     Mode & Risk Routing
-Stage 1     Seed Framing
-Stage 2     Question-driven Literature Map                    (loop)
-Stage 2.5   Problem Reframing Loop
-Stage 3     Problem Taste / Problem Selection
-Stage 4     Assumption Ledger
-Stage 5     Abstract Task / Mechanism Framing
-Stage 6     Artifact-triggered Data / Env / Benchmark Audit
-Stage 7     Baseline Ceiling / Headroom Audit
-Stage 8     Mechanism Invention Loop                          (Codex COLLABORATIVE)
-Stage 9     Analogy / Cross-pollination Loop                  (Codex COLLABORATIVE)
-Stage 10    Algorithm Sketch Tournament                       (Codex COLLABORATIVE on sketch / ADVERSARIAL on adjudication)
-Stage 11    Hypothesis-Mechanism-Benchmark-Control Matrix
-Stage 12    Null-result Contract
-Stage 13    Progressive Component / Minimal Mechanism Bundle
-Stage 14    Algorithmic Formalization
-Stage 15    Plan-Code Consistency Loop                        (audit → fix → re-audit)
-Stage 16    Cheapest Valid Diagnostic
-Stage 17    Diagnostic Run Audit
-Stage 18    Result Interpretation Loop
-Stage 18.5  Failure-to-Innovation Loop                        (Codex COLLABORATIVE)
-Stage 19    Re-read Literature Loop
-Stage 20    Scale-up Decision
-Stage 21    Result-to-Claim Construction
-Stage 22    Tie / Negative Result / Reframing Strategy
-Stage 23    Reviewer Red-team Loop                            (review → fix → re-review)
-Stage 24    Paper Writing / Paper Improvement Loop
-Stage 25    Human Decision / Next Loop
+orbit-research/MODE_ROUTING.md
+orbit-research/SEED_FRAMING.md
+orbit-research/LITERATURE_MAP.md
+orbit-research/PROBLEM_REFRAMING.md           (when triggered)
+orbit-research/PROBLEM_SELECTION.md
+orbit-research/ASSUMPTION_LEDGER.md
+orbit-research/ABSTRACT_TASK_MECHANISM.md
+orbit-research/ARTIFACT_AUDIT.md              (when an artifact actually exists)
+orbit-research/BASELINE_CEILING.md
+orbit-research/MECHANISM_IDEATION.md          (innovation: Codex collaborative)
+orbit-research/ANALOGY_TRANSFER.md            (innovation: Codex collaborative)
+orbit-research/ALGORITHM_TOURNAMENT.md        (innovation: Codex collaborative)
+orbit-research/CONTROL_DESIGN.md
+orbit-research/NULL_RESULT_CONTRACT.md
+orbit-research/COMPONENT_BUNDLE_LADDER.md     (v1.0 alias: COMPONENT_LADDER.md)
+orbit-research/ALGORITHMIC_FORMALIZATION.md
+orbit-research/PLAN_CODE_AUDIT.md             (verdict line: MATCHES_PLAN | PARTIAL_MISMATCH | CRITICAL_MISMATCH | ERROR)
+orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md  (v1.0 alias: TINY_RUN_PLAN.md)
+orbit-research/DIAGNOSTIC_RUN_REPORT.md       (v1.0 alias: TINY_RUN_REPORT.md)
+orbit-research/DIAGNOSTIC_RUN_AUDIT.md        (v1.0 alias: TINY_RUN_AUDIT.md; verdict: PASS | FIX_BEFORE_GPU | REDESIGN_EXPERIMENT)
+orbit-research/RESULT_INTERPRETATION.md
+orbit-research/FAILURE_TO_INNOVATION.md       (when triggered, innovation: Codex collaborative)
+orbit-research/LITERATURE_REREAD_NOTE.md
+orbit-research/SCALEUP_DECISION.md            (verdict line: PROCEED | HOLD | REDESIGN | HUMAN_DECISION_REQUIRED)
+orbit-research/CLAIM_CONSTRUCTION.md
+orbit-research/NEGATIVE_RESULT_STRATEGY.md    (when tie/failure)
+orbit-research/RED_TEAM_REVIEW.md             (loop output from /auto-review-loop; verdict: READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED)
+orbit-research/PAPER_IMPROVEMENT_LOG.md       (loop output from /paper-writing chain)
+orbit-research/AGENT_DECISION_RECOMMENDATION.md
+orbit-research/HUMAN_DECISION_NOTE.md         (human-authored/confirmed; verdict line: PROCEED | NARROW | REDESIGN | RE-READ | CHANGE BENCHMARK | STOP | HUMAN_DECISION_REQUIRED)
 ```
 
-Four spines:
-- **Discovery** (0, 1, 2, 2.5, 3) — frame the problem and select a target.
-- **Grounding** (4, 5, 6, 7) — *diagnostic support* for innovation, not innovation itself.
-- **Innovation** (8, 9, 10, 18.5) — divergent mechanism invention. Codex collaborative.
-- **Validation** (11–25) — controls, formalization, audit, diagnostic, scale-up, claim, paper, decision.
+Also reuse existing ARIS outputs when present:
 
-## Pipeline (Codex-CLI dispatch)
+- `idea-stage/IDEA_REPORT.md`
+- `idea-stage/IDEA_CANDIDATES.md`
+- `refine-logs/FINAL_PROPOSAL.md`
+- `refine-logs/EXPERIMENT_PLAN.md`
+- `refine-logs/EXPERIMENT_TRACKER.md`
+- `review-stage/AUTO_REVIEW.md`
+- `NARRATIVE_REPORT.md`
+- `paper/`
 
-### Stage 00 — Workspace init
+## Stage 00: Initialize Workspace
+
+Before any other stage:
 
 ```bash
 mkdir -p orbit-research/
 ```
 
-### Stage 0 — Mode & Risk Routing (FIRST ACTION)
+Idempotent. Every downstream skill assumes `orbit-research/` exists; create it once at the
+controller level so artifact writes never silently fail on a fresh project.
 
-Classify `$ARGUMENTS` into one of 7 routing categories:
+## Stage 0: Mode & Risk Routing (FIRST ACTION)
 
-| Category | Suggested mode | Initial risk | Stages to run |
-|---|---|---|---|
-| Broad area | EXPLORATION | 1–2 | 1 → 2 → 2.5 → 3 |
-| Concrete idea, no artifact | INNOVATION | 2–3 | 4 → 5 → 7 → 8/9/10 |
-| Concrete data / env / sim / reward in hand | INNOVATION/COMMITMENT | 2–4 | 6 → 7 → 11+ |
-| Designing new method | INNOVATION | 2–3 | 4 → 5 → 8 → 9 → 10 |
-| Implementing official experiments | COMMITMENT | 4 | 11 → 12 → 13 → 14 → 15 → 16 |
-| Running experiments | COMMITMENT | 3–4 | 16 → 17 → 18 |
-| Results failed/surprised | INNOVATION | 2–3 | 18 → 18.5 → 19 → (back to 8 or 11) |
+The orchestrator's first action — before anything else.
 
-Write `orbit-research/MODE_ROUTING.md` ending with one canonical line:
-`EXPLORATION | INNOVATION | COMMITMENT + risk: <1-5>`
+### Step 0a: Cross-skill continuation check (NEW — runs before input classification)
 
-**Auto-stub for low-risk single-stage:** if missing, default `EXPLORATION + risk: 1`.
+Per the canonical contract in `../shared-references/continuation-contract.md`, look for any
+upstream `*_STATE.json` produced by a prior skill that may want this orchestrator to
+continue from a known point. Glob:
+
+```bash
+ls orbit-research/*_STATE.json refine-logs/*_STATE.json review-stage/*_STATE.json paper/.aris/*_STATE.json 2>/dev/null
+```
+
+For each STATE file found, read it and apply the cross-skill resume rules:
+
+| Upstream STATE | Action |
+|---|---|
+| `status = "awaiting_human_continue"` AND user invoked `/research-pipeline` (downstream of this skill) | **Treat as approval to continue.** Load `artifact_inventory`. Use the artifact-presence routing path below to skip already-completed stages. Note this in `MODE_ROUTING.md` as "Continuing from <skill> output (artifacts loaded)." |
+| `status = "awaiting_user_action"` | Block downstream routing. Surface the upstream `next_action`; do not treat this as approval to continue. |
+| `status = "in_progress"` AND `timestamp < 24h` | Warn user the upstream skill was mid-execution. Ask: "resume `<upstream skill>` first?" If yes, exit and direct user to that skill. If no, proceed with fresh routing on `$ARGUMENTS`. |
+| `status = "in_progress"` AND `timestamp ≥ 24h` | Stale; ignore (or offer cleanup). Proceed with fresh routing. |
+| `status = "completed"` | Treat as historical context only. Proceed with fresh routing on `$ARGUMENTS` unless `— resume: true` is passed. |
+
+### Step 0b: Artifact-presence routing (works even without STATE files)
+
+Glob `orbit-research/*.md` to enumerate v1.3 artifacts already on disk. Map artifact
+presence → suggested first stage:
+
+| Artifacts present | Inferred starting stage | Suggested mode |
+|---|---|---|
+| `PROBLEM_SELECTION.md` + `ASSUMPTION_LEDGER.md` + `ABSTRACT_TASK_MECHANISM.md` + `ALGORITHM_TOURNAMENT.md` (all present) | **Stage 11** (commitment) — Discovery + Grounding + Innovation already done by upstream | COMMITMENT (risk 4) |
+| `PROBLEM_SELECTION.md` + `ASSUMPTION_LEDGER.md` + `ABSTRACT_TASK_MECHANISM.md` only (no Innovation artifacts) | **Stage 8** (Innovation entry) — Grounding done, Innovation needed | INNOVATION (risk 2–3) |
+| `PROBLEM_SELECTION.md` only | **Stage 4** (Grounding entry) | INNOVATION (risk 2) |
+| `MODE_ROUTING.md` + `SEED_FRAMING.md` only | **Stage 2** (Literature Map continuation) | EXPLORATION (risk 1–2) |
+| `PLAN_CODE_AUDIT.md` verdict = `MATCHES_PLAN` + `DIAGNOSTIC_RUN_AUDIT.md` absent | **Stage 16/17** (run diagnostic) | COMMITMENT (risk 3–4) |
+| `DIAGNOSTIC_RUN_AUDIT.md` verdict = `PASS` + `SCALEUP_DECISION.md` absent | **Stage 20** (scale-up decision) | COMMITMENT (risk 4) |
+| `CLAIM_CONSTRUCTION.md` + `RED_TEAM_REVIEW.md` ending `READY_FOR_PAPER` + `HUMAN_DECISION_NOTE.md` ending `PROCEED` all present | **Stage 24** (paper writing) | COMMITMENT (risk 4–5) |
+| (none of the above) | Fall through to Step 0c input-shape classification | (decide below) |
+
+When this routing applies, **bypass** the input-shape table and write `MODE_ROUTING.md`
+with both the inferred routing AND the trigger artifacts:
+
+```
+EXPLORATION | INNOVATION | COMMITMENT + risk: <N>
+trigger: artifact-presence (loaded: <comma-separated artifact basenames>)
+upstream-state: <SKILL>_STATE.json: <status>
+first-stage: <stage number>
+```
+
+### Step 0c: Input-shape classification (fallback when no continuation applies)
+
+If neither Step 0a nor Step 0b matched a continuation, classify `$ARGUMENTS` into one of
+these categories:
+
+| Category | Trigger | Suggested mode | Initial risk | First stages to run |
+|---|---|---|---|---|
+| Broad area | `$ARGUMENTS` is a research domain | EXPLORATION | 1–2 | 1 → 2 → 2.5 → 3 |
+| Concrete idea, no artifact | `$ARGUMENTS` is a problem statement, no data/code yet | INNOVATION | 2–3 | 4 → 5 → 7 → 8/9/10 |
+| Concrete data / benchmark / sim / reward in hand | `$ARGUMENTS` references an artifact path | INNOVATION/COMMITMENT | 2–4 | 6 (artifact-triggered audit) → 7 → 11+ |
+| Designing new method | user explicitly wants ideation | INNOVATION | 2–3 | 4 → 5 → 8 → 9 → 10 |
+| Implementing official experiments | proposal + plan exist | COMMITMENT | 4 | 11 → 12 → 13 → 14 → 15 → 16 |
+| Running experiments | implementation exists | COMMITMENT | 3–4 | 16 → 17 → 18 |
+| Results failed / surprised | result interpretation says tie or failure | INNOVATION | 2–3 | 18 → 18.5 → 19 → (back to 8 or 11) |
+
+**Action:**
+
+1. Use the Stage 0 harness from `research-harness-prompts.md`.
+2. Apply Step 0a (continuation check) → Step 0b (artifact-presence routing) →
+   Step 0c (input-shape classification), in order. The first one that matches wins.
+3. Write `orbit-research/MODE_ROUTING.md` ending with one canonical line:
+   `EXPLORATION | INNOVATION | COMMITMENT + risk: <1-5>`.
+4. **Auto-stub for low-risk single-stage commands:** when this orchestrator is invoked
+   with no `MODE_ROUTING.md` and the requested action is low-risk single-stage work
+   (no scale-up, no paper writing), default to `EXPLORATION + risk: 1` and write a stub.
+   Continue without blocking.
+5. **Honour `— from-stage: N` override:** if the user passes an explicit stage number
+   inline, that wins over Step 0a/b/c. Still write MODE_ROUTING.md noting the override.
 
 **Gate G0:** for high-risk transitions (scale-up, paper writing, public release, official
-experiment planning), if mode/risk cannot be inferred, block; require explicit Stage 0
-routing or `— mode:` flag.
+experiment planning), if mode/risk cannot be inferred from upstream STATE, prior artifacts,
+or an inline `— mode:` flag, block; require explicit Stage 0 routing.
 
-### Stage 1 — Seed Framing
+**After Stage 0,** run only the stages relevant to the user's input shape OR the inferred
+continuation point. Do not force a linear walk through 0–25.
 
-Write `orbit-research/SEED_FRAMING.md`. Use harness from `../shared-references/research-harness-prompts.md` §1.
+## Per-stage orchestration blocks
 
-### Stage 2 — Literature Map (loop)
+Each block: when to run, which sub-skill to invoke, required input artifacts, output
+artifact + verdict expected, gate(s) checked. Inline accept-either parsing reads the v1.3
+name first, falls back to v1.0 alias.
 
-Codex CLI invokes `/research-lit "$ARGUMENTS"`. Optionally `/arxiv`, `/semantic-scholar`,
-`/exa-search`, `/deepxiv`. Write `orbit-research/LITERATURE_MAP.md`. Re-fires at Stage 19.
+### Stage 1: Seed Framing
 
-### Stage 2.5 — Problem Reframing Loop
+**When:** category = broad area, or `SEED_FRAMING.md` is missing and the user's input is
+a domain rather than a concrete problem.
 
-Triggered when literature map suggests the problem-as-stated is the wrong cut. Write
+**Action:**
+
+1. Use the Stage 1 harness from `research-harness-prompts.md`.
+2. Write `orbit-research/SEED_FRAMING.md`.
+
+### Stage 2: Question-driven Literature Map (loop)
+
+**When:** category = broad area, or before problem selection. Re-fires at Stage 19 after
+early results.
+
+**Sub-skill invocation:**
+
+```bash
+/research-lit "$ARGUMENTS"
+```
+
+Optionally use `/arxiv`, `/semantic-scholar`, `/exa-search`, `/deepxiv`, Zotero, Obsidian,
+local PDFs.
+
+**Action:** write `orbit-research/LITERATURE_MAP.md`.
+
+**Codex (adversarial):** checks missing papers, missing baselines, overclaimed assumptions,
+claim-evidence gaps, benchmark saturation.
+
+### Stage 2.5: Problem Reframing Loop
+
+**When:** literature map suggests the problem-as-stated is the wrong cut.
+
+**Action:** use the Stage 2.5 harness from `research-harness-prompts.md`. Write
 `orbit-research/PROBLEM_REFRAMING.md` ending with `KEEP | REFRAME | SPLIT`.
 
-### Stage 3 — Problem Selection
+### Stage 3: Problem Taste / Problem Selection
 
-Required by **G1** for method commitment / official experiment planning / GPU run (unless
-mode = EXPLORATION/INNOVATION with candidates marked as such).
+**When:** before any commitment. Required by **G1** for method commitment, official
+experiment planning, or GPU run (unless mode = EXPLORATION/INNOVATION and outputs are
+clearly marked as candidates).
 
-Codex (adversarial) attacks feasibility, baseline risk, paper survivability. Write
-`orbit-research/PROBLEM_SELECTION.md` ending with `PROCEED | NARROW | RETHINK`.
+**Action:**
 
-### Stage 4 — Assumption Ledger
+1. Run Claude vs Codex debate (adversarial). Codex attacks feasibility, baseline risk,
+   paper value if the method ties.
+2. Write `orbit-research/PROBLEM_SELECTION.md` ending with `PROCEED | NARROW | RETHINK`.
 
-Write `orbit-research/ASSUMPTION_LEDGER.md`. Each row: ID, assumption text, tag (`factual`/`working`),
-test/citation. Required by **G2** for downstream claim wording.
+### Stage 4: Assumption Ledger
 
-### Stage 5 — Abstract Task / Mechanism Framing
+**When:** before mechanism invention OR before any committed experiment. Required by
+**G2** (downstream "is/will/always" claims must trace to a ledger entry).
 
-Write `orbit-research/ABSTRACT_TASK_MECHANISM.md`. Required by **G3** at Stage 11+.
+**Action:** use the Stage 4 harness. Write `orbit-research/ASSUMPTION_LEDGER.md` with rows
+tagged `factual` (citable) or `working` (must be tested).
 
-### Stage 6 — Artifact-triggered Audit
+### Stage 5: Abstract Task / Mechanism Framing
 
-**G4:** only fires when a concrete data set / env / simulator / reward / evaluator / split
-exists or has been fetched. Do NOT force this audit before then.
+**When:** before mechanism invention (Stage 8). Required by **G3** at commitment time
+(Stage 11+); not strictly required at Stage 8/9/10 in EXPLORATION/INNOVATION mode.
 
-Write `orbit-research/ARTIFACT_AUDIT.md`. Re-emit whenever audited artifact changes.
+**Action:** use the Stage 5 harness. Write `orbit-research/ABSTRACT_TASK_MECHANISM.md`.
 
-### Stage 7 — Baseline Ceiling / Headroom Audit
+### Stage 6: Artifact-triggered Data / Env / Benchmark Audit
 
-Required by **G5** for "outperforms / beats / improves over" claims (unless mode =
-EXPLORATION + no paper claim).
+**When:** **only when** a concrete data set, environment, simulator, reward function,
+evaluator, or split actually exists or has been fetched. **Gate G4:** do NOT force this
+audit before such an artifact exists. Re-emit whenever the audited artifact changes.
 
-Write `orbit-research/BASELINE_CEILING.md`. Headroom is reference, not veto.
+**Action:** use the Stage 6 harness. Write `orbit-research/ARTIFACT_AUDIT.md`.
 
-### Stage 8 — Mechanism Invention Loop  *(Codex COLLABORATIVE)*
+**Codex (adversarial):** acts as data/task ontology auditor; tries to find category errors
+or leakage.
 
-Mode switch: `CODEX_INNOVATION_MODE = COLLABORATIVE`. Use template in
-`../shared-references/innovation-loops.md` §7.1. Codex appends candidates; does NOT veto.
+### Stage 7: Baseline Ceiling / Headroom Audit
 
-Procedure: see `innovation-loops.md` §2. Generate 5–10 candidates rated by
-novelty/feasibility/falsifiability. Write `orbit-research/MECHANISM_IDEATION.md`.
+**When:** before any "outperforms / beats / improves over" claim (G5), unless mode =
+EXPLORATION AND no paper claim is being made.
 
-### Stage 9 — Analogy / Cross-pollination Loop  *(Codex COLLABORATIVE)*
+**Action:** use the Stage 7 harness. Write `orbit-research/BASELINE_CEILING.md`.
 
-Procedure: see `innovation-loops.md` §3. For each top candidate, find ≥1 analogous solved
-problem. Map *what transfers / what does not / what new constraint*. Write
+**Codex (adversarial):** argues whether the simple baseline is already too strong or
+whether the benchmark/claim must change. Headroom is a reference, not a veto.
+
+### Stage 8: Mechanism Invention Loop  *(Codex COLLABORATIVE)*
+
+**When:** category = designing new method, OR before commitment in INNOVATION mode.
+
+**Codex mode switch:** `CODEX_INNOVATION_MODE = COLLABORATIVE`. Use template in
+`innovation-loops.md` §7.1. Codex appends candidates; does NOT veto.
+
+**Action:** use the Stage 8 harness. See `innovation-loops.md` §2 for the full procedure.
+Write `orbit-research/MECHANISM_IDEATION.md` with all candidates visible (none pruned),
+top-3 marked for Stage 9, and a "Codex collaborative additions" section.
+
+### Stage 9: Analogy / Cross-pollination Loop  *(Codex COLLABORATIVE)*
+
+**When:** after `MECHANISM_IDEATION.md` exists.
+
+**Codex mode:** COLLABORATIVE.
+
+**Action:** use the Stage 9 harness. See `innovation-loops.md` §3. Write
 `orbit-research/ANALOGY_TRANSFER.md`.
 
-### Stage 10 — Algorithm Sketch Tournament  *(Codex COLLABORATIVE on sketch / ADVERSARIAL on adjudication)*
+### Stage 10: Algorithm Sketch Tournament  *(Codex COLLABORATIVE on sketch / ADVERSARIAL on adjudication)*
 
-Procedure: see `innovation-loops.md` §4. 1-page sketch per candidate; round-robin pairwise
-on diagnosability/fidelity/falsifiability/integration cost. Mark a TENTATIVE_PREFERRED_SKETCH_ID
-for Stage 11 commitment review (this is **not** a final method commitment); **keep
-ALTERNATES** for revival in Stage 11 review or in Stage 18.5.
+**When:** after `MECHANISM_IDEATION.md` and `ANALOGY_TRANSFER.md` exist.
 
-Write `orbit-research/ALGORITHM_TOURNAMENT.md` ending with
-`TENTATIVE_PREFERRED_SKETCH_ID + ALTERNATES + ABSTAIN_REASONS`.
+**Codex mode:** COLLABORATIVE on sketch quality; ADVERSARIAL on tournament adjudication.
 
-### Stage 11 — HMBC Matrix  *(Codex switches BACK to ADVERSARIAL)*
+**Action:** use the Stage 10 harness. See `innovation-loops.md` §4. Write
+`orbit-research/ALGORITHM_TOURNAMENT.md` ending with
+`TENTATIVE_PREFERRED_SKETCH_ID + ALTERNATES + ABSTAIN_REASONS`. The tentative pick is
+**not** a method commitment — Stage 11 (HMBC matrix) reviews it and may switch to an
+alternate or send the project back to Stage 8.
 
-Required by **G6** (≥1 of MECHANISM_IDEATION / ANALOGY_TRANSFER / ALGORITHM_TOURNAMENT
-must exist before commitment).
+### Stage 11: Hypothesis-Mechanism-Benchmark-Control Matrix  *(Codex switches BACK to ADVERSARIAL)*
 
-Codex CLI invokes `/research-refine "$ARGUMENTS"` then `/experiment-plan "refine-logs/FINAL_PROPOSAL.md"`.
+**When:** committing to an experiment plan. Required by **G6** (≥1 of MECHANISM_IDEATION
+/ ANALOGY_TRANSFER / ALGORITHM_TOURNAMENT must exist before commitment).
 
-Write `orbit-research/CONTROL_DESIGN.md`. Codex (adversarial) attacks control isolation,
-null-result interpretability, component attribution.
+**Sub-skill invocation:**
 
-### Stage 12 — Null-result Contract
+```bash
+/research-refine "$ARGUMENTS"
+/experiment-plan "refine-logs/FINAL_PROPOSAL.md"
+```
 
-Required by **G8** for diagnostic/confirmatory experiments (unless explicitly "exploratory probe").
+**Action:** use the Stage 11 harness. Write `orbit-research/CONTROL_DESIGN.md`.
 
-Write `orbit-research/NULL_RESULT_CONTRACT.md`.
+**Codex (adversarial):** attacks control isolation, null-result interpretability, component
+attribution, rollback conditions, algorithmic self-consistency.
 
-### Stage 13 — Component / Bundle Ladder
+### Stage 12: Null-result Contract
 
-Required by **G9** for new composed methods (single justified rung acceptable). Exception:
-baseline reproduction or single-component runs.
+**When:** before any diagnostic/confirmatory experiment. Required by **G8** unless run is
+explicitly marked "exploratory probe" (no paper claim allowed).
 
-Write `orbit-research/COMPONENT_BUNDLE_LADDER.md` (consumers also read v1.0 alias
-`COMPONENT_LADDER.md`).
+**Action:** use the Stage 12 harness. Write `orbit-research/NULL_RESULT_CONTRACT.md`.
 
-### Stage 14 — Algorithmic Formalization
+### Stage 13: Progressive Component / Minimal Mechanism Bundle
 
-Required by **G10** for scale-up to official experiments.
+**When:** before any official (full-system) run with a new composed method. Required by
+**G9** unless run is a baseline reproduction or single-component run.
 
-Write `orbit-research/ALGORITHMIC_FORMALIZATION.md`.
+**Action:** use the Stage 13 harness. Write `orbit-research/COMPONENT_BUNDLE_LADDER.md`
+(consumers also read v1.0 alias `COMPONENT_LADDER.md`). Bundle entries must include
+indivisibility justification.
 
-### Stage 15 — Plan-Code Consistency Loop
+### Stage 14: Algorithmic Formalization
 
-Codex CLI invokes `/experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"`, then runs
-semantic audit per `../shared-references/semantic-code-audit.md`.
+**When:** before official experiments. Required by **G10** unless mode = EXPLORATION AND
+no scale-up requested.
 
-Always write `orbit-research/PLAN_CODE_AUDIT.md` with verdict line on its own line:
-`MATCHES_PLAN | PARTIAL_MISMATCH | CRITICAL_MISMATCH | ERROR`.
+**Action:** use the Stage 14 harness. Write `orbit-research/ALGORITHMIC_FORMALIZATION.md`.
 
-**Gate G11:** `CRITICAL_MISMATCH` blocks scale-up; loop fix → re-audit. `ERROR` advisory
-at diagnostic, blocks at scale-up pending human acknowledgement.
+### Stage 15: Plan-Code Consistency Loop
 
-### Stage 16 — Cheapest Valid Diagnostic
+**When:** after implementation lands; loops audit → fix → re-audit until verdict is
+`MATCHES_PLAN` or scoped `PARTIAL_MISMATCH`.
 
-Write `orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md` (consumers also read v1.0 alias
-`TINY_RUN_PLAN.md`). Cheapest run that could falsify the central claim — not necessarily tiny.
+**Sub-skill invocation:**
 
-### Stage 17 — Diagnostic Run Audit
+```bash
+/experiment-bridge "refine-logs/EXPERIMENT_PLAN.md"
+```
 
-Codex CLI invokes `/run-experiment "[diagnostic command]"`, `/monitor-experiment`. For
-many jobs, `/experiment-queue "[manifest]"`.
+Then run semantic audit per `../shared-references/semantic-code-audit.md`.
 
-Write `orbit-research/DIAGNOSTIC_RUN_REPORT.md` (alias: `TINY_RUN_REPORT.md`) and
-`orbit-research/DIAGNOSTIC_RUN_AUDIT.md` (alias: `TINY_RUN_AUDIT.md`) with verdict
-`PASS | FIX_BEFORE_GPU | REDESIGN_EXPERIMENT`.
+**Action:**
 
-**Gate G12:** if diagnostic failed in a regime that violates mechanism preconditions, do
-NOT reject the mechanism — recommend diagnostic redesign.
+1. Codex reads v1.3 plan artifacts (ASSUMPTION_LEDGER, ABSTRACT_TASK_MECHANISM,
+   ALGORITHM_TOURNAMENT TENTATIVE_PREFERRED_SKETCH_ID, ALGORITHMIC_FORMALIZATION, COMPONENT_BUNDLE_LADDER,
+   CONTROL_DESIGN, NULL_RESULT_CONTRACT, DIAGNOSTIC_EXPERIMENT_PLAN, FINAL_PROPOSAL,
+   EXPERIMENT_PLAN) and implementation files directly.
+2. Always write `orbit-research/PLAN_CODE_AUDIT.md` with the verdict line on its own line:
+   one of `MATCHES_PLAN | PARTIAL_MISMATCH | CRITICAL_MISMATCH | ERROR`.
 
-### Stage 18 — Result Interpretation Loop
+**Gate G11:**
 
-Codex CLI invokes `/analyze-results "[results path]"`. Write
-`orbit-research/RESULT_INTERPRETATION.md`.
+- `MATCHES_PLAN` proceeds.
+- `PARTIAL_MISMATCH` proceeds only if the missing pieces are irrelevant to the next run.
+- `CRITICAL_MISMATCH` blocks scale-up unconditionally; loop fix → re-audit.
+- `ERROR` means the audit did not complete because required inputs were incomplete or a
+  regime check was unanswerable. Block any run that would rely on the failed audit until
+  the cause is fixed or explicitly judged by a human. Codex unavailability follows
+  `codex-precondition.md`: LOUD STOP, STATE `awaiting_user_action`, and no substitute
+  audit verdict.
+- Compile success is not enough.
 
-**Gate G14:** if NULL_RESULT_CONTRACT triggered tie/failure, frame honestly — no positive
-narrative.
+### Stage 16: Cheapest Valid Diagnostic
 
-### Stage 18.5 — Failure-to-Innovation Loop  *(Codex COLLABORATIVE)*
+**When:** before scale-up. Designed to be the cheapest run that could **falsify the
+central claim** — not necessarily a tiny run.
 
-Procedure: see `innovation-loops.md` §5. Find falsified assumptions, ask the inversion
-question, revive alternates from Stage 10. Write `orbit-research/FAILURE_TO_INNOVATION.md`.
+**Action:** use the Stage 16 harness. Write `orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md`
+(consumers also read v1.0 alias `TINY_RUN_PLAN.md`).
 
-### Stage 19 — Re-read Literature Loop
+### Stage 17: Diagnostic Run Audit
 
-Targeted `/research-lit` calls per question. See `innovation-loops.md` §6. Write
-`orbit-research/LITERATURE_REREAD_NOTE.md`.
+**Sub-skill invocation:**
 
-### Stage 20 — Scale-up Decision
+```bash
+/run-experiment "[diagnostic command OR manifest OR grid]"
+/monitor-experiment "[run id or server]"
+```
 
-Codex CLI invokes `/result-to-claim "[experiment description]"`.
+`/run-experiment` auto-routes by input shape:
+- single command / ≤5 jobs → runs inline (with STATE-based resume if interrupted)
+- ≥10 jobs / multi-seed sweep / wave dependencies → auto-delegates to `/experiment-queue`
+- 6–9 jobs (gray zone) → inline parallel; user can force `— queue: true`
 
-Verify Stage 20 preconditions (per harness §20). **Gate G15:** mode = COMMITMENT or
-risk ≥ 4 requires `HUMAN_DECISION_NOTE.md`. **Gate G19:** scale-up is a high-risk
-transition.
+The orchestrator does not need to choose between `/run-experiment` and `/experiment-queue`.
+Pass the diagnostic spec to `/run-experiment` and it handles routing. Override flags:
+`— queue: true` / `— solo: true` if the user wants to force a path.
 
-Write `orbit-research/SCALEUP_DECISION.md` ending with
-`PROCEED | HOLD | REDESIGN | HUMAN_DECISION_REQUIRED`.
+**Action:**
 
-### Stage 21 — Result-to-Claim Construction
+1. Run the cheapest valid diagnostic via `/run-experiment` (it routes if needed).
+2. Write `orbit-research/DIAGNOSTIC_RUN_REPORT.md` (consumers also read v1.0 alias
+   `TINY_RUN_REPORT.md`).
+3. Codex audits outputs against the plan with **G12 regime check**: if the run failed,
+   did the failure regime preserve the mechanism's necessary preconditions? If not,
+   recommend redesign rather than reject the mechanism.
+4. Write `orbit-research/DIAGNOSTIC_RUN_AUDIT.md` (consumers also read v1.0 alias
+   `TINY_RUN_AUDIT.md`) with verdict line: `PASS | FIX_BEFORE_GPU | REDESIGN_EXPERIMENT`.
 
-Build claim → evidence → control → scope → limitation chain.
+**Gate:** do not full-run unless `DIAGNOSTIC_RUN_AUDIT.md` (or `TINY_RUN_AUDIT.md`) verdict
+is `PASS`. `FIX_BEFORE_GPU` and `REDESIGN_EXPERIMENT` block.
 
-**Gate G17:** label exploratory findings explicitly as "exploratory finding, not pre-planned hypothesis."
+### Stage 18: Result Interpretation Loop
 
-Write `orbit-research/CLAIM_CONSTRUCTION.md`. Required by **G16** for Stage 24.
+**Sub-skill invocation:**
 
-### Stage 22 — Tie / Negative / Reframing
+```bash
+/analyze-results "[results path]"
+```
 
-Write `orbit-research/NEGATIVE_RESULT_STRATEGY.md`. Apply G17 anti-post-hoc check.
+**Action:** write `orbit-research/RESULT_INTERPRETATION.md` after every experiment.
 
-### Stage 23 — Reviewer Red-team Loop
+**Gate G14:** if NULL_RESULT_CONTRACT triggered tie/failure, frame the result honestly —
+do not write positive narrative. Route to Stage 22 if writing a paper from a tie/failure.
 
-Codex CLI invokes `/auto-review-loop "$ARGUMENTS" — difficulty: hard`,
-`/experiment-audit "[results and code]"`. The ARIS skill manages review → fix → re-review
-iterations and writes `orbit-research/RED_TEAM_REVIEW.md` directly.
+### Stage 18.5: Failure-to-Innovation Loop  *(Codex COLLABORATIVE)*
 
-### Stage 24 — Paper Writing / Improvement Loop
+**When:** RESULT_INTERPRETATION shows tie or failure, OR Stage 17 returned
+`REDESIGN_EXPERIMENT` (with a regime that preserved mechanism preconditions — otherwise
+G12 routes back to Stage 16, not here).
 
-**Gate G16 + G18:** refuse start if `CLAIM_CONSTRUCTION.md` absent (also enforced inline
-in `paper-writing/SKILL.md`).
+**Codex mode:** COLLABORATIVE.
 
-Codex CLI invokes:
+**Action:** use the Stage 18.5 harness. See `innovation-loops.md` §5. Write
+`orbit-research/FAILURE_TO_INNOVATION.md`.
+
+### Stage 19: Re-read Literature Loop
+
+**When:** RESULT_INTERPRETATION or FAILURE_TO_INNOVATION raises a question literature
+might answer.
+
+**Sub-skill invocation:** targeted `/research-lit` calls per question.
+
+**Action:** see `innovation-loops.md` §6. Write `orbit-research/LITERATURE_REREAD_NOTE.md`.
+
+### Stage 20: Scale-up Decision
+
+**Sub-skill invocation:**
+
+```bash
+/result-to-claim "[experiment description]"
+```
+
+**Action:**
+
+1. Verify Stage 20 preconditions (per harness §20): ARTIFACT_AUDIT (when applicable),
+   BASELINE_CEILING, CONTROL_DESIGN, NULL_RESULT_CONTRACT, DIAGNOSTIC_RUN_AUDIT verdict,
+   PLAN_CODE_AUDIT verdict, ALGORITHMIC_FORMALIZATION (if scaling official),
+   COMPONENT_BUNDLE_LADDER (if new composed method).
+2. **Gate G15:** if mode = COMMITMENT or risk_score ≥ 4, require
+   `HUMAN_DECISION_NOTE.md` ending `PROCEED` before SCALEUP_DECISION = PROCEED.
+3. **Gate G19:** scale-up is a "high-risk transition" — agent recommendations are
+   insufficient; human approval must be recorded.
+4. Write `orbit-research/SCALEUP_DECISION.md` ending with
+   `PROCEED | HOLD | REDESIGN | HUMAN_DECISION_REQUIRED`.
+
+### Stage 21: Result-to-Claim Construction
+
+**Sub-skill invocation:** `/result-to-claim` (already invoked at Stage 20 — reuse output).
+
+**Action:**
+
+1. Build claim → evidence → control → scope → limitation chain.
+2. **Gate G17:** label exploratory findings explicitly as "exploratory finding, not
+   pre-planned hypothesis." Do not present post-hoc reframings as pre-planned hypotheses.
+3. Write `orbit-research/CLAIM_CONSTRUCTION.md`.
+
+**Gate G16:** Stage 24 (paper writing) refuses to start without `CLAIM_CONSTRUCTION.md`.
+
+### Stage 22: Tie / Negative Result / Reframing Strategy
+
+**When:** result ties or fails.
+
+**Action:** use the Stage 22 harness. Write `orbit-research/NEGATIVE_RESULT_STRATEGY.md`.
+Apply G17 anti-post-hoc check.
+
+### Stage 23: Reviewer Red-team Loop
+
+**Sub-skill invocation:**
+
+```bash
+/auto-review-loop "$ARGUMENTS" — difficulty: hard — orbit-red-team: true
+/experiment-audit "[results and code]"
+```
+
+**Action:** review → fix → re-review iterations managed by `/auto-review-loop`. Output
+rolls up into `orbit-research/RED_TEAM_REVIEW.md` (the ARIS skill writes here directly per
+its inline gate; this orchestrator does not duplicate the writing). The file must end with
+`READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED`.
+
+### Stage 24: Paper Writing / Paper Improvement Loop
+
+**Gate G16 + G18 + G19:** refuse start if `CLAIM_CONSTRUCTION.md` is absent, if
+`RED_TEAM_REVIEW.md` does not end `READY_FOR_PAPER`, or if `HUMAN_DECISION_NOTE.md` does
+not end `PROCEED` (also enforced inline in `paper-writing/SKILL.md`).
+
+**Sub-skill invocation chain (delegated to ARIS):**
 
 ```bash
 /paper-writing "NARRATIVE_REPORT.md" — venue: $VENUE, assurance: submission
 ```
 
-`/paper-writing` transitively invokes `/paper-plan`, `/paper-figure`, `/figure-spec` or
+`/paper-writing` transitively invokes: `/paper-plan`, `/paper-figure`, `/figure-spec` or
 `/paper-illustration`, `/paper-write`, `/paper-compile`, `/auto-paper-improvement-loop`,
 `/paper-claim-audit`, `/citation-audit`.
 
-Track iterations in `orbit-research/PAPER_IMPROVEMENT_LOG.md`.
+**Action:** track all improvement-loop iterations in
+`orbit-research/PAPER_IMPROVEMENT_LOG.md`. Each entry: round number, reviewer feedback,
+fix applied, audit verdicts (`PAPER_CLAIM_AUDIT`, `CITATION_AUDIT`).
 
-**ARIS unavailability:** if any ARIS slash invocation fails, print
-"ARIS skill X unavailable. Stage 24 degraded: <fallback or HUMAN_DECISION_REQUIRED>."
-Continue gracefully. If load-bearing for a hard gate, escalate to HUMAN_DECISION_REQUIRED.
+**ARIS unavailability handling** — for any ARIS slash invocation in this stage:
 
-### Stage 25 — Human Decision / Next Loop
+```text
+For each ARIS skill call (/paper-writing, /paper-plan, /paper-figure, /paper-write,
+/paper-compile, /auto-paper-improvement-loop, /paper-claim-audit, /citation-audit):
+  - Try slash invocation.
+  - If skill not registered: print
+        "ARIS skill <name> unavailable. Stage 24 degraded: <fallback action or
+         HUMAN_DECISION_REQUIRED>."
+    Continue gracefully.
+  - If the missing skill was load-bearing for a hard gate (e.g. /paper-claim-audit for
+    submission readiness): escalate to HUMAN_DECISION_REQUIRED.
+```
 
-Write `orbit-research/HUMAN_DECISION_NOTE.md` ending with
-`PROCEED | NARROW | REDESIGN | RE-READ | CHANGE BENCHMARK | STOP | HUMAN_DECISION_REQUIRED`.
+### Stage 25: Human Decision / Next Loop
 
-**Gate G19:** required at all "high-risk transitions."
+**Action:**
+
+1. Write `orbit-research/AGENT_DECISION_RECOMMENDATION.md` ending with one of
+   `PROCEED | NARROW | REDESIGN | RE-READ | CHANGE BENCHMARK | STOP | HUMAN_DECISION_REQUIRED`.
+2. If the user explicitly supplies or confirms the decision, write
+   `orbit-research/HUMAN_DECISION_NOTE.md` with `Decision source:` and the final verdict.
+3. **Gate G19:** `HUMAN_DECISION_NOTE.md` ending `PROCEED` is required at all high-risk
+   transitions (scale-up, paper writing, public release). `AGENT_DECISION_RECOMMENDATION.md`
+   does not satisfy this gate.
 
 ## Innovation Loop Dispatch
 
-Stages 8, 9, 10, 18.5 require Codex collaborative mode (no veto). See
-`../shared-references/innovation-loops.md` §7.
+Stages 8, 9, 10, 18.5 are **innovation loops**. Different from the rest of the pipeline:
+
+- `CODEX_INNOVATION_MODE = COLLABORATIVE` for these stages. Use prompt template in
+  `innovation-loops.md` §7.1 — no veto, only adds candidates / blind spots / alternatives.
+- Convergence is **forbidden** inside the loop. Output keeps all candidates visible.
+- Codex switches back to `ADVERSARIAL` at Stages 11, 14, 15, 17, 21, 23.
+
+Mode-switching rule (orchestrator-side):
 
 ```
 IF current_stage IN {8, 9, 10, 18.5}:
-    codex_mode = COLLABORATIVE; use innovation-loops.md §7.1 template
+    codex_mode = COLLABORATIVE
+    use prompt template innovation-loops.md §7.1
 ELSE IF current_stage IN {11, 14, 15, 17, 21, 23}:
-    codex_mode = ADVERSARIAL; use semantic-code-audit.md or research-harness-prompts.md template
+    codex_mode = ADVERSARIAL
+    use semantic-code-audit.md template (audit gates) or research-harness-prompts.md
+    template (debate gates)
+ELSE:
+    codex is not invoked at this stage
 ```
 
 ## Hard Gates Enforcement (G0–G19)
 
-Full canonical text in `../shared-references/research-agent-pipeline.md` §6. Compact
-summary:
-
-- **G0** Mode & Risk Routing required at high-risk transitions; auto-stub for low-risk.
-- **G1** Method commitment / official planning / GPU run requires PROBLEM_SELECTION.
-- **G2** Downstream "is/will" claims must trace to ASSUMPTION_LEDGER.
-- **G3** Stage 11+ requires ABSTRACT_TASK_MECHANISM.
-- **G4** ARTIFACT_AUDIT only required after the artifact exists.
-- **G5** "outperforms" claims require BASELINE_CEILING.
-- **G6** Method commitment requires ≥1 of MECHANISM_IDEATION / ANALOGY_TRANSFER / ALGORITHM_TOURNAMENT.
-- **G7** Result feeding paper claims requires CONTROL_DESIGN.
-- **G8** Diagnostic/confirmatory experiments require NULL_RESULT_CONTRACT.
-- **G9** Official run with new composed method requires COMPONENT_BUNDLE_LADDER (single justified rung OK).
-- **G10** Scale-up to official experiments requires ALGORITHMIC_FORMALIZATION.
-- **G11** PLAN_CODE_AUDIT = CRITICAL_MISMATCH blocks scale-up unconditionally.
-- **G12** Diagnostic failure that violated mechanism preconditions does NOT kill the mechanism.
-- **G13** Test set isolation: no tuning/selection on test set.
-- **G14** No positive framing after NULL_RESULT_CONTRACT-triggered tie/failure.
-- **G15** Scale-up in COMMITMENT or risk ≥ 4 requires HUMAN_DECISION_NOTE.
-- **G16** Stage 24 (paper) requires CLAIM_CONSTRUCTION.
-- **G17** Post-hoc reframings must be labelled "exploratory finding, not pre-planned hypothesis."
-- **G18** /paper-writing inline guard: refuse without CLAIM_CONSTRUCTION.
-- **G19** Scale-up, paper, public release require HUMAN_DECISION_NOTE.
-
-## Suggested Artifact Layout
+The orchestrator enforces every gate at the point the next stage would otherwise begin.
+Each gate parses verdict lines, not file presence. Inline accept-either logic reads v1.3
+artifact name first; falls back to v1.0 alias.
 
 ```text
-project/
-├── orbit-research/
-│   ├── MODE_ROUTING.md
-│   ├── SEED_FRAMING.md
-│   ├── LITERATURE_MAP.md
-│   ├── PROBLEM_REFRAMING.md
-│   ├── PROBLEM_SELECTION.md
-│   ├── ASSUMPTION_LEDGER.md
-│   ├── ABSTRACT_TASK_MECHANISM.md
-│   ├── ARTIFACT_AUDIT.md
-│   ├── BASELINE_CEILING.md
-│   ├── MECHANISM_IDEATION.md
-│   ├── ANALOGY_TRANSFER.md
-│   ├── ALGORITHM_TOURNAMENT.md
-│   ├── CONTROL_DESIGN.md
-│   ├── NULL_RESULT_CONTRACT.md
-│   ├── COMPONENT_BUNDLE_LADDER.md
-│   ├── ALGORITHMIC_FORMALIZATION.md
-│   ├── PLAN_CODE_AUDIT.md
-│   ├── DIAGNOSTIC_EXPERIMENT_PLAN.md
-│   ├── DIAGNOSTIC_RUN_REPORT.md
-│   ├── DIAGNOSTIC_RUN_AUDIT.md
-│   ├── RESULT_INTERPRETATION.md
-│   ├── FAILURE_TO_INNOVATION.md
-│   ├── LITERATURE_REREAD_NOTE.md
-│   ├── SCALEUP_DECISION.md
-│   ├── CLAIM_CONSTRUCTION.md
-│   ├── NEGATIVE_RESULT_STRATEGY.md
-│   ├── RED_TEAM_REVIEW.md
-│   ├── PAPER_IMPROVEMENT_LOG.md
-│   └── HUMAN_DECISION_NOTE.md
-├── refine-logs/
-│   ├── FINAL_PROPOSAL.md
-│   └── EXPERIMENT_PLAN.md
-├── CODE/
-├── LOGS/
-├── EXPERIMENT_TRACKER.md
-└── paper/
+G0  Mode & Risk Routing required. Auto-stub for low-risk single-stage; block at high-risk
+    transitions when mode/risk cannot be inferred.
+
+G1  Method commitment, official experiment planning, or GPU run requires
+    PROBLEM_SELECTION.md. Mechanism brainstorming (Stages 8/9/10) allowed in
+    EXPLORATION/INNOVATION before final selection if outputs marked as candidates and
+    assumptions go to ASSUMPTION_LEDGER.md.
+
+G2  Downstream "is/will/always" claims must trace to ASSUMPTION_LEDGER.md row, OR demote
+    to "assume/hypothesise", OR cite external evidence.
+
+G3  Stage 11+ (commitment) requires ABSTRACT_TASK_MECHANISM.md. Stage 8/9/10 mechanism
+    invention may run without it in EXPLORATION/INNOVATION mode if candidates marked as
+    such and assumptions go to ledger.
+
+G4  ARTIFACT_AUDIT.md only required after the data/env/benchmark/evaluator artifact
+    actually exists. Do NOT force the audit before then.
+
+G5  "outperforms / beats / improves over" claims require BASELINE_CEILING.md, unless mode
+    = EXPLORATION AND no paper claim is being made.
+
+G6  Method commitment (Stage 11+) requires ≥1 of {MECHANISM_IDEATION, ANALOGY_TRANSFER,
+    ALGORITHM_TOURNAMENT}. Exception: explicit single-method confirmatory mode.
+
+G7  Result feeding paper claims requires CONTROL_DESIGN.md. No exception.
+
+G8  Diagnostic/confirmatory experiments require NULL_RESULT_CONTRACT.md, unless run is
+    explicitly marked "exploratory probe" (no paper claim allowed).
+
+G9  Official (full-system) run with a new composed method requires
+    COMPONENT_BUNDLE_LADDER.md (a single justified rung is acceptable). Exception:
+    baseline reproduction or single-component runs with no new composed mechanism.
+
+G10 Scale-up to official experiments requires ALGORITHMIC_FORMALIZATION.md, unless mode
+    = EXPLORATION AND no scale-up requested.
+
+G11 PLAN_CODE_AUDIT.md verdict = CRITICAL_MISMATCH blocks scale-up unconditionally. Loop
+    fix → re-audit until MATCHES_PLAN or scoped PARTIAL_MISMATCH. ERROR blocks any run
+    relying on the failed audit until the cause is fixed or explicitly judged by a human.
+    Codex unavailability is a LOUD STOP via codex-precondition.md, not an ERROR verdict.
+
+G12 If a tiny / diagnostic run failed in a regime that violated the mechanism's necessary
+    preconditions, do NOT reject the mechanism — require diagnostic redesign to a regime
+    where the mechanism could in principle manifest. Replaces v1.0 "tiny-run failure →
+    kill idea."
+
+G13 Test set isolation: experiments using test set anywhere in tuning/selection are blocked.
+    No exception.
+
+G14 NULL_RESULT_CONTRACT-triggered tie/failure cannot have positive framing in
+    RESULT_INTERPRETATION/CLAIM_CONSTRUCTION. No exception.
+
+G15 Scale-up in mode = COMMITMENT OR risk ≥ 4 requires HUMAN_DECISION_NOTE.md ending
+    PROCEED before SCALEUP_DECISION = PROCEED. No exception.
+
+G16 Stage 24 (paper writing) requires CLAIM_CONSTRUCTION.md. No exception.
+
+G17 Post-hoc result framings must be labelled "exploratory finding, not pre-planned
+    hypothesis" in CLAIM_CONSTRUCTION.md and the paper. No exception.
+
+G18 /paper-writing inline guard: refuse start if CLAIM_CONSTRUCTION.md absent. No exception.
+
+G19 Scale-up (Stage 20), paper writing (Stage 24), and any public-release transition
+    require HUMAN_DECISION_NOTE.md ending PROCEED. Agent recommendations do not satisfy
+    this gate. No exception.
 ```
 
-## Output Protocols
+## Paper Writing Integration
 
-> Follow shared protocols for all output files:
-> - **[Output Versioning Protocol](../shared-references/output-versioning.md)**
-> - **[Output Manifest Protocol](../shared-references/output-manifest.md)**
-> - **[Output Language Protocol](../shared-references/output-language.md)**
+Paper writing is **not** reimplemented. It is delegated to ARIS via Stage 24 (above):
 
-## Guardrails
+```bash
+/paper-writing "NARRATIVE_REPORT.md" — venue: $VENUE, assurance: submission
+```
 
-- Move fast in exploration; slow down before high-risk commitment.
-- Innovation loops produce candidates; commitment gates pick what runs.
-- Reuse ARIS execution skills (`/auto-review-loop`, `/paper-writing`, `/experiment-bridge`,
-  `/auto-paper-improvement-loop`, `/paper-claim-audit`, `/citation-audit`,
-  `/experiment-audit`); do not reimplement them.
-- Convergence over volume: correctness before generation speed.
-- Do not skip Stage 15 (plan-code audit) or Stage 17 (diagnostic-run audit) before scale-up.
-- Do not self-certify integrity-critical artifacts with a single model family.
-- Preserve human judgment at high-risk irreversible transitions (G15, G19).
+Before invoking, this orchestrator verifies the v1.3 hard preconditions (G16, G18, G19):
+
+- `orbit-research/CLAIM_CONSTRUCTION.md` (written by `/result-to-claim` at Stage 21)
+- `orbit-research/HUMAN_DECISION_NOTE.md` ending `PROCEED` (human-authored or
+  human-confirmed; agent recommendations do not satisfy G19)
+- `orbit-research/RED_TEAM_REVIEW.md` ending `READY_FOR_PAPER` (written by
+  `/auto-review-loop` at Stage 23)
+- `orbit-research/NEGATIVE_RESULT_STRATEGY.md` if `result-to-claim` returned `partial` or `no`
+
+These match the hard preconditions in `skills/paper-writing/SKILL.md`. If any are missing
+or have a blocking verdict, do not invoke `/paper-writing`; route the user back to the
+producing skill or to human STOP C decision.
+
+During paper writing, the ARIS chain runs (do not duplicate):
+
+- `/paper-plan`
+- `/paper-figure`
+- `/figure-spec` or `/paper-illustration`
+- `/paper-write`
+- `/paper-compile`
+- `/auto-paper-improvement-loop`
+- `/paper-claim-audit`
+- `/citation-audit`
+
+Track the iteration log in `orbit-research/PAPER_IMPROVEMENT_LOG.md`.
+
+## Final Rule
+
+```text
+Move fast in exploration. Slow down before commitment.
+Bold ideas are allowed. Undiagnosable experiments are not.
+Failure is allowed. Failure without interpretation is not.
+Runnable code is not success. Code that faithfully implements the v1.3 contract is.
+Innovation loops produce candidates. Commitment gates pick what runs.
+Reuse ARIS execution skills. Do not reimplement them.
+Preserve human judgment at high-risk irreversible transitions.
+```

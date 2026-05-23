@@ -1,15 +1,18 @@
 ---
-name: "research-review"
-description: "Get a deep critical review of research from GPT using a secondary Codex agent. Use when user says \"review my research\", \"help me review\", \"get external review\", or wants critical feedback on research ideas, papers, or experimental results."
+name: research-review
+description: Get a deep critical review of research from GPT via Codex MCP. Use when user says "review my research", "help me review", "get external review", or wants critical feedback on research ideas, papers, or experimental results.
+argument-hint: [topic-or-scope]
+allowed-tools: Bash(*), Read, Grep, Glob, Write, Edit, Agent, mcp__codex__codex, mcp__codex__codex-reply
 ---
 
-# Research Review via a secondary Codex agent (xhigh reasoning)
+# Research Review via Codex MCP (xhigh reasoning)
 
 Get a multi-round critical review of research work from an external LLM with maximum reasoning depth.
 
 ## Constants
 
-- REVIEWER_MODEL = `gpt-5.5` — Model used via a secondary Codex agent. Must be an OpenAI model (e.g., `gpt-5.5`, `o3`, `gpt-4o`)
+- REVIEWER_MODEL = `gpt-5.5` — Model used via Codex MCP. Must be an OpenAI model (e.g., `gpt-5.5`, `o3`, `gpt-4o`)
+- **REVIEWER_BACKEND = `codex`** — Default: Codex MCP (xhigh). Override with `— reviewer: oracle-pro` for GPT-5.5 Pro via Oracle MCP. See `../shared-references/reviewer-routing.md`.
 - **PAPER_MODE = `normal`** — Default review target is a normal publishable AI paper,
   not breakthrough-only.
 - **REVIEW_POSTURE = `collaborator` before STOP A/B; `adversarial` after STOP C** —
@@ -19,8 +22,11 @@ Get a multi-round critical review of research work from an external LLM with max
 
 ## Prerequisites
 
-- Use `spawn_agent` and `send_input` when the user has explicitly allowed delegation or subagents.
-- If delegation is not allowed, run the same review loop locally and preserve the same deliverable structure.
+- **Codex MCP Server** configured in Claude Code:
+  ```bash
+  claude mcp add codex -s user -- codex mcp-server
+  ```
+- This gives Claude Code access to `mcp__codex__codex` and `mcp__codex__codex-reply` tools
 
 ## Workflow
 
@@ -44,9 +50,9 @@ Before calling the external reviewer, compile a comprehensive briefing:
 Send a detailed prompt with xhigh reasoning:
 
 ```
-spawn_agent:
-  reasoning_effort: xhigh
-  message: |
+mcp__codex__codex:
+  config: {"model_reasoning_effort": "xhigh"}
+  prompt: |
     [Full research context + specific questions]
     Use REVIEW_POSTURE from the current ORBIT stop boundary.
 
@@ -68,7 +74,7 @@ spawn_agent:
 ```
 
 ### Step 3: Iterative Dialogue (Rounds 2-N)
-Use `send_input` with the returned agent id to continue the conversation:
+Use `mcp__codex__codex-reply` with the returned `threadId` to continue the conversation:
 
 For each round:
 1. **Respond** to criticisms with evidence/counterarguments
@@ -100,7 +106,7 @@ Update project memory/notes with key review conclusions.
 
 ## Key Rules
 
-- ALWAYS use `reasoning_effort: xhigh` for reviews
+- ALWAYS use `config: {"model_reasoning_effort": "xhigh"}` for reviews
 - Send comprehensive context in Round 1 — the external model cannot read your files
 - Be honest about weaknesses — hiding them leads to worse feedback
 - Before STOP A/B, preserve promising ideas and include a survival route for every major
@@ -108,7 +114,7 @@ Update project memory/notes with key review conclusions.
 - After STOP C, adversarial review is appropriate for paper-level claims.
 - Push back on criticisms you disagree with, but accept valid ones
 - Focus on ACTIONABLE feedback — "what experiment would fix this?"
-- Document the agent id for potential future resumption
+- Document the threadId for potential future resumption
 - The review document should be self-contained (readable without the conversation)
 
 ## Prompt Templates
@@ -133,3 +139,7 @@ ML reviewer and stress-test claims, baselines, controls, reproducibility, and ov
 
 ### For mock review:
 "Please write a mock NeurIPS review with: Summary, Strengths, Weaknesses, Questions for Authors, Score, Confidence, and What Would Move Toward Accept."
+
+## Review Tracing
+
+After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).

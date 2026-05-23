@@ -34,10 +34,18 @@ HELPER = REPO_ROOT / "tools" / "research_wiki.py"
 # strict mode is the documented contract.
 RESOLUTION_CHAIN = r'''
 cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" || exit 1
-ARIS_REPO="${ARIS_REPO:-$(awk -F'\t' '$1=="repo_root"{print $2; exit}' .aris/installed-skills.txt 2>/dev/null)}"
+if [ -z "${ARIS_REPO:-}" ] && [ -f .aris/installed-skills.txt ]; then
+  ARIS_REPO=$(awk -F'\t' '$1=="repo_root"{print $2; exit}' .aris/installed-skills.txt 2>/dev/null) || true
+fi
 WIKI_SCRIPT=".aris/tools/research_wiki.py"
 [ -f "$WIKI_SCRIPT" ] || WIKI_SCRIPT="tools/research_wiki.py"
-[ -f "$WIKI_SCRIPT" ] || { [ -n "${ARIS_REPO:-}" ] && WIKI_SCRIPT="$ARIS_REPO/tools/research_wiki.py"; }
+if [ ! -f "$WIKI_SCRIPT" ]; then
+  if [ -n "${ORBIT_REPO:-}" ] && [ -f "$ORBIT_REPO/tools/research_wiki.py" ]; then
+    WIKI_SCRIPT="$ORBIT_REPO/tools/research_wiki.py"
+  elif [ -n "${ARIS_REPO:-}" ] && [ -f "$ARIS_REPO/tools/research_wiki.py" ]; then
+    WIKI_SCRIPT="$ARIS_REPO/tools/research_wiki.py"
+  fi
+fi
 [ -f "$WIKI_SCRIPT" ] || exit 42
 printf '%s\n' "$WIKI_SCRIPT"
 python3 "$WIKI_SCRIPT" init research-wiki || exit 1
@@ -151,6 +159,22 @@ class ChainTest(unittest.TestCase):
             f"{REPO_ROOT}/tools/research_wiki.py",
         )
         self.assertTrue((self.project / "research-wiki" / "query_pack.md").exists())
+
+    def test_layer3_orbit_repo_env_precedes_aris_repo(self):
+        """ORBIT_REPO env var is checked before ARIS_REPO."""
+        other = self.tmp / "other-repo"
+        (other / "tools").mkdir(parents=True)
+        shutil.copy(HELPER, other / "tools" / "research_wiki.py")
+
+        result = _run_chain(
+            self.project,
+            env_overrides={"ORBIT_REPO": str(other), "ARIS_REPO": str(REPO_ROOT)},
+        )
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        self.assertEqual(
+            result.stdout.splitlines()[0],
+            f"{other}/tools/research_wiki.py",
+        )
 
     # ------------------------------------------------------------------
     # Layer 3b: ARIS_REPO auto-resolved from install manifest

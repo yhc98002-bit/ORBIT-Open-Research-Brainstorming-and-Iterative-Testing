@@ -44,11 +44,11 @@ If the context window fills up mid-loop, Claude Code auto-compacts. To recover, 
 }
 ```
 
-**On startup**: if `PAPER_IMPROVEMENT_STATE.json` exists with `"status": "in_progress"` AND `timestamp` is within 24 hours, read it + `PAPER_IMPROVEMENT_LOG.md` to recover context, then resume from the next round. If `"status": "awaiting_human_continue"`, treat re-invocation as human approval to continue per `shared-references/continuation-contract.md` cross-skill resume rules. Otherwise (file absent, `"status": "completed"`, or older than 24 hours), start fresh.
+**On startup**: if `PAPER_IMPROVEMENT_STATE.json` exists with `"status": "in_progress"` AND `timestamp` is within 24 hours, read it + `PAPER_IMPROVEMENT_LOG.md` to recover context, then resume from the next round. If `"status": "awaiting_human_continue"`, treat re-invocation as human approval to continue per `../shared-references/continuation-contract.md` cross-skill resume rules. Otherwise (file absent, `"status": "completed"`, or older than 24 hours), start fresh.
 
 **After each round**: overwrite the state file. **On completion**: set `"status": "completed"`. **On user-paused checkpoint** (e.g. user wants to inspect mid-loop quality before authorising more rounds): set `"status": "awaiting_human_continue"` with `next_action: "resume-round-N+1"`.
 
-Three-state status enum (`in_progress` / `awaiting_human_continue` / `completed`) is canonical per `shared-references/continuation-contract.md` v1.3. Old STATE files with only `in_progress` / `completed` still parse — `awaiting_human_continue` is additive. Recommended optional fields: `next_action`, `next_skill_hint`, `artifact_inventory`.
+Four-state status enum (`in_progress` / `awaiting_human_continue` / `awaiting_user_action` / `completed`) is canonical per `../shared-references/continuation-contract.md` v1.3. This loop normally uses only `in_progress`, `awaiting_human_continue`, and `completed`. Old STATE files with only `in_progress` / `completed` still parse — `awaiting_human_continue` is additive. Recommended optional fields: `next_action`, `next_skill_hint`, `artifact_inventory`.
 
 ## Reviewer Independence Protocol
 
@@ -465,4 +465,4 @@ Based on end-to-end testing on a 9-page ICLR 2026 theory paper:
 
 ## Review Tracing
 
-After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save the trace following `shared-references/review-tracing.md`. Use `tools/save_trace.sh` or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
+After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).

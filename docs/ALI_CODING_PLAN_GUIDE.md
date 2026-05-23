@@ -107,7 +107,8 @@ cp mcp-servers/llm-chat/server.py ~/.claude/mcp-servers/llm-chat/server.py
 
 ```bash
 mkdir -p ~/.claude/skills
-cp -r skills/* ~/.claude/skills/
+find skills -mindepth 1 -maxdepth 1 -type d ! -name 'skills-codex*' \
+  -exec cp -r {} ~/.claude/skills/ \;
 ```
 
 ### Step 5：配置 ~/.claude/settings.json

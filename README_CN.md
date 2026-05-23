@@ -245,17 +245,32 @@ agent 连贯跑，段与段之间 `awaiting_human_continue`（见
 
 ## 安装
 
-项目级安装（推荐，避免污染全局 skills）：
+Claude 项目级安装（推荐，避免污染全局 skills）：
 
 ```bash
 bash tools/install_aris.sh
 ```
 
-手动复制：
+这会在 `.claude/skills/` 下创建平铺的逐 skill symlink，在
+`.aris/installed-skills.txt` 记录 installer 管理的条目，并把 `.aris/tools/`
+链接到 repo 里的 helper scripts。
+
+Claude 手动复制：
 
 ```bash
 mkdir -p .claude/skills
-cp -r skills/* .claude/skills/
+find skills -mindepth 1 -maxdepth 1 -type d ! -name 'skills-codex*' \
+  -exec cp -r {} .claude/skills/ \;
+```
+
+Codex skill mirror 需要手动平铺安装：
+
+```bash
+mkdir -p .agents/skills
+cp -a skills/skills-codex/* .agents/skills/
+# 可选 reviewer overlay，需在 base mirror 后安装：
+# cp -a skills/skills-codex-gemini-review/* .agents/skills/
+# cp -a skills/skills-codex-claude-review/* .agents/skills/
 ```
 
 Codex reviewer 需要 Codex CLI / MCP：

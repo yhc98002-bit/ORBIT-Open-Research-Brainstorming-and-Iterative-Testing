@@ -1,22 +1,18 @@
 # `skills-codex`
 
-Codex-native mirror of the base ARIS skill set.
+Codex-native full mirror of the base ARIS skill set.
 
 ## Scope
 
-This package keeps the main `skills/` workflows available for OpenAI Codex CLI.
+This package is generated from the top-level `skills/` tree by
+`tools/sync_codex_mirror.py`. It mirrors every top-level skill directory with a
+`SKILL.md`, plus `shared-references/`.
 
-Recent core workflow follow-up skills mirrored here include:
+Do not maintain Codex-specific behavior directly in this directory. Reviewer
+transport differences live in the overlay packages:
 
-- `training-check`
-- `result-to-claim`
-- `ablation-planner`
-
-These skills cover the experiment follow-up chain:
-
-1. monitor training quality early
-2. judge what claims the results actually support
-3. design reviewer-facing ablations before paper writing
+- `skills/skills-codex-gemini-review/`
+- `skills/skills-codex-claude-review/`
 
 ## Install
 
@@ -26,14 +22,16 @@ These skills cover the experiment follow-up chain:
 # 1. Clone ARIS once to a stable location
 git clone https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep.git ~/aris_repo
 
-# 2. Attach to a Codex project (auto-detects platform from AGENTS.md):
+# 2. Attach to a Codex project with a flat manual install:
 cd ~/your-paper-project
-bash ~/aris_repo/tools/install_aris.sh
-# → creates .agents/skills/aris symlink → <aris-repo>/skills/skills-codex/
-# → adds managed block to AGENTS.md telling agent to use only project-local skills
+mkdir -p .agents/skills
+cp -a ~/aris_repo/skills/skills-codex/* .agents/skills/
+# Optional reviewer overlay, installed after the base mirror:
+# cp -a ~/aris_repo/skills/skills-codex-gemini-review/* .agents/skills/
+# cp -a ~/aris_repo/skills/skills-codex-claude-review/* .agents/skills/
 
-# Windows (PowerShell, junctions need admin or developer mode):
-.\tools\install_aris.ps1 C:\path\to\your-paper-project
+# Windows (PowerShell copy fallback):
+Copy-Item -Recurse C:\path\to\aris_repo\skills\skills-codex\* C:\path\to\your-paper-project\.agents\skills\
 ```
 
 <details>
@@ -48,16 +46,11 @@ Global install increases the risk of skill name collisions when other community 
 </details>
 
 <details>
-<summary><b>Alternative: project-local copy (per-project customization)</b></summary>
+<summary><b>Deprecated: nested project-local copy</b></summary>
 
-```bash
-mkdir -p ~/your-project/.agents/skills
-bash ~/aris_repo/tools/smart_update.sh \
-    --project ~/your-project \
-    --target-subdir .agents/skills/aris \
-    --apply
-# Update with the same command (smart_update detects personal customizations)
-```
+Older docs used `.agents/skills/aris`. That nested layout hides skills from
+flat skill discovery in current Codex-style project layouts. Prefer the flat
+copy shown above: `cp -a ~/aris_repo/skills/skills-codex/* .agents/skills/`.
 
 </details>
 

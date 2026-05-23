@@ -57,11 +57,13 @@ cd Auto-claude-code-research-in-sleep
 
 # Option A: Global install (available across all projects)
 mkdir -p ~/.gemini/antigravity/skills
-cp -r skills/* ~/.gemini/antigravity/skills/
+find skills -mindepth 1 -maxdepth 1 -type d ! -name 'skills-codex*' \
+  -exec cp -r {} ~/.gemini/antigravity/skills/ \;
 
 # Option B: Project-local install (recommended for isolation)
 mkdir -p /path/to/your/project/.agents/skills
-cp -r skills/* /path/to/your/project/.agents/skills/
+find skills -mindepth 1 -maxdepth 1 -type d ! -name 'skills-codex*' \
+  -exec cp -r {} /path/to/your/project/.agents/skills/ \;
 ```
 
 > **Important:** Antigravity discovers skills from `~/.gemini/antigravity/skills/` (global) and `<workspace>/.agents/skills/` (project-scoped). The agent sees skill names and descriptions at startup, then loads full SKILL.md content when relevant.
