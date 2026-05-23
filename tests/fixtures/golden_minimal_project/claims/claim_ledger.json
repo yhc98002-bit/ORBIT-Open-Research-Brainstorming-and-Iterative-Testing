@@ -2,6 +2,8 @@
   "schema_version": "0.1",
   "status": "ready",
   "updated_at": "2026-05-23T00:00:00Z",
+  "diagnostic_id": "diag_fixture",
+  "ledger_hash": "ledger_fixture_hash",
   "source_markdown": [
     "orbit-research/diagnostics/diag_fixture/RESULT_INTERPRETATION.md"
   ],

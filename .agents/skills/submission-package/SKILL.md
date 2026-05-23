@@ -23,6 +23,9 @@ Required:
 Expected when the paper is claim-bearing:
 
 - `claims/claim_ledger.json`
+- `orbit-research/diagnostics/<diagnostic_id>/RED_TEAM_REVIEW.md` or
+  `orbit-research/RED_TEAM_REVIEW.md` ending `READY_FOR_PAPER`
+- `orbit-research/HUMAN_DECISION_NOTE.md` ending `PROCEED`
 - `figures/figure_manifest.json` when generated figures are used
 - `references/citation_cache.json` when a citation cache exists
 
@@ -51,21 +54,47 @@ Expected when the paper is claim-bearing:
 }
 ```
 
+## STOP C Approval Preflight
+
+For claim-bearing papers, submission packaging must not run as a substitute for STOP C
+human approval. Before marking `paper/paper_package.json.status` as `ready`, require:
+
+1. `claims/claim_ledger.json` exists and validates.
+2. A red-team review exists at either
+   `orbit-research/diagnostics/<diagnostic_id>/RED_TEAM_REVIEW.md` or
+   `orbit-research/RED_TEAM_REVIEW.md`, and its final verdict is `READY_FOR_PAPER`.
+3. `orbit-research/HUMAN_DECISION_NOTE.md` exists and its final verdict is `PROCEED`.
+4. Claim audit passes.
+5. Citation audit passes.
+6. Compile passes.
+
+Run the approval checker before finalizing a claim-bearing package:
+
+```bash
+python tools/check_stop_c_approval.py --repo . --claim-ledger claims/claim_ledger.json
+```
+
+If STOP C approval is missing, write or update `paper/paper_package.json` with
+`status = "blocked"` and a blocker explaining the missing approval. Do not write
+`status = "ready"`.
+
 ## Workflow
 
-1. Run or request `/paper-compile "paper/"`.
-2. Run `/paper-claim-audit "paper/"`.
-3. Run `/citation-audit "paper/"`.
-4. If theorem, lemma, proof, derivation, or formal guarantee content exists, run
+1. For claim-bearing papers, run the STOP C approval preflight.
+2. Run or request `/paper-compile "paper/"`.
+3. Run `/paper-claim-audit "paper/"`.
+4. Run `/citation-audit "paper/"`.
+5. If theorem, lemma, proof, derivation, or formal guarantee content exists, run
    `/proof-checker "paper/"` or record why proof audit is not applicable.
-5. If `tools/verify_paper_audits.sh` exists, run it and record the result.
-6. Write `paper/paper_package.json`.
+6. If `tools/verify_paper_audits.sh` exists, run it and record the result.
+7. Write `paper/paper_package.json`.
 
 ## Status Rules
 
-- `ready`: compile succeeds and required audits are `PASS` or accepted `WARN`.
+- `ready`: STOP C approval exists for claim-bearing papers, compile succeeds, and required
+  audits are `PASS` or accepted `WARN`.
 - `blocked`: compile fails, an audit is `FAIL`, `BLOCKED`, or `ERROR`, or required input
-  evidence is missing.
+  evidence or STOP C approval is missing.
 - `draft`: checks ran but the user has not requested strict submission finalization.
 - `deprecated`: package is stale relative to changed paper or pack inputs.
 
@@ -75,6 +104,8 @@ Expected when the paper is claim-bearing:
   `NOT_APPLICABLE` record.
 - If `claims/claim_ledger.json` is absent for a claim-bearing paper, record a blocker; do
   not claim full rigor.
+- If `HUMAN_DECISION_NOTE.md` does not end `PROCEED`, record a blocker; do not infer human
+  approval from red-team review or claim ledger status.
 - Do not mutate scientific claims except for mechanical audit fixes approved by the user.
 - Do not label the package submission-ready unless `paper/paper_package.json.status` is
   `ready`.

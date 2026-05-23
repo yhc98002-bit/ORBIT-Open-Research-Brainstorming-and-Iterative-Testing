@@ -16,8 +16,8 @@ Use these instead of the old overloaded `/paper-writing` surface:
 | User intent | Preferred skill |
 | --- | --- |
 | Fast draft, outline, skeleton, rough LaTeX, notes-to-paper | `/paper-draft` |
-| Evidence-bound paper after STOP C claim ledger exists | `/paper-from-claims` |
-| Final compile, audits, proof/citation/claim assurance, submission package | `/submission-package` |
+| Evidence-bound paper after STOP C approval | `/paper-from-claims` |
+| Final compile, audits, proof/citation/claim assurance, submission package after STOP C approval | `/submission-package` |
 
 ## Routing Rules
 
@@ -26,7 +26,17 @@ requested outcome first: quick drafts go to `/paper-draft`, evidence-bound STOP 
 goes to `/paper-from-claims`, strict assurance goes to `/submission-package`, and only
 explicit legacy requests use the old one-shot chain.
 
-Legacy STOP C readiness still requires `orbit-research/RED_TEAM_REVIEW.md`  *(must end `READY_FOR_PAPER`) before treating the handoff as paper-ready.
+Legacy STOP C readiness still requires `orbit-research/RED_TEAM_REVIEW.md`  *(must end `READY_FOR_PAPER`) and `orbit-research/HUMAN_DECISION_NOTE.md` ending `PROCEED` before treating the handoff as paper-ready.
+
+For `/paper-from-claims`, run:
+
+```bash
+python tools/check_stop_c_approval.py --repo . --claim-ledger claims/claim_ledger.json
+```
+
+If the checker blocks, route to `/paper-draft "claims/claim_ledger.json"` for an
+unaudited draft or tell the user to review `STOP_C_REVIEW.md` and write
+`orbit-research/HUMAN_DECISION_NOTE.md` ending `PROCEED`.
 
 ## Compatibility Notes
 
@@ -36,12 +46,13 @@ should use:
 
 ```text
 /paper-draft "<proposal or notes>"
-/paper-from-claims "claims/claim_ledger.json"
-/submission-package "paper/"
+/paper-from-claims "claims/claim_ledger.json"  # only after STOP C approval
+/submission-package "paper/"                  # only after STOP C approval for claim-bearing papers
 ```
 
 ## Guardrail
 
 Do not force draft users through submission gates. Do not let submission users miss the
-strict audit/package step. When in doubt, route by the user's requested outcome rather
-than by artifact presence alone.
+strict audit/package step. Do not imply `/paper-writing` can bypass STOP C approval for
+claim-bearing paper generation or submission readiness. When in doubt, route by the
+user's requested outcome rather than by artifact presence alone.

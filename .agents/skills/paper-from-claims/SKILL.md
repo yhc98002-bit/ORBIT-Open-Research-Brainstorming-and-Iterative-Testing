@@ -29,6 +29,38 @@ first-class paper inputs. Do not discover figures by scanning `figures/` ad hoc 
 manifest has been read; do not build bibliography entries from search snippets when the
 citation cache has verified metadata.
 
+## STOP C Approval Preflight
+
+Before writing an evidence-bound paper, run:
+
+```bash
+python tools/validate_orbit_pack.py --pack claim_ledger --repo .
+python tools/check_stop_c_approval.py --repo . --claim-ledger claims/claim_ledger.json
+```
+
+Proceed only if all of these are true:
+
+1. `claims/claim_ledger.json` exists and validates.
+2. A red-team review exists at either
+   `orbit-research/diagnostics/<diagnostic_id>/RED_TEAM_REVIEW.md` or
+   `orbit-research/RED_TEAM_REVIEW.md`, and its final verdict is `READY_FOR_PAPER`.
+3. `orbit-research/HUMAN_DECISION_NOTE.md` exists and its final verdict is `PROCEED`.
+
+If `claims/claim_ledger.json` contains `diagnostic_id` or `ledger_hash`, prefer a
+matching per-diagnostic red-team review and a human decision note that mentions the same
+identifier. TODO: make this match mandatory once the claim ledger schema standardizes
+these identity fields.
+
+If STOP C approval is missing, refuse evidence-bound writing. Suggest one of:
+
+```text
+/paper-draft "claims/claim_ledger.json"
+```
+
+```text
+Review STOP_C_REVIEW.md, then write orbit-research/HUMAN_DECISION_NOTE.md ending PROCEED.
+```
+
 ## Outputs
 
 Write an evidence-bound paper draft under `paper/`:
@@ -65,7 +97,7 @@ Compilation is useful but not the gate here. Strict submission assurance belongs
 
 ## Suggested Flow
 
-1. Validate or at least parse `claims/claim_ledger.json`.
+1. Run the STOP C approval preflight.
 2. Read `figures/figure_manifest.json` and `references/citation_cache.json` when present.
 3. Build `paper/CLAIM_TRACE.md` before drafting prose.
 4. Run `/paper-plan "claims/claim_ledger.json"` to create or update the outline.

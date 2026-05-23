@@ -14,10 +14,13 @@ stabilization areas only; it does not change workflow behavior.
 ## Known Stabilization Areas
 
 1. Paper-from-claims gate
+   - Status: Prompt 1 adds explicit `/paper-from-claims` preflight text and
+     `tools/check_stop_c_approval.py`.
    - Ensure `/paper-from-claims` cannot bypass `HUMAN_DECISION_NOTE.md` when moving from STOP C to paper generation.
    - Preserve the distinction between quick drafting and HITL-approved paper-bearing generation.
 
 2. Submission-package gate
+   - Status: Prompt 1 makes ready claim-bearing `paper_package` validation require STOP C approval.
    - Ensure `/submission-package` requires the appropriate human decision and evidence-bound inputs before strict submission checks.
    - Keep compile, claim audit, citation audit, and package readiness separate from draft generation.
 

@@ -27,6 +27,10 @@ Accept any of:
 Do not require `claims/claim_ledger.json`, `RED_TEAM_REVIEW.md`, or
 `orbit-research/HUMAN_DECISION_NOTE.md`.
 
+If a claim ledger is provided but STOP C approval is absent, this skill may still draft,
+but the output must be labeled draft / unaudited and unsupported claims must remain TODOs.
+Do not route the user into `/paper-from-claims` unless STOP C approval exists.
+
 ## Outputs
 
 Write one or both:
@@ -46,6 +50,8 @@ missing.
 - Do not run `/paper-claim-audit`, `/citation-audit`, `/proof-checker`, or
   submission verification.
 - Do not label output submission-ready.
+- Do not imply `READY_FOR_PAPER` or `PROCEED`; those verdicts belong to STOP C review and
+  the human decision note.
 
 ## Suggested Flow
 

@@ -12,8 +12,10 @@ from typing import Any, Dict, List, Mapping, Optional
 
 try:
     from orbit_pack import PACK_SPECS, get_pack_spec, pack_names, pack_path, schema_path
+    from check_stop_c_approval import evaluate_stop_c_approval
 except ImportError:  # pragma: no cover - used when imported as tools.validate_orbit_pack
     from tools.orbit_pack import PACK_SPECS, get_pack_spec, pack_names, pack_path, schema_path
+    from tools.check_stop_c_approval import evaluate_stop_c_approval
 
 
 TOOL_REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -127,6 +129,8 @@ def validate_pack_semantics(name: str, instance: Mapping[str, Any]) -> List[str]
 
 
 def append_cross_pack_errors(repo: Path, report: Dict[str, Any]) -> None:
+    append_stop_c_approval_errors(repo, report)
+
     paper_path = pack_path(repo, "paper_package")
     citation_path = pack_path(repo, "citation_cache")
     if not paper_path.exists() or not citation_path.exists():
@@ -163,6 +167,43 @@ def append_cross_pack_errors(repo: Path, report: Dict[str, Any]) -> None:
         if result.get("name") == "citation_cache":
             result["status"] = "error"
             result.setdefault("errors", []).extend(errors)
+            return
+
+
+def append_stop_c_approval_errors(repo: Path, report: Dict[str, Any]) -> None:
+    paper_path = pack_path(repo, "paper_package")
+    if not paper_path.exists():
+        return
+
+    paper_package = parse_json_or_none(paper_path)
+    if not isinstance(paper_package, dict):
+        return
+    if paper_package.get("status") != "ready":
+        return
+
+    claim_ledger_ref = paper_package.get("claim_ledger_ref")
+    if not isinstance(claim_ledger_ref, str) or not claim_ledger_ref:
+        return
+
+    approval = evaluate_stop_c_approval(repo, claim_ledger_ref)
+    if approval.get("status") == "approved":
+        return
+
+    errors = [
+        "STOP C approval required for ready claim-bearing paper_package: %s" % error
+        for error in approval.get("errors", [])
+    ]
+    if not errors:
+        errors = ["STOP C approval required for ready claim-bearing paper_package"]
+
+    for result in report["results"]:
+        if result.get("name") == "paper_package":
+            result["status"] = "error"
+            result.setdefault("errors", []).extend(errors)
+            result.setdefault("warnings", []).extend(
+                "STOP C approval warning: %s" % warning
+                for warning in approval.get("warnings", [])
+            )
             return
 
 
