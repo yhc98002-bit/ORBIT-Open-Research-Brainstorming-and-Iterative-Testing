@@ -52,6 +52,24 @@ review against the selected `paper_mode`. For `paper_mode = normal`, enforce hon
 evidence-bound claims, reproducibility, and no overclaiming without requiring a completely
 new algorithmic breakthrough.
 
+Codex review remains required for the review rounds unless the user explicitly selects a
+non-Codex reviewer backend. If Codex MCP/auth/sandbox fails, do not synthesize a local
+review. Export a standalone prompt with `tools/codex_review_handoff.py generate`, write
+`orbit-research/codex-prompts/<phase-id>.md`, require the user to save the standalone
+Codex response to `orbit-research/codex-imports/<phase-id>.response.md`, and resume only
+after `/import-codex-review` validates/imports it. Set ORBIT_STATE
+`pause_reason: codex_review_needed`.
+
+For paper-bearing STOP C diagnostics, review `claims/claim_ledger.json` as the canonical
+claim source. Do not review only `CLAIM_CONSTRUCTION.md` prose when the ledger exists.
+The red-team review must check each ledger claim row for:
+
+- statement/evidence/control consistency;
+- `status` correctness (`supported`, `partial`, `unsupported`, or `exploratory`);
+- scope and limitations matching result coverage;
+- forbidden overclaims being complete enough to constrain paper writing;
+- allowed paper sections being appropriate for the evidence strength.
+
 Run `mkdir -p orbit-research/`, then write or update `orbit-research/RED_TEAM_REVIEW.md` with
 top rejection risks, essential fixes, claims to weaken, and submit-readiness.
 The file must end with exactly one of:
@@ -384,8 +402,9 @@ experiment, or benchmark changes. Instead:
 - apply only safe text-scope changes to claim wording, limitations, and review notes;
 - record all code/experiment fixes as required follow-up in `orbit-research/RED_TEAM_REVIEW.md`;
 - set the final RED_TEAM_REVIEW verdict to `REQUIRES_FIXES`, `REDESIGN_REQUIRED`, or
-  `HUMAN_DECISION_REQUIRED` unless the existing evidence is already defensible after claim
-  weakening.
+  `HUMAN_DECISION_REQUIRED` unless the existing ledger is already defensible after claim
+  weakening. If the review weakens or forbids a claim, update the required change list with
+  exact `claims/claim_ledger.json` claim IDs and fields.
 
 For each action item (highest priority first):
 
@@ -475,11 +494,12 @@ When loop ends (positive assessment or max rounds):
 4. **Write method/pipeline description** to `review-stage/AUTO_REVIEW.md` under a `## Method Description` section — a concise 1-2 paragraph description of the final method, its architecture, and data flow. This serves as input for `/paper-illustration` in Workflow 3 (so it can generate architecture diagrams automatically).
 5. **Generate claims from results** — only when `ORBIT_RED_TEAM_ONLY = false`, invoke
    `/result-to-claim` to convert experiment results from `review-stage/AUTO_REVIEW.md` into
-   structured paper claims. Output: `CLAIMS_FROM_RESULTS.md`. This bridges Workflow 2 →
-   Workflow 3 so `/paper-plan` can directly use validated claims instead of extracting
-   them from scratch. If `/result-to-claim` is not available, skip silently. When
+   structured paper claims. Output: `claims/claim_ledger.json` plus the generated
+   `claims/CLAIM_LEDGER.md` view. This bridges Workflow 2 → Workflow 3 so the paper path
+   can directly use validated claims instead of extracting them from scratch. If
+   `/result-to-claim` is not available, skip silently. When
    `ORBIT_RED_TEAM_ONLY = true`, skip this step because `/diagnostic-to-review` already
-   ran `/result-to-claim` and owns `CLAIM_CONSTRUCTION.md`.
+   ran `/result-to-claim` and owns `claims/claim_ledger.json`.
 6. If stopped at max rounds without positive assessment:
    - List remaining blockers
    - Estimate effort needed for each

@@ -371,8 +371,10 @@ ELSE:
 
 ### §7.1 Collaborative-mode prompt template (Codex side)
 
-Pass to `mcp__codex__codex` (model `gpt-5.5`, reasoning `xhigh`, sandbox
-`danger-full-access`):
+Pass to `mcp__codex__codex` with model `gpt-5.5` and reasoning `xhigh`.
+Do not pass `sandbox` or `approval-policy`; the Codex MCP server is registered
+with unsandboxed defaults (`danger-full-access`, `never`) in `~/.claude.json`
+and `~/.codex/config.toml`.
 
 ```
 You are a collaborative research innovator working alongside Claude.

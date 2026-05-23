@@ -26,6 +26,21 @@ Before executing the pipeline, read:
 - `../shared-references/reviewer-independence.md`
 - `../shared-references/reviewer-routing.md`
 
+## Prompt And Contract Library
+
+This legacy orchestrator keeps routing and gate sequencing in this file. Load prompt
+bodies from shared assets only when the stage needs them:
+
+- Stage 1-14, 18-23 harness prompts: `../shared-references/research-harness-prompts.md`
+- Stage 8/9/10/18.5 innovation-loop procedures: `../shared-references/innovation-loops.md`
+- Stage 15 and 17 audit prompts: `../shared-references/semantic-code-audit.md`
+- Codex availability and standalone handoff: `../shared-references/codex-precondition.md`
+- Resume/state behavior: `../shared-references/continuation-contract.md`
+
+For the newer public workflow, prefer `/idea-to-proposal`, `/experiment-bridge`,
+`/diagnostic-to-review`, `/paper-from-claims`, and `/submission-package`; their large
+prompt bodies live in per-skill `prompts/*.md` assets.
+
 ## Constants
 
 - **OUTPUT_ROOT = `orbit-research/`** — v1.3 artifacts live here unless the project already

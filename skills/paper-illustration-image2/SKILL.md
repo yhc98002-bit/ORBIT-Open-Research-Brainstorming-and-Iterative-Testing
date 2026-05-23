@@ -144,6 +144,28 @@ and a **local Codex app-server MCP bridge** as the raster renderer.
 
 **Not for:** Statistical plots (use `/paper-figure`), deterministic vector topology figures (prefer `/figure-spec`), photo-realistic scenes
 
+## Figure Manifest Contract
+
+`figures/figure_manifest.json` is the source of truth for paper figures. After finalizing
+or repairing an image2 figure, append/update an entry by `id`:
+
+```jsonc
+{
+  "id": "fig:method_image2",
+  "type": "ai_illustration|architecture|method_illustration|conceptual",
+  "supports_claims": ["C1"],
+  "data_source": "figures/ai_generated/preflight.json",
+  "generator": "paper-illustration-image2",
+  "output": "figures/ai_generated/method_image2.png",
+  "latex_label": "fig:method_image2",
+  "status": "draft|verified|needs_redesign"
+}
+```
+
+Set `verified` only after the helper `verify` step and visual review pass. Set
+`needs_redesign` when the figure fails logic, label, arrow, or claim-alignment checks.
+If no claim ledger is available, keep `supports_claims: []` and `status: "draft"`.
+
 ## Workflow: MUST EXECUTE ALL STEPS
 
 ### Step 0: Pre-flight Check

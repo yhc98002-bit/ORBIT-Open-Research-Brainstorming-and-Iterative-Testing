@@ -1,0 +1,26 @@
+{
+  "schema_version": "0.1",
+  "status": "ready",
+  "updated_at": "2026-05-23T00:00:00Z",
+  "source_markdown": [
+    "paper/main.tex"
+  ],
+  "generated_views": [],
+  "claim_ledger_ref": "claims/claim_ledger.json",
+  "figure_manifest_ref": "figures/figure_manifest.json",
+  "citation_cache_ref": "references/citation_cache.json",
+  "compile_status": {
+    "status": "pass",
+    "pdf": "paper/main.pdf"
+  },
+  "audits": [
+    {
+      "id": "claim-audit",
+      "status": "pass"
+    },
+    {
+      "id": "citation-audit",
+      "status": "pass"
+    }
+  ]
+}

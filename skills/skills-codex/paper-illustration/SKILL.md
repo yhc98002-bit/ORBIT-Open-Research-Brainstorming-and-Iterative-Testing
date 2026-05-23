@@ -153,6 +153,29 @@ Generate publication-quality illustrations using a **multi-stage workflow** with
 
 **Not for:** Statistical plots (use `/paper-figure`), photo-realistic images
 
+## Figure Manifest Contract
+
+`figures/figure_manifest.json` is the source of truth for paper figures. After accepting
+an illustration, append/update an entry by `id`:
+
+```jsonc
+{
+  "id": "fig:method_illustration",
+  "type": "ai_illustration|architecture|method_illustration|conceptual",
+  "supports_claims": ["C1"],
+  "data_source": "method note or prompt source path",
+  "generator": "paper-illustration",
+  "output": "figures/ai_generated/method_illustration.png",
+  "latex_label": "fig:method_illustration",
+  "status": "draft|verified|needs_redesign"
+}
+```
+
+Set `verified` only when the final image reaches the acceptance threshold and its content
+matches the claim/paper context. Set `needs_redesign` for rejected iterations or accepted
+images that fail claim alignment. Do not let generated images become paper inputs without
+a manifest entry.
+
 ## Workflow: MUST EXECUTE ALL STEPS
 
 ### Step 0: Pre-flight Check

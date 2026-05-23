@@ -1,0 +1,63 @@
+{
+  "schema_version": "0.1",
+  "status": "ready",
+  "updated_at": "2026-05-23T00:00:00Z",
+  "source_markdown": [
+    "proposal/PROPOSAL.md"
+  ],
+  "generated_views": [
+    "experiment/EXPERIMENT_PLAN.md",
+    "experiment/PROBE_REPORT.md"
+  ],
+  "proposal_ref": "proposal/proposal_pack.json",
+  "decision_tree": [
+    {
+      "id": "D1",
+      "if": "fixture metric improves over control",
+      "then": "construct bounded claim"
+    }
+  ],
+  "controls": [
+    {
+      "id": "control_baseline",
+      "description": "Synthetic baseline control."
+    }
+  ],
+  "null_result_contract": {
+    "if_no_improvement": "Record unsupported claim and stop for human decision."
+  },
+  "component_ladder": [
+    {
+      "id": "L1",
+      "component": "fixture mechanism only"
+    }
+  ],
+  "algorithmic_formalization": {
+    "summary": "Deterministic fixture comparison."
+  },
+  "plan_code_audit": {
+    "artifact": "orbit-research/PLAN_CODE_AUDIT.md",
+    "verdict": "MATCHES_PLAN",
+    "message": "Fixture plan and code are aligned."
+  },
+  "probes": [
+    {
+      "id": "probe_fixture",
+      "purpose": "Confirm fixture files are readable.",
+      "status": "complete",
+      "report": "experiment/PROBE_REPORT.md",
+      "audit": null,
+      "headroom_note": null
+    }
+  ],
+  "formal_diagnostics": [
+    {
+      "id": "diag_fixture",
+      "command": "python scripts/noop_fixture.py",
+      "status": "planned",
+      "owner": "diagnostic-to-review",
+      "expected_report": "orbit-research/diagnostics/diag_fixture/RUN_REPORT.md",
+      "expected_audit": "orbit-research/diagnostics/diag_fixture/RUN_AUDIT.md"
+    }
+  ]
+}

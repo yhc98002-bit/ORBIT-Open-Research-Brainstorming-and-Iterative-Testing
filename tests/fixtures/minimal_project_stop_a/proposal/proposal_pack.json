@@ -1,0 +1,50 @@
+{
+  "abstract_task": {
+    "decision_structure": "Select a candidate mechanism for a constrained benchmark regime.",
+    "input_space": "problem instance and baseline behavior",
+    "output_space": "proposal-level method sketch"
+  },
+  "assumptions": [
+    {
+      "confidence": "medium",
+      "id": "A1",
+      "kind": "working",
+      "statement": "The target regime has enough baseline headroom to justify formal planning."
+    }
+  ],
+  "baseline_headroom": {
+    "highest_headroom_regime": "small controlled diagnostic",
+    "simple_strong_baseline": "best available non-learned baseline"
+  },
+  "candidate_mechanisms": [
+    {
+      "feasibility": 4,
+      "id": "M1",
+      "name": "Minimal mechanism",
+      "novelty": 3
+    }
+  ],
+  "generated_views": [
+    "proposal/PROPOSAL.md"
+  ],
+  "open_risks": [
+    {
+      "id": "R1",
+      "mitigation": "Resolve during STOP B diagnostics.",
+      "risk": "Benchmark may be saturated."
+    }
+  ],
+  "problem_selection": {
+    "decision": "PROCEED",
+    "rationale": "Minimal fixture for STOP A pack validation."
+  },
+  "schema_version": "0.1",
+  "selected_sketch": {
+    "id": "S1",
+    "mechanism_ref": "M1",
+    "summary": "Minimal selected sketch for validator coverage."
+  },
+  "source_markdown": [],
+  "status": "ready",
+  "updated_at": "2026-05-23T00:00:00Z"
+}

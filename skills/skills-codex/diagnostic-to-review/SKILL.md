@@ -1,514 +1,461 @@
 ---
 name: diagnostic-to-review
-description: "ORBIT v1.4 thin pipeline that chains the post-implementation segment: /run-experiment (Stage 16/17 with auto-routing to /experiment-queue if needed) → /analyze-results (Stage 18), then conditional-required /result-to-claim (Stage 21) → /auto-review-loop (Stage 23): not triggered for local diagnostics, but required for paper-bearing diagnostics. Runs the happy path automatically for paper-bearing diagnostics; stops after interpretation + decision log for sanity, provenance, implementation, and local mechanism probes. Aborts are NOT errors — they are awaiting_human_continue or awaiting_user_action states with clear next_action so the user can decide or fix prerequisites."
-argument-hint: [diagnostic-command OR manifest-path OR grid-spec]
+description: "ORBIT v1.5 STOP C diagnostic session orchestrator. Runs one formal diagnostic session from a diagnostic command, manifest, grid spec, or experiment/experiment_pack.json; analyzes exact run outputs; writes/consumes claims/claim_ledger.json for paper-bearing results; conditionally red-teams; then stops at STOP C human decision. Uses per-diagnostic artifacts under orbit-research/diagnostics/<diagnostic_id>/ and writes legacy latest copies only for compatibility. Does not consume experiment-bridge probe artifacts as formal diagnostics, does not invoke paper-writing, does not fabricate HUMAN_DECISION_NOTE, and keeps Codex review required."
+argument-hint: [diagnostic-command OR manifest-path OR grid-spec OR experiment/experiment_pack.json]
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, mcp__codex__codex, mcp__codex__codex-reply
 ---
 
-# /diagnostic-to-review — v1.4 Run → Analyze → Conditional-Required Claim → Review
+# /diagnostic-to-review -- STOP C Formal Diagnostic Session
 
-Chain the post-implementation segment for: **$ARGUMENTS**
+Run a recoverable STOP C diagnostic session for: **$ARGUMENTS**
 
 ## Overview
 
-This skill is a thin orchestrator that walks Stage 17/18 of the ORBIT pipeline, then
-continues to Stage 21/23 only when the result affects paper-level claim scope. The user
-invokes it once after `/experiment-bridge` returned `MATCHES_PLAN`; this skill takes over
-until either the diagnostic-only path has a clean interpretation + decision log, the
-paper-bearing happy path completes, or a verdict-line gate aborts the chain and surfaces a
-clear "what's blocking + what to decide" report.
+This skill owns STOP C. It runs formal diagnostics, analyzes results, conditionally
+constructs claims, conditionally runs red-team review, and then stops for human STOP C
+decision. It does not invoke `/paper-writing`, does not decide scale-up, and does not
+write `HUMAN_DECISION_NOTE.md` except when the user explicitly supplies that decision.
 
-Version note: `v1.4` names this STOP C wrapper behavior. The underlying artifact names,
-stage numbers, and hard gates remain the ORBIT v1.3 contract in
-`../shared-references/research-agent-pipeline.md`.
+The design is session-based. Every invocation gets a `diagnostic_id` and `input_hash`.
+Canonical outputs live under:
 
-Ownership boundary:
-- This skill owns formal diagnostic execution via `/run-experiment`.
-- This skill owns scientific `RESULT_INTERPRETATION.md`.
-- This skill owns `RESEARCH_DECISION_LOG.md` routing after results.
-- This skill owns `CLAIM_CONSTRUCTION.md` for paper-level claims through
-  `/result-to-claim`.
-- This skill owns `RED_TEAM_REVIEW.md` through `/auto-review-loop`.
-- This skill owns `AGENT_DECISION_RECOMMENDATION.md` through `/result-to-claim`; it does
-  not fabricate human approval.
-- `/result-to-claim` and `/auto-review-loop` are conditional-required, not discretionary:
-  not triggered for local/sanity/probe diagnostics, but mandatory for paper-bearing
-  diagnostics.
-
-**Scope boundary:**
-- Starts after `PLAN_CODE_AUDIT.md` exists with verdict = `MATCHES_PLAN` (or scoped
-  `PARTIAL_MISMATCH`). Refuses to start otherwise (G11).
-- Ends at Stage 23 (red-team review). Does **NOT** invoke `/paper-writing` — paper
-  writing is the next stop only after STOP C human confirmation (G16/G18/G19).
-- Does **NOT** trigger `SCALEUP_DECISION = PROCEED` automatically — that requires
-  `HUMAN_DECISION_NOTE.md` per G15+G19, which by design must be human-written.
-
-```
-Input:  diagnostic command / manifest / grid
-
-  Phase 1: /run-experiment "$ARGUMENTS"  (auto-routes solo vs queue per T3a)
-           ABORT if DIAGNOSTIC_RUN_AUDIT verdict != PASS (FIX_BEFORE_GPU,
-                  REDESIGN_EXPERIMENT, ERROR with regime_check_unanswerable)
-           OR     if Stage 17 G12 regime check fails
-
-  Phase 2: /analyze-results "results/"
-           ABORT if no parseable results found
-           OR     if signs of metric/data fraud per experiment-integrity protocol
-
-  Phase 3: Claim relevance gate
-           If sanity/provenance/implementation/local-mechanism: stop after
-           RESULT_INTERPRETATION + RESEARCH_DECISION_LOG.
-           If paper-level claim scope is affected: /result-to-claim is mandatory.
-
-  Phase 4: /auto-review-loop "<scope>" — difficulty: hard
-           Mandatory when Phase 3 ran /result-to-claim; skipped for local diagnostics.
-           ABORT if reviewer score < ABORT_REVIEW_SCORE after MAX_ROUNDS
-           OR     if G14 (positive framing after tie/failure) detected
-           OR     if G17 (post-hoc reframing as pre-planned) detected
-
-  Phase 5: orbit-research/PIPELINE_SUMMARY.md + STATE.status = awaiting_human_continue
-           (happy path: STOP C ready for human decision; abort: clear next_action
-            describing blocker)
+```text
+orbit-research/diagnostics/<diagnostic_id>/
 ```
 
-## Constants
+Legacy fixed-path artifacts may still be written as **latest compatibility copies**, but
+they must never be used for idempotent skip unless they match the current
+`diagnostic_id`, `input_hash`, and run/result references.
 
-- **OUTPUT_ROOT_V13 = `orbit-research/`** — v1.3 artifacts.
-- **ABORT_REVIEW_SCORE = 4** — `/auto-review-loop` rounds with score below this after
-  MAX_ROUNDS round-robin → abort and report. Tunable via `— abort-score: <N>`.
-- **CONTINUE_ON_PARTIAL = true** — when `result-to-claim` returns `partial`, continue
-  to red-team (the partial scope can still be reviewed; G14/G17 catch overclaims).
-  Set `false` to abort on partial too.
-- **AUTO_PROCEED = true** — chain phases without prompting unless user passes
-  `— human checkpoint: true`.
+## Ownership Boundary
+
+This skill owns:
+
+- formal diagnostic execution via `/run-experiment`;
+- per-diagnostic `RUN_REPORT.md` and `RUN_AUDIT.md`;
+- `RESULT_INTERPRETATION.md`;
+- `RESEARCH_DECISION_LOG.md`;
+- `claims/claim_ledger.json` as the canonical paper-bearing claim/evidence ledger;
+- `claims/CLAIM_LEDGER.md` as the generated ledger view;
+- `CLAIM_CONSTRUCTION.md` only as a per-diagnostic or legacy compatibility view for
+  paper-bearing diagnostics;
+- `NEGATIVE_RESULT_STRATEGY.md` when the result is unsupported, tied, or reframed;
+- `RED_TEAM_REVIEW.md` only for paper-bearing diagnostics;
+- `STOP_C_REVIEW.md`;
+- `HUMAN_DECISION_NOTE.template.md`.
+
+This skill does not own:
+
+- STOP B implementation/headroom probes from `/experiment-bridge`;
+- paper-writing;
+- scale-up approval;
+- human approval fabrication.
+
+## Formal Diagnostic vs STOP B Probe
+
+`/experiment-bridge` may produce implementation/headroom probes:
+
+- `experiment/PROBE_REPORT.md`
+- `experiment/PROBE_AUDIT.md`
+- `experiment/HEADROOM_NOTE.md`
+- `experiment_pack.probes[]`
+
+Those are not formal diagnostic artifacts. This skill must not treat them as
+`RUN_REPORT.md`, `RUN_AUDIT.md`, claim evidence, or red-team input. If `$ARGUMENTS`
+points only to probe artifacts, write a blocked Phase 0 context explaining that a formal
+diagnostic command/manifest is required.
+
+Formal diagnostics use:
+
+- `orbit-research/diagnostics/<diagnostic_id>/RUN_REPORT.md`
+- `orbit-research/diagnostics/<diagnostic_id>/RUN_AUDIT.md`
+- `orbit-research/diagnostics/<diagnostic_id>/RESULT_INTERPRETATION.md`
+- `orbit-research/RUN_LEDGER.jsonl`
+
+Compatibility latest copies may also be written to:
+
+- `orbit-research/DIAGNOSTIC_RUN_REPORT.md`
+- `orbit-research/DIAGNOSTIC_RUN_AUDIT.md`
+- `orbit-research/RESULT_INTERPRETATION.md`
+- `orbit-research/RESEARCH_DECISION_LOG.md`
+- `orbit-research/CLAIM_CONSTRUCTION.md`
+- `orbit-research/NEGATIVE_RESULT_STRATEGY.md`
+- `orbit-research/RED_TEAM_REVIEW.md`
+
+Paper-bearing STOP C also uses:
+
+- `claims/claim_ledger.json` -- canonical claim/evidence/source-of-truth ledger
+- `claims/CLAIM_LEDGER.md` -- generated human-readable ledger view
 
 ## Load First
 
-- `../shared-references/research-agent-pipeline.md` — Stages 17/18/21/23 + hard gates
-  G11/G12/G14/G16/G17
-- `../shared-references/research-harness-prompts.md` — sections `17`, `18`, `21`, `22`, `23`
-- `../shared-references/semantic-code-audit.md` — Stage 17 audit + G12 regime check
-- `../shared-references/experiment-integrity.md` — Phase 2 metric / data fraud signals
-- `../shared-references/document-hygiene.md` — avoid turning proposal documents into claim
-  audits or rebuttal logs
+- `../shared-references/research-agent-pipeline.md` -- Stages 17/18/21/23 and hard gates.
+- `../shared-references/research-harness-prompts.md` -- sections `17`, `18`, `21`, `22`, `23`.
+- `../shared-references/semantic-code-audit.md` -- Stage 17 audit and G12 regime check.
+- `../shared-references/experiment-integrity.md` -- metric/data fraud signals.
+- `../shared-references/codex-precondition.md` -- Codex required loud-stop contract.
+- `../shared-references/continuation-contract.md` -- resume states.
+- `../shared-references/document-hygiene.md`.
 
-Also read these project artifacts when present because failure routing depends on them:
+Also inspect when present:
 
-- `orbit-research/RUN_LEDGER.jsonl` — canonical run provenance and failed/no-result runs
-- `refine-logs/EXPERIMENT_PLAN_EXEC.md` — especially `Decision Tree / Branch Table`
-- `refine-logs/FINAL_PROPOSAL.md` and `FINAL_PROPOSAL_SHORT.md` — proposal status block
-- `orbit-research/ASSUMPTION_LEDGER.md` — critical hypotheses H1-Hk
-- `orbit-research/NULL_RESULT_CONTRACT.md` — tie/negative interpretation
-- `../shared-references/continuation-contract.md` — STATE schema, four-state enum, resume
-  rules
+- `experiment/experiment_pack.json`
+- `orbit-research/PLAN_CODE_AUDIT.md`
+- `orbit-research/RUN_LEDGER.jsonl`
+- `experiment/EXPERIMENT_PLAN_EXEC.md` or legacy `refine-logs/EXPERIMENT_PLAN_EXEC.md`
+- `orbit-research/NULL_RESULT_CONTRACT.md`
+- `orbit-research/COMPONENT_BUNDLE_LADDER.md`
+- `orbit-research/ASSUMPTION_LEDGER.md`
 
-## Pre-flight — entry guards
+## Session Identity
 
-Before Phase 1 starts, verify:
+Phase 0 creates a deterministic context for this run:
 
-1. **G11 prereq**: `orbit-research/PLAN_CODE_AUDIT.md` exists AND verdict line is
-   `MATCHES_PLAN` or scoped `PARTIAL_MISMATCH` whose missing pieces are irrelevant to this
-   diagnostic. If `CRITICAL_MISMATCH` or `ERROR` → refuse to start; route user back to
-   `/experiment-bridge` to fix code and re-audit.
-2. **G8 prereq**: `orbit-research/NULL_RESULT_CONTRACT.md` exists (the diagnostic must
-   know what positive/null/tie means). If absent → refuse; route to
-   `/experiment-bridge "refine-logs/FINAL_PROPOSAL.md" — mode: plan-only` or a focused
-   `/experiment-plan` patch if the plan already exists.
-3. **G9 prereq**: `orbit-research/COMPONENT_BUNDLE_LADDER.md` exists (or run is a single-
-   component baseline reproduction with explicit declaration). If neither → refuse.
-4. **`$ARGUMENTS` parses** as either a single command, a manifest path, or a grid spec
-   per `/run-experiment` Step 0 detection rules. If not → ask user.
+- `input_hash`: SHA-256 over normalized `$ARGUMENTS`, referenced manifest or
+  `experiment_pack` content hash, selected diagnostic command, and relevant prereq
+  artifact hashes (`PLAN_CODE_AUDIT.md`, `experiment_pack`, null-result contract).
+- `diagnostic_id`: `diag_<UTC YYYYMMDDTHHMMSSZ>_<input_hash[0:8]>` for a fresh run.
+  On resume, reuse the existing `diagnostic_id` only if its
+  `DIAGNOSTIC_CONTEXT.json.input_hash` matches the new `input_hash`.
+- `diagnostic_kind`: one of
+  `sanity | provenance | implementation | local_mechanism_probe | paper_bearing | scaleup | unknown`.
+- `claim_relevance`: one of
+  `none | local_only | affects_claim_scope | paper_bearing | unknown`.
 
-If any guard fails, write a STATE with `status = "in_progress"` + `next_action = "fix-prereq:<name>"`
-and exit. Do not partially run.
+## Phase 0: Context, Preflight, Codex Precondition
 
-## State Persistence (Continuation Contract)
+Phase 0 happens before Phase 1. It must not write `status = in_progress` for blocked
+preflight failures.
 
-Follows `../shared-references/continuation-contract.md`.
+Steps:
 
-**STATE file:** `orbit-research/DIAGNOSTIC_TO_REVIEW_STATE.json`
+1. Parse `$ARGUMENTS` as a diagnostic command, manifest path, grid spec, or
+   `experiment/experiment_pack.json`.
+2. Compute `diagnostic_id` and `input_hash`.
+3. Classify or accept `diagnostic_kind`.
+4. Classify `claim_relevance`.
+5. Create:
 
-Schema:
+   ```text
+   orbit-research/diagnostics/<diagnostic_id>/
+   orbit-research/codex-prompts/
+   ```
+
+6. Verify prerequisites:
+   - G11: `orbit-research/PLAN_CODE_AUDIT.md` verdict is `MATCHES_PLAN` or scoped
+     `PARTIAL_MISMATCH` irrelevant to this diagnostic.
+   - G8: null-result interpretation exists in `experiment_pack.null_result_contract` or
+     `orbit-research/NULL_RESULT_CONTRACT.md`.
+   - G9: component ladder/control structure exists in `experiment_pack.component_ladder`
+     or `orbit-research/COMPONENT_BUNDLE_LADDER.md`, unless this is an explicitly declared
+     single-component baseline reproduction.
+   - The input resolves to a formal diagnostic command/manifest/grid, not only STOP B
+     probe artifacts.
+7. Check Codex precondition using `codex-precondition.md` section 3.
+8. Write:
+
+   ```text
+   orbit-research/diagnostics/<diagnostic_id>/DIAGNOSTIC_CONTEXT.json
+   ```
+
+`DIAGNOSTIC_CONTEXT.json` must include:
+
+```jsonc
+{
+  "schema_version": "0.1",
+  "diagnostic_id": "<diagnostic_id>",
+  "input_hash": "<sha256>",
+  "raw_arguments": "$ARGUMENTS",
+  "diagnostic_kind": "paper_bearing",
+  "claim_relevance": "paper_bearing",
+  "formal_input": {
+    "kind": "command|manifest|grid|experiment_pack",
+    "value": "<resolved command or path>"
+  },
+  "result_candidates": [],
+  "expected_result_paths": [],
+  "run_id": null,
+  "created_at": "<ISO 8601 UTC>",
+  "codex_precondition": {"ready": true}
+}
+```
+
+### Phase 0 Blocked State
+
+If any prereq or Codex precondition fails, write
+`orbit-research/DIAGNOSTIC_TO_REVIEW_STATE.json` and
+`orbit-research/ORBIT_STATE.json` with `awaiting_user_action`, not `in_progress`:
+
+```jsonc
+{
+  "status": "awaiting_user_action",
+  "pause_reason": "missing_prereq",
+  "blockers": [
+    {
+      "id": "G11",
+      "kind": "missing_artifact|bad_verdict|codex_unavailable|legacy_conflict",
+      "artifact": "orbit-research/PLAN_CODE_AUDIT.md",
+      "message": "short blocker",
+      "safe_next_command": "/experiment-bridge \"experiment/experiment_pack.json\" -- mode: audit-only"
+    }
+  ],
+  "safe_next_command": "<exact recovery command>"
+}
+```
+
+For Codex MCP unavailability or mid-run Codex failure, also export a standalone review
+prompt before stopping:
+
+```text
+orbit-research/codex-prompts/<diagnostic_id>.<phase>.md
+```
+
+The prompt must include the diagnostic context, required Codex role, expected verdict
+format, source artifacts to review, and instructions for the user to paste it into Codex
+manually. This prompt is recovery metadata; it is not a substitute audit/review verdict.
+
+## State Persistence
+
+State file:
+
+```text
+orbit-research/DIAGNOSTIC_TO_REVIEW_STATE.json
+```
+
+Required fields:
 
 ```jsonc
 {
   "skill": "diagnostic-to-review",
-  "phase": "phase-3-claim",                  // last completed phase
-  "status": "in_progress" | "awaiting_human_continue" | "awaiting_user_action" | "completed",
-  "abort_reason": null | "<reason-code>",    // present iff aborted
-  "next_action": "<what to do next>",
-  "next_skill_hint": "/paper-writing OR /experiment-bridge (re-audit) OR ...",
+  "diagnostic_id": "<diagnostic_id>",
+  "input_hash": "<sha256>",
+  "phase": "phase-0-context|phase-1-run|phase-2-analyze|phase-3-claim|phase-4-review|phase-5-stop-c-review",
+  "status": "in_progress|awaiting_human_continue|awaiting_user_action|completed",
+  "pause_reason": null,
+  "next_action": "<same-skill resume or human action>",
+  "next_skill_hint": "<narrow recovery skill or null>",
+  "safe_next_command": "<exact command or human instruction>",
   "timestamp": "<ISO 8601 UTC>",
-  "artifact_inventory": [
-    "orbit-research/RUN_LEDGER.jsonl",
-    "orbit-research/DIAGNOSTIC_RUN_REPORT.md",
-    "orbit-research/DIAGNOSTIC_RUN_AUDIT.md",
-    "orbit-research/RESULT_INTERPRETATION.md",
-    "orbit-research/CLAIM_CONSTRUCTION.md",
-    "orbit-research/AGENT_DECISION_RECOMMENDATION.md",
-    "orbit-research/RED_TEAM_REVIEW.md",
-    "orbit-research/PIPELINE_SUMMARY.md"
-  ],
-  "diagnostic_run_id": "<from RUN_EXPERIMENT_STATE>",
-  "review_thread_id": "<Codex thread id from auto-review-loop>",
-  "notes": "Free-form notes"
+  "artifact_inventory": [],
+  "run_id": null,
+  "result_paths": [],
+  "review_thread_id": null,
+  "notes": ""
 }
 ```
 
-### On entry — resume decision tree
+## Resume And Idempotent Skip
 
-Apply the canonical contract decision tree. Specifically:
+Do not skip a phase merely because a fixed legacy path exists.
 
-- `status = "completed"` + no `— resume:` → ask "previous chain completed; rerun?"
-- `status = "in_progress"` + `timestamp < 24h` → resume from `phase + 1`; check artifact-presence skip per phase artifact map.
-- `status = "awaiting_human_continue"` (abort case) → re-invocation with `— resume: true` AND user has fixed the underlying issue → resume from the aborted phase.
-- `status = "awaiting_human_continue"` (happy path completion) → re-invocation = "user wants to rerun the chain; treat as fresh start unless `— resume: true`."
+A phase may be skipped only if all of these are true:
 
-### Override flags
+1. `DIAGNOSTIC_TO_REVIEW_STATE.json.diagnostic_id` matches the current `diagnostic_id`.
+2. `DIAGNOSTIC_TO_REVIEW_STATE.json.input_hash` matches the current `input_hash`.
+3. The required per-diagnostic artifact exists under
+   `orbit-research/diagnostics/<diagnostic_id>/`.
+4. The artifact references the same `run_id` or exact result path recorded in
+   `DIAGNOSTIC_CONTEXT.json`.
 
-| Flag | Effect |
-|---|---|
-| `— resume: true` | Force resume even if STATE looks ambiguous |
-| `— fresh: true` | Delete STATE; ignore prior artifacts; run from Phase 1 |
-| `— from-phase: <N>` | Force start from phase 1–5 |
-| `— human checkpoint: true` | Pause at every phase boundary |
-| `— no-checkpoint: true` | Run straight through to `completed` (no awaiting_human_continue at end) |
-| `— abort-score: <N>` | Override ABORT_REVIEW_SCORE for Phase 4 |
-| `— continue-on-no: true` | Continue Phase 4 even if Phase 3 returned `claim_supported=no` (treats as documented negative result) |
+If any condition fails, replay the phase and overwrite only the current
+per-diagnostic artifacts plus compatibility latest copies.
 
-### Phase artifact map (idempotent skip)
+Phase artifact map:
 
-| Phase | Expected artifacts |
-|---|---|
-| phase-1-run | `orbit-research/RUN_LEDGER.jsonl` + `DIAGNOSTIC_RUN_REPORT.md` + `DIAGNOSTIC_RUN_AUDIT.md` (verdict line) |
-| phase-2-analyze | `orbit-research/RESULT_INTERPRETATION.md` + `RESEARCH_DECISION_LOG.md` when result is failed / mixed / surprising |
-| phase-3-claim | `orbit-research/CLAIM_CONSTRUCTION.md` + `AGENT_DECISION_RECOMMENDATION.md` + `RESEARCH_DECISION_LOG.md` when claim is unsupported |
-| phase-4-review | `orbit-research/RED_TEAM_REVIEW.md` |
-| phase-5-summary | `orbit-research/PIPELINE_SUMMARY.md` |
+| Phase | Required per-diagnostic artifacts |
+| --- | --- |
+| phase-0-context | `DIAGNOSTIC_CONTEXT.json` |
+| phase-1-run | `RUN_REPORT.md`, `RUN_AUDIT.md`, `DIAGNOSTIC_CONTEXT.json` updated with `run_id` and result candidates |
+| phase-2-analyze | `RESULT_INTERPRETATION.md`, `RESEARCH_DECISION_LOG.md` when failed/mixed/surprising/no-result |
+| phase-3-claim | `claims/claim_ledger.json` plus `claims/CLAIM_LEDGER.md` for paper-bearing diagnostics; per-diagnostic/legacy `CLAIM_CONSTRUCTION.md` remains a compatibility view; `NEGATIVE_RESULT_STRATEGY.md` when unsupported/tie/reframed |
+| phase-4-review | `RED_TEAM_REVIEW.md` for paper-bearing diagnostics |
+| phase-5-stop-c-review | `STOP_C_REVIEW.md`, `HUMAN_DECISION_NOTE.template.md` |
 
 ## Workflow
 
-### Phase 1: Run — `/run-experiment`
+### Phase 1: Formal Run
+
+Run the formal diagnostic:
 
 ```bash
-/run-experiment "$ARGUMENTS"
+/run-experiment "<formal command or manifest from DIAGNOSTIC_CONTEXT.json>"
 ```
 
-`/run-experiment` (T3a-state + T3a-route) handles auto-routing (solo vs `/experiment-queue`),
-state-based resume on interruption (screen attach + log offset replay), and writes
-`RUN_LEDGER.jsonl` + `DIAGNOSTIC_RUN_REPORT.md` + `DIAGNOSTIC_RUN_AUDIT.md` with verdict
-line. If the run fails, OOMs, times out, is killed, or produces no result, it is still a
-valid ledgered diagnostic event.
+`/run-experiment` writes the run ledger and formal diagnostic report/audit. Copy or render
+the current session's outputs into:
 
-**Abort triggers:**
-
-| Verdict / state | Abort reason | next_skill_hint |
-|---|---|---|
-| `DIAGNOSTIC_RUN_AUDIT.verdict = FIX_BEFORE_GPU` | `fix-code-then-re-audit` | `/experiment-bridge` (re-run plan-code audit after fix) |
-| `DIAGNOSTIC_RUN_AUDIT.verdict = REDESIGN_EXPERIMENT` AND G12 regime check passed (regime DID preserve mechanism preconditions) | `redesign-diagnostic` | `/experiment-plan` (redesign Stage 16 plan) |
-| `DIAGNOSTIC_RUN_AUDIT.verdict = REDESIGN_EXPERIMENT` AND G12 regime check failed (regime DID NOT preserve mechanism preconditions) | `regime-mismatch-not-mechanism-failure` | `/experiment-plan` (redesign diagnostic to a regime where mechanism could in principle manifest) — do NOT kill the mechanism |
-| `DIAGNOSTIC_RUN_AUDIT.verdict = ERROR` AND reason = `regime_check_unanswerable` | `human-must-judge-regime` | manual review — escalate to HUMAN_DECISION_REQUIRED |
-
-Codex unavailability is **not** an abort trigger at this stage — it is
-handled earlier by the Phase 0 precondition (see
-[`../shared-references/codex-precondition.md`](../shared-references/codex-precondition.md)
-and the "For Codex MCP unavailability" section below). A run that reaches
-this table has already passed the precondition; if Codex then fails
-mid-Phase-1, the LOUD STOP in §5 of the precondition contract takes over
-and `DIAGNOSTIC_RUN_AUDIT.verdict` is **not** written for the failed
-phase. The previous Codex-unavailable abort row was the silent-skip this
-skill no longer supports.
-
-If verdict = `PASS` → write Phase 1 STATE (`status: in_progress`, `next_action: phase-2-analyze`)
-and continue to Phase 2.
-
-### Phase 2: Analyze — `/analyze-results`
-
-```bash
-/analyze-results "results/"
+```text
+orbit-research/diagnostics/<diagnostic_id>/RUN_REPORT.md
+orbit-research/diagnostics/<diagnostic_id>/RUN_AUDIT.md
 ```
 
-Or pass an explicit results path / W&B run id derived from Phase 1's `DIAGNOSTIC_RUN_REPORT.md`.
+Update `DIAGNOSTIC_CONTEXT.json` with:
 
-Writes `orbit-research/RESULT_INTERPRETATION.md` per Stage 18 harness.
+- `run_id`
+- `screen_name` if any
+- exact result files/directories
+- W&B run IDs or dashboard URLs
+- log paths
+- ledger start/final record references
 
-If the diagnostic is failed, mixed, contradictory, or surprising, write
-`orbit-research/RESEARCH_DECISION_LOG.md` before routing or aborting. The log is the
-canonical local decision artifact for failed diagnostics; do not default to
-`/idea-to-proposal — fresh: true` or broad `/proposal-revise both`.
+Compatibility latest copies may be written to:
 
-Use this structure:
+- `orbit-research/DIAGNOSTIC_RUN_REPORT.md`
+- `orbit-research/DIAGNOSTIC_RUN_AUDIT.md`
+
+### Phase 1 Audit And G12 Semantics
+
+`RUN_AUDIT.md` must use this structured interpretation:
+
+```yaml
+verdict: PASS | FIX_BEFORE_GPU | REDESIGN_EXPERIMENT | ERROR
+regime_preserved: true | false | unknown
+mechanism_rejected: true | false
+reason: <short reason>
+```
+
+Routing:
+
+| Audit interpretation | Route |
+| --- | --- |
+| `verdict: PASS` | Continue to Phase 2. |
+| `verdict: FIX_BEFORE_GPU` | Pause with `awaiting_user_action`; route to `/experiment-bridge "experiment/experiment_pack.json" -- mode: audit-only`. |
+| `verdict: REDESIGN_EXPERIMENT` and `regime_preserved: true` | Pause; route to `/experiment-plan -- mode: diagnostic-branch-only` or STOP B pack patch. |
+| `verdict: REDESIGN_EXPERIMENT` and `regime_preserved: false` | Pause; redesign diagnostic regime; explicitly set `mechanism_rejected: false`. |
+| `verdict: ERROR` or `regime_preserved: unknown` | Pause for human or missing-input recovery; do not reject the mechanism. |
+
+There is no route where G12 regime failure rejects the mechanism. If the diagnostic regime
+did not preserve mechanism preconditions, the diagnostic is invalid for mechanism rejection.
+
+### Phase 2: Analyze Exact Results
+
+Load and follow [result_interpretation.md](prompts/result_interpretation.md). Derive exact
+result paths from the session context, run report, and ledger; never default blindly to
+`results/`. Write `RESULT_INTERPRETATION.md` and the narrow `RESEARCH_DECISION_LOG.md`.
+
+### Phase 3: Claim Relevance Gate
+
+Load and follow [claim_relevance.md](prompts/claim_relevance.md). Local diagnostics stop
+after interpretation and decision log; paper-bearing diagnostics must update
+`claims/claim_ledger.json`. Validate with `python3 tools/validate_orbit_pack.py --repo . --pack claim_ledger`.
+
+### Phase 4: Red-team Review
+
+Load and follow [red_team_review.md](prompts/red_team_review.md). Parse the final verdict
+token (`READY_FOR_PAPER`, `REQUIRES_FIXES`, `REDESIGN_REQUIRED`, or
+`HUMAN_DECISION_REQUIRED`) rather than treating a numeric score as sufficient.
+
+### Phase 5: STOP C Review
+
+Load and follow [stop_c_review.md](prompts/stop_c_review.md). Always write the STOP C
+review and `HUMAN_DECISION_NOTE.template.md`; final safe next action is human STOP C
+decision unless a human-authored `HUMAN_DECISION_NOTE.md` already exists and ends PROCEED.
+
+The human template must ask for an explicit final verdict, for example:
 
 ```markdown
-# Research Decision Log
+# HUMAN_DECISION_NOTE
 
-- Diagnostic / run ID: [from DIAGNOSTIC_RUN_REPORT]
-- Result pattern: [positive / negative / mixed / tie / surprising / invalid]
-- Affected hypotheses: [H1-Hk, especially paper-breaking entries]
-- Failure type: implementation/config issue | invalid diagnostic | mechanism issue | benchmark/headroom issue | central paper-breaking hypothesis false | literature conflict | inconclusive
-- Decision: continue | local patch | change diagnostic | re-read literature | failure-to-innovation | proposal-revise | archive
-- Local patch target: experiment-bridge | experiment-plan | proposal-revise | research-lit | failure-to-innovation | manual
-- Proposal status update: unchanged | SUPPORTED | REFRAMED | ARCHIVED
-- Proposal revision needed: no | proposal-only | plan-only | both | assumption-only | mechanism-only | benchmark/control-only | diagnostic-branch-only
-- Next skill hint: [/experiment-bridge | /experiment-plan | /proposal-revise | /research-lit | /research-pipeline from Stage 18.5 | human decision]
-- Human decision required: yes/no
-
-## Rationale
-[Short evidence-based reason, citing RESULT_INTERPRETATION, NULL_RESULT_CONTRACT,
-EXPERIMENT_PLAN_EXEC Decision Tree, and affected H-IDs.]
+- Diagnostic ID:
+- Reviewed STOP_C_REVIEW.md: yes/no
+- Decision: PROCEED | FIX_FIRST | REDESIGN_DIAGNOSTIC | REFRAME_CLAIM | ARCHIVE | SCALE_UP
+- Rationale:
 ```
 
-**Abort triggers:**
+Compatibility latest copies:
 
-| Condition | Abort reason | next_skill_hint |
-|---|---|---|
-| No parseable results found at expected paths | `results-not-found` | write RESULT_INTERPRETATION from RUN_LEDGER failure/no-result records, then write/update RESEARCH_DECISION_LOG before routing |
-| `experiment-integrity.md` fraud signals detected (fake ground truth, score normalisation fraud, phantom results, scope inflation) | `integrity-failure` | `/experiment-audit` for full integrity audit; do NOT proceed to claim construction with corrupt eval |
-| Result interpretation entirely contradicts the proposal's claim direction | `result-contradicts-proposal` | follow `RESEARCH_DECISION_LOG.md`; likely `/proposal-revise — mode: mechanism-only` or human decision to mark proposal `REFRAMED` / `ARCHIVED` |
+- `orbit-research/STOP_C_REVIEW.md`
+- `orbit-research/HUMAN_DECISION_NOTE.template.md`
+- `orbit-research/PIPELINE_SUMMARY.md`
 
-If interpretation is well-formed (positive / negative / mixed all OK as long as the
-result is *interpretable* per `NULL_RESULT_CONTRACT.md`) → write Phase 2 STATE and
-continue to Phase 3.
-
-If no metric result exists, still write `RESULT_INTERPRETATION.md` from
-`RUN_LEDGER.jsonl`, logs, and `DIAGNOSTIC_RUN_AUDIT.md`. Classify the outcome as
-`no_result`, `oom`, `timeout`, `killed`, or `failed`; then write/update
-`RESEARCH_DECISION_LOG.md` before routing. Do not skip straight to proposal revision.
-
-### Phase 3: Claim Relevance Gate — conditional-required `/result-to-claim`
-
-Do not invoke `/result-to-claim` after every diagnostic. First classify the run's purpose
-from `DIAGNOSTIC_EXPERIMENT_PLAN.md`, `EXPERIMENT_PLAN_EXEC.md`, and
-`RESULT_INTERPRETATION.md`.
-
-Stop after `RESULT_INTERPRETATION.md` + `RESEARCH_DECISION_LOG.md` when the diagnostic is:
-
-- sanity / smoke testing
-- provenance or logging validation
-- implementation/config validation
-- mechanism probing that informs the next local patch but does not change paper-level
-  claim scope yet
-- benchmark plumbing, data availability, or evaluator validity checking
-
-For any diagnostic that affects paper-level claim scope, `/result-to-claim` is mandatory,
-such as:
-
-- a main benchmark or ablation intended to support a paper claim
-- a critical hypothesis whose truth changes `FINAL_PROPOSAL` status or claim wording
-- a scale-up decision where evidence may become primary paper support
-- a negative/tie result that would weaken, reframe, or archive a paper-bearing claim
-
-```bash
-/result-to-claim "<one-line description: e.g. 'main result on benchmark X with method Y'>"
-```
-
-Auto-derive the description from `RESULT_INTERPRETATION.md` if the user did not pass one
-and the claim relevance gate says this is paper-bearing.
-Writes `orbit-research/CLAIM_CONSTRUCTION.md` and
-`AGENT_DECISION_RECOMMENDATION.md` per Stage 21/25 harness; writes
-`NEGATIVE_RESULT_STRATEGY.md` if Stage 22 triggered. It writes
-`HUMAN_DECISION_NOTE.md` only when the user explicitly supplies or confirms the decision
-in this invocation.
-
-**Abort triggers:**
-
-| Condition | Abort reason | next_skill_hint |
-|---|---|---|
-| `claim_supported = no` AND `— continue-on-no: true` NOT set | `claim-not-supported` | write/update `RESEARCH_DECISION_LOG.md`; route according to its decision, not broad full-pipeline revision |
-| G14 violation detected: NULL_RESULT_CONTRACT triggered tie/failure but draft has positive framing | `g14-positive-framing-on-failure` | rewrite per Stage 22 (Tie / Negative Strategy); G14 is no-exception |
-| G17 violation detected: post-hoc claim presented as pre-planned hypothesis | `g17-post-hoc-as-pre-planned` | label explicitly as "exploratory finding, not pre-planned hypothesis" before proceeding; G17 is no-exception |
-
-If `claim_supported = yes` OR (`claim_supported = partial` AND `CONTINUE_ON_PARTIAL = true`)
-→ write Phase 3 STATE and continue to Phase 4.
-
-### Failure Routing from `RESEARCH_DECISION_LOG.md`
-
-When the decision log exists, its `Decision`, `Failure type`, and `Proposal revision
-needed` fields are binding for recovery routing:
-
-| Failure type | Route | Rule |
-|---|---|---|
-| implementation/config issue | `/experiment-bridge` fix loop | Patch implementation/config and re-run plan-code audit; do not revise proposal. |
-| invalid diagnostic | `/experiment-plan — mode: diagnostic-branch-only` | Patch the diagnostic branch / run card; do not mark mechanism false. |
-| mechanism issue | `/proposal-revise — mode: mechanism-only` or failure-to-innovation | Revise only mechanism artifacts unless the log explicitly says proposal-only/both. |
-| benchmark/headroom issue | `/experiment-plan — mode: benchmark/control-only` or `/proposal-revise — mode: benchmark/control-only` | Patch controls, benchmark, or claim scope only. |
-| central paper-breaking hypothesis false | human decision | Patch only the `## Proposal Status` block in `FINAL_PROPOSAL.md` and `FINAL_PROPOSAL_SHORT.md` to `REFRAMED` or `ARCHIVED`; do not auto-run broad revision. |
-| literature conflict | `/research-lit` then targeted revise | Re-read literature before changing mechanism or claims. |
-| inconclusive | continue or change diagnostic | Follow the Decision Tree / Branch Table; avoid proposal revision unless required. |
-
-`/idea-to-proposal — fresh: true` is not a default failed-diagnostic recovery. Use it only
-when the human explicitly chooses to abandon the current problem/method and restart
-discovery.
-
-### Phase 4: Red-team — conditional-required `/auto-review-loop`
-
-```bash
-/auto-review-loop "<scope: e.g. 'method Y on benchmark X claim chain'>" — difficulty: hard — orbit-red-team: true
-```
-
-Do not run this phase for sanity, provenance, implementation, or local mechanism probes
-that stopped after `RESULT_INTERPRETATION.md` + `RESEARCH_DECISION_LOG.md`. When Phase 3
-ran `/result-to-claim` because the diagnostic affects paper-level claim scope,
-`/auto-review-loop` is mandatory. Together Phase 3 and Phase 4 produce
-`CLAIM_CONSTRUCTION.md`, `AGENT_DECISION_RECOMMENDATION.md`, and
-`RED_TEAM_REVIEW.md` for STOP C.
-
-**Abort triggers:**
-
-| Condition | Abort reason | next_skill_hint |
-|---|---|---|
-| Reviewer score below `ABORT_REVIEW_SCORE` (default 4/10) after `MAX_ROUNDS` rounds | `irrecoverable-review-score` | major fixes / new experiments needed before paper writing; cannot defend at top venue |
-| G14 / G17 violations re-detected by the red-team reviewer | `gate-violation-flagged-by-reviewer` | rewrite per the violation reason |
-| `/auto-review-loop` returned with required fixes that loop into a Stage 11 redesign | `redesign-required` | `/research-pipeline — from-stage: 11` to redo HMBC matrix |
-
-If review converges with score ≥ ABORT_REVIEW_SCORE and no gate violations → write Phase 4
-STATE and continue to Phase 5. If the reviewed claim supports the central diagnostic
-hypothesis, patch only the `## Proposal Status` block in `FINAL_PROPOSAL.md` and
-`FINAL_PROPOSAL_SHORT.md` to `SUPPORTED`, with evidence basis citing
-`CLAIM_CONSTRUCTION.md` and `RED_TEAM_REVIEW.md`.
-
-### Phase 5: Pipeline Summary
-
-Write `orbit-research/PIPELINE_SUMMARY.md`:
-
-```markdown
-# /diagnostic-to-review Pipeline Summary
-
-- Input: $ARGUMENTS
-- Completed: <ISO timestamp>
-- Outcome: DIAGNOSTIC_ONLY | PAPER_BEARING | ABORTED:<reason>
-
-## Artifact map
-
-### Phase 1 — Run (Stage 17)
-- orbit-research/DIAGNOSTIC_RUN_REPORT.md
-- orbit-research/DIAGNOSTIC_RUN_AUDIT.md  (verdict: PASS)
-
-### Phase 2 — Analyze (Stage 18)
-- orbit-research/RUN_LEDGER.jsonl
-- orbit-research/RESULT_INTERPRETATION.md
-- orbit-research/RESEARCH_DECISION_LOG.md  (if failed / mixed / surprising / unsupported)
-
-### Phase 3 — Claim (Stage 21 / 22, only if paper-level claim scope is affected)
-- orbit-research/CLAIM_CONSTRUCTION.md
-- orbit-research/AGENT_DECISION_RECOMMENDATION.md
-- orbit-research/NEGATIVE_RESULT_STRATEGY.md  (if tie/failure)
-
-### Phase 4 — Red-team (Stage 23, only if paper-level claim scope is affected)
-- orbit-research/RED_TEAM_REVIEW.md  (final score: <N>/10)
-
-## Next steps (NOT run by this skill)
-
-If diagnostic-only:
-1. Review RESULT_INTERPRETATION.md + RESEARCH_DECISION_LOG.md.
-2. Decide: continue, local patch, change diagnostic, re-read literature, or archive.
-
-If paper-bearing:
-1. Review CLAIM_CONSTRUCTION.md + RED_TEAM_REVIEW.md +
-   AGENT_DECISION_RECOMMENDATION.md jointly — STOP C in the 4-stop HITL flow.
-2. Human decides: scale-up to full grid OR write paper now OR pivot. Record that decision
-   in `orbit-research/HUMAN_DECISION_NOTE.md` with final verdict `PROCEED` before any
-   high-risk transition.
-3. For paper writing: /paper-writing "NARRATIVE_REPORT.md" — venue: ICLR, assurance: submission
-   (G16/G18/G19 enforced — CLAIM_CONSTRUCTION.md must exist,
-   RED_TEAM_REVIEW.md must end READY_FOR_PAPER, and HUMAN_DECISION_NOTE.md must end PROCEED.)
-4. For scale-up: /run-experiment "<full grid manifest>" → re-runs this pipeline with
-   bigger N. SCALEUP_DECISION.md must end with PROCEED and HUMAN_DECISION_NOTE.md must end
-   PROCEED per G15/G19.
-
-If aborted:
-- See <skill>_STATE.json next_action and next_skill_hint for the specific recovery path.
-```
-
-**Write final STATE** at end of Phase 5 with **`awaiting_human_continue`** (designed
-human checkpoint — STOP C in the 4-stop HITL flow):
+Final state must be a STOP C human checkpoint:
 
 ```jsonc
 {
   "skill": "diagnostic-to-review",
-  "phase": "phase-5-summary",
+  "diagnostic_id": "<diagnostic_id>",
+  "input_hash": "<sha256>",
+  "phase": "phase-5-stop-c-review",
   "status": "awaiting_human_continue",
-  "abort_reason": null,                          // null = happy path
-  "next_action": "human-must-review-stop-c-and-write-HUMAN_DECISION_NOTE-before-paper-writing-or-scale-up",
-  "next_skill_hint": "/paper-writing OR /run-experiment (scale-up grid)",
+  "pause_reason": "stop_review",
+  "next_action": "review STOP_C_REVIEW.md, then write orbit-research/HUMAN_DECISION_NOTE.md",
+  "next_skill_hint": null,
+  "safe_next_command": "Review orbit-research/diagnostics/<diagnostic_id>/STOP_C_REVIEW.md, then write orbit-research/HUMAN_DECISION_NOTE.md",
   "timestamp": "<now>",
-  "artifact_inventory": [/* full list */]
+  "artifact_inventory": [
+    "claims/claim_ledger.json",
+    "claims/CLAIM_LEDGER.md",
+    "orbit-research/diagnostics/<diagnostic_id>/RED_TEAM_REVIEW.md",
+    "orbit-research/diagnostics/<diagnostic_id>/STOP_C_REVIEW.md"
+  ]
 }
 ```
 
-If aborted at any prior phase, STATE was already written there with abort context.
+Do not set final next action to paper writing or `/run-experiment` unless
+`orbit-research/HUMAN_DECISION_NOTE.md` already exists, references this `diagnostic_id`,
+and ends with final verdict `PROCEED`. Even then, report it as a permitted next step, not
+as an automatic action. When a valid `claims/claim_ledger.json` exists, the permitted
+paper-writing command is:
 
-## ARIS / Sub-skill Unavailability
-
-For each delegated invocation, follow the standard fallback pattern (per
-`../shared-references/continuation-contract.md`):
-
-```text
-Try slash invocation.
-If skill not registered:
-  Print "ORBIT skill <name> unavailable. Phase <N> degraded: <fallback or HUMAN_DECISION_REQUIRED>."
-  Continue gracefully.
-If load-bearing for a hard gate (e.g. /auto-review-loop for Stage 23 + paper-writing G16):
-  Escalate — do not silently produce an incomplete review.
+```bash
+/paper-from-claims "claims/claim_ledger.json"
 ```
 
-For Codex MCP unavailability, this skill follows the **Codex Precondition +
-Loud-Stop Contract** in
-[`../shared-references/codex-precondition.md`](../shared-references/codex-precondition.md):
+Do not use legacy `/paper-writing "orbit-research/CLAIM_CONSTRUCTION.md"` as the STOP C
+state safe next command once the ledger exists.
 
-- **Phase 0 precondition.** Codex availability is checked at skill entry
-  (§3 of the contract). Phase 1 (diagnostic audit) and Phase 4 (red-team
-  review) both depend on independent Codex judgment; a single-model
-  "audit" or "red-team" is exactly the silent regression the contract
-  removes. A failed precondition stops at `phase-0-precondition` with
-  `status: "awaiting_user_action"` *before* Phase 1's audit verdict is
-  written.
-- **Mid-run failure (§5 of the contract).** A failing Codex call during
-  Phase 1 audit or Phase 4 red-team review triggers a LOUD STOP: STATE
-  `status: "awaiting_user_action"`, no `DIAGNOSTIC_RUN_AUDIT` verdict or
-  `RED_TEAM_REVIEW.md` produced for the failed phase, loud user-facing
-  remediation message. Phase 5 pipeline summary is **not** written under
-  these conditions — the chain stops where the audit/review was supposed
-  to live.
-- **Override.** `— codex-required: false` opts into a degraded single-model
-  run; `DIAGNOSTIC_RUN_AUDIT` and `RED_TEAM_REVIEW.md` carry the §6 visible
-  header at the top of the file, and the next caller (`/paper-writing`
-  Phase 5.5/5.8) will see the degraded-mode header and may block at the
-  submission gate.
+## Codex Required And Standalone Prompt Export
 
-The previous behavior — a Codex-unavailable diagnostic audit marked as advisory `ERROR`
-and a `⚠️ degraded` header on `RED_TEAM_REVIEW.md`
-that "does not abort the chain" — is **deprecated**. An audit/review that
-silently degrades is not an audit/review.
+Codex remains required by default. This skill follows
+`../shared-references/codex-precondition.md`.
 
-## What This Skill Deliberately Does NOT Do
+Additional STOP C recovery rule: when Codex MCP is unavailable at precondition time or
+fails during Phase 1 audit / Phase 4 red-team review, write a standalone prompt:
 
-- Does **not** invoke `/paper-writing`, `/auto-paper-improvement-loop`, `/paper-claim-audit`,
-  or `/citation-audit`. Paper writing is the next stop (STOP D in 4-stop flow), gated by
-  G16 + G18 on `CLAIM_CONSTRUCTION.md` (which this skill produces), Stage 23
-  `RED_TEAM_REVIEW.md`, and G19 human approval.
-- Does **not** auto-decide scale-up. `SCALEUP_DECISION.md` must end with `PROCEED` only
-  when `HUMAN_DECISION_NOTE.md` explicitly authorises it with final verdict `PROCEED`
-  (G15 + G19).
-- Does **not** modify `PLAN_CODE_AUDIT.md` — if Phase 1 abort path is `fix-code`, route
-  back to `/experiment-bridge`.
-- Does **not** modify `EXPERIMENT_PLAN.md` — if Phase 1 abort path is `redesign-diagnostic`,
-  route back to `/experiment-plan` patch mode. Use `/idea-to-proposal — fresh: true` only
-  after an explicit human decision to abandon and restart discovery.
+```text
+orbit-research/codex-prompts/<diagnostic_id>.<phase>.md
+orbit-research/codex-prompts/<diagnostic_id>.<phase>.json
+```
 
-## Output Protocols
+The prompt should contain:
 
-> Follow shared protocols for all output files:
-> - **[Output Versioning Protocol](../shared-references/output-versioning.md)**
-> - **[Output Manifest Protocol](../shared-references/output-manifest.md)**
-> - **[Output Language Protocol](../shared-references/output-language.md)**
+- diagnostic context JSON;
+- relevant artifacts and snippets;
+- exact reviewer role (Stage 17 audit or Stage 23 red-team);
+- required verdict format;
+- instruction that the user can paste the prompt into Codex manually and then place the
+  response at `orbit-research/codex-imports/<diagnostic_id>.<phase>.response.md`.
+
+Use `tools/codex_review_handoff.py generate` when possible so the prompt, metadata,
+expected import path, and ORBIT_STATE are consistent. Set `pause_reason:
+codex_review_needed` and safe next command:
+
+```text
+/import-codex-review orbit-research/codex-imports/<diagnostic_id>.<phase>.response.md
+```
+
+This prompt does not satisfy the gate by itself. The gate is satisfied only after a valid
+Codex-backed artifact exists, either from MCP or imported standalone response, or the user
+explicitly passes `-- codex-required: false`, which must mark downstream artifacts as
+degraded.
+
+## What This Skill Deliberately Does Not Do
+
+- Does not consume STOP B probe artifacts as formal diagnostic evidence.
+- Does not invoke `/paper-writing`, `/auto-paper-improvement-loop`, `/paper-claim-audit`,
+  or `/citation-audit`.
+- Does not auto-decide scale-up.
+- Does not fabricate `HUMAN_DECISION_NOTE.md`.
+- Does not modify `PLAN_CODE_AUDIT.md`; route code/plan mismatch back to
+  `/experiment-bridge`.
+- Does not modify `experiment/experiment_pack.json` except to read diagnostic commands and
+  decision tree context; route diagnostic redesign back to STOP B planning tools.
+- Does not default to `/idea-to-proposal -- fresh: true` for failed diagnostics.
 
 ## Final Rule
 
 ```text
-Run cheap, interpret honestly, claim only when paper-level scope is affected, review hard.
-A bottleneck is information; it is not failure.
-Every abort produces a clear next_action — never a silent stop.
-Convergence on a defensible claim is the goal; abandoning a bad chain early
-is cheaper than burning more GPU and writing a paper that won't survive review.
+One diagnostic session, one diagnostic_id, one input_hash.
+Run exact evidence, analyze exact outputs, route failures narrowly, and stop at STOP C for
+human decision. Negative evidence is an outcome, not an orchestration abort.
 ```

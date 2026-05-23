@@ -1,0 +1,38 @@
+{
+  "schema_version": "0.1",
+  "status": "ready",
+  "updated_at": "2026-05-23T00:00:00Z",
+  "source_markdown": [
+    "orbit-research/diagnostics/diag_fixture/RESULT_INTERPRETATION.md"
+  ],
+  "generated_views": [
+    "claims/CLAIM_LEDGER.md"
+  ],
+  "claims": [
+    {
+      "id": "C1",
+      "statement": "The fixture result supports a bounded diagnostic claim.",
+      "status": "supported",
+      "evidence_refs": [
+        "results/diag_fixture/metrics.json"
+      ],
+      "controls": [
+        "control_baseline"
+      ],
+      "scope": "Golden minimal fixture only.",
+      "limitations": [
+        "This is a regression fixture, not a real experiment."
+      ],
+      "forbidden_overclaims": [
+        "Do not generalize beyond the fixture."
+      ],
+      "allowed_paper_sections": [
+        "results",
+        "limitations"
+      ]
+    }
+  ],
+  "result_refs": [
+    "results/diag_fixture/metrics.json"
+  ]
+}

@@ -33,6 +33,11 @@ source, followed by `CLAIMS_FROM_RESULTS.md`, `NARRATIVE_REPORT.md`, and `STORY.
 story honestly instead of forcing a positive method-win narrative. This priority order
 applies in every invocation, not only under `/research-pipeline`.
 
+If `figures/figure_manifest.json` exists, use it as the figure/table source of truth when
+planning figure placement. If `references/citation_cache.json` exists, use it as the
+citation metadata and context source of truth. Do not infer figure support or citation
+validity only from loose files when these structured manifests are present.
+
 ## Orchestra-Guided Writing Overlay
 
 Keep the existing `insleep` workflow and outputs, but use the shared references below to improve the quality of the story and outline.

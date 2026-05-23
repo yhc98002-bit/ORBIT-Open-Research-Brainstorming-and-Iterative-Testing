@@ -1,0 +1,18 @@
+{
+  "schema_version": "0.1",
+  "current_stop": "STOP_D",
+  "current_skill": "submission-package",
+  "current_phase": "package_review",
+  "status": "paused",
+  "pause_reason": "stop_review",
+  "blockers": [],
+  "canonical_packs": {
+    "proposal_pack": "proposal/proposal_pack.json",
+    "experiment_pack": "experiment/experiment_pack.json",
+    "claim_ledger": "claims/claim_ledger.json",
+    "paper_package": "paper/paper_package.json"
+  },
+  "legacy_artifacts_detected": [],
+  "safe_next_command": "/submission-package \"paper/\"",
+  "updated_at": "2026-05-23T00:00:00Z"
+}

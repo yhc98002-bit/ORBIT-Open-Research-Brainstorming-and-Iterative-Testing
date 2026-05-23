@@ -1,0 +1,25 @@
+{
+  "figures": [
+    {
+      "data_source": "results/diag_fixture/metrics.json",
+      "generator": "paper-figure",
+      "id": "fig:fixture_result",
+      "latex_label": "fig:fixture_result",
+      "output": "figures/fixture_result.pdf",
+      "status": "verified",
+      "supports_claims": [
+        "C1"
+      ],
+      "type": "line_plot"
+    }
+  ],
+  "generated_views": [
+    "figures/FIGURE_MANIFEST.md"
+  ],
+  "schema_version": "0.1",
+  "source_markdown": [
+    "paper/PAPER_PLAN.md"
+  ],
+  "status": "ready",
+  "updated_at": "2026-05-23T00:00:00Z"
+}

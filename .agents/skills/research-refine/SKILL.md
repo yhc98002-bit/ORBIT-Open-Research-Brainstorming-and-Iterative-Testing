@@ -1,18 +1,19 @@
 ---
-name: "research-refine"
-description: "Turn a vague research direction into a problem-anchored, elegant, frontier-aware, implementation-oriented method plan via iterative GPT-5.5 review. Use when the user says \"refine my approach\", \"帮我细化方案\", \"decompose this problem\", \"打磨idea\", \"refine research plan\", \"细化研究方案\", or wants a concrete research method with a publishable normal-paper route instead of a vague or overbuilt idea."
+name: research-refine
+description: 'Turn a vague research direction into a problem-anchored, elegant, frontier-aware, implementation-oriented method plan via iterative GPT-5.5 xhigh review. Use when the user says "refine my approach", "帮我细化方案", "decompose this problem", "打磨idea", "refine research plan", "细化研究方案", or wants a concrete research method with a publishable normal-paper route instead of a vague or overbuilt idea.'
+allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, mcp__codex__codex, mcp__codex__codex-reply
 ---
 
-> Override for Codex users who want **Claude Code**, not a second Codex agent, to act as the reviewer. Install this package **after** `skills/skills-codex/*`.
+> **ORBIT compatibility note:** This skill may still accept legacy v1.0 artifact aliases
+> (e.g. `TASK_ONTOLOGY.md`, `COMPONENT_LADDER.md`, `TINY_RUN_AUDIT.md`), but new ORBIT
+> refinement gates use the v1.3 artifact/gate contract defined in
+> [`skills/shared-references/research-agent-pipeline.md`](../shared-references/research-agent-pipeline.md);
+> v1.4 wrapper skills build on that contract without replacing it. Legacy names are read
+> only as aliases.
 
 # Research Refine: Problem-Anchored, Elegant, Frontier-Aware Plan Refinement
 
 Refine and concretize: **$ARGUMENTS**
-
-Load `../shared-references/research-posture.md` before refining. Default to
-`paper_mode: normal`, `novelty_policy: positioning-first`, and collaborator review before
-STOP A. Do not apply breakthrough-only or adversarial acceptance standards unless the
-user explicitly requests them or the workflow is after STOP C.
 
 ## Overview
 
@@ -31,29 +32,150 @@ User input (PROBLEM + vague APPROACH)
   -> Phase 1 (Claude): Scan grounding papers -> identify technical gap -> choose the sharpest route -> write focused proposal
   -> Phase 2 (Codex/GPT-5.5): Review for fidelity, specificity, contribution quality, and frontier leverage
   -> Phase 3 (Claude): Anchor check + simplicity check -> revise method -> rewrite full proposal
-  -> Phase 4 (Codex, same agent): Re-evaluate revised proposal
-  -> Repeat Phase 3-4 until OVERALL SCORE >= 9 or MAX_ROUNDS reached
+  -> Phase 4 (Codex, same thread): Re-evaluate revised proposal
+  -> Repeat Phase 3-4 until OVERALL SCORE >= SCORE_THRESHOLD or MAX_ROUNDS reached
+     (SCORE_THRESHOLD and MAX_ROUNDS are derived from REVIEWER_DIFFICULTY:
+      medium → 9 / 5, hard / nightmare → 9.5 / 7)
   -> Phase 5: Save full history to refine-logs/
   -> STOP A handoff: /experiment-bridge "refine-logs/FINAL_PROPOSAL.md"
 ```
 
 ## Constants
 
-- **REVIEWER_MODEL = `claude-review`** — Claude reviewer invoked through the local `claude-review` MCP bridge. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
-- **MAX_ROUNDS = 5** — Maximum review-revise rounds.
-- **SCORE_THRESHOLD = 9** — Minimum overall score to stop.
+- **REVIEWER_MODEL = `gpt-5.5`** — Reviewer model used via Codex MCP.
+- **REVIEWER_EFFORT = `xhigh`** — Codex `model_reasoning_effort` for the reviewer call.
+  Override with `— effort: <level>` (one of `low`, `medium`, `high`, `xhigh`, `max`
+  where `max` = `xhigh`). Subject to Codex MCP environment availability — if the
+  requested level is unavailable, Codex falls back to the next lower available level
+  and the fallback is logged in `STATE.notes`.
+- **VENUE = `""`** — Target venue name (e.g. `ICLR`, `NeurIPS`, `ICML`, `CVPR`, `ACL`,
+  `AAAI`, `ACM`, `IEEE_CONF`, `IEEE_JOURNAL`). When set, Phase 2 / Phase 4 reviewer
+  prompts replace the default normal-paper venue target with the named venue
+  so the reviewer framing is concrete to the user's actual target. Override with
+  `— venue: <name>`. Default empty (uses the hardcoded list). Mirrors
+  `/research-pipeline`'s `VENUE` constant.
+- **PAPER_MODE = `normal`** — Override with
+  `— paper-mode: <normal|breakthrough|benchmark|reproduction-plus|system|audit>`.
+  Normal mode does not require a completely new algorithmic breakthrough by default.
+- **REVIEW_POSTURE = `collaborator` before STOP A** — Override with
+  `— review-posture: <collaborator|adversarial>`. Use adversarial posture after STOP C
+  or when the user explicitly requests it.
+- **NOVELTY_POLICY = `positioning-first`** — Load
+  `../shared-references/research-posture.md` before review/refinement.
+- **REVIEWER_DIFFICULTY = `medium`** — How strict the Phase 2 / Phase 4 reviewer
+  is. Three levels (mirrors `/auto-review-loop`'s `REVIEWER_DIFFICULTY` so the user can
+  pass the same `— difficulty:` flag through any wrapper skill — e.g. `/idea-to-proposal`,
+  `/research-pipeline`):
+  - `medium` (default): standard reviewer prompt; **SCORE_THRESHOLD = 9**,
+    **MAX_ROUNDS = 5** (the historical defaults — backward-compatible).
+  - `hard`: stricter collaborator before STOP A; **SCORE_THRESHOLD = 9.5**,
+    **MAX_ROUNDS = 7**. The reviewer pushes harder on contribution sprawl, weak
+    mechanism specificity, and unfocused validation while still providing survival
+    routes.
+  - `nightmare`: before STOP A, interpret as "strong collaborator review" unless the
+    user explicitly sets `— review-posture: adversarial` or the workflow is after STOP C.
+    In adversarial mode it adds per-dimension vetoes.
+  Override with `— difficulty: <level>`.
+- **MAX_ROUNDS** — derived from `REVIEWER_DIFFICULTY`: `medium → 5`, `hard → 7`,
+  `nightmare → 7`. Default 5 (medium).
+- **SCORE_THRESHOLD** — derived from `REVIEWER_DIFFICULTY`: `medium → 9`, `hard → 9.5`,
+  `nightmare → 9.5`. Default 9 (medium). Note `nightmare` adds a per-dimension `≥ 8`
+  side-condition on top of the overall threshold.
 - **OUTPUT_DIR = `refine-logs/`** — Directory for round files and final report.
 - **MAX_LOCAL_PAPERS = 15** — Maximum local papers/notes to scan for grounding.
 - **MAX_CORE_EXPERIMENTS = 3** — Default cap for core validation blocks inside this skill.
 - **MAX_PRIMARY_CLAIMS = 2** — Soft cap for paper-level claims. Prefer one dominant claim plus one supporting claim.
 - **MAX_NEW_TRAINABLE_COMPONENTS = 2** — Soft cap for genuinely new trainable pieces. Exceed only if the paper breaks otherwise.
 
-> Override via argument if needed, e.g. `/research-refine "problem | approach" -- max rounds: 3, threshold: 9`.
+## ORBIT Refinement Gates
+
+These gates are always-on. Load `../shared-references/research-agent-pipeline.md`,
+`../shared-references/document-hygiene.md`, and `../shared-references/research-posture.md`
+before refining. Run `mkdir -p orbit-research/`.
+
+Before STOP A, refine from the proposal-stage artifacts only:
+
+- `orbit-research/PROBLEM_SELECTION.md`
+- `orbit-research/ASSUMPTION_LEDGER.md`
+- `orbit-research/ABSTRACT_TASK_MECHANISM.md`  *(legacy alias accepted: `TASK_ONTOLOGY.md`)*
+- `orbit-research/BASELINE_CEILING.md`
+
+Do not force full experiment-planning contracts before STOP A. `CONTROL_DESIGN.md`,
+`NULL_RESULT_CONTRACT.md`, and `COMPONENT_BUNDLE_LADDER.md` belong to
+`/experiment-bridge` after STOP A. Before STOP A, include only a candidate validation
+sketch, expected diagnostic, likely baseline/control needs, and null-result intuition.
+
+The method proposal must identify the simplest strong baseline, the highest-headroom
+regime, the intended mechanism, and the minimum evidence that would make the proposal
+worth formal experiment planning.
+
+> Override via argument if needed, e.g.
+> `/research-refine "problem | approach" — max rounds: 3 — threshold: 9 — venue: ICLR — difficulty: hard — effort: xhigh`.
+>
+> The `— venue:` and `— difficulty:` flags mirror the upstream `/research-pipeline`
+> and `/auto-review-loop` argument syntax respectively, so the same flag string passed
+> to a wrapper skill (e.g. `/idea-to-proposal`) propagates here verbatim.
+
+## State Persistence (Checkpoint Recovery)
+
+Long-running refinement sessions may fail mid-way (e.g., API timeout, context compaction, or session interruption). To avoid losing completed work, persist state to `refine-logs/REFINE_STATE.json` after each phase boundary:
+
+```json
+{
+  "phase": "review",
+  "round": 1,
+  "threadId": "019cd392-...",
+  "last_score": 6.5,
+  "last_verdict": "REVISE",
+  "status": "in_progress",
+  "venue": "",
+  "difficulty": "medium",
+  "effort": "xhigh",
+  "max_rounds_effective": 5,
+  "score_threshold_effective": 9.0,
+  "timestamp": "2026-03-22T20:00:00"
+}
+```
+
+**Field definitions:**
+
+| Field | Values | Meaning |
+|-------|--------|---------|
+| `phase` | `"anchor"` / `"proposal"` / `"review"` / `"refine"` / `"done"` | Last **completed** phase |
+| `round` | 0–MAX_ROUNDS | Current round number |
+| `threadId` | string or null | Reviewer thread ID for `codex-reply` continuity |
+| `last_score` | number or null | Most recent overall score from reviewer |
+| `last_verdict` | string or null | Most recent verdict (READY / REVISE / RETHINK) |
+| `status` | `"in_progress"` / `"awaiting_human_continue"` / `"awaiting_user_action"` / `"completed"` | Loop status — four-state enum per `../shared-references/continuation-contract.md` |
+| `venue` | string (e.g. `"ICLR"`) or `""` | Target venue parsed from `— venue:` flag. Empty string = normal ML venue target without breakthrough-only assumptions. |
+| `difficulty` | `"medium"` / `"hard"` / `"nightmare"` | Reviewer difficulty parsed from `— difficulty:` flag. Drives `max_rounds_effective` + `score_threshold_effective` + reviewer prompt routing. Default `"medium"`. |
+| `effort` | `"low"` / `"medium"` / `"high"` / `"xhigh"` / `"max"` | Codex `model_reasoning_effort` parsed from `— effort:` flag (`max` = `xhigh`). Default `"xhigh"`. The actual effort honored is recorded in `STATE.notes` if Codex MCP fell back. |
+| `max_rounds_effective` | integer | The MAX_ROUNDS in effect for this run after `difficulty` derivation: `medium → 5`, `hard / nightmare → 7`. |
+| `score_threshold_effective` | number | The SCORE_THRESHOLD in effect for this run after `difficulty` derivation: `medium → 9.0`, `hard / nightmare → 9.5`. |
+| `timestamp` | ISO 8601 | When state was last written |
+| `next_action` | string (optional) | Free-text hint for resume |
+| `next_skill_hint` | string (optional) | Downstream skill the user should call next (e.g. `/experiment-plan`) |
+| `artifact_inventory` | array (optional) | Output artifacts produced so far |
+
+**Write rules:**
+- **Write after each phase completes** (not before). Overwrite each time — only the latest state matters.
+- **Default state during execution:** `"in_progress"`.
+- **On user-paused checkpoint** (when `— human checkpoint: true` is set, or after the
+  proposal stabilises if the user wants to inspect before downstream consumption): set
+  `"status": "awaiting_human_continue"` and include `next_skill_hint`. The next caller
+  (same skill or downstream) reads this and treats invocation as approval per the
+  cross-skill resume rules in `continuation-contract.md`.
+- **On completion** (Phase 5 finished AND user did not request the human checkpoint):
+  set `"status": "completed"`.
+
+This is the v1.3 canonical contract; old STATE files with only `in_progress` / `completed`
+still parse. `awaiting_human_continue` and `awaiting_user_action` are additive states.
 
 ## Output Structure
 
 ```
 refine-logs/
+├── REFINE_STATE.json
 ├── round-0-initial-proposal.md
 ├── round-1-review.md
 ├── round-1-refinement.md
@@ -70,266 +192,59 @@ Every `round-N-refinement.md` must contain a **full anchored proposal**, not jus
 
 ## Workflow
 
+### Initialization (Checkpoint Recovery)
+
+Before starting any phase, check whether a previous run left a checkpoint:
+
+1. **Check for `refine-logs/REFINE_STATE.json`**:
+   - If it **does not exist** → **fresh start** (proceed to Phase 0 normally)
+   - If it exists AND `status` is `"completed"` → **fresh start** (delete state file, previous run finished)
+   - If it exists AND `status` is `"in_progress"` AND `timestamp` is **older than 24 hours** → **fresh start** (stale state from a killed/abandoned run — delete the file)
+   - If it exists AND `status` is `"in_progress"` AND `timestamp` is **within 24 hours** → **resume**
+
+2. **On resume**, read the state file and recover context:
+   - Read all existing `refine-logs/round-*.md` files to restore prior work
+   - Read `refine-logs/score-history.md` if it exists
+   - Recover `threadId` for reviewer thread continuity
+   - Log to the user: `"Checkpoint found. Resuming after phase: {phase}, round: {round}."`
+   - **Jump to the next phase** based on the saved `phase` value:
+
+   | Saved `phase` | What was completed | Resume from |
+   |---------------|-------------------|-------------|
+   | `"anchor"` | Phase 0 done | Phase 1 (read anchor from round-0 context) |
+   | `"proposal"` | Phase 1 done | Phase 2 (read `round-0-initial-proposal.md`) |
+   | `"review"` | Phase 2 or 4 done | Phase 3 (read latest `round-N-review.md`) |
+   | `"refine"` | Phase 3 done | Phase 4 (read latest `round-N-refinement.md`) |
+
+3. **On fresh start**, ensure `refine-logs/` directory exists and proceed to Phase 0.
+
 ### Phase 0: Freeze the Problem Anchor
 
-Before proposing anything, extract the user's immutable bottom-line problem. This anchor must be copied verbatim into every proposal and every refinement round.
+Load and follow [problem_anchor.md](prompts/problem_anchor.md). Keep the extracted anchor
+verbatim through every proposal and refinement round; mark reviewer suggestions that change
+the problem as drift.
 
-Write:
-
-- **Bottom-line problem**: What technical problem must be solved?
-- **Must-solve bottleneck**: What specific weakness in current methods is unacceptable?
-- **Non-goals**: What is explicitly *not* the goal of this project?
-- **Constraints**: Compute, data, time, tooling, venue, deployment limits.
-- **Success condition**: What evidence would make the user say "yes, this method addresses the actual problem"?
-
-If later reviewer feedback would change the problem being solved, mark that as **drift** and push back or adapt carefully.
+**Checkpoint:** Write `refine-logs/REFINE_STATE.json` with phase `anchor`, round `0`,
+`status = in_progress`, and the current timestamp.
 
 ### Phase 1: Build the Initial Proposal
 
-#### Step 1.1: Scan Grounding Material
+Load and follow [initial_proposal.md](prompts/initial_proposal.md). The prompt preserves
+the full grounding scan, technical-gap, route-selection, concrete-method, and minimal
+claim-driven validation template.
 
-Check `papers/` and `literature/` first. Read only the relevant parts needed to answer:
-
-- What mechanism do current methods use?
-- Where exactly do they fail for this problem?
-- Which recent LLM / VLM / Diffusion / RL era techniques are actually relevant here?
-- What training objectives, representations, or interfaces are reusable?
-- What details distinguish a real method from a renamed high-level idea?
-
-If local material is insufficient, search recent venue/arXiv work online. Focus on **method sections, training setup, and failure modes**, not just abstracts.
-
-#### Step 1.2: Identify the Technical Gap
-
-Do not stop at generic research questions. Make the gap operational:
-
-1. **Current pipeline failure point**: where does the baseline break?
-2. **Why naive fixes are insufficient**: larger context, more data, prompting, memory bank, or stacking more modules.
-3. **Smallest adequate intervention**: what is the least additional mechanism that could plausibly fix the bottleneck?
-4. **Frontier-native alternative**: is there a more current route using foundation-model-era primitives that better matches the bottleneck?
-5. **Core technical claim**: what exact mechanism claim could survive normal paper scrutiny?
-6. **Required evidence**: what minimum proof is needed to defend that claim?
-
-#### Step 1.3: Choose the Sharpest Route
-
-Before locking the method, compare two candidate routes if both are plausible:
-
-- **Route A: Elegant minimal route** — the smallest mechanism that directly targets the bottleneck.
-- **Route B: Frontier-native route** — a more modern route that uses LLM / VLM / Diffusion / RL / distillation / inference-time scaling *only if* it gives a cleaner or stronger story.
-
-Then decide:
-
-- Which route is more likely to become a strong paper under the stated constraints?
-- Which route has the cleaner novelty story relative to the closest work?
-- Which route avoids contribution sprawl?
-
-If both routes are weak, rethink the framing instead of combining them into a larger system by default.
-
-#### Step 1.4: Concretize the Method First
-
-The proposal must answer "how would we actually build this?" Prefer method detail over broad experimentation and prefer reuse over invention.
-
-Cover:
-
-1. **One-sentence method thesis**: the single strongest mechanism claim.
-2. **Contribution focus**: one dominant contribution and at most one supporting contribution.
-3. **Complexity budget**: what is frozen or reused, what is new, and what tempting additions are intentionally excluded.
-4. **System graph**: modules, data flow, inputs, outputs.
-5. **Representation design**: what latent, embedding, plan token, reward signal, memory state, or alignment space is used?
-6. **Training recipe**: data source, supervision, pseudo-labeling, negatives, curriculum, losses, weighting, stagewise vs joint training.
-7. **Inference path**: how the trained components are used at test time and what signals flow where.
-8. **Why the mechanism stays small**: why a larger stack is unnecessary.
-9. **Exact role of any frontier primitive**: if you use an LLM / VLM / Diffusion / RL component, specify whether it acts as planner, teacher, critic, reward model, generator prior, search controller, or distillation source.
-10. **Failure handling**: what could go wrong and what fallback or diagnostic exists?
-11. **Novelty and elegance argument**: why this is more than naming a module and why the paper still looks focused.
-
-If the method is still only described as "add a module" or "use a planner," it is not concrete enough.
-
-#### Step 1.5: Design Minimal Claim-Driven Validation
-
-Experiments exist to validate the method, not to dominate the document.
-
-For each core claim, define the **smallest strong experiment** that can validate it:
-
-- the claim being tested
-- the necessary baseline or ablation
-- the decisive metric
-- the expected directional outcome
-
-Additional rules:
-
-- Ensure one experiment block directly supports the **Problem Anchor**.
-- If complexity risk exists, include one **simplification or deletion check**.
-- If a frontier primitive is central, include one **necessity check** showing why that choice matters.
-- Default to **1-3 core experiment blocks** and leave the full execution roadmap to `/experiment-plan`.
-
-#### Step 1.6: Write the Initial Proposal
-
-Save to `refine-logs/round-0-initial-proposal.md`.
-
-Use this structure:
-
-```markdown
-# Research Proposal: [Title]
-
-## Problem Anchor
-- Bottom-line problem:
-- Must-solve bottleneck:
-- Non-goals:
-- Constraints:
-- Success condition:
-
-## Technical Gap
-[Why current methods fail, why naive bigger systems are not enough, and what mechanism is missing]
-
-## Method Thesis
-- One-sentence thesis:
-- Why this is the smallest adequate intervention:
-- Why this route is timely in the foundation-model era:
-
-## Contribution Focus
-- Dominant contribution:
-- Optional supporting contribution:
-- Explicit non-contributions:
-
-## Proposed Method
-### Complexity Budget
-- Frozen / reused backbone:
-- New trainable components:
-- Tempting additions intentionally not used:
-
-### System Overview
-[Step-by-step pipeline or ASCII graph]
-
-### Core Mechanism
-- Input / output:
-- Architecture or policy:
-- Training signal / loss:
-- Why this is the main novelty:
-
-### Optional Supporting Component
-- Only include if truly necessary:
-- Input / output:
-- Training signal / loss:
-- Why it does not create contribution sprawl:
-
-### Modern Primitive Usage
-- Which LLM / VLM / Diffusion / RL-era primitive is used:
-- Exact role in the pipeline:
-- Why it is more natural than an old-school alternative:
-
-### Integration into Base Generator / Downstream Pipeline
-[Where the new method attaches, what is frozen, what is trainable, inference order]
-
-### Training Plan
-[Stagewise or joint training, losses, data construction, pseudo-labels, schedules]
-
-### Failure Modes and Diagnostics
-- [Failure mode]:
-- [How to detect]:
-- [Fallback or mitigation]:
-
-### Novelty and Elegance Argument
-[Closest work, exact difference, why this is a focused mechanism-level contribution rather than a module pile-up]
-
-## Claim-Driven Validation Sketch
-### Claim 1: [Main claim]
-- Minimal experiment:
-- Baselines / ablations:
-- Metric:
-- Expected evidence:
-
-### Claim 2: [Optional]
-- Minimal experiment:
-- Baselines / ablations:
-- Metric:
-- Expected evidence:
-
-## Experiment Handoff Inputs
-- Must-prove claims:
-- Must-run ablations:
-- Critical datasets / metrics:
-- Highest-risk assumptions:
-
-## Compute & Timeline Estimate
-- Estimated GPU-hours:
-- Data / annotation cost:
-- Timeline:
-```
+Save the result to `refine-logs/round-0-initial-proposal.md` and update
+`refine-logs/REFINE_STATE.json` with phase `proposal`, round `0`, and current status.
 
 ### Phase 2: External Method Review (Round 1)
 
-Send the full proposal to GPT-5.5 for an **elegance-first, frontier-aware, method-first** review. The reviewer should spend most of the critique budget on the method itself, not on expanding the experiment menu.
+Load [reviewer_critique.md](prompts/reviewer_critique.md) and send the full proposal to
+Codex/GPT-5.5 with the parsed `VENUE`, `PAPER_MODE`, `REVIEWER_DIFFICULTY`,
+`REVIEW_POSTURE`, and `REVIEWER_EFFORT` substitutions. Preserve the difficulty
+escalation blocks and Codex standalone handoff behavior from that asset exactly.
 
-```
-mcp__claude-review__review_start:
-  prompt: |
-    You are a constructive senior ML research collaborator and paper director for a normal ML venue target (NeurIPS/ICML/ICLR-style expectations without breakthrough-only assumptions).
-    This is an early-stage, method-first research proposal.
-
-    Your job is NOT to reward extra modules, contribution sprawl, or a giant benchmark checklist.
-    Your job IS to stress-test whether the proposed method:
-    (1) still solves the original anchored problem,
-    (2) is concrete enough to implement,
-    (3) presents a focused, elegant contribution,
-    (4) uses foundation-model-era techniques appropriately when they are the natural fit.
-
-    Review principles:
-    - Prefer the smallest adequate mechanism over a larger system.
-    - Penalize parallel contributions that make the paper feel unfocused.
-    - If a modern LLM / VLM / Diffusion / RL route would clearly produce a better paper, say so concretely.
-    - If the proposal is already modern enough, do NOT force trendy components.
-    - Do not ask for extra experiments unless they are needed to prove the core claims.
-
-    Read the Problem Anchor first. If your suggested fix would change the problem being solved,
-    call that out explicitly as drift instead of treating it as a normal revision request.
-
-    === PROPOSAL ===
-    [Paste the FULL proposal from Phase 1]
-    === END PROPOSAL ===
-
-    Score these 7 dimensions from 1-10:
-
-    1. **Problem Fidelity**: Does the method still attack the original bottleneck, or has it drifted into solving something easier or different?
-
-    2. **Method Specificity**: Are the interfaces, representations, losses, training stages, and inference path concrete enough that an engineer could start implementing?
-
-    3. **Contribution Quality**: Is there one dominant mechanism-level contribution with real novelty, good parsimony, and no obvious contribution sprawl?
-
-    4. **Frontier Leverage**: Does the proposal use current foundation-model-era primitives appropriately when they are the right tool, instead of defaulting to old-school module stacking?
-
-    5. **Feasibility**: Can this method be trained and integrated with the stated resources and data assumptions?
-
-    6. **Validation Focus**: Are the proposed experiments minimal but sufficient to validate the core claims? Is there unnecessary experimental bloat?
-
-    7. **Paper-Mode Fit**: If executed well, would the contribution survive as a normal / benchmark / reproduction-plus / system / focused mechanism paper?
-
-    **OVERALL SCORE** (1-10): Weighted toward Problem Fidelity, Method Specificity, Contribution Quality, and Frontier Leverage.
-    Use this weighting: Problem Fidelity 15%, Method Specificity 25%, Contribution Quality 25%, Frontier Leverage 15%, Feasibility 10%, Validation Focus 5%, Venue Readiness 5%.
-
-    For each dimension scoring < 7, provide:
-    - The specific weakness
-    - A concrete fix at the method level (interface / loss / training recipe / integration point / deletion of unnecessary parts)
-    - Priority: CRITICAL / IMPORTANT / MINOR
-
-    Then add:
-    - **Simplification Opportunities**: 1-3 concrete ways to delete, merge, or reuse components while preserving the main claim. Write "NONE" if already tight.
-    - **Modernization Opportunities**: 1-3 concrete ways to replace old-school pieces with more natural foundation-model-era primitives if genuinely better. Write "NONE" if already modern enough.
-    - **Drift Warning**: "NONE" if the proposal still solves the anchored problem; otherwise explain the drift clearly.
-    - **Verdict**: READY / REVISE / RETHINK
-
-    Verdict rule:
-    - READY: overall score >= 9, no meaningful drift, one focused dominant contribution, and no obvious complexity bloat remains
-    - REVISE: the direction is promising but not yet at READY bar
-    - RETHINK: the core mechanism or framing is still fundamentally off
-```
-
-After this start call, immediately save the returned `jobId` and poll `mcp__claude-review__review_status` with a bounded `waitSeconds` until `done=true`. Treat the completed status payload's `response` as the reviewer output, and save the completed `threadId` for any follow-up round.
-
-**CRITICAL: Save the returned `jobId`**, poll `mcp__claude-review__review_status` until `done=true`, then save the completed `threadId` from the status result for all later rounds.
-
-**CRITICAL: Save the FULL raw response** verbatim.
-
-Save review to `refine-logs/round-1-review.md` with the raw response in a `<details>` block.
+Save the raw response to `refine-logs/round-1-review.md`, save the `threadId`, parse score
+and verdict, and update `refine-logs/REFINE_STATE.json` with phase `review`.
 
 ### Phase 3: Parse Feedback and Revise the Method
 
@@ -343,7 +258,7 @@ Extract:
 - **Frontier Leverage**
 - **Feasibility**
 - **Validation Focus**
-- **Venue Readiness**
+- **Paper-Mode Fit**
 - **Overall score**
 - **Verdict**
 - **Drift Warning**
@@ -356,7 +271,7 @@ Update `refine-logs/score-history.md`:
 ```markdown
 # Score Evolution
 
-| Round | Problem Fidelity | Method Specificity | Contribution Quality | Frontier Leverage | Feasibility | Validation Focus | Venue Readiness | Overall | Verdict |
+| Round | Problem Fidelity | Method Specificity | Contribution Quality | Frontier Leverage | Feasibility | Validation Focus | Paper-Mode Fit | Overall | Verdict |
 |-------|------------------|--------------------|----------------------|-------------------|-------------|------------------|-----------------|---------|---------|
 | 1     | X                | X                  | X                    | X                 | X           | X                | X               | X       | REVISE  |
 ```
@@ -365,79 +280,28 @@ Update `refine-logs/score-history.md`:
 
 #### Step 3.2: Revise With an Anchor Check and a Simplicity Check
 
-Before changing anything:
+Load and follow [anchor_simplicity_revision.md](prompts/anchor_simplicity_revision.md).
+The asset preserves the exact revision discipline: copy the problem anchor, run anchor
+and simplicity checks, accept valid feedback, push back on drift, and save the round-N
+refinement artifact.
 
-1. Copy the **Problem Anchor verbatim**.
-2. Write an **Anchor Check**:
-   - What is the original bottleneck?
-   - Does the current method still solve it?
-   - Which reviewer suggestions would cause drift if followed blindly?
-3. Write a **Simplicity Check**:
-   - What is the dominant contribution now?
-   - What components can be removed, merged, or kept frozen?
-   - Which reviewer suggestions add unnecessary complexity?
-   - If a frontier primitive is central, is its role still crisp and justified?
-
-Then process reviewer feedback:
-
-- If **valid**: sharpen the mechanism, simplify if possible, or modernize if the paper really improves.
-- If **debatable**: revise, but explain your reasoning with evidence.
-- If **wrong, drifting, or over-complicating**: push back with evidence from local papers and the Problem Anchor.
-
-Bias the revisions toward:
-
-- a sharper central contribution
-- fewer moving parts
-- cleaner reuse of strong existing backbones
-- more natural foundation-model-era leverage when it improves the paper
-- leaner, claim-driven experiments
-
-Do **not** add multiple parallel contributions just to chase score. If the reviewer requests another module, first ask whether the same gain can come from a better interface, distillation signal, reward model, or inference policy on top of an existing backbone.
-
-Save to `refine-logs/round-N-refinement.md`:
-
-```markdown
-# Round N Refinement
-
-## Problem Anchor
-[Copy verbatim from round 0]
-
-## Anchor Check
-- Original bottleneck:
-- Why the revised method still addresses it:
-- Reviewer suggestions rejected as drift:
-
-## Simplicity Check
-- Dominant contribution after revision:
-- Components removed or merged:
-- Reviewer suggestions rejected as unnecessary complexity:
-- Why the remaining mechanism is still the smallest adequate route:
-
-## Changes Made
-
-### 1. [Method section changed]
-- Reviewer said:
-- Action:
-- Reasoning:
-- Impact on core method:
-
-### 2. [Novelty / modernity / feasibility / validation change]
-- Reviewer said:
-- Action:
-- Reasoning:
-- Impact on core method:
-
-## Revised Proposal
-[Full updated proposal from Problem Anchor through Claim-Driven Validation Sketch]
-```
+**Checkpoint:** Update `refine-logs/REFINE_STATE.json` with phase `refine`, round `N`,
+and the parsed review state.
 
 ### Phase 4: Re-evaluation (Round 2+)
 
-Send the revised proposal back to GPT-5.5 in the **same agent**:
+Send the revised proposal back to GPT-5.5 in the **same thread**. The
+REVIEWER_DIFFICULTY routing established in Phase 2 persists across all rounds —
+do NOT downgrade difficulty mid-loop, and do NOT re-issue the difficulty
+escalation paragraphs (the reviewer thread retains them from Phase 2). The
+verdict rule below uses the same SCORE_THRESHOLD derived from
+REVIEWER_DIFFICULTY.
 
 ```
-mcp__claude-review__review_reply_start:
+mcp__codex__codex-reply:
   threadId: [saved from Phase 2]
+  model: REVIEWER_MODEL
+  config: {"model_reasoning_effort": REVIEWER_EFFORT}
   prompt: |
     [Round N re-evaluation]
 
@@ -461,14 +325,14 @@ mcp__claude-review__review_reply_start:
     - State whether the method is simpler or still overbuilt
     - State whether the frontier leverage is now appropriate or still old-school / forced
     - Focus new critiques on missing mechanism, weak training signal, weak integration point, pseudo-novelty, or unnecessary complexity
-    - Use the same verdict rule: READY only if overall score >= 9 and no blocking issue remains
+    - Use the same verdict rule: READY only if overall score >= SCORE_THRESHOLD and no blocking issue remains (and, when REVIEWER_DIFFICULTY = nightmare, every individual dimension >= 8)
 
     Same output format: 7 scores, overall score, verdict, drift warning, simplification opportunities, modernization opportunities, remaining action items.
 ```
 
-After this start call, immediately save the returned `jobId` and poll `mcp__claude-review__review_status` with a bounded `waitSeconds` until `done=true`. Treat the completed status payload's `response` as the reviewer output, and save the completed `threadId` for any follow-up round.
-
 Save review to `refine-logs/round-N-review.md`.
+
+**Checkpoint:** Update `refine-logs/REFINE_STATE.json` with `{"phase": "review", "round": N, "threadId": "<saved>", "last_score": <parsed>, "last_verdict": "<parsed>", ...}`.
 
 Then return to Phase 3 until:
 
@@ -522,12 +386,35 @@ Write `refine-logs/FINAL_PROPOSAL.md` as a short **index**, not as the full prop
 It should route readers to the right level of detail and avoid review chatter, round
 history, raw reviewer output, repeated caveats, or long method exposition.
 
+Do not paste reviewer objections or rebuttal-style defenses into `FINAL_PROPOSAL.md`.
+Resolve them by changing method/scope or moving decision history to
+`orbit-research/RESEARCH_DECISION_LOG.md`, claim support to
+`orbit-research/CLAIM_CONSTRUCTION.md`, and reviewer concerns to
+`orbit-research/RED_TEAM_REVIEW.md`.
+
 ```markdown
 # Final Proposal — Index
 
 **Purpose**: this file is an **index**. The proposal is split into progressive-disclosure files so agents read only the layer they need.
 
 **Project**: [one-line project / method / target venue / current status]
+
+## Proposal Status
+
+**Status**: PROPOSAL_READY
+**Allowed values**: PROPOSAL_READY / EXPERIMENT_PLAN_READY / SCALE_READY / SUPPORTED / REFRAMED / ARCHIVED
+**Evidence basis**: proposal/refinement only; central hypotheses are tracked in the risk register and not validated until diagnostics support them
+**Next gate**: `/experiment-bridge "refine-logs/FINAL_PROPOSAL.md"` for experiment planning, implementation, and plan-code audit
+**Last status change**: <ISO date> — created by `/research-refine`
+
+## Critical Hypotheses
+
+Brief summary only. The canonical risk register lives in
+`orbit-research/ASSUMPTION_LEDGER.md` when present.
+
+| ID | Role | Confidence | Cheapest diagnostic | If false |
+|----|------|------------|----------------------|----------|
+| H1 | paper-breaking/supporting/optional | low/medium/high | [diagnostic] | continue/weaken/reframe/archive |
 
 ## Read first
 
@@ -571,7 +458,7 @@ history, raw reviewer output, repeated caveats, or long method exposition.
 
 Also write:
 
-- `refine-logs/FINAL_PROPOSAL_SHORT.md` — the clean 2-4 page proposal. It should contain only the problem, thesis, method overview, core claims, strongest baselines, main risks, and next gate.
+- `refine-logs/FINAL_PROPOSAL_SHORT.md` — the clean 2-4 page proposal. It must include the same `## Proposal Status` block and a compact `## Critical Hypotheses` table, then only the problem, thesis, method overview, core claims, strongest baselines, main risks, and next gate.
 - `refine-logs/METHOD_SPEC.md` — the implementation-level method contract. This is where formulas, module boundaries, hyperparameters, and data flow belong.
 - `refine-logs/FAILURE_CONTRACT.md` — only when failure routing is not already cleanly represented in `orbit-research/NULL_RESULT_CONTRACT.md`.
 - `refine-logs/FINAL_PROPOSAL_FULL.md` — optional archive only when the current run started from a useful monolithic proposal or when preserving round-history language matters.
@@ -602,7 +489,7 @@ If the final verdict is not READY, still write the best current index, short pro
 
 ## Score Evolution
 
-| Round | Problem Fidelity | Method Specificity | Contribution Quality | Frontier Leverage | Feasibility | Validation Focus | Venue Readiness | Overall | Verdict |
+| Round | Problem Fidelity | Method Specificity | Contribution Quality | Frontier Leverage | Feasibility | Validation Focus | Paper-Mode Fit | Overall | Verdict |
 |-------|------------------|--------------------|----------------------|-------------------|-------------|------------------|-----------------|---------|---------|
 | 1     | ...              | ...                | ...                  | ...               | ...         | ...              | ...             | ...     | ...     |
 
@@ -684,16 +571,19 @@ Method spec: refine-logs/METHOD_SPEC.md
 Suggested next step: /experiment-bridge "refine-logs/FINAL_PROPOSAL.md"
 ```
 
+**Checkpoint:** Update `refine-logs/REFINE_STATE.json` with `{"phase": "done", "status": "completed", ...}`.
+
 ## Output Protocols
 
 > Follow these shared protocols for all output files:
-> - **[Output Versioning Protocol](../../shared-references/output-versioning.md)** — write timestamped file first, then copy to fixed name
-> - **[Output Manifest Protocol](../../shared-references/output-manifest.md)** — log every output to MANIFEST.md
-> - **[Output Language Protocol](../../shared-references/output-language.md)** — respect the project's language setting
+> - **[Output Versioning Protocol](../shared-references/output-versioning.md)** — apply selective milestone timestamping rules
+> - **[Output Manifest Protocol](../shared-references/output-manifest.md)** — log every output to MANIFEST.md
+> - **[Output Language Protocol](../shared-references/output-language.md)** — respect the project's language setting
 
 ## Key Rules
 
 - **Progressive disclosure.** Keep `FINAL_PROPOSAL.md` as an index. Put the clean pitch in `FINAL_PROPOSAL_SHORT.md`, implementation detail in `METHOD_SPEC.md`, and long history in `FINAL_PROPOSAL_FULL.md` only when it is useful.
+- **Document hygiene.** Do not paste reviewer objections or rebuttal-style defenses into `FINAL_PROPOSAL`. Resolve them by changing method/scope or moving decision history to `RESEARCH_DECISION_LOG`, claim support to `CLAIM_CONSTRUCTION`, and reviewer concerns to `RED_TEAM_REVIEW`.
 
 - **Anchor first, every round.** Always carry forward the same Problem Anchor.
 - **One paper, one dominant contribution.** Avoid multiple parallel contributions unless the paper truly needs them.
@@ -703,21 +593,23 @@ Suggested next step: /experiment-bridge "refine-logs/FINAL_PROPOSAL.md"
 - **Minimal experiments.** Inside this skill, experiments only need to prove the core claims.
 - **Review the mechanism, not the parts count.** A long module list is not novelty.
 - **Pushback is encouraged.** If reviewer feedback causes drift or unnecessary complexity, argue back with evidence.
-- **Always ask the Claude reviewer for strict, high-rigor feedback** in every review round.
-- **Save the completed `threadId` from Phase 2** and use `mcp__claude-review__review_reply_start` plus `mcp__claude-review__review_status` for later rounds.
+- **ALWAYS use `config: {"model_reasoning_effort": "xhigh"}`** for all Codex review calls.
+- **Save `threadId` from Phase 2** and use `mcp__codex__codex-reply` for later rounds.
+- **Codex remains required.** If MCP/auth/sandbox fails, export/import a standalone Codex
+  review via `/import-codex-review`; do not mark the review satisfied until an MCP or
+  imported standalone Codex response exists.
 - **Do not fabricate results.** Only describe expected evidence and planned experiments.
 - **Be specific about compute and data assumptions.** Vague "we'll train a model" is not enough.
-- **Document everything.** Save every raw review, every anchor check, every simplicity check, and every major method change.
+- **Document in the right layer.** Save raw reviews, anchor checks, simplicity checks, and major method changes in round files or `REFINEMENT_REPORT.md`; do not carry them into `FINAL_PROPOSAL`.
 
 ## Composing with Other Skills
 
 This skill sits between idea discovery and execution:
 
 ```
-/research-refine-pipeline              -> one-shot refine + experiment planning
+/research-refine-pipeline       -> legacy one-shot refine + experiment planning when explicitly requested
 /idea-creator "direction"       -> candidate ideas
 /research-refine "PROBLEM: ... | APPROACH: ..."  <- you are here
-/experiment-plan                -> detailed experiment roadmap
 /experiment-bridge              -> experiment planning + implementation + plan-code audit + STOP B
 /diagnostic-to-review           -> formal diagnostic + interpretation + conditional-required claim/review
 ```

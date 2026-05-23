@@ -21,6 +21,7 @@
 #
 # Options:
 #   --aris-repo PATH       override aris-repo discovery
+#   --profile NAME         install/reconcile only one catalog profile
 #   --dry-run              show plan, no writes
 #   --quiet                no prompts; abort on any condition that would prompt
 #   --no-doc               skip CLAUDE.md update
@@ -76,6 +77,7 @@ EXCLUDE_TOP_NAMES=("skills-codex" "skills-codex.bak")  # not skills, not symlink
 PROJECT_PATH=""
 ARIS_REPO_OVERRIDE=""
 ACTION="auto"        # auto | reconcile | uninstall
+PROFILE=""
 DRY_RUN=false
 QUIET=false
 NO_DOC=false
@@ -84,6 +86,7 @@ MIGRATE_COPY=""      # "" | keep-user | prefer-upstream
 CLEAR_STALE_LOCK=false
 ADOPT_NAMES=()
 REPLACE_LINK_NAMES=()
+PROFILE_SKILLS_FILE=""
 
 usage() { sed -n '2,40p' "$0" | sed 's/^# \?//'; }
 
@@ -92,6 +95,7 @@ while [[ $# -gt 0 ]]; do
         --reconcile)         ACTION="reconcile"; shift ;;
         --uninstall)         ACTION="uninstall"; shift ;;
         --aris-repo)         ARIS_REPO_OVERRIDE="${2:?--aris-repo requires path}"; shift 2 ;;
+        --profile)           PROFILE="${2:?--profile requires NAME}"; shift 2 ;;
         --dry-run)           DRY_RUN=true; shift ;;
         --quiet)             QUIET=true; shift ;;
         --no-doc)            NO_DOC=true; shift ;;
@@ -131,6 +135,27 @@ prompt()   { $QUIET && return 1; printf "%s " "$1" >&2; read -r REPLY; [[ "$REPL
 abs_path() { ( cd "$1" 2>/dev/null && pwd ) || return 1; }
 
 is_safe_name() { [[ "$1" =~ $SAFE_NAME_REGEX ]]; }
+
+load_profile_skill_filter() {
+    [[ -z "$PROFILE" ]] && return 0
+    is_safe_name "$PROFILE" || die "unsafe --profile name: $PROFILE"
+
+    local repo="$1"
+    local catalog="$repo/skills/skill_catalog.yaml"
+    local lister="$repo/tools/list_skill_profiles.py"
+    [[ -f "$catalog" ]] || die "--profile requires catalog: $catalog"
+    [[ -f "$lister" ]] || die "--profile requires helper: $lister"
+    command -v python3 >/dev/null 2>&1 || die "--profile requires python3 to read skill_catalog.yaml"
+
+    PROFILE_SKILLS_FILE="$(mktemp -t aris-profile.XXXX)"
+    python3 "$lister" --catalog "$catalog" --profile "$PROFILE" --names-only > "$PROFILE_SKILLS_FILE"
+    [[ -s "$PROFILE_SKILLS_FILE" ]] || die "profile produced no skills: $PROFILE"
+}
+
+profile_allows_skill() {
+    [[ -z "$PROFILE" ]] && return 0
+    grep -qxF "$1" "$PROFILE_SKILLS_FILE"
+}
 
 # Read symlink target without following further (one hop)
 read_link_target() {
@@ -210,6 +235,7 @@ build_upstream_inventory() {
         for s in "${SUPPORT_NAMES[@]}"; do [[ "$name" == "$s" ]] && { is_support=true; break; }; done
         if $is_support; then continue; fi
         if [[ ! -f "$d/SKILL.md" ]]; then continue; fi
+        profile_allows_skill "$name" || continue
         # S10: source must not be a symlink leading outside the repo
         src="$skills_dir/$name"
         if is_symlink "$src"; then
@@ -718,6 +744,9 @@ log ""
 log "$INSTALL_FLAVOR Project Install"
 log "  Project:    $PROJECT_PATH"
 log "  Repo:       $ARIS_REPO"
+if [[ -n "$PROFILE" ]]; then
+    log "  Profile:    $PROFILE"
+fi
 log "  Action:     $ACTION$($DRY_RUN && echo ' (dry-run)')"
 log ""
 
@@ -747,6 +776,7 @@ if [[ "$ACTION" == "reconcile" && ! -f "$MANIFEST_PATH" ]]; then
 fi
 
 # Build inventories
+load_profile_skill_filter "$ARIS_REPO"
 UPSTREAM_FILE="$(mktemp -t aris-upstream.XXXX)"
 build_upstream_inventory "$ARIS_REPO" > "$UPSTREAM_FILE"
 [[ -s "$UPSTREAM_FILE" ]] || die "upstream inventory empty (broken aris-repo?)"
@@ -838,4 +868,4 @@ if ! $DRY_RUN; then
 fi
 
 # Cleanup
-rm -f "$UPSTREAM_FILE" "$MANIFEST_DATA" "$PLAN_FILE"
+rm -f "$UPSTREAM_FILE" "$MANIFEST_DATA" "$PLAN_FILE" "$PROFILE_SKILLS_FILE"

@@ -24,6 +24,25 @@ later when paper-level claims exist. Similar or concurrent work goes to
 **Language note:** ORBIT's persistent research artifacts default to English even when the
 chat is in Chinese. Chinese templates are manual opt-in only.
 
+## Public Entry Points
+
+The full repository contains many specialist subskills, but new users should start with
+the public entries below. The complete catalog lives in
+[`skills/skill_catalog.yaml`](skills/skill_catalog.yaml); profile details are documented in
+[`docs/refactor/SKILL_PROFILES.md`](docs/refactor/SKILL_PROFILES.md).
+
+| Profile | Public entries | Purpose |
+|---|---|---|
+| `orbit-core` | `/orbit-status`, `/idea-to-proposal`, `/experiment-bridge`, `/diagnostic-to-review`, `/proposal-revise` | Research workflow from STOP A through STOP C |
+| `paper-pack` | `/paper-draft`, `/paper-from-claims`, `/submission-package` | Drafting, evidence-bound writing, strict package checks |
+| `patent-pack` | `/patent-pipeline` | Patent drafting workflow |
+| `presentation-pack` | `/paper-slides`, `/paper-poster`, `/grant-proposal` | Talks, posters, and grant drafts |
+| `infra-pack` | `/run-experiment`, `/vast-gpu`, `/serverless-modal`, `/experiment-queue` | GPU and experiment execution |
+
+Internal skills remain available for advanced direct use and for orchestration, but they
+are not the recommended first interaction surface. `/import-codex-review` is a public
+recovery utility used only after a standalone Codex handoff is required.
+
 **v1.3 — research-methodology routing harness.** ORBIT routes you through 26 stages organised
 into four spines (Discovery / Grounding / Innovation / Validation) by mode (EXPLORATION /
 INNOVATION / COMMITMENT) and risk score. It moves fast in exploration, slows down before
@@ -53,8 +72,9 @@ v1.3 keeps the diagnostic discipline at commitment time and adds:
 - **plan-code consistency loop** and **reviewer red-team loop** — explicit audit → fix → re-audit
 - **Codex collaborative mode** during innovation; adversarial review for paper-level
   claims and late commitment gates
-- explicit reuse of mature ARIS execution skills (`/auto-review-loop`, `/paper-writing`,
-  `/auto-paper-improvement-loop`, `/paper-claim-audit`, `/citation-audit`,
+- explicit reuse of mature ARIS execution skills (`/auto-review-loop`, `/paper-draft`,
+  `/paper-from-claims`, `/submission-package`, `/auto-paper-improvement-loop`,
+  `/paper-claim-audit`, `/citation-audit`,
   `/experiment-audit`, `/experiment-bridge`)
 
 ## Four Spines
@@ -126,7 +146,8 @@ plan-code audit, and limited probes before formal diagnostics.
 **From results to paper:**
 ```text
 /result-to-claim "main result on benchmark X with method Y"
-/paper-writing "NARRATIVE_REPORT.md" — venue: ICLR, assurance: submission
+/paper-from-claims "claims/claim_ledger.json"
+/submission-package "paper/"
 ```
 
 `/result-to-claim` accepts an experiment description (not a path); it reads from `results/`,
@@ -143,6 +164,15 @@ bash tools/install_aris.sh
 This creates flat per-skill symlinks under `.claude/skills/`, records the
 managed entries in `.aris/installed-skills.txt`, and links `.aris/tools/` to
 the repo helper scripts used by skills.
+
+Install only a public profile plus its internal support skills:
+
+```bash
+bash tools/install_aris.sh --profile orbit-core
+```
+
+Running without `--profile` keeps the existing default behavior and installs all canonical
+top-level skills.
 
 Manual Claude copy fallback:
 
@@ -283,16 +313,18 @@ abandon.
    Local sanity/provenance/implementation/local-mechanism probes stop after
    RESULT_INTERPRETATION.md + RESEARCH_DECISION_LOG.md.
    Paper-bearing diagnostics must run /result-to-claim and /auto-review-loop,
-   producing CLAIM_CONSTRUCTION.md, RED_TEAM_REVIEW.md, and HUMAN_DECISION_NOTE.md.
+   producing claims/claim_ledger.json, RED_TEAM_REVIEW.md, and HUMAN_DECISION_NOTE.md.
    Aborts cleanly on any verdict-line bottleneck (FIX_BEFORE_GPU, claim_supported=no,
    irrecoverable review score, G14/G17 violations) — abort is awaiting_human_continue
    with clear next_action, never a silent failure
    ⏸ STOP C: adversarial paper-claim review when paper-bearing; review RESULT_INTERPRETATION + RESEARCH_DECISION_LOG;
-              if paper-bearing, also review CLAIM_CONSTRUCTION +
+              if paper-bearing, also review claims/claim_ledger.json +
               RED_TEAM_REVIEW + HUMAN_DECISION_NOTE jointly
 
-4. /paper-writing "NARRATIVE_REPORT.md" — venue: ICLR, assurance: submission
-   Paper writing chain (G16+G18 enforced — needs CLAIM_CONSTRUCTION.md from STOP C)
+4. /paper-from-claims "claims/claim_ledger.json"
+   Evidence-bound paper generation from STOP C claim ledger
+   /submission-package "paper/"
+   Strict compile + claim/citation/proof audits + paper_package.json
    ⏸ STOP D (implicit): submission-readiness review before push to Overleaf / arXiv
 ```
 
@@ -313,7 +345,8 @@ based on phase progress, artifact presence, and 24h staleness.
 /idea-to-proposal "Discrete Diffusion VLA post-training"   # STOP A: review proposal
 /experiment-bridge "refine-logs/FINAL_PROPOSAL.md"         # STOP B: plan + code + audit + probe
 /diagnostic-to-review "[diagnostic command]"               # STOP C: review decision; claim + red-team if paper-bearing
-/paper-writing "NARRATIVE_REPORT.md" — venue: ICLR         # STOP D: ship paper
+/paper-from-claims "claims/claim_ledger.json"              # STOP D draft: evidence-bound paper
+/submission-package "paper/"                               # STOP D package: strict submission assurance
 ```
 
 For long notes where the idea is not settled yet, pass the file as context:
@@ -399,7 +432,7 @@ Runs run-experiment → analyze-results, then applies conditional-required
 required for paper-bearing diagnostics. Sanity, provenance, implementation, and local
 mechanism probes stop after `RESULT_INTERPRETATION.md` +
 `orbit-research/RESEARCH_DECISION_LOG.md`. Diagnostics that affect paper-level claim
-scope must produce `CLAIM_CONSTRUCTION.md`, `RED_TEAM_REVIEW.md`, and
+scope must produce `claims/claim_ledger.json`, `RED_TEAM_REVIEW.md`, and
 `HUMAN_DECISION_NOTE.md` for STOP C. Failed, mixed, or surprising diagnostics write the
 decision log first, then route to a local patch, diagnostic change,
 failure-to-innovation, scoped proposal-revise, or archive decision.
@@ -412,14 +445,17 @@ Or invoke each individually:
 /auto-review-loop "<scope>" — difficulty: hard
 ```
 
-### Paper writing (delegates to ARIS chain)
+### Paper paths
 
 ```text
-/paper-writing "NARRATIVE_REPORT.md" — venue: ICLR, assurance: submission
+/paper-draft "proposal/proposal_pack.json"                 # fast draft, no submission gates
+/paper-from-claims "claims/claim_ledger.json"              # evidence-bound paper
+/submission-package "paper/"                               # strict compile + audits + package
 ```
 
-Argument separator is em-dash `—`, not single `-`. ARIS chain remains intact:
-`/paper-plan`, `/paper-figure`, `/figure-spec` or `/paper-illustration` or
+`/paper-writing` remains as a compatibility router. Argument separator is em-dash `—`,
+not single `-`. The underlying ARIS subskills remain intact: `/paper-plan`,
+`/paper-figure`, `/figure-spec` or `/paper-illustration` or
 `/paper-illustration-image2`, `/paper-write`, `/paper-compile`,
 `/auto-paper-improvement-loop`, `/paper-claim-audit`, `/citation-audit`.
 
@@ -429,8 +465,8 @@ Phase 2b illustration backends: `figurespec` (default, deterministic JSON→SVG)
 no external API key, uses your ChatGPT Plus/Pro quota; experimental) / `mermaid`
 (Mermaid syntax, free) / `false` (manual). Override inline with `— illustration: <name>`.
 
-ORBIT additional requirement: `CLAIM_CONSTRUCTION.md` must exist before `/paper-writing`
-will start (G16 + G18).
+ORBIT additional requirement: paper-bearing STOP D should start from
+`claims/claim_ledger.json`. Legacy `CLAIM_CONSTRUCTION.md` is a compatibility view.
 
 ## Codex availability — degradation, not silent skip
 
@@ -442,7 +478,7 @@ in three tiers**, never skips silently:
 |---|---|---|
 | **Advisory** (proceed) | Innovation loops (Stages 8/9/10/18.5) collaborative additions; Stage 15 PLAN_CODE_AUDIT at diagnostic stage; `/idea-to-proposal` Phase 4 final review | Footer of the relevant artifact: `Codex collaborative additions: NOT_AVAILABLE (codex_mcp_unreachable)` or `Phase X review: SKIPPED (codex_mcp_unreachable)` |
 | **Block pending human ack** | Stage 15 PLAN_CODE_AUDIT at scale-up (G11 ERROR rule); Stage 17 G12 regime check unanswerable | DIAGNOSTIC_RUN_AUDIT.verdict = ERROR with reason; orchestrator surfaces "human-must-acknowledge-codex-down" |
-| **Load-bearing degradation** | `/auto-review-loop` (Stage 23) → single-model review only; `/paper-writing` Phase 5.5/5.8 audits → BLOCKED | RED_TEAM_REVIEW.md header `⚠️ degraded: codex_mcp_unreachable, single-model review only`; PAPER_CLAIM_AUDIT / CITATION_AUDIT verdict = BLOCKED |
+| **Load-bearing degradation** | `/auto-review-loop` (Stage 23) -> single-model review only; `/submission-package` audits -> BLOCKED | RED_TEAM_REVIEW.md header `degraded: codex_mcp_unreachable, single-model review only`; PAPER_CLAIM_AUDIT / CITATION_AUDIT verdict = BLOCKED |
 
 Full degradation contract: each skill's "ARIS / Sub-skill Unavailability" section.
 

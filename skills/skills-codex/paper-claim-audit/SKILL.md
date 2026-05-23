@@ -1,13 +1,14 @@
 ---
 name: paper-claim-audit
-description: "Zero-context verification that every number, comparison, and scope claim in the paper matches raw result files. Uses a fresh cross-model reviewer with NO prior context to prevent confirmation bias. Use when user says \"审查论文数据\", \"check paper claims\", \"verify numbers\", \"论文数字核对\", or before submission to ensure paper-to-evidence fidelity."
+description: "Zero-context verification that every number, comparison, and scope claim in the paper matches claims/claim_ledger.json and raw result files. Uses a fresh cross-model reviewer with NO prior context to prevent confirmation bias. Use when user says \"审查论文数据\", \"check paper claims\", \"verify numbers\", \"论文数字核对\", or before submission to ensure paper-to-evidence fidelity."
 argument-hint: [paper-directory]
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, mcp__codex__codex
 ---
 
 # Paper Claim Audit: Zero-Context Evidence Verification
 
-Verify that every claim in the paper matches raw evidence for: **$ARGUMENTS**
+Verify that every claim in the paper matches `claims/claim_ledger.json` and raw evidence
+for: **$ARGUMENTS**
 
 ## Why This Exists
 
@@ -31,6 +32,7 @@ A **fresh reviewer with zero prior context** catches these because it has no exp
 
 **Zero-context, fresh reviewer.** The auditor receives ONLY:
 - Paper .tex files (the claims)
+- `claims/claim_ledger.json` (the canonical claim/evidence contract)
 - Raw result files (the evidence)
 
 It does NOT receive:
@@ -38,7 +40,7 @@ It does NOT receive:
 - ❌ EXPERIMENT_TRACKER.md
 - ❌ AUTO_REVIEW.md
 - ❌ NARRATIVE_REPORT.md
-- ❌ Any executor summary or interpretation
+- ❌ Any executor summary or interpretation outside the canonical claim ledger
 - ❌ Any prior audit results
 - ❌ Any conversation history
 
@@ -48,7 +50,7 @@ This is **stricter than reviewer-independence** — it's zero-context evidence a
 
 ### Step 1: Collect Files (Executor — Claude)
 
-Locate paper and result files WITHOUT reading or interpreting them.
+Locate paper, claim ledger, and result files WITHOUT reading or interpreting them.
 
 **Paper files** (claims) — paths shown relative to the shell's working
 directory so you can find them with `ls`; when writing them into
@@ -59,6 +61,16 @@ paper/main.tex                # → hash key: main.tex
 paper/sections/*.tex          # → hash key: sections/*.tex
 paper/tables/*.tex (if separate)   # → hash key: tables/*.tex
 ```
+
+**Claim ledger** (canonical claim contract):
+```
+claims/claim_ledger.json
+```
+
+If `claims/claim_ledger.json` is missing, write `paper/PAPER_CLAIM_AUDIT.json` with
+verdict `WARN` or `BLOCKED` depending on raw evidence availability, and state that the run
+is a fallback raw-evidence audit without full STOP C rigor. Do not pretend the audit has
+verified paper claims against the canonical claim contract.
 
 **Result files** (evidence):
 ```
@@ -73,7 +85,9 @@ wandb-summary.json (if exists)
 ```
 EXPERIMENT_LOG.md, EXPERIMENT_TRACKER.md, AUTO_REVIEW*.md
 NARRATIVE_REPORT.md, PAPER_PLAN.md, findings.md
-Any .md file that is an executor-written summary
+Any .md file that is an executor-written summary, except generated
+`claims/CLAIM_LEDGER.md` may be used only as a human-readable sibling of
+`claims/claim_ledger.json`
 ```
 
 ### Step 2: Fresh Reviewer Audit (Codex GPT-5.5 — NEW thread, no reply)
@@ -87,13 +101,17 @@ mcp__codex__codex:
   # Sandbox is set globally in ~/.codex/config.toml as sandbox_mode = "danger-full-access".
   # Codex MCP per-call config does not accept a sandbox key.
   prompt: |
-    You are a paper-to-evidence auditor. You have ZERO prior context about
-    this research. You will receive only paper source files and raw result
-    files. Your job is to verify that every number in the paper exactly
+    You are a paper-to-claim-ledger-to-evidence auditor. You have ZERO prior
+    context about this research. You will receive only paper source files,
+    claims/claim_ledger.json, and raw result files. Your job is to verify that
+    every paper claim is allowed by the claim ledger and every number exactly
     matches the raw evidence.
 
     Paper files to read:
     [list .tex file paths]
+
+    Claim ledger to read:
+    [claims/claim_ledger.json if present, otherwise state MISSING_LEDGER_FALLBACK]
 
     Result files to read:
     [list .json/.csv/.yaml file paths]
@@ -101,18 +119,28 @@ mcp__codex__codex:
     ## Audit Protocol
 
     ### A. Extract Every Quantitative Claim
-    For each number, percentage, comparison, or scope statement in the paper:
+    For each number, percentage, comparison, qualitative finding, or scope statement in the paper:
     - Location (section, table, caption, or inline text)
     - Exact claim text
     - The number or comparison being made
 
-    ### B. Trace Each Claim to Evidence
+    ### B. Trace Each Claim to the Claim Ledger
+    For each extracted paper claim:
+    - Which claim_ledger entry authorizes it?
+    - Is the paper section allowed by allowed_paper_sections?
+    - Does the wording violate forbidden_overclaims?
+    - Does the paper scope exceed the ledger scope or limitations?
+    - Ledger status: supported | partial | unsupported | exploratory
+    - Match status: ledger_exact | ledger_narrower | paper_overclaim |
+      forbidden_overclaim | missing_from_ledger
+
+    ### C. Trace Each Claim to Evidence
     For each extracted claim, find the supporting raw data:
     - Which result file contains this number?
     - What is the EXACT value in that file?
     - Match status: exact_match / rounding_ok / mismatch
 
-    ### C. Check These Specific Failure Modes
+    ### D. Check These Specific Failure Modes
 
     1. **Number inflation**: Paper says 85.3%, raw file says 84.7%
        Rule: only standard rounding to displayed precision is allowed
@@ -139,11 +167,16 @@ mcp__codex__codex:
 
     7. **Scope overclaim**: Paper says "consistently outperforms"
        but only tested on 2 datasets
-       Rule: check if language matches actual evaluation scope
+       Rule: check if language matches actual evaluation scope and claim_ledger scope
+
+    8. **Ledger violation**: Paper uses a claim outside allowed_paper_sections,
+       omits a required limitation, or uses wording listed under forbidden_overclaims
+       Rule: ledger violations are at least WARN and are FAIL when material.
 
     ## Output Format (per claim)
     For each claim, report:
     - claim_id: sequential number
+    - ledger_claim_id: matching claim_ledger id, or MISSING
     - location: section/table/figure
     - paper_text: exact quote from paper
     - paper_value: the number claimed
@@ -151,7 +184,8 @@ mcp__codex__codex:
     - evidence_value: the actual number
     - status: exact_match | rounding_ok | ambiguous_mapping |
               missing_evidence | config_mismatch | aggregation_mismatch |
-              number_mismatch | scope_overclaim | unsupported_claim
+              number_mismatch | scope_overclaim | unsupported_claim |
+              missing_from_ledger | forbidden_overclaim | section_not_allowed
     - details: explanation if not exact_match
 
     Overall verdict: PASS | WARN | FAIL
@@ -167,6 +201,7 @@ Parse the reviewer's response and write `PAPER_CLAIM_AUDIT.md`:
 **Date**: [today]
 **Auditor**: GPT-5.5 xhigh (fresh zero-context thread)
 **Paper**: [paper title from tex]
+**Claim ledger**: `claims/claim_ledger.json` / MISSING_LEDGER_FALLBACK
 
 ## Overall Verdict: [PASS | WARN | FAIL]
 
@@ -181,17 +216,19 @@ Parse the reviewer's response and write `PAPER_CLAIM_AUDIT.md`:
 
 ### [FAIL/WARN] Claim #N: [description]
 - **Location**: Section X / Table Y / Figure Z
+- **Ledger claim**: C1 / MISSING
 - **Paper says**: "..."
+- **Ledger allows**: ...
 - **Evidence shows**: ...
 - **Status**: [status]
 - **Fix**: [specific correction needed]
 
 ## All Claims (detailed)
 
-| # | Location | Paper Value | Evidence Value | Status |
-|---|----------|-------------|---------------|--------|
-| 1 | Table 2 | 85.3% | 85.28% | rounding_ok |
-| 2 | Abstract | "15% improvement" | 12.8% | number_mismatch |
+| # | Ledger Claim | Location | Paper Value | Evidence Value | Status |
+|---|--------------|----------|-------------|---------------|--------|
+| 1 | C1 | Table 2 | 85.3% | 85.28% | rounding_ok |
+| 2 | MISSING | Abstract | "15% improvement" | 12.8% | number_mismatch |
 | ... |
 ```
 
@@ -240,7 +277,7 @@ Same pattern as `/experiment-audit`:
 
 - **Fresh thread EVERY run.** Never use `codex-reply`. Never carry context.
 - **Zero executor interpretation.** Only file paths. No summaries.
-- **Only raw results.** No EXPERIMENT_LOG, no AUTO_REVIEW, no human summaries.
+- **Only the claim ledger plus raw results.** No EXPERIMENT_LOG, no AUTO_REVIEW, no human summaries.
 - **Rounding rule.** Only standard rounding to displayed precision. 84.7% → 84.7% or 85% is OK. 84.7% → 85.3% is NOT OK.
 - **Cross-model.** Reviewer must be a different model family from executor.
 
@@ -286,7 +323,7 @@ The artifact conforms to the schema in `../shared-references/assurance-contract.
 ### `audited_input_hashes` scope
 
 Hash the **declared input set** passed into this audit invocation — i.e. the
-exact `.tex` files and raw result / config files this run read — not a
+exact `.tex` files, `claims/claim_ledger.json` if present, and raw result / config files this run read — not a
 repo-wide union and not the reviewer's self-reported subset. If a caller
 passed only `main.tex` + a single result file, hash those two files and no
 others. The external verifier rehashes these entries; any mismatch flags
@@ -305,18 +342,20 @@ external `results/` dirs. The verifier resolves relative entries via
 | Input state                                           | Verdict          | `reason_code` example |
 |-------------------------------------------------------|------------------|-----------------------|
 | No numeric claims detected in paper                   | `NOT_APPLICABLE` | `no_numeric_claims`   |
+| Claim ledger missing, fallback raw evidence audit run | `WARN`           | `missing_claim_ledger_fallback` |
 | Numeric claims detected, no raw result files found    | `BLOCKED`        | `no_raw_evidence`     |
 | All claims reconcile to raw data                      | `PASS`           | `all_numbers_match`   |
 | Minor rounding drift only, no material mismatch       | `WARN`           | `rounding_drift`      |
-| Any material mismatch (wrong number, config mismatch) | `FAIL`           | `claim_mismatch`      |
+| Any material mismatch or ledger violation             | `FAIL`           | `claim_mismatch`      |
 | Reviewer invocation failed (network / malformed)      | `ERROR`          | `reviewer_error`      |
 
 ### Thread independence
 
 Every invocation uses a fresh `mcp__codex__codex` thread. Never
 `codex-reply`. Do not accept prior audit outputs (PROOF_AUDIT, CITATION_AUDIT,
-EXPERIMENT_LOG, AUTO_REVIEW summaries) as input to this audit — the fresh
-thread preserves reviewer independence per
+EXPERIMENT_LOG, AUTO_REVIEW summaries) as input to this audit. The one exception is
+`claims/claim_ledger.json`, which is the canonical STOP C claim contract rather than a
+review summary. The fresh thread preserves reviewer independence per
 `../shared-references/reviewer-independence.md`.
 
 ### Human-readable sibling

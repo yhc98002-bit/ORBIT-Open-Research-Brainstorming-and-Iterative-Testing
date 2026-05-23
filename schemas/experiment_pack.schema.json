@@ -1,0 +1,180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://orbit.local/schemas/experiment_pack.schema.json",
+  "title": "experiment_pack",
+  "description": "STOP B machine-readable experiment pack. Markdown artifacts are generated or legacy views.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "status",
+    "updated_at",
+    "source_markdown",
+    "generated_views",
+    "proposal_ref",
+    "decision_tree",
+    "controls",
+    "null_result_contract",
+    "component_ladder",
+    "algorithmic_formalization",
+    "probes",
+    "formal_diagnostics"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "ready",
+        "blocked",
+        "deprecated"
+      ]
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_markdown": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "generated_views": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "proposal_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "decision_tree": {
+      "type": "array"
+    },
+    "controls": {
+      "type": "array"
+    },
+    "null_result_contract": {
+      "type": [
+        "object",
+        "string",
+        "null"
+      ]
+    },
+    "component_ladder": {
+      "type": "array"
+    },
+    "algorithmic_formalization": {
+      "type": [
+        "object",
+        "string",
+        "null"
+      ]
+    },
+    "plan_code_audit": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "artifact": {
+          "type": "string"
+        },
+        "verdict": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "probes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "report": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "audit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "headroom_note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "formal_diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "command": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "expected_report": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "expected_audit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

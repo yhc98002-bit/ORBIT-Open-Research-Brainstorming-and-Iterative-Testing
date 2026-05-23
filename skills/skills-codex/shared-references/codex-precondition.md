@@ -157,6 +157,65 @@ tool-call timeout, etc.):
    require it; substituting a Claude-only artifact and marking it
    `degraded` is exactly the silent-skip behavior this contract replaces.
 
+## §5.5 Standalone Codex handoff
+
+If Codex MCP/auth/sandbox fails but the user can run Codex manually, export a
+standalone prompt instead of accepting a single-model fallback. This still
+requires Codex review; it only changes the transport.
+
+The producing skill SHOULD use:
+
+```bash
+python3 tools/codex_review_handoff.py generate \
+  --repo . \
+  --phase-id "<phase-id>" \
+  --role "<required Codex role>" \
+  --file "<artifact to read>" \
+  --objective "<review objective>" \
+  --output-format "<required schema/verdict format>" \
+  --required-section "VERDICT" \
+  --output-artifact "<expected review artifact>" \
+  --write-orbit-state
+```
+
+This writes:
+
+```text
+orbit-research/codex-prompts/<phase-id>.md
+orbit-research/codex-prompts/<phase-id>.json
+```
+
+The standalone prompt must include:
+
+- role;
+- files to read;
+- review objective;
+- required output schema/format;
+- exact import path:
+  `orbit-research/codex-imports/<phase-id>.response.md`.
+
+Set `ORBIT_STATE.json` to `status: "blocked"` or `status: "paused"` with
+`pause_reason: "codex_review_needed"` and:
+
+```jsonc
+{
+  "safe_next_command": "/import-codex-review orbit-research/codex-imports/<phase-id>.response.md"
+}
+```
+
+The user runs standalone Codex manually, saves the complete response to the
+import path, then invokes:
+
+```text
+/import-codex-review orbit-research/codex-imports/<phase-id>.response.md
+```
+
+Import is conservative. If required sections/tokens are missing, or the
+response says it could not access the files, the import reports a blocker
+and the review remains unsatisfied. Do not mark a Codex-required gate as
+passed until either the MCP response exists or the standalone Codex response
+has been imported.
+
 ## §6 Override: `— codex-required: false`
 
 The only way to deliberately run a Codex-using skill without Codex is to

@@ -43,6 +43,40 @@ The dangerous citation problems are **not** wildly fake citations — those are 
 - **WEB_SEARCH = required** — The reviewer must perform real web/DBLP/arXiv lookups, not pattern-match from memory.
 - **OUTPUT = `CITATION_AUDIT.md`** — Human-readable per-entry verdict report.
 - **STATE = `CITATION_AUDIT.json`** — Machine-readable verdict ledger consumable by downstream tools.
+- **CACHE = `references/citation_cache.json`** — Canonical citation metadata and usage cache shared with paper writing.
+
+## Citation Cache Contract
+
+`references/citation_cache.json` is the source of truth for verified citation metadata and
+paper usage contexts. During audit, read it before reviewer calls when present, and update
+or create it after verification:
+
+```jsonc
+{
+  "key": "madaan2023selfrefine",
+  "title": "Self-Refine: Iterative Refinement with Self-Feedback",
+  "authors": ["Aman Madaan", "..."],
+  "venue": "NeurIPS",
+  "year": 2023,
+  "source": "DBLP|CrossRef|arXiv|OpenReview|Semantic Scholar|manual",
+  "verified": true,
+  "used_for": ["related_work", "method_context"],
+  "contexts": [
+    {
+      "file": "sections/2_related_work.tex",
+      "line": 42,
+      "claim": "self-feedback loop framing",
+      "verdict": "SUPPORTS|WEAK|WRONG"
+    }
+  ]
+}
+```
+
+The cache is not a substitute for fresh audit: still run new reviewer/web checks for
+submission assurance. After the audit, update cache entries with corrected metadata,
+verified source, usage contexts, and `verified: true` only when existence, metadata, and
+context are clean or explicitly accepted. Set `verified: false` for unresolved,
+wrong-context, hallucinated, or replacement-needed entries.
 
 ## Workflow
 
@@ -249,6 +283,7 @@ After each `mcp__codex__codex` reviewer call, save the trace following `../share
 
 - `CITATION_AUDIT.md` (human-readable report) at paper root
 - `CITATION_AUDIT.json` (machine-readable ledger; schema below) at paper root
+- `references/citation_cache.json` updated with verified metadata and contexts
 - `.aris/traces/citation-audit/<date>_runNN/` (per-entry review traces)
 - Optional: applied fixes to `references.bib` + `sec/*.tex` (with --apply flag)
 
@@ -257,8 +292,8 @@ After each `mcp__codex__codex` reviewer call, save the trace following `../share
 This skill **always** writes `paper/CITATION_AUDIT.json`, regardless of
 caller or detector outcome. A paper with no `.bib` file or no `\cite{...}`
 usage emits verdict `NOT_APPLICABLE`; silent skip is forbidden.
-`paper-writing` Phase 6 and `tools/verify_paper_audits.sh` both rely on
-this artifact existing at a predictable path.
+`/submission-package` and `tools/verify_paper_audits.sh` both rely on this artifact
+existing at a predictable path.
 
 The artifact conforms to the schema in `../shared-references/assurance-contract.md`:
 
@@ -321,7 +356,7 @@ Every invocation uses a fresh `mcp__codex__codex` thread. Never
 PAPER_CLAIM_AUDIT, EXPERIMENT_LOG) as input — the fresh thread preserves
 reviewer independence per `../shared-references/reviewer-independence.md`.
 
-This skill never blocks by itself; `paper-writing` Phase 6 plus the
+This skill never blocks by itself; `/submission-package` plus the
 verifier decide whether the verdict blocks finalization based on the
 `assurance` level.
 

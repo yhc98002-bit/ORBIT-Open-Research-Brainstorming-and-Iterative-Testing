@@ -1,0 +1,478 @@
+schema_version: "0.1"
+
+profiles:
+  orbit-core:
+    public:
+      - orbit-status
+      - idea-to-proposal
+      - experiment-bridge
+      - diagnostic-to-review
+      - proposal-revise
+    internal:
+      - research-lit
+      - idea-discovery
+      - research-refine
+      - experiment-plan
+      - run-experiment
+      - analyze-results
+      - result-to-claim
+      - auto-review-loop
+  paper-pack:
+    public:
+      - paper-draft
+      - paper-from-claims
+      - submission-package
+    internal:
+      - paper-plan
+      - paper-figure
+      - paper-write
+      - paper-compile
+      - auto-paper-improvement-loop
+      - paper-claim-audit
+      - citation-audit
+  patent-pack:
+    public:
+      - patent-pipeline
+    internal:
+      - prior-art-search
+      - claims-drafting
+      - specification-writing
+  presentation-pack:
+    public:
+      - paper-slides
+      - paper-poster
+      - grant-proposal
+    internal: []
+  infra-pack:
+    public:
+      - run-experiment
+      - vast-gpu
+      - serverless-modal
+      - experiment-queue
+    internal: []
+
+mirror_policy:
+  canonical_root: skills
+  full_mirrors:
+    - .agents/skills
+    - skills/skills-codex
+  overlays:
+    - path: skills/skills-codex-gemini-review
+      kind: review-overlay
+      skills:
+        - auto-paper-improvement-loop
+        - auto-review-loop
+        - grant-proposal
+        - idea-creator
+        - idea-discovery
+        - idea-discovery-robot
+        - novelty-check
+        - paper-figure
+        - paper-plan
+        - paper-poster
+        - paper-slides
+        - paper-write
+        - paper-writing
+        - research-refine
+        - research-review
+    - path: skills/skills-codex-claude-review
+      kind: review-overlay
+      skills:
+        - auto-paper-improvement-loop
+        - auto-review-loop
+        - novelty-check
+        - paper-figure
+        - paper-plan
+        - paper-write
+        - research-refine
+        - research-review
+
+skills:
+  - name: ablation-planner
+    category: paper
+    public_entry: false
+    profiles: []
+    canonical_source: skills/ablation-planner/SKILL.md
+  - name: alphaxiv
+    category: literature
+    public_entry: false
+    profiles: []
+    canonical_source: skills/alphaxiv/SKILL.md
+  - name: analyze-results
+    category: orbit
+    public_entry: false
+    profiles: [orbit-core]
+    canonical_source: skills/analyze-results/SKILL.md
+  - name: arxiv
+    category: literature
+    public_entry: false
+    profiles: []
+    canonical_source: skills/arxiv/SKILL.md
+  - name: auto-paper-improvement-loop
+    category: paper
+    public_entry: false
+    profiles: [paper-pack]
+    canonical_source: skills/auto-paper-improvement-loop/SKILL.md
+  - name: auto-review-loop
+    category: orbit
+    public_entry: false
+    profiles: [orbit-core]
+    canonical_source: skills/auto-review-loop/SKILL.md
+  - name: auto-review-loop-llm
+    category: orbit
+    public_entry: false
+    profiles: []
+    canonical_source: skills/auto-review-loop-llm/SKILL.md
+  - name: auto-review-loop-minimax
+    category: orbit
+    public_entry: false
+    profiles: []
+    canonical_source: skills/auto-review-loop-minimax/SKILL.md
+  - name: citation-audit
+    category: paper
+    public_entry: false
+    profiles: [paper-pack]
+    canonical_source: skills/citation-audit/SKILL.md
+  - name: claims-drafting
+    category: patent
+    public_entry: false
+    profiles: [patent-pack]
+    canonical_source: skills/claims-drafting/SKILL.md
+  - name: comm-lit-review
+    category: literature
+    public_entry: false
+    profiles: []
+    canonical_source: skills/comm-lit-review/SKILL.md
+  - name: deepxiv
+    category: literature
+    public_entry: false
+    profiles: []
+    canonical_source: skills/deepxiv/SKILL.md
+  - name: diagnostic-to-review
+    category: orbit
+    public_entry: true
+    profiles: [orbit-core]
+    canonical_source: skills/diagnostic-to-review/SKILL.md
+  - name: dse-loop
+    category: infra
+    public_entry: false
+    profiles: []
+    canonical_source: skills/dse-loop/SKILL.md
+  - name: embodiment-description
+    category: patent
+    public_entry: false
+    profiles: []
+    canonical_source: skills/embodiment-description/SKILL.md
+  - name: exa-search
+    category: literature
+    public_entry: false
+    profiles: []
+    canonical_source: skills/exa-search/SKILL.md
+  - name: experiment-audit
+    category: orbit
+    public_entry: false
+    profiles: []
+    canonical_source: skills/experiment-audit/SKILL.md
+  - name: experiment-bridge
+    category: orbit
+    public_entry: true
+    profiles: [orbit-core]
+    canonical_source: skills/experiment-bridge/SKILL.md
+  - name: experiment-plan
+    category: orbit
+    public_entry: false
+    profiles: [orbit-core]
+    canonical_source: skills/experiment-plan/SKILL.md
+  - name: experiment-queue
+    category: infra
+    public_entry: true
+    profiles: [infra-pack]
+    canonical_source: skills/experiment-queue/SKILL.md
+  - name: feishu-notify
+    category: utility
+    public_entry: false
+    profiles: []
+    canonical_source: skills/feishu-notify/SKILL.md
+  - name: figure-description
+    category: patent
+    public_entry: false
+    profiles: []
+    canonical_source: skills/figure-description/SKILL.md
+  - name: figure-spec
+    category: visual
+    public_entry: false
+    profiles: []
+    canonical_source: skills/figure-spec/SKILL.md
+  - name: formula-derivation
+    category: proof
+    public_entry: false
+    profiles: []
+    canonical_source: skills/formula-derivation/SKILL.md
+  - name: grant-proposal
+    category: presentation
+    public_entry: true
+    profiles: [presentation-pack]
+    canonical_source: skills/grant-proposal/SKILL.md
+  - name: idea-creator
+    category: orbit
+    public_entry: false
+    profiles: []
+    canonical_source: skills/idea-creator/SKILL.md
+  - name: idea-discovery
+    category: orbit
+    public_entry: false
+    profiles: [orbit-core]
+    canonical_source: skills/idea-discovery/SKILL.md
+  - name: idea-discovery-robot
+    category: orbit
+    public_entry: false
+    profiles: []
+    canonical_source: skills/idea-discovery-robot/SKILL.md
+  - name: idea-to-proposal
+    category: orbit
+    public_entry: true
+    profiles: [orbit-core]
+    canonical_source: skills/idea-to-proposal/SKILL.md
+  - name: import-codex-review
+    category: orbit
+    public_entry: true
+    profiles: []
+    canonical_source: skills/import-codex-review/SKILL.md
+  - name: invention-structuring
+    category: patent
+    public_entry: false
+    profiles: []
+    canonical_source: skills/invention-structuring/SKILL.md
+  - name: jurisdiction-format
+    category: patent
+    public_entry: false
+    profiles: []
+    canonical_source: skills/jurisdiction-format/SKILL.md
+  - name: mermaid-diagram
+    category: visual
+    public_entry: false
+    profiles: []
+    canonical_source: skills/mermaid-diagram/SKILL.md
+  - name: meta-optimize
+    category: utility
+    public_entry: false
+    profiles: []
+    canonical_source: skills/meta-optimize/SKILL.md
+  - name: monitor-experiment
+    category: infra
+    public_entry: false
+    profiles: []
+    canonical_source: skills/monitor-experiment/SKILL.md
+  - name: novelty-check
+    category: orbit
+    public_entry: false
+    profiles: []
+    canonical_source: skills/novelty-check/SKILL.md
+  - name: orbit-status
+    category: orbit
+    public_entry: true
+    profiles: [orbit-core]
+    canonical_source: skills/orbit-status/SKILL.md
+  - name: overleaf-sync
+    category: infra
+    public_entry: false
+    profiles: []
+    canonical_source: skills/overleaf-sync/SKILL.md
+  - name: paper-claim-audit
+    category: paper
+    public_entry: false
+    profiles: [paper-pack]
+    canonical_source: skills/paper-claim-audit/SKILL.md
+  - name: paper-compile
+    category: paper
+    public_entry: false
+    profiles: [paper-pack]
+    canonical_source: skills/paper-compile/SKILL.md
+  - name: paper-draft
+    category: paper
+    public_entry: true
+    profiles: [paper-pack]
+    canonical_source: skills/paper-draft/SKILL.md
+  - name: paper-figure
+    category: paper
+    public_entry: false
+    profiles: [paper-pack]
+    canonical_source: skills/paper-figure/SKILL.md
+  - name: paper-from-claims
+    category: paper
+    public_entry: true
+    profiles: [paper-pack]
+    canonical_source: skills/paper-from-claims/SKILL.md
+  - name: paper-illustration
+    category: visual
+    public_entry: false
+    profiles: []
+    canonical_source: skills/paper-illustration/SKILL.md
+  - name: paper-illustration-image2
+    category: visual
+    public_entry: false
+    profiles: []
+    canonical_source: skills/paper-illustration-image2/SKILL.md
+  - name: paper-plan
+    category: paper
+    public_entry: false
+    profiles: [paper-pack]
+    canonical_source: skills/paper-plan/SKILL.md
+  - name: paper-poster
+    category: presentation
+    public_entry: true
+    profiles: [presentation-pack]
+    canonical_source: skills/paper-poster/SKILL.md
+  - name: paper-slides
+    category: presentation
+    public_entry: true
+    profiles: [presentation-pack]
+    canonical_source: skills/paper-slides/SKILL.md
+  - name: paper-write
+    category: paper
+    public_entry: false
+    profiles: [paper-pack]
+    canonical_source: skills/paper-write/SKILL.md
+  - name: paper-writing
+    category: paper
+    public_entry: false
+    profiles: []
+    canonical_source: skills/paper-writing/SKILL.md
+    legacy: true
+  - name: patent-novelty-check
+    category: patent
+    public_entry: false
+    profiles: []
+    canonical_source: skills/patent-novelty-check/SKILL.md
+  - name: patent-pipeline
+    category: patent
+    public_entry: true
+    profiles: [patent-pack]
+    canonical_source: skills/patent-pipeline/SKILL.md
+  - name: patent-review
+    category: patent
+    public_entry: false
+    profiles: []
+    canonical_source: skills/patent-review/SKILL.md
+  - name: pixel-art
+    category: visual
+    public_entry: false
+    profiles: []
+    canonical_source: skills/pixel-art/SKILL.md
+  - name: prior-art-search
+    category: patent
+    public_entry: false
+    profiles: [patent-pack]
+    canonical_source: skills/prior-art-search/SKILL.md
+  - name: proof-checker
+    category: proof
+    public_entry: false
+    profiles: []
+    canonical_source: skills/proof-checker/SKILL.md
+  - name: proof-writer
+    category: proof
+    public_entry: false
+    profiles: []
+    canonical_source: skills/proof-writer/SKILL.md
+  - name: proposal-revise
+    category: orbit
+    public_entry: true
+    profiles: [orbit-core]
+    canonical_source: skills/proposal-revise/SKILL.md
+  - name: qzcli
+    category: infra
+    public_entry: false
+    profiles: []
+    canonical_source: skills/qzcli/SKILL.md
+  - name: rebuttal
+    category: paper
+    public_entry: false
+    profiles: []
+    canonical_source: skills/rebuttal/SKILL.md
+  - name: research-doc-hygiene
+    category: orbit
+    public_entry: false
+    profiles: []
+    canonical_source: skills/research-doc-hygiene/SKILL.md
+  - name: research-lit
+    category: orbit
+    public_entry: false
+    profiles: [orbit-core]
+    canonical_source: skills/research-lit/SKILL.md
+  - name: research-pipeline
+    category: orbit
+    public_entry: false
+    profiles: []
+    canonical_source: skills/research-pipeline/SKILL.md
+    legacy: true
+  - name: research-refine
+    category: orbit
+    public_entry: false
+    profiles: [orbit-core]
+    canonical_source: skills/research-refine/SKILL.md
+  - name: research-refine-pipeline
+    category: orbit
+    public_entry: false
+    profiles: []
+    canonical_source: skills/research-refine-pipeline/SKILL.md
+    legacy: true
+  - name: research-review
+    category: orbit
+    public_entry: false
+    profiles: []
+    canonical_source: skills/research-review/SKILL.md
+  - name: research-wiki
+    category: utility
+    public_entry: false
+    profiles: []
+    canonical_source: skills/research-wiki/SKILL.md
+  - name: result-to-claim
+    category: orbit
+    public_entry: false
+    profiles: [orbit-core]
+    canonical_source: skills/result-to-claim/SKILL.md
+  - name: run-experiment
+    category: infra
+    public_entry: true
+    profiles: [orbit-core, infra-pack]
+    canonical_source: skills/run-experiment/SKILL.md
+  - name: semantic-scholar
+    category: literature
+    public_entry: false
+    profiles: []
+    canonical_source: skills/semantic-scholar/SKILL.md
+  - name: serverless-modal
+    category: infra
+    public_entry: true
+    profiles: [infra-pack]
+    canonical_source: skills/serverless-modal/SKILL.md
+  - name: specification-writing
+    category: patent
+    public_entry: false
+    profiles: [patent-pack]
+    canonical_source: skills/specification-writing/SKILL.md
+  - name: submission-package
+    category: paper
+    public_entry: true
+    profiles: [paper-pack]
+    canonical_source: skills/submission-package/SKILL.md
+  - name: system-profile
+    category: infra
+    public_entry: false
+    profiles: []
+    canonical_source: skills/system-profile/SKILL.md
+  - name: training-check
+    category: infra
+    public_entry: false
+    profiles: []
+    canonical_source: skills/training-check/SKILL.md
+  - name: vast-gpu
+    category: infra
+    public_entry: true
+    profiles: [infra-pack]
+    canonical_source: skills/vast-gpu/SKILL.md
+  - name: writing-systems-papers
+    category: paper
+    public_entry: false
+    profiles: []
+    canonical_source: skills/writing-systems-papers/SKILL.md

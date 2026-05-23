@@ -1,0 +1,35 @@
+{
+  "citations": [
+    {
+      "authors": [
+        "A. Researcher",
+        "B. Scientist"
+      ],
+      "contexts": [
+        {
+          "claim": "fixture background",
+          "file": "paper/sections/2_related_work.tex",
+          "verdict": "SUPPORTS"
+        }
+      ],
+      "key": "researcher2026fixture",
+      "source": "DBLP",
+      "title": "A Fixture Paper for Structured Citation Cache Tests",
+      "used_for": [
+        "related_work"
+      ],
+      "venue": "FixtureConf",
+      "verified": true,
+      "year": 2026
+    }
+  ],
+  "generated_views": [
+    "references/CITATION_CACHE.md"
+  ],
+  "schema_version": "0.1",
+  "source_markdown": [
+    "orbit-research/LITERATURE_MAP.md"
+  ],
+  "status": "ready",
+  "updated_at": "2026-05-23T00:00:00Z"
+}

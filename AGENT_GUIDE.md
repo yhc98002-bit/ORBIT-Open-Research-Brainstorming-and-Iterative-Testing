@@ -54,13 +54,32 @@ claims, evidence, baselines, controls, reproducibility, and overclaiming.
 
 The argument separator is em-dash `—`, not single `-`.
 
+## Public Skill Surface
+
+Prefer these public entrypoints before exposing lower-level subskills. The source of truth
+is `skills/skill_catalog.yaml`; profile rationale is in
+`docs/refactor/SKILL_PROFILES.md`.
+
+| Profile | Public entries | Internal subskills |
+|---|---|---|
+| `orbit-core` | `/orbit-status`, `/idea-to-proposal`, `/experiment-bridge`, `/diagnostic-to-review`, `/proposal-revise` | `/research-lit`, `/idea-discovery`, `/research-refine`, `/experiment-plan`, `/run-experiment`, `/analyze-results`, `/result-to-claim`, `/auto-review-loop` |
+| `paper-pack` | `/paper-draft`, `/paper-from-claims`, `/submission-package` | `/paper-plan`, `/paper-figure`, `/paper-write`, `/paper-compile`, `/auto-paper-improvement-loop`, `/paper-claim-audit`, `/citation-audit` |
+| `patent-pack` | `/patent-pipeline` | `/prior-art-search`, `/claims-drafting`, `/specification-writing` |
+| `presentation-pack` | `/paper-slides`, `/paper-poster`, `/grant-proposal` | None in the baseline profile |
+| `infra-pack` | `/run-experiment`, `/vast-gpu`, `/serverless-modal`, `/experiment-queue` | None in the baseline profile |
+
+Legacy wrappers such as `/paper-writing`, `/research-pipeline`, and
+`/research-refine-pipeline` remain callable for compatibility but should not be the first
+recommendation. `/import-codex-review` is a public recovery utility for Codex handoff
+imports, not a normal workflow starting point.
+
 ## Common Parameters
 
 ```
 — effort: lite | balanced | max | beast      # work intensity (default: balanced)
 — human checkpoint: true | false             # pause for approval (default: false)
 — AUTO_PROCEED: true | false                 # auto-continue at gates (default: true)
-— assurance: draft | submission              # paper-writing audit gate level
+— assurance: draft | submission              # submission-package audit gate level
 — difficulty: medium | hard | nightmare      # review strictness; before STOP A it is collaborator-style
 — paper-mode: normal | breakthrough | benchmark | reproduction-plus | system | audit
 — review-posture: collaborator | adversarial
@@ -154,14 +173,15 @@ artifact names; consumers accept either v1.3 or v1.0 alias names (preferring v1.
   mechanism; require diagnostic redesign to a regime where the mechanism could manifest.
 - **G13** — Test set isolation: no tuning / selection on test set. No exception.
 - **G14** — `NULL_RESULT_CONTRACT`-triggered tie/failure cannot have positive framing in
-  `RESULT_INTERPRETATION` / `CLAIM_CONSTRUCTION`. No exception.
+  `RESULT_INTERPRETATION` / `claims/claim_ledger.json`. No exception.
 - **G15** — Scale-up in mode = COMMITMENT OR risk ≥ 4 requires `HUMAN_DECISION_NOTE.md`
   before `SCALEUP_DECISION = PROCEED`. No exception.
-- **G16** — Stage 24 (paper writing) requires `CLAIM_CONSTRUCTION.md`. No exception.
+- **G16** — Claim-bearing paper writing requires `claims/claim_ledger.json`. No exception.
 - **G17** — Post-hoc reframings must be labelled "exploratory finding, not pre-planned
-  hypothesis" in `CLAIM_CONSTRUCTION.md` and the paper. No exception.
-- **G18** — `/paper-writing` inline guard: refuse without `CLAIM_CONSTRUCTION.md`. No exception.
-- **G19** — Scale-up (Stage 20), paper writing (Stage 24), and any public-release transition
+  hypothesis" in `claims/claim_ledger.json` and the paper. No exception.
+- **G18** — `/paper-from-claims` guard: refuse claim-bearing writing without
+  `claims/claim_ledger.json`. No exception.
+- **G19** — Scale-up (Stage 20), paper-from-claims handoff, and any public-release transition
   require `HUMAN_DECISION_NOTE.md`. No exception.
 
 Full canonical text in `skills/shared-references/research-agent-pipeline.md` §6. v1.0
@@ -203,12 +223,14 @@ stages. Sub-skills enforce their own v1.3 gates even when invoked directly.
 | Stages 11–15: Validation prerequisites | `/experiment-bridge "refine-logs/FINAL_PROPOSAL.md"` | approved proposal | EXPERIMENT_PLAN.md, EXPERIMENT_PLAN_EXEC.md, CONTROL_DESIGN, NULL_RESULT_CONTRACT, COMPONENT_BUNDLE_LADDER, ALGORITHMIC_FORMALIZATION, PLAN_CODE_AUDIT.md (verdict line) | STOP B: plan, implement, audit, and run a limited probe when mode allows before formal diagnostics |
 | Stages 16–17: Diagnostic + Audit | `/diagnostic-to-review "diagnostic command"` | diagnostic command | DIAGNOSTIC_EXPERIMENT_PLAN, DIAGNOSTIC_RUN_REPORT, DIAGNOSTIC_RUN_AUDIT.md (verdict line), RESULT_INTERPRETATION.md, RESEARCH_DECISION_LOG.md | Formal diagnostic execution and interpretation before scale-up |
 | Stage 20: Scale | `/experiment-queue` or `/run-experiment` | manifest | LOGS/, EXPERIMENT_TRACKER.md, SCALEUP_DECISION.md | Full sweep after diagnostic passes + HUMAN_DECISION_NOTE |
-| Stages 18, 21–22: Interpret + Claim | `/analyze-results` then conditional-required `/result-to-claim` | logs + results | RESULT_INTERPRETATION.md, CLAIM_CONSTRUCTION.md, NEGATIVE_RESULT_STRATEGY.md, HUMAN_DECISION_NOTE.md | Local diagnostics stop after interpretation + decision log; paper-bearing diagnostics must map results to claims |
+| Stages 18, 21–22: Interpret + Claim | `/analyze-results` then conditional-required `/result-to-claim` | logs + results | RESULT_INTERPRETATION.md, claims/claim_ledger.json, NEGATIVE_RESULT_STRATEGY.md, HUMAN_DECISION_NOTE.md | Local diagnostics stop after interpretation + decision log; paper-bearing diagnostics must map results to claims |
 | Stage 23: Red-team Loop | conditional-required `/auto-review-loop` | project state | RED_TEAM_REVIEW.md, AUTO_REVIEW.md | Required for paper-bearing diagnostics after `/result-to-claim`; not triggered for local diagnostics |
-| Stage 24: Paper writing | `/paper-writing "NARRATIVE_REPORT.md"` | narrative report | paper/, PAPER_IMPROVEMENT_LOG.md, PAPER_CLAIM_AUDIT, CITATION_AUDIT | Draft paper after CLAIM_CONSTRUCTION + RED_TEAM_REVIEW exist (G16, G18) |
+| Stage 24a: Draft | `/paper-draft "<proposal or notes>"` | proposal, narrative, or notes | paper/DRAFT.md or paper/main.tex with TODOs | Fast draft/skeleton; no submission gates |
+| Stage 24b: Evidence-bound paper | `/paper-from-claims "claims/claim_ledger.json"` | claim ledger | paper/, paper/CLAIM_TRACE.md | Draft paper after STOP C claim ledger + red-team + human decision |
+| Stage 24c: Submission package | `/submission-package "paper/"` | paper directory | paper/paper_package.json, compile/audit artifacts | Strict compile, claim audit, citation audit, proof/package checklist |
 | Rebuttal (W4) | `/rebuttal "paper/ + reviews"` | paper + reviews | PASTE_READY.txt | Reviews received |
 
-### Standalone Skills
+### Internal and Advanced Skills
 
 | Skill | What it does |
 |-------|-------------|
@@ -222,7 +244,11 @@ stages. Sub-skills enforce their own v1.3 gates even when invoked directly.
 | `/novelty-check "idea"` | Positioning-first novelty analysis; classify related/concurrent work before any abandon/rewrite decision |
 | `/research-review "draft"` | Codex GPT-5.5 xhigh deep critique |
 | `/experiment-audit` | Cross-model integrity audit of eval code |
-| `/result-to-claim` | Verdict on whether results support claims |
+| `/result-to-claim` | Verdict on whether results support claims; writes `claims/claim_ledger.json` |
+| `/paper-draft "<proposal or notes>"` | Fast draft/skeleton without STOP C submission gates |
+| `/paper-from-claims "claims/claim_ledger.json"` | Evidence-bound paper generation from structured claims |
+| `/submission-package "paper/"` | Strict compile + claim/citation/proof audits and `paper/paper_package.json` |
+| `/paper-writing` | Compatibility router to the three paper paths above |
 | `/paper-claim-audit "paper/"` | Numerical claim audit |
 | `/citation-audit "paper/"` | Bibliography audit |
 | `/overleaf-sync setup\|pull\|push\|status` | Two-way Overleaf sync |
@@ -270,14 +296,15 @@ both exist).
 | `orbit-research/FAILURE_TO_INNOVATION.md` | — | research-pipeline (Stage 18.5) | Stages 19, 20 |
 | `orbit-research/LITERATURE_REREAD_NOTE.md` | — | research-lit (Stage 19 loop) | research-pipeline |
 | `orbit-research/SCALEUP_DECISION.md` (verdict line) | — | research-pipeline | experiment-queue |
-| `orbit-research/CLAIM_CONSTRUCTION.md` | — | result-to-claim | paper-plan, paper-write, paper-writing (G16, G18) |
+| `claims/claim_ledger.json` | `orbit-research/CLAIM_CONSTRUCTION.md` compatibility view | result-to-claim | paper-from-claims, auto-review-loop, paper-claim-audit, submission-package |
 | `orbit-research/NEGATIVE_RESULT_STRATEGY.md` | — | result-to-claim | paper-plan, paper-write |
-| `orbit-research/RED_TEAM_REVIEW.md` | — | auto-review-loop | paper-writing |
-| `orbit-research/PAPER_IMPROVEMENT_LOG.md` | — | paper-writing chain | (audit log) |
-| `orbit-research/HUMAN_DECISION_NOTE.md` (verdict line) | — | result-to-claim, research-pipeline | paper-writing, scale-up gate (G15, G19) |
+| `orbit-research/RED_TEAM_REVIEW.md` | — | auto-review-loop | paper-from-claims, submission-package |
+| `orbit-research/PAPER_IMPROVEMENT_LOG.md` | — | auto-paper-improvement-loop | (audit log) |
+| `orbit-research/HUMAN_DECISION_NOTE.md` (verdict line) | — | result-to-claim, research-pipeline | paper-from-claims, scale-up gate (G15, G19) |
 | `EXPERIMENT_AUDIT.{md,json}` | — | experiment-audit | result-to-claim |
-| `PAPER_CLAIM_AUDIT.{md,json}` | — | paper-claim-audit | paper-writing Phase 5.5 gate |
-| `CITATION_AUDIT.{md,json}` | — | citation-audit | paper-writing Phase 5.8 gate |
+| `PAPER_CLAIM_AUDIT.{md,json}` | — | paper-claim-audit | submission-package |
+| `CITATION_AUDIT.{md,json}` | — | citation-audit | submission-package |
+| `paper/paper_package.json` | — | submission-package | release/submission decision |
 | `research-wiki/` | — | research-wiki | idea-creator, research-lit, result-to-claim |
 
 Every audit verdict (`PLAN_CODE_AUDIT`, `DIAGNOSTIC_RUN_AUDIT`, `SCALEUP_DECISION`,
@@ -371,7 +398,7 @@ Read these before invoking review-related skills:
 - `skills/shared-references/citation-discipline.md` — citation rules
 - `skills/shared-references/writing-principles.md` — writing standards
 - `skills/shared-references/venue-checklists.md` — venue formatting
-- `skills/shared-references/assurance-contract.md` — paper-writing audit gate schema
+- `skills/shared-references/assurance-contract.md` — submission-package audit gate schema
 
 ## Research Wiki (When Present)
 

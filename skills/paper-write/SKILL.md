@@ -31,9 +31,17 @@ only under `/research-pipeline`):
 - `orbit-research/CLAIM_CONSTRUCTION.md`
 - `orbit-research/NEGATIVE_RESULT_STRATEGY.md` if present
 - `orbit-research/RED_TEAM_REVIEW.md`
+- `figures/figure_manifest.json` if present
+- `references/citation_cache.json` if present
 
 Claims in the Introduction, Abstract, and Conclusion must not exceed the scoped claims in
 `CLAIM_CONSTRUCTION.md`.
+
+When `figures/figure_manifest.json` exists, include figures/tables only through manifest
+entries and their declared `output`, `latex_label`, `supports_claims`, and `status`.
+When `references/citation_cache.json` exists, build citations from cache entries and keep
+unverified entries marked for citation audit. Do not invent figure paths or BibTeX when
+the structured manifests are available.
 
 If no PAPER_PLAN.md exists, ask the user to run `/paper-plan` first or provide a brief outline.
 

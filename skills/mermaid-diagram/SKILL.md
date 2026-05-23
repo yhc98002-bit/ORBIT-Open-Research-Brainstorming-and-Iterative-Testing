@@ -14,6 +14,29 @@ Generate high-quality Mermaid diagram code based on user requirements, with file
 - **OUTPUT_DIR = `figures/`** — Output directory for all generated files
 - **MAX_ITERATIONS = 3** — Maximum refinement rounds for syntax errors
 
+## Figure Manifest Contract
+
+`figures/figure_manifest.json` is the source of truth for paper figures. After a Mermaid
+diagram renders or is accepted, append/update an entry by `id`:
+
+```jsonc
+{
+  "id": "fig:system_flow",
+  "type": "mermaid_flowchart|sequence|state|architecture|...",
+  "supports_claims": ["C1"],
+  "data_source": "figures/system-flow.mmd",
+  "generator": "mermaid-diagram",
+  "output": "figures/system-flow.png",
+  "latex_label": "fig:system_flow",
+  "status": "draft|verified|needs_redesign"
+}
+```
+
+Use `verified` only after syntax rendering and visual review pass. Use `needs_redesign`
+for wrong arrows, missing blocks, unreadable layout, or claim mismatch. If this is not a
+paper figure, still write the manifest entry with `supports_claims: []` so downstream
+paper tools can distinguish reusable figures from ad-hoc files.
+
 ## Workflow: MUST EXECUTE ALL STEPS
 
 ### Step 0: Pre-flight Check

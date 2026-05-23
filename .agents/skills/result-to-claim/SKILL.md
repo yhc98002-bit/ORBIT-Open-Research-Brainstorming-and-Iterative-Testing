@@ -1,6 +1,6 @@
 ---
 name: result-to-claim
-description: Use when experiments complete to judge what claims the results support, what they don't, and what evidence is still missing. Codex MCP evaluates results against intended claims and routes to next action (pivot, supplement, or confirm). Use after experiments finish — before writing the paper or running ablations.
+description: Use when experiments complete to judge what claims the results support, what they don't, and what evidence is still missing. Codex MCP evaluates results against intended claims, writes claims/claim_ledger.json as the canonical claim/evidence binding, and routes to next action. Use after formal diagnostics finish and before paper writing or ablations.
 argument-hint: [experiment-description-or-wandb-run]
 allowed-tools: Bash(*), Read, Grep, Glob, Write, Edit, mcp__codex__codex, mcp__codex__codex-reply
 ---
@@ -20,10 +20,15 @@ This gate is always-on. Before paper writing, load:
 - `../shared-references/reviewer-independence.md`
 - `../shared-references/run-ledger.md` — verify evidence traces to ledgered `run_id`s
 
-Run `mkdir -p orbit-research/`. Always write or update:
+Run `mkdir -p claims orbit-research/`. Always write or update:
 
-- `orbit-research/CLAIM_CONSTRUCTION.md` — claim → evidence → control → scope → limitation
-  chain (Stage 21). Required by G16 and G18 before `/paper-writing`.
+- `claims/claim_ledger.json` — canonical STOP C source of truth for claim → evidence →
+  control → scope → limitation binding. Required before any paper-bearing diagnostic can
+  hand off to paper writing.
+- `claims/CLAIM_LEDGER.md` — human-readable generated view of the claim ledger.
+- `orbit-research/CLAIM_CONSTRUCTION.md` — compatibility generated view during migration.
+  It may be read by old skills, but it is not the source of truth when
+  `claims/claim_ledger.json` exists.
 - `orbit-research/AGENT_DECISION_RECOMMENDATION.md` — short note summarizing what is
   believed, what evidence supports it, what remains uncertain, agent's recommendation, and ending with one
   of `PROCEED / NARROW / REDESIGN / RE-READ / CHANGE BENCHMARK / STOP / HUMAN_DECISION_REQUIRED`.
@@ -31,27 +36,54 @@ Run `mkdir -p orbit-research/`. Always write or update:
 - `orbit-research/NEGATIVE_RESULT_STRATEGY.md` if the method ties, fails, or only partially
   supports the intended claim (Stage 22).
 
+`claims/claim_ledger.json` must conform to `schemas/claim_ledger.schema.json` and include:
+
+```jsonc
+{
+  "schema_version": "0.1",
+  "status": "draft|ready|blocked|deprecated",
+  "updated_at": "<ISO-8601 UTC>",
+  "source_markdown": ["orbit-research/RESULT_INTERPRETATION.md"],
+  "generated_views": ["claims/CLAIM_LEDGER.md", "orbit-research/CLAIM_CONSTRUCTION.md"],
+  "result_refs": ["orbit-research/diagnostics/<diagnostic_id>/RUN_REPORT.md"],
+  "claims": [
+    {
+      "id": "C1",
+      "statement": "Evidence-bounded claim text.",
+      "status": "supported|partial|unsupported|exploratory",
+      "evidence_refs": ["run_id:<id>", "path/to/result.json"],
+      "controls": ["baseline/control/run refs"],
+      "scope": "datasets, regimes, metrics, and conditions where the claim is allowed",
+      "limitations": ["known caveats"],
+      "forbidden_overclaims": ["wording or scope that downstream paper writing must not use"],
+      "allowed_paper_sections": ["results", "limitations"]
+    }
+  ]
+}
+```
+
 Do **not** silently write `orbit-research/HUMAN_DECISION_NOTE.md` as if the user approved a
 high-risk transition. G15/G19 require a human-authored or human-confirmed note with final
 verdict `PROCEED` before scale-up, paper writing, or public release. If the user explicitly
 supplies that decision in the current request, write `HUMAN_DECISION_NOTE.md` and include a
 `Decision source:` line quoting/paraphrasing the user's approval.
 
-Use the claim → evidence → control → scope → limitation chain. Downgrade claims when
-evidence is partial. If the result is negative, evaluate whether the contribution can
+Use the claim → evidence → control → scope → limitation chain in the ledger. Downgrade
+claims when evidence is partial. If the result is negative, evaluate whether the contribution can
 become benchmark diagnosis, baseline ceiling analysis, failure taxonomy, negative result,
 regime map, evaluation protocol, task ontology contribution, or controlled reproduction.
 
 **G14 inline check (mandatory):** if `orbit-research/NULL_RESULT_CONTRACT.md` triggered a
-tie or failure outcome, **refuse to write positive framing** in `CLAIM_CONSTRUCTION.md`
-or `RESULT_INTERPRETATION.md`. Frame the result honestly per Stage 22 — invoke
+tie or failure outcome, **refuse to write positive framing** in `claims/claim_ledger.json`,
+`CLAIM_LEDGER.md`, `CLAIM_CONSTRUCTION.md`, or `RESULT_INTERPRETATION.md`. Frame the result honestly per Stage 22 — invoke
 `NEGATIVE_RESULT_STRATEGY.md` instead of forcing a success story. No exception.
 
 **G17 inline check (mandatory):** if a result is being framed post-hoc as "what we
 predicted" — i.e., the current claim emerged from `orbit-research/RESULT_INTERPRETATION.md`
 or `orbit-research/FAILURE_TO_INNOVATION.md` rather than from a pre-registered hypothesis
-in `orbit-research/CONTROL_DESIGN.md` — label it explicitly in `CLAIM_CONSTRUCTION.md` and
-in any downstream paper as **"exploratory finding, not pre-planned hypothesis."** Do NOT
+in `orbit-research/CONTROL_DESIGN.md` — label it explicitly in `claims/claim_ledger.json`,
+`CLAIM_LEDGER.md`, `CLAIM_CONSTRUCTION.md`, and any downstream paper as
+**"exploratory finding, not pre-planned hypothesis."** Do NOT
 present post-hoc reframings as pre-planned hypotheses. No exception.
 
 ## When to Use
@@ -119,6 +151,9 @@ mcp__codex__codex:
     5. suggested_claim_revision: if the claim should be strengthened, weakened, or reframed
     6. next_experiments_needed: specific experiments to fill gaps (if any)
     7. confidence: high | medium | low
+    8. claim_ledger_entries: proposed ledger rows with id, statement, support status
+       (supported | partial | unsupported | exploratory), evidence_refs, controls, scope,
+       limitations, forbidden_overclaims, and allowed_paper_sections
 
     Be honest. Do not inflate claims beyond what the data supports.
     A single positive result on one dataset does not support a general claim.
@@ -131,13 +166,36 @@ Extract structured fields from Codex response:
 
 ```markdown
 - claim_supported: yes | partial | no
+- support_status: supported | partial | unsupported | exploratory
 - what_results_support: "..."
 - what_results_dont_support: "..."
 - missing_evidence: "..."
 - suggested_claim_revision: "..."
 - next_experiments_needed: "..."
 - confidence: high | medium | low
+- claim_ledger_entries:
+  - id:
+  - statement:
+  - status:
+  - evidence_refs:
+  - controls:
+  - scope:
+  - limitations:
+  - forbidden_overclaims:
+  - allowed_paper_sections:
 ```
+
+Normalize into `claims/claim_ledger.json`. Use:
+
+- `status: "ready"` only when all primary paper-bearing claims are `supported` or
+  intentionally `partial`/`exploratory` with explicit scope and forbidden overclaims.
+- `status: "draft"` when evidence is still being reconciled or Codex review is pending.
+- `status: "blocked"` only for invalid/corrupt evidence, missing provenance, or integrity
+  failure that prevents a defensible ledger.
+
+Render `claims/CLAIM_LEDGER.md` from the JSON. During migration, also render
+`orbit-research/CLAIM_CONSTRUCTION.md` from the same JSON instead of maintaining a
+separate prose-only source.
 
 ### Step 3.5: Check Experiment Integrity (if audit exists)
 
@@ -172,27 +230,36 @@ reconciled.
 
 #### `no` — Claim not supported
 
-1. Record postmortem in findings.md (Research Findings section):
+1. Write a ledger entry with `status: "unsupported"` or `status: "exploratory"` if a
+   negative/reframed contribution remains.
+2. Add explicit `forbidden_overclaims` so downstream writing cannot imply the original
+   claim was supported.
+3. Record postmortem in findings.md (Research Findings section):
    - What was tested, what failed, hypotheses for why
    - Constraints for future attempts (what NOT to try again)
-2. Update CLAUDE.md Pipeline Status
-3. Decide whether to pivot to next idea from IDEA_CANDIDATES.md or try an alternative approach
+4. Write `orbit-research/NEGATIVE_RESULT_STRATEGY.md`.
+5. Update CLAUDE.md Pipeline Status.
+6. Stop for STOP C decision; do not treat unsupported claims as a runtime abort unless
+   evidence is invalid/corrupt.
 
 #### `partial` — Claim partially supported
 
-1. Update the working claim to reflect what IS supported
-2. Record the gap in findings.md
-3. Design and run supplementary experiments to fill evidence gaps
-4. Re-run result-to-claim after supplementary experiments complete
-5. **Multiple rounds of `partial` on the same claim** → record analysis in findings.md, consider whether to narrow the claim scope or switch ideas
+1. Write a ledger entry with `status: "partial"` and narrow `scope`.
+2. Record the gap in findings.md.
+3. Add `limitations`, `forbidden_overclaims`, and `allowed_paper_sections`.
+4. Design supplementary experiments only if STOP C human decision requests them.
+5. Re-run result-to-claim after supplementary experiments complete.
+6. **Multiple rounds of `partial` on the same claim** → record analysis in findings.md,
+   consider whether to narrow the claim scope or switch ideas.
 
 #### `yes` — Claim supported
 
-1. Record confirmed claim in project notes
-2. If ablation studies are incomplete → trigger `/ablation-planner`
-3. If all evidence is in → ready for STOP C red-team and human decision; paper writing
-   still requires `RED_TEAM_REVIEW.md` ending `READY_FOR_PAPER` and
-   `HUMAN_DECISION_NOTE.md` ending `PROCEED`
+1. Write a ledger entry with `status: "supported"` and exact evidence refs.
+2. Record confirmed claim in project notes.
+3. If ablation studies are incomplete → trigger `/ablation-planner`.
+4. If all evidence is in → ready for STOP C red-team and human decision; paper writing
+   still requires `claims/claim_ledger.json`, `RED_TEAM_REVIEW.md` ending
+   `READY_FOR_PAPER`, and `HUMAN_DECISION_NOTE.md` ending `PROCEED`.
 
 ### Step 5: Update Research Wiki (if active)
 
@@ -267,8 +334,12 @@ if research-wiki/ exists:
 - Do not inflate claims beyond what the data supports. If Codex says "partial", do not round up to "yes".
 - A single positive result on one dataset does not support a general claim. Be honest about scope.
 - If `confidence` is low, treat the judgment as inconclusive and add experiments rather than committing to a claim.
-- If Codex MCP is unavailable (call fails), CC makes its own judgment and marks it `[pending Codex review]` — do not block the pipeline.
+- If Codex MCP is unavailable (call fails), write a draft `claims/claim_ledger.json`
+  with `status: "draft"`, mark affected entries as `exploratory` or pending review,
+  and do not mark the ledger paper-ready until Codex or explicit human review completes.
 - Always record the verdict and reasoning in findings.md, regardless of outcome.
+- Downstream paper writing must read `claims/claim_ledger.json` when it exists; Markdown
+  claim files are views or compatibility artifacts.
 
 ## Review Tracing
 

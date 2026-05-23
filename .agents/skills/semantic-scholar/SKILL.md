@@ -38,6 +38,32 @@ This skill is the **published venue** counterpart to `/arxiv`:
 > - `/semantic-scholar "topic" - sort: citations` — bulk search sorted by citation count
 > - `/semantic-scholar "DOI:10.1109/..."` — fetch a single paper by DOI
 
+## Citation Cache Contract
+
+When results include usable metadata, append/update `references/citation_cache.json`.
+Semantic Scholar entries should preserve published venue metadata and DOI/arXiv IDs when
+available:
+
+```jsonc
+{
+  "key": "semantic_scholar_stable_key",
+  "title": "Paper title",
+  "authors": ["Author One", "Author Two"],
+  "venue": "IEEE Transactions on Signal Processing",
+  "year": 2024,
+  "source": "Semantic Scholar: <paperId or DOI>",
+  "verified": false,
+  "used_for": ["related_work"],
+  "contexts": [
+    {"query": "$ARGUMENTS", "citationCount": 1364, "doi": "10.xxxx/...", "arxiv": "2401.x"}
+  ]
+}
+```
+
+Set `verified: true` only for a fetched single-paper record with DOI/published venue
+metadata that resolves cleanly, or after `/citation-audit` confirms the entry. Search
+result snippets alone stay `verified: false`.
+
 ## Workflow
 
 ### Step 1: Parse Arguments
@@ -207,6 +233,7 @@ Summarize what was done:
 - `Found N published papers for "query"`
 - `Filters applied: [publication types, fields, year range, etc.]`
 - `N papers are venue-only (not on arXiv)`
+- `Updated references/citation_cache.json with N citation entries`
 - `Wiki-ingested N papers` (if `research-wiki/` was present)
 
 Suggest follow-up skills:

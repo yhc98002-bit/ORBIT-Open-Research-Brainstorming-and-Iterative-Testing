@@ -60,6 +60,35 @@ propose final methods yet.
 
 This skill checks multiple sources **in priority order**. All are optional — if a source is not configured or not requested, skip it silently.
 
+## Citation Cache Contract
+
+When a search source returns citation-quality metadata, append/update
+`references/citation_cache.json`. This cache is the structured handoff to
+`/paper-from-claims`, `/paper-write`, and `/citation-audit`.
+
+Each paper row should become a draft cache entry:
+
+```jsonc
+{
+  "key": "short_stable_key",
+  "title": "Paper title",
+  "authors": ["Author One", "Author Two"],
+  "venue": "ICLR",
+  "year": 2026,
+  "source": "zotero|arxiv|semantic-scholar|deepxiv|exa|web|local",
+  "verified": false,
+  "used_for": ["related_work", "background"],
+  "contexts": [
+    {"artifact": "orbit-research/LITERATURE_MAP.md", "note": "why this paper matters"}
+  ]
+}
+```
+
+Use `verified: true` only when the source provides canonical metadata (for example Zotero
+library metadata explicitly trusted by the user, DOI/DBLP/CrossRef, or a later
+`/citation-audit` pass). Otherwise leave entries as draft/unverified; do not fabricate
+BibTeX from incomplete search snippets.
+
 ### Source Selection
 
 Parse `$ARGUMENTS` for a `— sources:` directive:
@@ -296,6 +325,9 @@ Present as a structured literature table:
 Plus a narrative summary of the landscape (3-5 paragraphs).
 
 If Zotero BibTeX was exported, include a `references.bib` snippet for direct use in paper writing.
+Also write/update `references/citation_cache.json` with every citation row and its
+`used_for`/`contexts` from the literature map. This cache is the preferred paper input;
+`references.bib` is a generated/exportable view.
 
 ### Step 5: Save (if requested)
 - Save paper PDFs to `literature/` or `papers/`

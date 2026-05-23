@@ -1,0 +1,41 @@
+{
+  "schema_version": "0.1",
+  "status": "ready",
+  "updated_at": "2026-05-23T00:00:00Z",
+  "source_markdown": [],
+  "generated_views": [
+    "proposal/PROPOSAL.md"
+  ],
+  "problem_selection": {
+    "id": "P1",
+    "summary": "Toy bounded diagnostic problem for ORBIT regression tests."
+  },
+  "assumptions": [
+    {
+      "id": "A1",
+      "statement": "The fixture is local and does not require external APIs or GPUs."
+    }
+  ],
+  "abstract_task": {
+    "input": "small synthetic metric table",
+    "output": "bounded diagnostic claim"
+  },
+  "baseline_headroom": {
+    "baseline": "fixture_baseline",
+    "expected_headroom": "small but measurable"
+  },
+  "candidate_mechanisms": [
+    {
+      "id": "M1",
+      "name": "fixture mechanism",
+      "rationale": "Provides a deterministic target for validators."
+    }
+  ],
+  "selected_sketch": {
+    "id": "M1",
+    "summary": "Use the fixture mechanism and one control."
+  },
+  "open_risks": [
+    "Fixture results do not imply real scientific validity."
+  ]
+}

@@ -40,6 +40,31 @@ Generate all figures and tables for a paper based on: **$ARGUMENTS**
 
 If no PAPER_PLAN.md exists, scan for data files and ask the user which figures to generate.
 
+## Figure Manifest Contract
+
+`figures/figure_manifest.json` is the source of truth for paper figures. After creating,
+updating, preserving, or verifying any figure/table, append or update the corresponding
+entry by `id`:
+
+```jsonc
+{
+  "id": "fig:training_curves",
+  "type": "line_plot|bar_chart|table|multi_panel|manual|...",
+  "supports_claims": ["C1"],
+  "data_source": "results/run_001/metrics.json",
+  "generator": "paper-figure",
+  "output": "figures/fig_training_curves.pdf",
+  "latex_label": "fig:training_curves",
+  "status": "draft|verified|needs_redesign"
+}
+```
+
+Use `supports_claims` from `claims/claim_ledger.json` or the paper plan when available;
+otherwise use an empty list and mark the entry `draft`. Set `verified` only after output
+exists and passes the quality checklist/review. Set `needs_redesign` for figures that
+fail visual review or no longer match the claim/data source. `figures/latex_includes.tex`
+is a generated view, not the manifest source of truth.
+
 ## Workflow
 
 ### Step 1: Read Figure Plan

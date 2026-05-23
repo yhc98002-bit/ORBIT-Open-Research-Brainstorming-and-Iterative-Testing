@@ -1,0 +1,40 @@
+{
+  "claims": [
+    {
+      "allowed_paper_sections": [
+        "results",
+        "limitations"
+      ],
+      "controls": [
+        "baseline_control"
+      ],
+      "evidence_refs": [
+        "run_id:diag_fixture_run",
+        "orbit-research/diagnostics/diag_fixture/RUN_REPORT.md"
+      ],
+      "forbidden_overclaims": [
+        "Do not claim generalization beyond the fixture benchmark."
+      ],
+      "id": "C1",
+      "limitations": [
+        "Fixture covers one diagnostic only."
+      ],
+      "scope": "Minimal STOP C fixture benchmark.",
+      "statement": "The fixture result supports a bounded diagnostic claim.",
+      "status": "supported"
+    }
+  ],
+  "generated_views": [
+    "claims/CLAIM_LEDGER.md",
+    "orbit-research/CLAIM_CONSTRUCTION.md"
+  ],
+  "result_refs": [
+    "orbit-research/diagnostics/diag_fixture/RUN_REPORT.md"
+  ],
+  "schema_version": "0.1",
+  "source_markdown": [
+    "orbit-research/diagnostics/diag_fixture/RESULT_INTERPRETATION.md"
+  ],
+  "status": "ready",
+  "updated_at": "2026-05-23T00:00:00Z"
+}

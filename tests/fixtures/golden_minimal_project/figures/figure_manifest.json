@@ -1,0 +1,23 @@
+{
+  "schema_version": "0.1",
+  "status": "ready",
+  "updated_at": "2026-05-23T00:00:00Z",
+  "source_markdown": [
+    "claims/CLAIM_LEDGER.md"
+  ],
+  "generated_views": [],
+  "figures": [
+    {
+      "id": "fig:fixture_metric",
+      "type": "line_plot",
+      "supports_claims": [
+        "C1"
+      ],
+      "data_source": "results/diag_fixture/metrics.json",
+      "generator": "paper-figure",
+      "output": "figures/fixture_metric.pdf",
+      "latex_label": "fig:fixture_metric",
+      "status": "verified"
+    }
+  ]
+}

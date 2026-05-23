@@ -1,0 +1,60 @@
+{
+  "algorithmic_formalization": {
+    "summary": "Minimal formalization placeholder for STOP B fixture."
+  },
+  "component_ladder": [
+    {
+      "component": "baseline",
+      "decision": "include"
+    }
+  ],
+  "controls": [
+    {
+      "id": "C1",
+      "purpose": "isolate baseline behavior"
+    }
+  ],
+  "decision_tree": [
+    {
+      "branch": "probe_pass",
+      "next": "formal_diagnostic"
+    }
+  ],
+  "formal_diagnostics": [
+    {
+      "command": "python run_diagnostic.py --config configs/minimal.yaml",
+      "expected_audit": "orbit-research/DIAGNOSTIC_RUN_AUDIT.md",
+      "expected_report": "orbit-research/DIAGNOSTIC_RUN_REPORT.md",
+      "id": "D1",
+      "owner": "diagnostic-to-review",
+      "status": "planned"
+    }
+  ],
+  "generated_views": [
+    "experiment/EXPERIMENT_PLAN.md",
+    "experiment/EXPERIMENT_PLAN_EXEC.md"
+  ],
+  "null_result_contract": {
+    "if_no_signal": "do not claim failure before checking regime and implementation"
+  },
+  "plan_code_audit": {
+    "artifact": "orbit-research/PLAN_CODE_AUDIT.md",
+    "message": "Minimal fixture assumes plan/code match.",
+    "verdict": "MATCHES_PLAN"
+  },
+  "probes": [
+    {
+      "audit": "experiment/PROBE_AUDIT.md",
+      "headroom_note": "experiment/HEADROOM_NOTE.md",
+      "id": "P1",
+      "purpose": "implementation smoke test",
+      "report": "experiment/PROBE_REPORT.md",
+      "status": "PASS"
+    }
+  ],
+  "proposal_ref": "proposal/proposal_pack.json",
+  "schema_version": "0.1",
+  "source_markdown": [],
+  "status": "ready",
+  "updated_at": "2026-05-23T00:00:00Z"
+}

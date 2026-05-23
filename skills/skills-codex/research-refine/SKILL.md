@@ -220,334 +220,31 @@ Before starting any phase, check whether a previous run left a checkpoint:
 
 ### Phase 0: Freeze the Problem Anchor
 
-Before proposing anything, extract the user's immutable bottom-line problem. This anchor must be copied verbatim into every proposal and every refinement round.
+Load and follow [problem_anchor.md](prompts/problem_anchor.md). Keep the extracted anchor
+verbatim through every proposal and refinement round; mark reviewer suggestions that change
+the problem as drift.
 
-Write:
-
-- **Bottom-line problem**: What technical problem must be solved?
-- **Must-solve bottleneck**: What specific weakness in current methods is unacceptable?
-- **Non-goals**: What is explicitly *not* the goal of this project?
-- **Constraints**: Compute, data, time, tooling, venue, deployment limits.
-- **Success condition**: What evidence would make the user say "yes, this method addresses the actual problem"?
-
-If later reviewer feedback would change the problem being solved, mark that as **drift** and push back or adapt carefully.
-
-**Checkpoint:** Write `refine-logs/REFINE_STATE.json` with `{"phase": "anchor", "round": 0, "threadId": null, "last_score": null, "last_verdict": null, "status": "in_progress", "timestamp": "<now>"}`.
+**Checkpoint:** Write `refine-logs/REFINE_STATE.json` with phase `anchor`, round `0`,
+`status = in_progress`, and the current timestamp.
 
 ### Phase 1: Build the Initial Proposal
 
-#### Step 1.1: Scan Grounding Material
+Load and follow [initial_proposal.md](prompts/initial_proposal.md). The prompt preserves
+the full grounding scan, technical-gap, route-selection, concrete-method, and minimal
+claim-driven validation template.
 
-Check `papers/` and `literature/` first. Read only the relevant parts needed to answer:
-
-- What mechanism do current methods use?
-- Where exactly do they fail for this problem?
-- Which recent LLM / VLM / Diffusion / RL era techniques are actually relevant here?
-- What training objectives, representations, or interfaces are reusable?
-- What details distinguish a real method from a renamed high-level idea?
-
-If local material is insufficient, search recent venue/arXiv work online. Focus on **method sections, training setup, and failure modes**, not just abstracts.
-
-#### Step 1.2: Identify the Technical Gap
-
-Do not stop at generic research questions. Make the gap operational:
-
-1. **Current pipeline failure point**: where does the baseline break?
-2. **Why naive fixes are insufficient**: larger context, more data, prompting, memory bank, or stacking more modules.
-3. **Smallest adequate intervention**: what is the least additional mechanism that could plausibly fix the bottleneck?
-4. **Frontier-native alternative**: is there a more current route using foundation-model-era primitives that better matches the bottleneck?
-5. **Core technical claim**: what exact mechanism claim could survive normal paper scrutiny?
-6. **Required evidence**: what minimum proof would support the candidate claim or change the next research decision?
-
-#### Step 1.3: Choose the Sharpest Route
-
-Before locking the method, compare two candidate routes if both are plausible:
-
-- **Route A: Elegant minimal route** — the smallest mechanism that directly targets the bottleneck.
-- **Route B: Frontier-native route** — a more modern route that uses LLM / VLM / Diffusion / RL / distillation / inference-time scaling *only if* it gives a cleaner or stronger story.
-
-Then decide:
-
-- Which route is more likely to become a strong paper under the stated constraints?
-- Which route has the cleaner novelty story relative to the closest work?
-- Which route avoids contribution sprawl?
-
-If both routes are weak, rethink the framing instead of combining them into a larger system by default.
-
-#### Step 1.4: Concretize the Method First
-
-The proposal must answer "how would we actually build this?" Prefer method detail over broad experimentation and prefer reuse over invention.
-
-Cover:
-
-1. **One-sentence method thesis**: the single strongest mechanism claim.
-2. **Contribution focus**: one dominant contribution and at most one supporting contribution.
-3. **Complexity budget**: what is frozen or reused, what is new, and what tempting additions are intentionally excluded.
-4. **System graph**: modules, data flow, inputs, outputs.
-5. **Representation design**: what latent, embedding, plan token, reward signal, memory state, or alignment space is used?
-6. **Training recipe**: data source, supervision, pseudo-labeling, negatives, curriculum, losses, weighting, stagewise vs joint training.
-7. **Inference path**: how the trained components are used at test time and what signals flow where.
-8. **Why the mechanism stays small**: why a larger stack is unnecessary.
-9. **Exact role of any frontier primitive**: if you use an LLM / VLM / Diffusion / RL component, specify whether it acts as planner, teacher, critic, reward model, generator prior, search controller, or distillation source.
-10. **Failure handling**: what could go wrong and what fallback or diagnostic exists?
-11. **Novelty and elegance argument**: why this is more than naming a module and why the paper still looks focused.
-
-If the method is still only described as "add a module" or "use a planner," it is not concrete enough.
-
-#### Step 1.5: Design Minimal Claim-Driven Validation
-
-Experiments exist to validate the method, not to dominate the document.
-
-For each core claim, define the **smallest strong experiment** that can validate it:
-
-- the claim being tested
-- the necessary baseline or ablation
-- the decisive metric
-- the expected directional outcome
-
-Additional rules:
-
-- Ensure one experiment block directly supports the **Problem Anchor**.
-- If complexity risk exists, include one **simplification or deletion check**.
-- If a frontier primitive is central, include one **necessity check** showing why that choice matters.
-- Default to **1-3 core experiment blocks** and leave the full execution roadmap to `/experiment-plan`.
-
-#### Step 1.6: Write the Initial Proposal
-
-Save to `refine-logs/round-0-initial-proposal.md`.
-
-Use this structure:
-
-```markdown
-# Research Proposal: [Title]
-
-## Problem Anchor
-- Bottom-line problem:
-- Must-solve bottleneck:
-- Non-goals:
-- Constraints:
-- Success condition:
-
-## Technical Gap
-[Why current methods fail, why naive bigger systems are not enough, and what mechanism is missing]
-
-## Method Thesis
-- One-sentence thesis:
-- Why this is the smallest adequate intervention:
-- Why this route is timely in the foundation-model era:
-
-## Contribution Focus
-- Dominant contribution:
-- Optional supporting contribution:
-- Explicit non-contributions:
-
-## Proposed Method
-### Complexity Budget
-- Frozen / reused backbone:
-- New trainable components:
-- Tempting additions intentionally not used:
-
-### System Overview
-[Step-by-step pipeline or ASCII graph]
-
-### Core Mechanism
-- Input / output:
-- Architecture or policy:
-- Training signal / loss:
-- Why this is the main novelty:
-
-### Optional Supporting Component
-- Only include if truly necessary:
-- Input / output:
-- Training signal / loss:
-- Why it does not create contribution sprawl:
-
-### Modern Primitive Usage
-- Which LLM / VLM / Diffusion / RL-era primitive is used:
-- Exact role in the pipeline:
-- Why it is more natural than an old-school alternative:
-
-### Integration into Base Generator / Downstream Pipeline
-[Where the new method attaches, what is frozen, what is trainable, inference order]
-
-### Training Plan
-[Stagewise or joint training, losses, data construction, pseudo-labels, schedules]
-
-### Failure Modes and Diagnostics
-- [Failure mode]:
-- [How to detect]:
-- [Fallback or mitigation]:
-
-### Novelty and Elegance Argument
-[Closest work, exact difference, why this is a focused mechanism-level contribution rather than a module pile-up]
-
-## Claim-Driven Validation Sketch
-### Claim 1: [Main claim]
-- Minimal experiment:
-- Baselines / ablations:
-- Metric:
-- Expected evidence:
-
-### Claim 2: [Optional]
-- Minimal experiment:
-- Baselines / ablations:
-- Metric:
-- Expected evidence:
-
-## Experiment Handoff Inputs
-- Must-prove claims:
-- Must-run ablations:
-- Critical datasets / metrics:
-- Highest-risk assumptions:
-
-## Compute & Timeline Estimate
-- Estimated GPU-hours:
-- Data / annotation cost:
-- Timeline:
-```
-
-**Checkpoint:** Update `refine-logs/REFINE_STATE.json` with `{"phase": "proposal", "round": 0, ...}`.
+Save the result to `refine-logs/round-0-initial-proposal.md` and update
+`refine-logs/REFINE_STATE.json` with phase `proposal`, round `0`, and current status.
 
 ### Phase 2: External Method Review (Round 1)
 
-Send the full proposal to GPT-5.5 for an **elegance-first, frontier-aware, method-first** review. The reviewer should spend most of the critique budget on the method itself, not on expanding the experiment menu.
+Load [reviewer_critique.md](prompts/reviewer_critique.md) and send the full proposal to
+Codex/GPT-5.5 with the parsed `VENUE`, `PAPER_MODE`, `REVIEWER_DIFFICULTY`,
+`REVIEW_POSTURE`, and `REVIEWER_EFFORT` substitutions. Preserve the difficulty
+escalation blocks and Codex standalone handoff behavior from that asset exactly.
 
-**Route by REVIEWER_DIFFICULTY and REVIEW_POSTURE** before composing the prompt:
-- `medium` (default): use the collaborator prompt below as-is.
-- `hard`: before STOP A, use stronger collaborator review and require survival routes;
-  raise the verdict bar from "score ≥ 9" to "score ≥ 9.5"; allow up to MAX_ROUNDS = 7
-  rounds.
-- `nightmare`: before STOP A, interpret as strong collaborator review unless the user
-  explicitly sets `— review-posture: adversarial` or the workflow is after STOP C. In
-  adversarial mode, add per-dimension vetoes.
-
-```
-mcp__codex__codex:
-  model: REVIEWER_MODEL
-  config: {"model_reasoning_effort": REVIEWER_EFFORT}     // honors `— effort:` flag; default "xhigh"
-  prompt: |
-    You are a constructive senior ML research collaborator and paper director for {VENUE_PHRASE}.
-    This is an early-stage, method-first research proposal.
-    Default paper mode is {PAPER_MODE}. In normal mode, judge against a clean,
-    honest, publishable AI paper bar, not a breakthrough-only bar.
-
-    [INSERT difficulty-escalation paragraph here when REVIEWER_DIFFICULTY ∈ {hard, nightmare}]
-    [INSERT per-dimension veto clause here only when REVIEW_POSTURE = adversarial]
-
-    Your job is NOT to reward extra modules, contribution sprawl, or a giant benchmark checklist.
-    Your job IS to stress-test whether the proposed method:
-    (1) still solves the original anchored problem,
-    (2) is concrete enough to implement,
-    (3) presents a focused, elegant contribution,
-    (4) uses foundation-model-era techniques appropriately when they are the natural fit.
-
-    Review principles:
-    - Prefer the smallest adequate mechanism over a larger system.
-    - Penalize parallel contributions that make the paper feel unfocused.
-    - Similar work is not fatal by default; classify novelty risk and propose positioning.
-    - For every major criticism, include a survival route and the minimal evidence needed.
-    - Do not recommend abandonment unless a true STRONG_BLOCKER is present.
-    - If a modern LLM / VLM / Diffusion / RL route would clearly produce a better paper, say so concretely.
-    - If the proposal is already modern enough, do NOT force trendy components.
-    - Do not ask for extra experiments unless they are needed to prove the core claims.
-
-    Read the Problem Anchor first. If your suggested fix would change the problem being solved,
-    call that out explicitly as drift instead of treating it as a normal revision request.
-
-    === PROPOSAL ===
-    [Paste the FULL proposal from Phase 1]
-    === END PROPOSAL ===
-
-    Score these 7 dimensions from 1-10:
-
-    1. **Problem Fidelity**: Does the method still attack the original bottleneck, or has it drifted into solving something easier or different?
-
-    2. **Method Specificity**: Are the interfaces, representations, losses, training stages, and inference path concrete enough that an engineer could start implementing?
-
-    3. **Contribution Quality**: Is there one dominant mechanism-level contribution with real novelty, good parsimony, and no obvious contribution sprawl?
-
-    4. **Frontier Leverage**: Does the proposal use current foundation-model-era primitives appropriately when they are the right tool, instead of defaulting to old-school module stacking?
-
-    5. **Feasibility**: Can this method be trained and integrated with the stated resources and data assumptions?
-
-    6. **Validation Focus**: Are the proposed experiments minimal but sufficient to validate the core claims? Is there unnecessary experimental bloat?
-
-    7. **Paper-Mode Fit**: If executed well, would the contribution survive as a normal / benchmark / reproduction-plus / system / focused mechanism paper under {VENUE_PHRASE} expectations?
-
-    **OVERALL SCORE** (1-10): Weighted toward Problem Fidelity, Method Specificity, Contribution Quality, and Frontier Leverage.
-    Use this weighting: Problem Fidelity 15%, Method Specificity 25%, Contribution Quality 25%, Frontier Leverage 15%, Feasibility 10%, Validation Focus 5%, Paper-Mode Fit 5%.
-
-    For each dimension scoring < 7, provide:
-    - The specific weakness
-    - A concrete fix at the method level (interface / loss / training recipe / integration point / deletion of unnecessary parts)
-    - A survival route, unless the issue is a true STRONG_BLOCKER
-    - Priority: CRITICAL / IMPORTANT / MINOR
-
-    Then add:
-    - **Simplification Opportunities**: 1-3 concrete ways to delete, merge, or reuse components while preserving the main claim. Write "NONE" if already tight.
-    - **Modernization Opportunities**: 1-3 concrete ways to replace old-school pieces with more natural foundation-model-era primitives if genuinely better. Write "NONE" if already modern enough.
-    - **Drift Warning**: "NONE" if the proposal still solves the anchored problem; otherwise explain the drift clearly.
-    - **Verdict**: READY / REVISE / RETHINK
-
-    Verdict rule:
-    - READY: overall score >= SCORE_THRESHOLD, no meaningful drift, one focused dominant contribution, and no obvious complexity bloat remains
-    - REVISE: the direction is promising but not yet at READY bar
-    - RETHINK: the core mechanism or framing is still fundamentally off
-    [If REVIEW_POSTURE = adversarial and REVIEWER_DIFFICULTY = nightmare, additionally
-    return REVISE when any single dimension scores < 8 even if overall >= SCORE_THRESHOLD.]
-```
-
-**Variable substitution before sending the prompt**:
-- `{VENUE_PHRASE}` = `VENUE` if `VENUE != ""` else `"a normal ML venue target (NeurIPS/ICML/ICLR-style expectations without breakthrough-only assumptions)"`.
-  Examples: `VENUE = "ICLR"` → `"ICLR"`; `VENUE = "IEEE_JOURNAL"` → `"IEEE_JOURNAL"`;
-  `VENUE = ""` → `"a normal ML venue target (NeurIPS/ICML/ICLR-style expectations without breakthrough-only assumptions)"`.
-- `SCORE_THRESHOLD` = the difficulty-derived numeric threshold (medium = 9, hard /
-  nightmare = 9.5).
-- `REVIEWER_EFFORT` = the effort level parsed from `— effort:` (default `xhigh`).
-- `PAPER_MODE` = parsed from `— paper-mode:` (default `normal`).
-- `REVIEW_POSTURE` = parsed from `— review-posture:` or inferred from stop boundary.
-
-### REVIEWER_DIFFICULTY routing — escalation paragraphs
-
-Insert the relevant block(s) into the reviewer prompt depending on
-`REVIEWER_DIFFICULTY`:
-
-**For `hard` and `nightmare` before STOP A — strong collaborator paragraph:**
-
-```
-DIFFICULTY: HARD. Apply a stronger collaborator review. Specifically:
-- Do not let "interesting" carry weight against "focused"; sprawl is the
-  primary failure mode at this bar and must be flagged in the Verdict, not
-  buried in Simplification Opportunities.
-- Frontier-leverage incompleteness must be called out: if the proposal could
-  be strengthened by a foundation-model-era primitive that is currently
-  missing, that is a CRITICAL issue, not a Modernization Opportunity.
-- Validation focus: a single non-decisive experiment in the validation plan
-  must be flagged CRITICAL — every claim must have a falsifiable predicate
-  with a Cohen's-d threshold or equivalent.
-- Raise the verdict bar to overall score >= 9.5 for READY.
-- Still provide a positioning fix and survival route for every major concern.
-```
-
-**For adversarial `nightmare` only — per-dimension veto clause (added after STOP C or explicit request):**
-
-```
-DIFFICULTY: NIGHTMARE with REVIEW_POSTURE = adversarial. Every individual
-dimension (Problem Fidelity, Method Specificity, Contribution Quality,
-Frontier Leverage, Feasibility, Validation Focus, Paper-Mode Fit) must
-independently score >= 8 for READY — overall score >= 9.5 is necessary but
-not sufficient. If any single dimension is < 8, the verdict must be REVISE
-or RETHINK regardless of the overall score, and the reviewer must list the
-specific dimension(s) below 8 in the Verdict line.
-```
-
-**CRITICAL: Save the `threadId`** from this call for all later rounds.
-
-**CRITICAL: Save the FULL raw response** verbatim.
-
-Save review to `refine-logs/round-1-review.md` with the raw response in a `<details>` block.
-
-**Checkpoint:** Update `refine-logs/REFINE_STATE.json` with `{"phase": "review", "round": 1, "threadId": "<saved>", "last_score": <parsed>, "last_verdict": "<parsed>", ...}`.
+Save the raw response to `refine-logs/round-1-review.md`, save the `threadId`, parse score
+and verdict, and update `refine-logs/REFINE_STATE.json` with phase `review`.
 
 ### Phase 3: Parse Feedback and Revise the Method
 
@@ -583,73 +280,13 @@ Update `refine-logs/score-history.md`:
 
 #### Step 3.2: Revise With an Anchor Check and a Simplicity Check
 
-Before changing anything:
+Load and follow [anchor_simplicity_revision.md](prompts/anchor_simplicity_revision.md).
+The asset preserves the exact revision discipline: copy the problem anchor, run anchor
+and simplicity checks, accept valid feedback, push back on drift, and save the round-N
+refinement artifact.
 
-1. Copy the **Problem Anchor verbatim**.
-2. Write an **Anchor Check**:
-   - What is the original bottleneck?
-   - Does the current method still solve it?
-   - Which reviewer suggestions would cause drift if followed blindly?
-3. Write a **Simplicity Check**:
-   - What is the dominant contribution now?
-   - What components can be removed, merged, or kept frozen?
-   - Which reviewer suggestions add unnecessary complexity?
-   - If a frontier primitive is central, is its role still crisp and justified?
-
-Then process reviewer feedback:
-
-- If **valid**: sharpen the mechanism, simplify if possible, or modernize if the paper really improves.
-- If **debatable**: revise, but explain your reasoning with evidence.
-- If **wrong, drifting, or over-complicating**: push back with evidence from local papers and the Problem Anchor.
-
-Bias the revisions toward:
-
-- a sharper central contribution
-- fewer moving parts
-- cleaner reuse of strong existing backbones
-- more natural foundation-model-era leverage when it improves the paper
-- leaner, decision-changing experiments
-
-Do **not** add multiple parallel contributions just to chase score. If the reviewer requests another module, first ask whether the same gain can come from a better interface, distillation signal, reward model, or inference policy on top of an existing backbone.
-
-Save to `refine-logs/round-N-refinement.md`:
-
-```markdown
-# Round N Refinement
-
-## Problem Anchor
-[Copy verbatim from round 0]
-
-## Anchor Check
-- Original bottleneck:
-- Why the revised method still addresses it:
-- Reviewer suggestions rejected as drift:
-
-## Simplicity Check
-- Dominant contribution after revision:
-- Components removed or merged:
-- Reviewer suggestions rejected as unnecessary complexity:
-- Why the remaining mechanism is still the smallest adequate route:
-
-## Changes Made
-
-### 1. [Method section changed]
-- Reviewer said:
-- Action:
-- Reasoning:
-- Impact on core method:
-
-### 2. [Novelty / modernity / feasibility / validation change]
-- Reviewer said:
-- Action:
-- Reasoning:
-- Impact on core method:
-
-## Revised Proposal
-[Full updated proposal from Problem Anchor through Claim-Driven Validation Sketch]
-```
-
-**Checkpoint:** Update `refine-logs/REFINE_STATE.json` with `{"phase": "refine", "round": N, ...}`.
+**Checkpoint:** Update `refine-logs/REFINE_STATE.json` with phase `refine`, round `N`,
+and the parsed review state.
 
 ### Phase 4: Re-evaluation (Round 2+)
 
@@ -958,6 +595,9 @@ Suggested next step: /experiment-bridge "refine-logs/FINAL_PROPOSAL.md"
 - **Pushback is encouraged.** If reviewer feedback causes drift or unnecessary complexity, argue back with evidence.
 - **ALWAYS use `config: {"model_reasoning_effort": "xhigh"}`** for all Codex review calls.
 - **Save `threadId` from Phase 2** and use `mcp__codex__codex-reply` for later rounds.
+- **Codex remains required.** If MCP/auth/sandbox fails, export/import a standalone Codex
+  review via `/import-codex-review`; do not mark the review satisfied until an MCP or
+  imported standalone Codex response exists.
 - **Do not fabricate results.** Only describe expected evidence and planned experiments.
 - **Be specific about compute and data assumptions.** Vague "we'll train a model" is not enough.
 - **Document in the right layer.** Save raw reviews, anchor checks, simplicity checks, and major method changes in round files or `REFINEMENT_REPORT.md`; do not carry them into `FINAL_PROPOSAL`.

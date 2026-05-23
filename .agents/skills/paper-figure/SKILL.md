@@ -1,9 +1,9 @@
 ---
-name: "paper-figure"
+name: paper-figure
 description: "Generate publication-quality figures and tables from experiment results. Use when user says \"画图\", \"作图\", \"generate figures\", \"paper figures\", or needs plots for a paper."
+argument-hint: [figure-plan-or-data-path]
+allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, mcp__codex__codex, mcp__codex__codex-reply
 ---
-
-> Override for Codex users who want **Claude Code**, not a second Codex agent, to act as the reviewer. Install this package **after** `skills/skills-codex/*`.
 
 # Paper Figure: Publication-Quality Plots from Experiment Data
 
@@ -30,7 +30,7 @@ Generate all figures and tables for a paper based on: **$ARGUMENTS**
 - **COLOR_PALETTE = `tab10`** — Default matplotlib color cycle. Options: `tab10`, `Set2`, `colorblind` (deuteranopia-safe)
 - **FONT_SIZE = 10** — Base font size (matches typical conference body text)
 - **FIG_DIR = `figures/`** — Output directory for generated figures
-- **REVIEWER_MODEL = `claude-review`** — Claude reviewer invoked through the local `claude-review` MCP bridge. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
+- **REVIEWER_MODEL = `gpt-5.5`** — Model used via Codex MCP for figure quality review.
 
 ## Inputs
 
@@ -39,6 +39,31 @@ Generate all figures and tables for a paper based on: **$ARGUMENTS**
 3. **Existing figures** — any manually created figures to preserve
 
 If no PAPER_PLAN.md exists, scan for data files and ask the user which figures to generate.
+
+## Figure Manifest Contract
+
+`figures/figure_manifest.json` is the source of truth for paper figures. After creating,
+updating, preserving, or verifying any figure/table, append or update the corresponding
+entry by `id`:
+
+```jsonc
+{
+  "id": "fig:training_curves",
+  "type": "line_plot|bar_chart|table|multi_panel|manual|...",
+  "supports_claims": ["C1"],
+  "data_source": "results/run_001/metrics.json",
+  "generator": "paper-figure",
+  "output": "figures/fig_training_curves.pdf",
+  "latex_label": "fig:training_curves",
+  "status": "draft|verified|needs_redesign"
+}
+```
+
+Use `supports_claims` from `claims/claim_ledger.json` or the paper plan when available;
+otherwise use an empty list and mark the entry `draft`. Set `verified` only after output
+exists and passes the quality checklist/review. Set `needs_redesign` for figures that
+fail visual review or no longer match the claim/data source. `figures/latex_includes.tex`
+is a generated view, not the manifest source of truth.
 
 ## Workflow
 
@@ -202,7 +227,9 @@ Save all snippets to `figures/latex_includes.tex` for easy copy-paste into the p
 Send figure descriptions and captions to GPT-5.5 for review:
 
 ```
-mcp__claude-review__review_start:
+mcp__codex__codex:
+  model: gpt-5.5
+  config: {"model_reasoning_effort": "xhigh"}
   prompt: |
     Review these figure/table plans for a [VENUE] submission.
 
@@ -215,8 +242,6 @@ mcp__claude-review__review_start:
 
     [list all figures with captions and descriptions]
 ```
-
-After this start call, immediately save the returned `jobId` and poll `mcp__claude-review__review_status` with a bounded `waitSeconds` until `done=true`. Treat the completed status payload's `response` as the reviewer output, and save the completed `threadId` for any follow-up round.
 
 ### Step 8: Quality Checklist
 
@@ -248,13 +273,6 @@ figures/
 ├── latex_includes.tex           # LaTeX snippets for all figures
 └── TABLE_*.tex                  # standalone table LaTeX files
 ```
-
-## Output Protocols
-
-> Follow these shared protocols for all output files:
-> - **[Output Versioning Protocol](../../shared-references/output-versioning.md)** — write timestamped file first, then copy to fixed name
-> - **[Output Manifest Protocol](../../shared-references/output-manifest.md)** — log every output to MANIFEST.md
-> - **[Output Language Protocol](../../shared-references/output-language.md)** — respect the project's language setting
 
 ## Key Rules
 

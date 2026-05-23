@@ -1,0 +1,18 @@
+{
+  "blockers": [],
+  "canonical_packs": {
+    "claim_ledger": "claims/claim_ledger.json",
+    "experiment_pack": "experiment/experiment_pack.json",
+    "paper_package": "paper/paper_package.json",
+    "proposal_pack": "proposal/proposal_pack.json"
+  },
+  "current_phase": "phase-5-summary",
+  "current_skill": "idea-to-proposal",
+  "current_stop": "STOP_A",
+  "legacy_artifacts_detected": [],
+  "pause_reason": "stop_review",
+  "safe_next_command": "/experiment-bridge \"proposal/proposal_pack.json\"",
+  "schema_version": "0.1",
+  "status": "paused",
+  "updated_at": "2026-05-23T00:00:00Z"
+}

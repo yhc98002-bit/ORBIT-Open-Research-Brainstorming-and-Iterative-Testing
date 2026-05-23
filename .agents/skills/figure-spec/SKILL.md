@@ -33,6 +33,29 @@ Generate publication-quality **architecture diagrams**, **workflow pipelines**, 
 - **CJK support**: multi-line labels with proper Chinese character width estimation
 - **No external API**: runs fully local, no network, no API keys
 
+## Figure Manifest Contract
+
+`figures/figure_manifest.json` is the source of truth for paper figures. After rendering
+or updating a diagram, append/update one entry by `id`:
+
+```jsonc
+{
+  "id": "fig:method_architecture",
+  "type": "architecture|workflow|pipeline|audit_cascade|topology",
+  "supports_claims": ["C1"],
+  "data_source": "figures/specs/method_architecture.json",
+  "generator": "figure-spec",
+  "output": "figures/method_architecture.svg",
+  "latex_label": "fig:method_architecture",
+  "status": "draft|verified|needs_redesign"
+}
+```
+
+Use `verified` only after the FigureSpec validates and the rendered SVG/PDF passes visual
+review. Use `needs_redesign` if semantic relationships, label readability, or claim
+support are wrong. If no claim ledger is available, keep `supports_claims: []` and
+`status: "draft"`.
+
 ## Tool Location
 
 Resolve `figure_renderer.py` using the standard helper chain in

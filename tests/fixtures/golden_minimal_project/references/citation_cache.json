@@ -1,0 +1,29 @@
+{
+  "schema_version": "0.1",
+  "status": "ready",
+  "updated_at": "2026-05-23T00:00:00Z",
+  "source_markdown": [],
+  "generated_views": [],
+  "citations": [
+    {
+      "key": "fixture2026",
+      "title": "A Minimal Fixture for ORBIT Regression Tests",
+      "authors": [
+        "A. Tester"
+      ],
+      "venue": "FixtureConf",
+      "year": 2026,
+      "source": "local-fixture",
+      "verified": true,
+      "used_for": [
+        "background"
+      ],
+      "contexts": [
+        {
+          "file": "paper/main.tex",
+          "text": "Used only as a local regression citation."
+        }
+      ]
+    }
+  ]
+}
