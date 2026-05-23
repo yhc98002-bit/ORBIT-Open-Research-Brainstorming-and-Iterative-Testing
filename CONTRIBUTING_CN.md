@@ -76,7 +76,7 @@ allowed-tools: Read, Write, Bash(*)
 
 ## 有问题？
 
-欢迎提交 Issue 提问，或加入我们的微信群（二维码见 README）。
+欢迎提交 Issue 提问。
 
 ## 许可证
 
