@@ -23,9 +23,14 @@
   "formal_diagnostics": [
     {
       "command": "python run_diagnostic.py --config configs/minimal.yaml",
+      "claim_relevance": "primary_evidence",
       "expected_audit": "orbit-research/DIAGNOSTIC_RUN_AUDIT.md",
       "expected_report": "orbit-research/DIAGNOSTIC_RUN_REPORT.md",
+      "expected_result_paths": [
+        "results/minimal/"
+      ],
       "id": "D1",
+      "kind": "paper_bearing_main",
       "owner": "diagnostic-to-review",
       "status": "planned"
     }

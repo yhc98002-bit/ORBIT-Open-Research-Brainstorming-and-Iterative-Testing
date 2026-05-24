@@ -147,7 +147,33 @@
           "id": {
             "type": "string"
           },
+          "kind": {
+            "type": "string",
+            "description": "Diagnostic class, for example paper_bearing_main, sanity, implementation, or scaleup."
+          },
+          "claim_relevance": {
+            "type": "string",
+            "description": "How this diagnostic relates to claims, for example primary_evidence, scope_check, local_only, or none."
+          },
           "command": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "manifest": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "manifest_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "grid_spec": {
             "type": [
               "string",
               "null"
@@ -158,6 +184,12 @@
           },
           "owner": {
             "type": "string"
+          },
+          "expected_result_paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "expected_report": {
             "type": [

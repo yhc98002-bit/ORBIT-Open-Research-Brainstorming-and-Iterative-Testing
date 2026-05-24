@@ -34,6 +34,10 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     selection = parser.add_mutually_exclusive_group()
     selection.add_argument("--all", action="store_true", help="Validate every canonical pack path.")
     selection.add_argument("--pack", choices=pack_names(), help="Validate one named pack.")
+    selection.add_argument(
+        "--kind",
+        help="Compatibility alias for --pack; accepts names like experiment or experiment_pack.",
+    )
     selection.add_argument("--path", help="Validate a specific pack file path.")
     parser.add_argument("--json", action="store_true", help="Emit machine-readable validation report.")
     return parser.parse_args(argv)
@@ -226,6 +230,24 @@ def infer_pack_name(path: Path) -> Optional[str]:
     return None
 
 
+def normalize_pack_kind(kind: Optional[str]) -> Optional[str]:
+    if kind is None:
+        return None
+    normalized = kind.strip().replace("-", "_")
+    aliases = {
+        "proposal": "proposal_pack",
+        "experiment": "experiment_pack",
+        "claims": "claim_ledger",
+        "claim": "claim_ledger",
+        "figures": "figure_manifest",
+        "figure": "figure_manifest",
+        "citations": "citation_cache",
+        "citation": "citation_cache",
+        "paper": "paper_package",
+    }
+    return aliases.get(normalized, normalized)
+
+
 def relative_to_or_none(path: Path, root: Path) -> Optional[Path]:
     try:
         return path.relative_to(root)
@@ -312,6 +334,25 @@ def validate_selection(repo: Path, args: argparse.Namespace) -> Dict[str, Any]:
         selected = [inferred]
     elif args.pack:
         selected = [args.pack]
+    elif args.kind:
+        kind = normalize_pack_kind(args.kind)
+        if kind not in PACK_SPECS:
+            return {
+                "results": [
+                    {
+                        "name": kind,
+                        "path": None,
+                        "schema": None,
+                        "status": "error",
+                        "warnings": [],
+                        "errors": [
+                            "unknown pack kind %r; valid packs: %s"
+                            % (args.kind, ", ".join(pack_names()))
+                        ],
+                    }
+                ]
+            }
+        selected = [kind]
     else:
         selected = pack_names()
 

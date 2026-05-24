@@ -53,7 +53,12 @@
   "formal_diagnostics": [
     {
       "id": "diag_fixture",
+      "kind": "paper_bearing_main",
+      "claim_relevance": "primary_evidence",
       "command": "python scripts/noop_fixture.py",
+      "expected_result_paths": [
+        "results/diag_fixture/"
+      ],
       "status": "planned",
       "owner": "diagnostic-to-review",
       "expected_report": "orbit-research/diagnostics/diag_fixture/RUN_REPORT.md",

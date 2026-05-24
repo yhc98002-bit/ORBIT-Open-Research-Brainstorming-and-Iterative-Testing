@@ -25,6 +25,7 @@ stabilization areas only; it does not change workflow behavior.
    - Keep compile, claim audit, citation audit, and package readiness separate from draft generation.
 
 3. Orbit-status STOP C next command
+   - Status: Prompt 2 routes STOP C from `experiment/experiment_pack.json` formal diagnostics and blocks missing diagnostics instead of suggesting `PLAN_CODE_AUDIT.md`.
    - Confirm `tools/orbit_status.py` reports the safe STOP C handoff.
    - The safe next command should point to the human decision step until a valid `HUMAN_DECISION_NOTE.md` exists.
 

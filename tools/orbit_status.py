@@ -249,6 +249,54 @@ def experiment_pack_path(repo: Path) -> Path:
     return repo / "experiment/experiment_pack.json"
 
 
+def quote_skill_arg(value: str) -> str:
+    return json.dumps(value)
+
+
+def formal_diagnostic_input(entry: Mapping[str, Any]) -> Optional[str]:
+    for key in ("command", "manifest", "manifest_path", "grid_spec"):
+        value = entry.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return None
+
+
+def formal_diagnostic_entries(pack: Mapping[str, Any]) -> List[Mapping[str, Any]]:
+    diagnostics = pack.get("formal_diagnostics")
+    if not isinstance(diagnostics, list):
+        return []
+    entries: List[Mapping[str, Any]] = []
+    for item in diagnostics:
+        if not isinstance(item, Mapping):
+            continue
+        if formal_diagnostic_input(item):
+            entries.append(item)
+    return entries
+
+
+def formal_diagnostic_next_command(pack: Mapping[str, Any]) -> Optional[str]:
+    entries = formal_diagnostic_entries(pack)
+    if not entries:
+        return None
+    if len(entries) == 1:
+        formal_input = formal_diagnostic_input(entries[0])
+        if formal_input:
+            return "/diagnostic-to-review %s" % quote_skill_arg(formal_input)
+    return '/diagnostic-to-review "experiment/experiment_pack.json"'
+
+
+def legacy_experiment_plan_path(repo: Path) -> Optional[str]:
+    for candidate in (
+        "refine-logs/EXPERIMENT_PLAN_EXEC.md",
+        "experiment/EXPERIMENT_PLAN_EXEC.md",
+        "refine-logs/EXPERIMENT_PLAN.md",
+        "experiment/EXPERIMENT_PLAN.md",
+    ):
+        if (repo / candidate).exists():
+            return candidate
+    return None
+
+
 def summarize_probe_status(probes: Any) -> str:
     if not isinstance(probes, list) or not probes:
         return "not_run"
@@ -339,12 +387,13 @@ def state_from_experiment_pack(repo: Path, legacy_artifacts: List[str]) -> Optio
         "plan_status": plan_status,
         "audit_status": audit_status if audit_verdict is None else "%s (%s)" % (audit_status, audit_verdict),
         "probe_status": probe_status,
+        "formal_diagnostics": len(formal_diagnostic_entries(pack)),
     }
 
     blockers: List[Mapping[str, Any]] = []
     status = "paused"
     pause_reason: Optional[str] = "stop_review"
-    safe_next = '/diagnostic-to-review "experiment/experiment_pack.json"'
+    safe_next = formal_diagnostic_next_command(pack)
     current_phase = "plan_code_probe_review"
 
     if plan_status == "blocked" or audit_status == "blocked" or probe_status == "blocked":
@@ -371,6 +420,19 @@ def state_from_experiment_pack(repo: Path, legacy_artifacts: List[str]) -> Optio
                 "G11",
                 "orbit-research/PLAN_CODE_AUDIT.md",
                 "PLAN_CODE_AUDIT is missing after experiment_pack",
+                safe_next,
+            )
+        )
+    elif safe_next is None:
+        status = "blocked"
+        pause_reason = "missing_prereq"
+        current_phase = "formal_diagnostics_missing"
+        safe_next = '/experiment-bridge "experiment/experiment_pack.json" — mode: plan-only'
+        blockers.append(
+            missing_blocker(
+                "G12",
+                "experiment_pack.formal_diagnostics",
+                "experiment_pack.formal_diagnostics is missing or lacks a command/manifest",
                 safe_next,
             )
         )
@@ -725,20 +787,29 @@ def infer_from_legacy(repo: Path) -> Dict[str, Any]:
                 command,
             )
         if parsed and parsed["verdict"] in PLAN_CODE_GOOD:
-            command = '/diagnostic-to-review "orbit-research/PLAN_CODE_AUDIT.md"'
+            legacy_plan = legacy_experiment_plan_path(repo)
+            command = (
+                '/experiment-bridge "%s" — mode: plan-only' % legacy_plan
+                if legacy_plan
+                else '/experiment-bridge "%s" — mode: plan-only' % proposal_path(repo)
+            )
             return state_with_legacy(
                 repo,
                 legacy_artifacts,
-                "STOP_C",
-                "diagnostic-to-review",
-                "diagnostic_run_missing",
-                "paused",
+                "STOP_B",
+                "experiment-bridge",
+                "formal_diagnostics_missing",
+                "blocked",
                 "missing_prereq",
                 [
                     missing_blocker(
                         "G12",
-                        "orbit-research/DIAGNOSTIC_RUN_AUDIT.md",
-                        "DIAGNOSTIC_RUN_AUDIT is missing after PLAN_CODE_AUDIT %s" % parsed["verdict"],
+                        "experiment/experiment_pack.json",
+                        (
+                            "experiment_pack.json with formal_diagnostics is missing after "
+                            "PLAN_CODE_AUDIT %s; PLAN_CODE_AUDIT.md is not a diagnostic input"
+                        )
+                        % parsed["verdict"],
                         command,
                     )
                 ],
@@ -814,7 +885,7 @@ def infer_from_legacy(repo: Path) -> Dict[str, Any]:
             "orbit-research/DIAGNOSTIC_TO_REVIEW_STATE.json",
             "STOP_C",
             "diagnostic-to-review",
-            '/diagnostic-to-review "orbit-research/PLAN_CODE_AUDIT.md"',
+            '/diagnostic-to-review "<explicit diagnostic command>"',
         ),
         (
             "orbit-research/IDEA_TO_PROPOSAL_STATE.json",
@@ -915,6 +986,8 @@ def format_pretty(state: Mapping[str, Any]) -> str:
         lines.append("  Plan: %s" % stop_b.get("plan_status", "unknown"))
         lines.append("  Audit: %s" % stop_b.get("audit_status", "unknown"))
         lines.append("  Probe: %s" % stop_b.get("probe_status", "unknown"))
+        if "formal_diagnostics" in stop_b:
+            lines.append("  Formal diagnostics: %s" % stop_b.get("formal_diagnostics", 0))
 
     stop_c = state.get("stop_c")
     if isinstance(stop_c, dict):

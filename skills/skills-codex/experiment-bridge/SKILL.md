@@ -109,6 +109,8 @@ compatibility views:
 - `orbit-research/COMPONENT_BUNDLE_LADDER.md`
 - `orbit-research/ALGORITHMIC_FORMALIZATION.md`
 - `orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md`
+- `experiment_pack.formal_diagnostics[]` entries with `id`, `kind`,
+  `claim_relevance`, a `command` or manifest path, and `expected_result_paths[]`.
 
 Implementation/audit outputs:
 
