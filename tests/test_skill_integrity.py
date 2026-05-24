@@ -257,6 +257,23 @@ class SkillIntegrityTest(unittest.TestCase):
 
         self.assertEqual(failures, [])
 
+    def test_result_to_claim_uses_standalone_codex_handoff(self):
+        text = (SKILLS_DIR / "result-to-claim" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        required = [
+            "tools/codex_review_handoff.py",
+            "/import-codex-review orbit-research/codex-imports/result-to-claim.claim-evaluation.response.md",
+            'pause_reason: "codex_review_needed"',
+            'codex_review: "pending"',
+            "gating: false",
+            "A draft `claims/claim_ledger.json` is allowed only when it is",
+            "Do not let a non-gating or degraded draft ledger satisfy paper gates",
+        ]
+        missing = [item for item in required if item not in text]
+
+        self.assertEqual(missing, [])
+
     def test_human_gate_requires_proceed_verdict(self):
         files = [
             SKILLS_DIR / "paper-writing" / "SKILL.md",

@@ -42,6 +42,8 @@ Run `mkdir -p claims orbit-research/`. Always write or update:
 {
   "schema_version": "0.1",
   "status": "draft|ready|blocked|deprecated",
+  "codex_review": "passed|pending|imported|degraded",
+  "gating": true,
   "updated_at": "<ISO-8601 UTC>",
   "source_markdown": ["orbit-research/RESULT_INTERPRETATION.md"],
   "generated_views": ["claims/CLAIM_LEDGER.md", "orbit-research/CLAIM_CONSTRUCTION.md"],
@@ -117,6 +119,40 @@ Assemble the key information:
   and whether any result file is orphaned or unledgered
 
 ### Step 2: Codex Judgment
+
+Codex is required for the claim judgment. Follow
+`../shared-references/codex-precondition.md`; do not accept a local
+single-model substitute as satisfying this gate.
+
+If Codex MCP/auth/sandbox is unavailable before or during this judgment, export a
+standalone handoff prompt and pause:
+
+```bash
+python3 tools/codex_review_handoff.py generate \
+  --repo . \
+  --phase-id "result-to-claim.claim-evaluation" \
+  --role "Independent Codex reviewer judging whether results support paper-bearing claims" \
+  --file "claims/claim_ledger.json" \
+  --file "RUN_LEDGER.jsonl" \
+  --file "orbit-research/RESULT_INTERPRETATION.md" \
+  --objective "Judge claim support from the available results and propose claim_ledger entries without overclaiming." \
+  --output-format "Include VERDICT, claim_supported, confidence, claim_ledger_entries, missing_evidence, and forbidden_overclaims." \
+  --required-section "VERDICT" \
+  --required-section "claim_supported" \
+  --required-section "claim_ledger_entries" \
+  --output-artifact "orbit-research/CODEX_RESULT_TO_CLAIM_REVIEW.md" \
+  --write-orbit-state
+```
+
+This writes `orbit-research/codex-prompts/result-to-claim.claim-evaluation.md`
+and points `ORBIT_STATE.json` at:
+
+```text
+/import-codex-review orbit-research/codex-imports/result-to-claim.claim-evaluation.response.md
+```
+
+Do not mark `claims/claim_ledger.json` as `ready` until a Codex MCP response exists or
+the standalone response has been imported with `/import-codex-review`.
 
 Send the collected results to Codex for objective evaluation:
 
@@ -201,6 +237,12 @@ Normalize into `claims/claim_ledger.json`. Use:
 - `status: "draft"` when evidence is still being reconciled or Codex review is pending.
 - `status: "blocked"` only for invalid/corrupt evidence, missing provenance, or integrity
   failure that prevents a defensible ledger.
+- If a draft ledger is written while waiting for standalone Codex import, it must include
+  `codex_review: "pending"` and `gating: false`. This draft is a recovery aid, not a
+  commitment artifact, and must not satisfy `/paper-from-claims` or `/submission-package`.
+- If the user explicitly passes `— codex-required: false`, every output must carry visible
+  degraded-mode markers, and the ledger must use `codex_review: "degraded"` and
+  `gating: false` unless a later human decision explicitly accepts the degraded artifact.
 - Unsupported original hypotheses are valid STOP C outcomes when encoded as
   `claim_role: "original_hypothesis"` with `paper_use: "do_not_claim"` or
   `paper_use: "limitations_only"`. They must not become main paper claims.
@@ -355,9 +397,15 @@ if research-wiki/ exists:
 - Do not inflate claims beyond what the data supports. If Codex says "partial", do not round up to "yes".
 - A single positive result on one dataset does not support a general claim. Be honest about scope.
 - If `confidence` is low, treat the judgment as inconclusive and add experiments rather than committing to a claim.
-- If Codex MCP is unavailable (call fails), write a draft `claims/claim_ledger.json`
-  with `status: "draft"`, mark affected entries as `exploratory` or pending review,
-  and do not mark the ledger paper-ready until Codex or explicit human review completes.
+- If Codex MCP is unavailable or a Codex call fails, use
+  `tools/codex_review_handoff.py` and `/import-codex-review`; update
+  `orbit-research/ORBIT_STATE.json` with `pause_reason: "codex_review_needed"` and the
+  import command. A draft `claims/claim_ledger.json` is allowed only when it is
+  explicitly non-gating: `status: "draft"`, `codex_review: "pending"`,
+  `gating: false`.
+- Do not let a non-gating or degraded draft ledger satisfy paper gates. Downstream
+  `/paper-from-claims` and `/submission-package` still require Codex-reviewed claims,
+  STOP C red-team `READY_FOR_PAPER`, and human `PROCEED`.
 - Always record the verdict and reasoning in findings.md, regardless of outcome.
 - Downstream paper writing must read `claims/claim_ledger.json` when it exists; Markdown
   claim files are views or compatibility artifacts.

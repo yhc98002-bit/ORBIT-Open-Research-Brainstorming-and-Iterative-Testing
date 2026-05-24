@@ -56,6 +56,7 @@ stabilization areas only; it does not change workflow behavior.
    - Do not treat `claim_supported=no` as a default runtime abort unless evidence integrity is invalid.
 
 10. Result-to-claim Codex handoff consistency
+    - Status: Prompt 8 aligns `/result-to-claim` with the standalone Codex handoff contract and marks Codex-pending draft ledgers as non-gating.
     - Ensure Codex required remains intact.
     - If Codex MCP/auth/sandbox fails, export a standalone review prompt and require import before marking review complete.
 
