@@ -114,8 +114,10 @@ Phase 0 creates a deterministic context for this run:
 - `input_hash`: SHA-256 over normalized formal diagnostic input. The executable helper
   computes it so repeated invocations do not drift by prompt interpretation.
 - `diagnostic_id`: `diag_<UTC YYYYMMDD_HHMMSS>_<input_hash prefix>` for a fresh run.
-  On resume, reuse an existing `diagnostic_id` only if its
-  `DIAGNOSTIC_CONTEXT.json.input_hash` matches the current input hash.
+  Normal invocation may reuse an existing `diagnostic_id` only when the newest matching
+  `DIAGNOSTIC_CONTEXT.json` is active/incomplete and its `input_hash` matches the current
+  input. Terminal sessions such as `reviewed`, `stop_c_ready`, `completed`, or `archived`
+  are not silently reused.
 - `diagnostic_kind`: one of
   `implementation_smoke | headroom_probe | local_mechanism_probe | paper_bearing_main |
   paper_bearing_ablation | scaleup_candidate | unknown`.
@@ -128,6 +130,18 @@ Use the helper instead of hand-rolling these fields:
 python3 tools/diagnostic_session.py create --repo . --input "$ARGUMENTS"
 ```
 
+If the user explicitly resumes a known diagnostic command, use:
+
+```bash
+python3 tools/diagnostic_session.py resume --repo . --input "$ARGUMENTS"
+```
+
+If the user wants a fresh rerun of the same command after a terminal STOP C session, use:
+
+```bash
+python3 tools/diagnostic_session.py create --repo . --input "$ARGUMENTS" --fresh
+```
+
 ## Phase 0: Context, Preflight, Codex Precondition
 
 Phase 0 happens before Phase 1. It must not write `status = in_progress` for blocked
@@ -137,19 +151,30 @@ Steps:
 
 1. Parse `$ARGUMENTS` as a diagnostic command, manifest path, grid spec, or
    `experiment/experiment_pack.json`.
-2. Create or reuse the session context with:
+2. Create or reuse only an active/incomplete matching session context with:
 
    ```bash
    python3 tools/diagnostic_session.py create --repo . --input "$ARGUMENTS"
    ```
 
+   If this returns `terminal_session_exists`, stop and ask for an explicit choice:
+   `-- resume:true` to inspect/recover that session, or `-- fresh:true` to rerun the
+   same diagnostic command with a new `diagnostic_id`.
+
    If the user explicitly resumes, first run:
 
    ```bash
-   python3 tools/diagnostic_session.py validate-resume --repo . --input "$ARGUMENTS"
+   python3 tools/diagnostic_session.py resume --repo . --input "$ARGUMENTS"
    ```
 
+   `validate-resume` remains a compatibility alias for the same input-hash check.
    Treat a nonzero result as a resume blocker; do not fall back to old fixed paths.
+
+   If the user explicitly requests a fresh rerun, run:
+
+   ```bash
+   python3 tools/diagnostic_session.py create --repo . --input "$ARGUMENTS" --fresh
+   ```
 3. Read `diagnostic_id`, `input_hash`, `diagnostic_kind`, and `claim_relevance` from
    `orbit-research/diagnostics/<diagnostic_id>/DIAGNOSTIC_CONTEXT.json`.
 4. Create:
@@ -266,8 +291,12 @@ Do not skip a phase merely because a fixed legacy path exists.
 Before approving a resume, run:
 
 ```bash
-python3 tools/diagnostic_session.py validate-resume --repo . --input "$ARGUMENTS"
+python3 tools/diagnostic_session.py resume --repo . --input "$ARGUMENTS"
 ```
+
+`validate-resume` is accepted as a compatibility alias. Resume is approved only when the
+input hash matches an existing diagnostic context; it must never be inferred from fixed
+latest paths. Fresh reruns of the same command require `create --fresh`.
 
 A phase may be skipped only if all of these are true:
 

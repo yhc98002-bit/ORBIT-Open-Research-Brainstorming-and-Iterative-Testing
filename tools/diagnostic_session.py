@@ -47,17 +47,20 @@ STATUSES = {
     "claim_routed",
     "reviewed",
     "stop_c_ready",
+    "completed",
+    "archived",
 }
 AUDIT_VERDICTS = {"PASS", "FIX_BEFORE_GPU", "REDESIGN_EXPERIMENT", "ERROR"}
 REGIME_VALUES = {"true", "false", "unknown"}
 ACTIVE_STATUSES = {
     "initialized",
+    "blocked",
     "running",
     "run_complete",
     "interpreted",
     "claim_routed",
-    "reviewed",
 }
+TERMINAL_STATUSES = {"reviewed", "stop_c_ready", "completed", "archived"}
 DIAGNOSTIC_ID_RE = re.compile(r"^diag_[A-Za-z0-9_.-]+$")
 
 
@@ -247,6 +250,18 @@ def active_contexts(repo: Path) -> List[Dict[str, Any]]:
     return [context for context in load_all_contexts(repo) if context.get("status") in ACTIVE_STATUSES]
 
 
+def is_active_status(status: Any) -> bool:
+    return status in ACTIVE_STATUSES
+
+
+def is_terminal_status(status: Any) -> bool:
+    return status in TERMINAL_STATUSES
+
+
+def latest_context(contexts: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    return contexts[-1] if contexts else None
+
+
 def make_context(
     repo: Path,
     input_value: str,
@@ -294,16 +309,30 @@ def create_session(args: argparse.Namespace) -> Dict[str, Any]:
     repo = Path(args.repo).resolve()
     input_hash = stable_input_hash(args.input)
     matches = find_matching_contexts(repo, input_hash)
-    if matches and not args.fresh:
-        context = matches[-1]
+    latest = latest_context(matches)
+    if latest and not args.fresh:
+        if is_active_status(latest.get("status")):
+            context = latest
+            return {
+                "ok": True,
+                "created": False,
+                "status": "existing_active",
+                "diagnostic_id": context["diagnostic_id"],
+                "input_hash": input_hash,
+                "context_path": context["_context_path"],
+                "context": without_private_keys(context),
+                "message": "reusing active diagnostic session with matching input_hash",
+            }
         return {
-            "ok": True,
+            "ok": False,
             "created": False,
-            "status": "existing",
-            "diagnostic_id": context["diagnostic_id"],
+            "status": "terminal_session_exists",
+            "diagnostic_id": latest["diagnostic_id"],
             "input_hash": input_hash,
-            "context_path": context["_context_path"],
-            "context": without_private_keys(context),
+            "context_path": latest["_context_path"],
+            "context_status": latest.get("status"),
+            "context": without_private_keys(latest),
+            "message": "matching diagnostic session is terminal; use resume to inspect/recover it or create --fresh to rerun",
         }
 
     context = make_context(repo, args.input, args.diagnostic_kind, args.claim_relevance)
@@ -320,32 +349,21 @@ def create_session(args: argparse.Namespace) -> Dict[str, Any]:
     }
 
 
-def status_session(args: argparse.Namespace) -> Dict[str, Any]:
-    repo = Path(args.repo).resolve()
-    path = context_path(repo, args.diagnostic_id)
-    context = load_context(path)
-    return {
-        "ok": True,
-        "status": context["status"],
-        "diagnostic_id": context["diagnostic_id"],
-        "context_path": rel_to_repo(repo, path),
-        "context": context,
-    }
-
-
-def validate_resume(args: argparse.Namespace) -> Dict[str, Any]:
+def resume_session(args: argparse.Namespace) -> Dict[str, Any]:
     repo = Path(args.repo).resolve()
     input_hash = stable_input_hash(args.input)
     matches = find_matching_contexts(repo, input_hash)
-    if matches:
-        context = matches[-1]
+    context = latest_context(matches)
+    if context:
         return {
             "ok": True,
             "status": "resume_ok",
             "diagnostic_id": context["diagnostic_id"],
             "input_hash": input_hash,
             "context_path": context["_context_path"],
-            "message": "resume approved by matching input_hash",
+            "context_status": context.get("status"),
+            "context": without_private_keys(context),
+            "message": "resume approved by explicit matching input_hash",
         }
 
     active = active_contexts(repo)
@@ -363,15 +381,32 @@ def validate_resume(args: argparse.Namespace) -> Dict[str, Any]:
                 }
                 for context in active
             ],
-            "message": "no matching input_hash; refusing to reuse an active diagnostic session",
+            "message": "no matching input_hash; refusing to resume a different active diagnostic session",
         }
 
     return {
         "ok": False,
-        "status": "new_session_required",
+        "status": "missing_matching_session",
         "input_hash": input_hash,
-        "message": "no matching diagnostic context; create a new session",
+        "message": "no matching diagnostic context; create a new session or check the input command",
     }
+
+
+def status_session(args: argparse.Namespace) -> Dict[str, Any]:
+    repo = Path(args.repo).resolve()
+    path = context_path(repo, args.diagnostic_id)
+    context = load_context(path)
+    return {
+        "ok": True,
+        "status": context["status"],
+        "diagnostic_id": context["diagnostic_id"],
+        "context_path": rel_to_repo(repo, path),
+        "context": context,
+    }
+
+
+def validate_resume(args: argparse.Namespace) -> Dict[str, Any]:
+    return resume_session(args)
 
 
 def update_run(args: argparse.Namespace) -> Dict[str, Any]:
@@ -442,6 +477,8 @@ def render_text(payload: Mapping[str, Any]) -> str:
         lines.append("context_path: %s" % payload["context_path"])
     if payload.get("message"):
         lines.append("message: %s" % payload["message"])
+    if payload.get("context_status"):
+        lines.append("context_status: %s" % payload["context_status"])
     if payload.get("active_diagnostics"):
         lines.append("active_diagnostics:")
         for item in payload["active_diagnostics"]:
@@ -465,20 +502,25 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    create = subparsers.add_parser("create", help="Create or reuse a diagnostic context for an input.")
+    create = subparsers.add_parser("create", help="Create a diagnostic context, or reuse only an active matching one.")
     add_common(create)
     create.add_argument("--input", required=True, help="Diagnostic command, manifest, grid spec, or pack path.")
     create.add_argument("--diagnostic-kind", choices=sorted(DIAGNOSTIC_KINDS))
     create.add_argument("--claim-relevance", choices=sorted(CLAIM_RELEVANCE))
-    create.add_argument("--fresh", action="store_true", help="Force a new context even if input_hash exists.")
+    create.add_argument("--fresh", action="store_true", help="Force a new context even if input_hash matches a terminal prior session.")
     create.set_defaults(func=create_session)
+
+    resume_explicit = subparsers.add_parser("resume", help="Explicitly resume an existing diagnostic context by matching input_hash.")
+    add_common(resume_explicit)
+    resume_explicit.add_argument("--input", required=True, help="Diagnostic command, manifest, grid spec, or pack path.")
+    resume_explicit.set_defaults(func=resume_session)
 
     status = subparsers.add_parser("status", help="Read a diagnostic context by id.")
     add_common(status)
     status.add_argument("--diagnostic-id", required=True)
     status.set_defaults(func=status_session)
 
-    resume = subparsers.add_parser("validate-resume", help="Approve resume only when input_hash matches.")
+    resume = subparsers.add_parser("validate-resume", help="Compatibility alias for resume; approve only when input_hash matches.")
     add_common(resume)
     resume.add_argument("--input", required=True, help="Diagnostic command, manifest, grid spec, or pack path.")
     resume.set_defaults(func=validate_resume)
