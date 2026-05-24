@@ -449,8 +449,8 @@ Or invoke each individually:
 
 ```text
 /paper-draft "proposal/proposal_pack.json"                 # fast draft, no submission gates
-/paper-from-claims "claims/claim_ledger.json"              # evidence-bound paper
-/submission-package "paper/"                               # strict compile + audits + package
+/paper-from-claims "claims/claim_ledger.json"              # evidence-bound paper after STOP C approval
+/submission-package "paper/"                               # strict compile + audits + package after STOP C approval
 ```
 
 `/paper-writing` remains as a compatibility router. Argument separator is em-dash `—`,
@@ -466,21 +466,24 @@ no external API key, uses your ChatGPT Plus/Pro quota; experimental) / `mermaid`
 (Mermaid syntax, free) / `false` (manual). Override inline with `— illustration: <name>`.
 
 ORBIT additional requirement: paper-bearing STOP D should start from
-`claims/claim_ledger.json`. Legacy `CLAIM_CONSTRUCTION.md` is a compatibility view.
+`claims/claim_ledger.json` and STOP C approval (`RED_TEAM_REVIEW.md` ending
+`READY_FOR_PAPER` plus `HUMAN_DECISION_NOTE.md` ending `PROCEED`). Legacy
+`CLAIM_CONSTRUCTION.md` is a compatibility view.
 
-## Codex availability — degradation, not silent skip
+## Codex Availability
 
-Codex (gpt-5.5 xhigh) is the cross-model reviewer everywhere in ORBIT. When unavailable
-(MCP unreachable, sandbox issue, etc.), **the system reports the degradation explicitly
-in three tiers**, never skips silently:
+Codex review is required by default. MCP transport, auth, or sandbox failure does not
+create a valid single-model substitute for ORBIT commitment gates. Instead, the producing
+skill exports a standalone Codex review prompt under `orbit-research/codex-prompts/`, sets
+`ORBIT_STATE.json` to `codex_review_needed`, and tells the user to import the standalone
+response with `/import-codex-review`.
 
-| Tier | Behavior | Where it shows up |
-|---|---|---|
-| **Advisory** (proceed) | Innovation loops (Stages 8/9/10/18.5) collaborative additions; Stage 15 PLAN_CODE_AUDIT at diagnostic stage; `/idea-to-proposal` Phase 4 final review | Footer of the relevant artifact: `Codex collaborative additions: NOT_AVAILABLE (codex_mcp_unreachable)` or `Phase X review: SKIPPED (codex_mcp_unreachable)` |
-| **Block pending human ack** | Stage 15 PLAN_CODE_AUDIT at scale-up (G11 ERROR rule); Stage 17 G12 regime check unanswerable | DIAGNOSTIC_RUN_AUDIT.verdict = ERROR with reason; orchestrator surfaces "human-must-acknowledge-codex-down" |
-| **Load-bearing degradation** | `/auto-review-loop` (Stage 23) -> single-model review only; `/submission-package` audits -> BLOCKED | RED_TEAM_REVIEW.md header `degraded: codex_mcp_unreachable, single-model review only`; PAPER_CLAIM_AUDIT / CITATION_AUDIT verdict = BLOCKED |
+No single-model fallback satisfies commitment gates unless the user explicitly passes
+`codex-required: false` and later accepts degraded artifacts. The standard recovery path
+keeps Codex required; it only changes the transport from MCP to a manual Codex terminal.
 
-Full degradation contract: each skill's "ARIS / Sub-skill Unavailability" section.
+Full contract: `skills/shared-references/codex-precondition.md` and
+`docs/refactor/CODEX_HANDOFF.md`.
 
 ## Important Files
 

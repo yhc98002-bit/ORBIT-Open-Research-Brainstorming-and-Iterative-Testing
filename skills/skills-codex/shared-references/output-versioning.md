@@ -72,7 +72,8 @@ Timestamp only major milestone artifacts:
   `FINAL_PROPOSAL_FULL.md`, `METHOD_SPEC.md` when it is a committed method snapshot.
 - Plan milestones: `EXPERIMENT_PLAN.md`, `EXPERIMENT_PLAN_EXEC.md` when the plan is being
   promoted for human review or paper-level execution.
-- Claim / review milestones: `CLAIM_CONSTRUCTION.md`, `RED_TEAM_REVIEW.md`,
+- Claim / review milestones: `claims/claim_ledger.json`, `claims/CLAIM_LEDGER.md`,
+  `CLAIM_CONSTRUCTION.md` compatibility views, `RED_TEAM_REVIEW.md`, and
   `PIPELINE_SUMMARY.md` when they summarize a paper-bearing diagnostic chain.
 - Paper artifacts: `paper/main.tex`, `PAPER_PLAN.md`, `NARRATIVE_REPORT.md`, or other
   submission-facing documents.

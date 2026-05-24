@@ -29,7 +29,8 @@ artifacts should remain English unless the user explicitly opts into Chinese art
 - Code, shell commands, file paths, directory names
 - Paper titles, author names, venue names, BibTeX entries
 - Technical terms with no standard Chinese translation (keep English, optionally annotate: "attention mechanism (注意力机制)")
-- LaTeX content — paper-writing workflow always outputs English for venue submission
+- LaTeX content — `/paper-from-claims`, `/submission-package`, and legacy
+  `/paper-writing` compatibility routing always output English for venue submission
 - JSON state files — keys and structure remain English
 - **Machine-parsed markers** — never localize the following, regardless of language setting:
   - Markdown frontmatter keys (e.g., `outcome:`, `node_id:`, `title:`, `type:`)
@@ -51,5 +52,8 @@ artifacts should remain English unless the user explicitly opts into Chinese art
 | /research-refine-pipeline | Full | orbit-research/PIPELINE_SUMMARY.md follows artifact language setting; default English |
 | /research-pipeline | Full | Inherits from sub-skills |
 | /result-to-claim | Full | Claim descriptions follow artifact language setting; default English |
-| /paper-writing | Skip | Always English LaTeX for submission |
+| /paper-draft | Partial | User-facing draft prose may follow artifact language; LaTeX remains English |
+| /paper-from-claims | Skip | Always English LaTeX for evidence-bound paper generation |
+| /submission-package | Skip | Always English package/audit metadata for submission |
+| /paper-writing | Skip | Compatibility router; downstream paper LaTeX remains English |
 | /paper-write | Skip | Always English LaTeX |

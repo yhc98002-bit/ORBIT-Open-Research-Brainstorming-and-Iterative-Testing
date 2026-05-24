@@ -106,7 +106,7 @@ Old Markdown artifacts remain useful as:
 
 They should stop being the only gate source once the corresponding pack exists.
 For example, after `claims/claim_ledger.json` exists, claim status should be read
-from the ledger, while `CLAIM_CONSTRUCTION.md` becomes a view or legacy source.
+from the ledger, while `CLAIM_CONSTRUCTION.md` becomes a legacy compatibility view.
 
 `source_markdown` lists Markdown or text artifacts used to create the pack.
 `generated_views` lists Markdown views generated from the pack.

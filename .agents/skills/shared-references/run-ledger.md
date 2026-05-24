@@ -66,8 +66,8 @@ kill, or no-result detection.
 
 ## Integrity Expectations
 
-- Result files used by `/analyze-results`, `/result-to-claim`, or paper-writing must be
-  traceable to a `run_id`.
+- Result files used by `/analyze-results`, `/result-to-claim`, `/paper-from-claims`, or
+  `/submission-package` must be traceable to a `run_id`.
 - If result files are missing, duplicated, older than their run start, or not linked to a
   ledger entry, the analysis must warn and report the affected seeds/runs.
 - A paper claim should not use an experiment-audit `FAIL` result unless it is explicitly

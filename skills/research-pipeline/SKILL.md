@@ -1,6 +1,6 @@
 ---
 name: research-pipeline
-description: "ORBIT v1.3 research-methodology routing harness built on ARIS skills. Routes by mode (EXPLORATION/INNOVATION/COMMITMENT) and risk (1-5) through 26 stages organised into four spines (Discovery/Grounding/Innovation/Validation). Innovation loops for divergent mechanism invention; artifact-triggered audits; cheapest valid diagnostic; verdict-line gates only at high-risk transitions. Reuses mature ARIS execution skills (/auto-review-loop, /paper-writing, /experiment-bridge, etc.) instead of reimplementing them. Use when user says 全流程/full pipeline/end-to-end research/从问题到论文/ORBIT/自动科研流水线/ORBIT v1.3."
+description: "ORBIT v1.3 research-methodology routing harness built on ARIS skills. Routes by mode (EXPLORATION/INNOVATION/COMMITMENT) and risk (1-5) through 26 stages organised into four spines (Discovery/Grounding/Innovation/Validation). Innovation loops for divergent mechanism invention; artifact-triggered audits; cheapest valid diagnostic; verdict-line gates only at high-risk transitions. Reuses mature ARIS execution skills (/auto-review-loop, /paper-draft, /paper-from-claims, /submission-package, /experiment-bridge, etc.) instead of reimplementing them. Use when user says 全流程/full pipeline/end-to-end research/从问题到论文/ORBIT/自动科研流水线/ORBIT v1.3."
 argument-hint: [research-area-or-problem-or-artifact-path]
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, mcp__codex__codex, mcp__codex__codex-reply
 ---
@@ -55,8 +55,8 @@ prompt bodies live in per-skill `prompts/*.md` assets.
   `innovation-loops.md` §7.1); `ADVERSARIAL` everywhere else (use templates in
   `semantic-code-audit.md` and `research-harness-prompts.md`).
 - **MAX_DEBATE_ROUNDS = 2** — Prevent infinite Claude vs Codex debate loops.
-- **AUTO_WRITE = false** — If true, run `/paper-writing` after CLAIM_CONSTRUCTION and
-  RED_TEAM_REVIEW gates pass.
+- **AUTO_WRITE = false** — If true, run `/paper-from-claims` after
+  `claims/claim_ledger.json`, `RED_TEAM_REVIEW`, and `HUMAN_DECISION_NOTE` gates pass.
 - **VENUE = `ICLR`** — Used when paper writing is enabled.
 - **AUTO_PROCEED = false** for irreversible actions: GPU scale-up, final paper claims,
   stopping a project.
@@ -92,10 +92,12 @@ orbit-research/RESULT_INTERPRETATION.md
 orbit-research/FAILURE_TO_INNOVATION.md       (when triggered, innovation: Codex collaborative)
 orbit-research/LITERATURE_REREAD_NOTE.md
 orbit-research/SCALEUP_DECISION.md            (verdict line: PROCEED | HOLD | REDESIGN | HUMAN_DECISION_REQUIRED)
-orbit-research/CLAIM_CONSTRUCTION.md
+claims/claim_ledger.json                       (canonical Stage 21 claim/evidence ledger)
+claims/CLAIM_LEDGER.md                         (generated view)
+orbit-research/CLAIM_CONSTRUCTION.md           (legacy compatibility view)
 orbit-research/NEGATIVE_RESULT_STRATEGY.md    (when tie/failure)
 orbit-research/RED_TEAM_REVIEW.md             (loop output from /auto-review-loop; verdict: READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED)
-orbit-research/PAPER_IMPROVEMENT_LOG.md       (loop output from /paper-writing chain)
+paper/paper_package.json                       (Stage 24c submission package)
 orbit-research/AGENT_DECISION_RECOMMENDATION.md
 orbit-research/HUMAN_DECISION_NOTE.md         (human-authored/confirmed; verdict line: PROCEED | NARROW | REDESIGN | RE-READ | CHANGE BENCHMARK | STOP | HUMAN_DECISION_REQUIRED)
 ```
@@ -159,7 +161,7 @@ presence → suggested first stage:
 | `MODE_ROUTING.md` + `SEED_FRAMING.md` only | **Stage 2** (Literature Map continuation) | EXPLORATION (risk 1–2) |
 | `PLAN_CODE_AUDIT.md` verdict = `MATCHES_PLAN` + `DIAGNOSTIC_RUN_AUDIT.md` absent | **Stage 16/17** (run diagnostic) | COMMITMENT (risk 3–4) |
 | `DIAGNOSTIC_RUN_AUDIT.md` verdict = `PASS` + `SCALEUP_DECISION.md` absent | **Stage 20** (scale-up decision) | COMMITMENT (risk 4) |
-| `CLAIM_CONSTRUCTION.md` + `RED_TEAM_REVIEW.md` ending `READY_FOR_PAPER` + `HUMAN_DECISION_NOTE.md` ending `PROCEED` all present | **Stage 24** (paper writing) | COMMITMENT (risk 4–5) |
+| `claims/claim_ledger.json` + `RED_TEAM_REVIEW.md` ending `READY_FOR_PAPER` + `HUMAN_DECISION_NOTE.md` ending `PROCEED` all present | **Stage 24b/24c** (paper-from-claims or submission package) | COMMITMENT (risk 4-5) |
 | (none of the above) | Fall through to Step 0c input-shape classification | (decide below) |
 
 When this routing applies, **bypass** the input-shape table and write `MODE_ROUTING.md`
@@ -498,7 +500,7 @@ might answer.
 4. Write `orbit-research/SCALEUP_DECISION.md` ending with
    `PROCEED | HOLD | REDESIGN | HUMAN_DECISION_REQUIRED`.
 
-### Stage 21: Result-to-Claim Construction
+### Stage 21: Result-to-Claim Ledger
 
 **Sub-skill invocation:** `/result-to-claim` (already invoked at Stage 20 — reuse output).
 
@@ -507,9 +509,13 @@ might answer.
 1. Build claim → evidence → control → scope → limitation chain.
 2. **Gate G17:** label exploratory findings explicitly as "exploratory finding, not
    pre-planned hypothesis." Do not present post-hoc reframings as pre-planned hypotheses.
-3. Write `orbit-research/CLAIM_CONSTRUCTION.md`.
+3. Write `claims/claim_ledger.json` as the canonical claim/evidence ledger and
+   `claims/CLAIM_LEDGER.md` as a generated view. `orbit-research/CLAIM_CONSTRUCTION.md`
+   legacy compatibility view may also be written.
 
-**Gate G16:** Stage 24 (paper writing) refuses to start without `CLAIM_CONSTRUCTION.md`.
+**Gate G16:** Stage 24b (paper-from-claims) refuses to start without
+`claims/claim_ledger.json`. `CLAIM_CONSTRUCTION.md` may be consumed only as a legacy view
+if the ledger is absent; new runs should generate the ledger.
 
 ### Stage 22: Tie / Negative Result / Reframing Strategy
 
@@ -532,35 +538,47 @@ rolls up into `orbit-research/RED_TEAM_REVIEW.md` (the ARIS skill writes here di
 its inline gate; this orchestrator does not duplicate the writing). The file must end with
 `READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED`.
 
-### Stage 24: Paper Writing / Paper Improvement Loop
+### Stage 24a: Paper Draft
 
-**Gate G16 + G18 + G19:** refuse start if `CLAIM_CONSTRUCTION.md` is absent, if
-`RED_TEAM_REVIEW.md` does not end `READY_FOR_PAPER`, or if `HUMAN_DECISION_NOTE.md` does
-not end `PROCEED` (also enforced inline in `paper-writing/SKILL.md`).
+Use `/paper-draft` for a fast outline, skeleton, or rough paper. This path does not
+require STOP C approval, but it must mark unsupported claims as TODOs and must not call
+the output submission-ready.
 
-**Sub-skill invocation chain (delegated to ARIS):**
+### Stage 24b: Paper From Claims
+
+**Gate G16 + G19:** refuse claim-bearing evidence writing if `claims/claim_ledger.json` is
+absent, if `RED_TEAM_REVIEW.md` does not end `READY_FOR_PAPER`, or if
+`HUMAN_DECISION_NOTE.md` does not end `PROCEED`.
+
+**Sub-skill invocation:**
 
 ```bash
-/paper-writing "NARRATIVE_REPORT.md" — venue: $VENUE, assurance: submission
+/paper-from-claims "claims/claim_ledger.json"
 ```
 
-`/paper-writing` transitively invokes: `/paper-plan`, `/paper-figure`, `/figure-spec` or
-`/paper-illustration`, `/paper-write`, `/paper-compile`, `/auto-paper-improvement-loop`,
-`/paper-claim-audit`, `/citation-audit`.
+### Stage 24c: Submission Package
 
-**Action:** track all improvement-loop iterations in
-`orbit-research/PAPER_IMPROVEMENT_LOG.md`. Each entry: round number, reviewer feedback,
-fix applied, audit verdicts (`PAPER_CLAIM_AUDIT`, `CITATION_AUDIT`).
+**Gate G18 + G19:** refuse submission readiness if compile, claim audit, citation audit,
+proof/package checks, or STOP C human approval are missing.
+
+**Sub-skill invocation:**
+
+```bash
+/submission-package "paper/"
+```
+
+`/paper-writing` remains callable only as a compatibility router to the three paper paths.
 
 **ARIS unavailability handling** — for any ARIS slash invocation in this stage:
 
 ```text
-For each ARIS skill call (/paper-writing, /paper-plan, /paper-figure, /paper-write,
-/paper-compile, /auto-paper-improvement-loop, /paper-claim-audit, /citation-audit):
+For each ARIS skill call (/paper-draft, /paper-from-claims, /submission-package,
+/paper-plan, /paper-figure, /paper-write, /paper-compile, /paper-claim-audit,
+/citation-audit):
   - Try slash invocation.
   - If skill not registered: print
-        "ARIS skill <name> unavailable. Stage 24 degraded: <fallback action or
-         HUMAN_DECISION_REQUIRED>."
+        "ARIS skill <name> unavailable. Stage 24 blocked or downgraded to draft:
+         <fallback action or HUMAN_DECISION_REQUIRED>."
     Continue gracefully.
   - If the missing skill was load-bearing for a hard gate (e.g. /paper-claim-audit for
     submission readiness): escalate to HUMAN_DECISION_REQUIRED.
@@ -658,56 +676,60 @@ G13 Test set isolation: experiments using test set anywhere in tuning/selection 
     No exception.
 
 G14 NULL_RESULT_CONTRACT-triggered tie/failure cannot have positive framing in
-    RESULT_INTERPRETATION/CLAIM_CONSTRUCTION. No exception.
+    RESULT_INTERPRETATION, claims/claim_ledger.json, or CLAIM_CONSTRUCTION compatibility
+    view. No exception.
 
 G15 Scale-up in mode = COMMITMENT OR risk ≥ 4 requires HUMAN_DECISION_NOTE.md ending
     PROCEED before SCALEUP_DECISION = PROCEED. No exception.
 
-G16 Stage 24 (paper writing) requires CLAIM_CONSTRUCTION.md. No exception.
+G16 Evidence-bound paper writing requires claims/claim_ledger.json. CLAIM_CONSTRUCTION.md
+    legacy compatibility view may be consumed if claim_ledger.json is absent, but new runs
+    should generate claim_ledger.json. No exception for new runs.
 
 G17 Post-hoc result framings must be labelled "exploratory finding, not pre-planned
-    hypothesis" in CLAIM_CONSTRUCTION.md and the paper. No exception.
+    hypothesis" in claims/claim_ledger.json, any CLAIM_CONSTRUCTION compatibility view,
+    and the paper. No exception.
 
-G18 /paper-writing inline guard: refuse start if CLAIM_CONSTRUCTION.md absent. No exception.
+G18 Submission readiness requires /submission-package compile, claim audit, citation
+    audit, and proof/package checks to pass or be explicitly NOT_APPLICABLE. No exception.
 
-G19 Scale-up (Stage 20), paper writing (Stage 24), and any public-release transition
-    require HUMAN_DECISION_NOTE.md ending PROCEED. Agent recommendations do not satisfy
-    this gate. No exception.
+G19 Scale-up (Stage 20), paper-from-claims (Stage 24b), submission-package readiness
+    (Stage 24c), and any public-release transition require HUMAN_DECISION_NOTE.md ending
+    PROCEED. Agent recommendations do not satisfy this gate. No exception.
 ```
 
-## Paper Writing Integration
+## Paper Path Integration
 
-Paper writing is **not** reimplemented. It is delegated to ARIS via Stage 24 (above):
+Paper work is **not** reimplemented. It is delegated to the v2 public paper entries:
 
 ```bash
-/paper-writing "NARRATIVE_REPORT.md" — venue: $VENUE, assurance: submission
+/paper-draft "<proposal or notes>"
+/paper-from-claims "claims/claim_ledger.json"
+/submission-package "paper/"
 ```
 
-Before invoking, this orchestrator verifies the v1.3 hard preconditions (G16, G18, G19):
+`/paper-writing` remains a compatibility router only; do not treat it as the canonical
+owner of drafting, evidence-bound paper generation, compile, audits, and submission
+readiness.
 
-- `orbit-research/CLAIM_CONSTRUCTION.md` (written by `/result-to-claim` at Stage 21)
+Before invoking `/paper-from-claims` or `/submission-package` for a claim-bearing paper,
+this orchestrator verifies the hard preconditions (G16, G18, G19):
+
+- `claims/claim_ledger.json` (canonical output from `/result-to-claim` at Stage 21)
 - `orbit-research/HUMAN_DECISION_NOTE.md` ending `PROCEED` (human-authored or
   human-confirmed; agent recommendations do not satisfy G19)
 - `orbit-research/RED_TEAM_REVIEW.md` ending `READY_FOR_PAPER` (written by
   `/auto-review-loop` at Stage 23)
 - `orbit-research/NEGATIVE_RESULT_STRATEGY.md` if `result-to-claim` returned `partial` or `no`
 
-These match the hard preconditions in `skills/paper-writing/SKILL.md`. If any are missing
-or have a blocking verdict, do not invoke `/paper-writing`; route the user back to the
-producing skill or to human STOP C decision.
+`claims/CLAIM_LEDGER.md` and `orbit-research/CLAIM_CONSTRUCTION.md` may be consumed as
+legacy compatibility views when `claim_ledger.json` is absent, but new runs should
+generate the ledger and treat Markdown as a view. If any gate is missing or has a
+blocking verdict, do not invoke `/paper-from-claims` or mark `/submission-package` ready;
+route the user back to the producing skill or to human STOP C decision.
 
-During paper writing, the ARIS chain runs (do not duplicate):
-
-- `/paper-plan`
-- `/paper-figure`
-- `/figure-spec` or `/paper-illustration`
-- `/paper-write`
-- `/paper-compile`
-- `/auto-paper-improvement-loop`
-- `/paper-claim-audit`
-- `/citation-audit`
-
-Track the iteration log in `orbit-research/PAPER_IMPROVEMENT_LOG.md`.
+Draft-only work can use `/paper-draft` before STOP C approval, but unsupported claims must
+remain TODOs and the output must not be represented as evidence-bound or submission-ready.
 
 ## Final Rule
 

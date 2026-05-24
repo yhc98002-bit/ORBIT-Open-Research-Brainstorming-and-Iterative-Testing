@@ -2,8 +2,9 @@
 
 ARIS audits emit machine-readable verdicts. The `assurance` axis decides whether
 those verdicts are advisory (draft mode) or load-bearing gates (submission mode).
-This contract is referenced by `paper-writing`, `paper-claim-audit`, `citation-audit`,
-`proof-checker`, and the external verifier `tools/verify_paper_audits.sh`.
+This contract is referenced by `submission-package`, `paper-claim-audit`,
+`citation-audit`, `proof-checker`, and the external verifier
+`tools/verify_paper_audits.sh`. `paper-writing` is only a compatibility router.
 
 ## Why a separate axis from `effort`
 
@@ -26,18 +27,19 @@ finalization."
 
 ## Assurance Levels
 
-### `draft` — current behavior, no breakage
+### `draft` — fast paper exploration, no submission claim
 - Audits run only if their content detector matches.
 - Silent skip allowed.
-- `paper-writing` Phase 6 produces a final report regardless.
+- `/paper-draft` or draft-oriented helpers may produce draft output regardless.
 - For: rapid iteration, exploratory drafts, early-stage research.
 
 ### `submission` — load-bearing audits
 - All mandatory audits **must** emit a verdict (one of the 6 below).
 - Silent skip is **forbidden**.
-- `paper-writing` Phase 6 invokes `tools/verify_paper_audits.sh`; non-zero exit
-  blocks Final Report.
-- The Final Report tags itself `submission-ready: yes/no` based on verifier output.
+- `/submission-package` invokes `tools/verify_paper_audits.sh`; non-zero exit blocks
+  `paper/paper_package.json.status = "ready"`.
+- `paper/paper_package.json` records `status = "ready"` or `status = "blocked"` based
+  on verifier output.
 - For: conference / journal submission, anything you'd put your name on.
 
 ## Default Mapping (derived if `assurance` not given)
@@ -134,7 +136,8 @@ Field semantics:
 `tools/verify_paper_audits.sh <paper-dir>` is the single source of truth for
 "are mandatory audits complete and current?" It must:
 
-1. Locate the paper-writing manifest (which mandatory audits applied this run).
+1. Locate the submission-package manifest or `paper/paper_package.json` audit list
+   (which mandatory audits applied this run).
 2. For each, check artifact JSON exists at expected path.
 3. Validate artifact JSON against required-fields schema (above).
 4. Verify `verdict` is one of the 6 allowed values.
@@ -144,8 +147,8 @@ Field semantics:
 7. Output a structured JSON report and exit 0 (all green) or 1 (any FAIL /
    BLOCKED / ERROR / STALE / missing artifact).
 
-Phase 6 of `paper-writing` invokes the verifier; at `assurance: submission`,
-non-zero exit blocks Final Report generation.
+`/submission-package` invokes the verifier; at `assurance: submission`, non-zero exit
+blocks `paper/paper_package.json.status = "ready"` and records a blocked package.
 
 ## Subskill Contract: "Always Emit, Never Block"
 
@@ -154,13 +157,13 @@ follow this contract:
 
 - **Always emit a verdict artifact**, even on detector-negative or error paths.
 - **Never block** the parent's flow themselves — they only emit verdicts.
-- **The parent skill** (`paper-writing` Phase 6 + verifier) decides whether a
+- **The parent skill** (`/submission-package` + verifier) decides whether a
   given verdict blocks finalization. This decision lives in *one* place
   (`assurance` axis + verifier), not duplicated across child skills.
 
 Earlier wording in `paper-claim-audit` and `citation-audit` (e.g., "audit is
 advisory, never blocking") referred to this division of labor — but conflicted
-with `paper-writing`'s declaration that they were "mandatory submission gates."
+with the legacy `paper-writing` declaration that they were "mandatory submission gates."
 This contract resolves the conflict: child = always emit; parent = decides
 blocking based on assurance level.
 
@@ -200,7 +203,7 @@ blocking based on assurance level.
   Add results/ or downgrade to `— assurance: draft`."
 
 ### Stale audit (user edited paper after running audits)
-- User runs `/paper-writing` at beast → all audits PASS, files written
+- User runs `/submission-package` at beast → all audits PASS, files written
 - User edits `sec/5.evidence.tex` to change a number
 - User reruns the verifier (or re-finalizes)
 - Verifier rehashes → `audited_input_hashes` mismatch → `STALE` flag → exit 1

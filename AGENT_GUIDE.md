@@ -167,8 +167,9 @@ artifact names; consumers accept either v1.3 or v1.0 alias names (preferring v1.
 - **G10** — Scale-up to official experiments requires `ALGORITHMIC_FORMALIZATION.md`,
   unless mode = EXPLORATION AND no scale-up requested.
 - **G11** — `PLAN_CODE_AUDIT.md` verdict `CRITICAL_MISMATCH` blocks scale-up unconditionally.
-  Loop fix → re-audit until `MATCHES_PLAN` or scoped `PARTIAL_MISMATCH`. `ERROR` advisory
-  at diagnostic stage, blocks at scale-up pending human acknowledgement.
+  Loop fix → re-audit until `MATCHES_PLAN` or scoped `PARTIAL_MISMATCH`. Codex
+  availability failures are loud stops handled by `codex-precondition.md`; use standalone
+  Codex handoff rather than advisory fallback.
 - **G12** — Diagnostic run failure that violated mechanism preconditions does NOT kill the
   mechanism; require diagnostic redesign to a regime where the mechanism could manifest.
 - **G13** — Test set isolation: no tuning / selection on test set. No exception.
@@ -181,8 +182,9 @@ artifact names; consumers accept either v1.3 or v1.0 alias names (preferring v1.
   hypothesis" in `claims/claim_ledger.json` and the paper. No exception.
 - **G18** — `/paper-from-claims` guard: refuse claim-bearing writing without
   `claims/claim_ledger.json`. No exception.
-- **G19** — Scale-up (Stage 20), paper-from-claims handoff, and any public-release transition
-  require `HUMAN_DECISION_NOTE.md`. No exception.
+- **G19** — Scale-up (Stage 20), paper-from-claims handoff, submission package readiness,
+  and any public-release transition require `HUMAN_DECISION_NOTE.md` ending `PROCEED`.
+  No exception.
 
 Full canonical text in `skills/shared-references/research-agent-pipeline.md` §6. v1.0
 gates "tiny run before scale-up always" and "data audit before any other stage" are
@@ -226,8 +228,8 @@ stages. Sub-skills enforce their own v1.3 gates even when invoked directly.
 | Stages 18, 21–22: Interpret + Claim | `/analyze-results` then conditional-required `/result-to-claim` | logs + results | RESULT_INTERPRETATION.md, claims/claim_ledger.json, NEGATIVE_RESULT_STRATEGY.md, HUMAN_DECISION_NOTE.md | Local diagnostics stop after interpretation + decision log; paper-bearing diagnostics must map results to claims |
 | Stage 23: Red-team Loop | conditional-required `/auto-review-loop` | project state | RED_TEAM_REVIEW.md, AUTO_REVIEW.md | Required for paper-bearing diagnostics after `/result-to-claim`; not triggered for local diagnostics |
 | Stage 24a: Draft | `/paper-draft "<proposal or notes>"` | proposal, narrative, or notes | paper/DRAFT.md or paper/main.tex with TODOs | Fast draft/skeleton; no submission gates |
-| Stage 24b: Evidence-bound paper | `/paper-from-claims "claims/claim_ledger.json"` | claim ledger | paper/, paper/CLAIM_TRACE.md | Draft paper after STOP C claim ledger + red-team + human decision |
-| Stage 24c: Submission package | `/submission-package "paper/"` | paper directory | paper/paper_package.json, compile/audit artifacts | Strict compile, claim audit, citation audit, proof/package checklist |
+| Stage 24b: Evidence-bound paper | `/paper-from-claims "claims/claim_ledger.json"` | claim ledger + STOP C approval | paper/, paper/CLAIM_TRACE.md | Draft paper after claim ledger, red-team READY_FOR_PAPER, and human PROCEED |
+| Stage 24c: Submission package | `/submission-package "paper/"` | paper directory + STOP C approval for claim-bearing papers | paper/paper_package.json, compile/audit artifacts | Strict compile, claim audit, citation audit, proof/package checklist |
 | Rebuttal (W4) | `/rebuttal "paper/ + reviews"` | paper + reviews | PASTE_READY.txt | Reviews received |
 
 ### Internal and Advanced Skills
@@ -246,8 +248,8 @@ stages. Sub-skills enforce their own v1.3 gates even when invoked directly.
 | `/experiment-audit` | Cross-model integrity audit of eval code |
 | `/result-to-claim` | Verdict on whether results support claims; writes `claims/claim_ledger.json` |
 | `/paper-draft "<proposal or notes>"` | Fast draft/skeleton without STOP C submission gates |
-| `/paper-from-claims "claims/claim_ledger.json"` | Evidence-bound paper generation from structured claims |
-| `/submission-package "paper/"` | Strict compile + claim/citation/proof audits and `paper/paper_package.json` |
+| `/paper-from-claims "claims/claim_ledger.json"` | Evidence-bound paper generation from structured claims after STOP C approval |
+| `/submission-package "paper/"` | Strict compile + claim/citation/proof audits and `paper/paper_package.json`; requires STOP C approval for claim-bearing papers |
 | `/paper-writing` | Compatibility router to the three paper paths above |
 | `/paper-claim-audit "paper/"` | Numerical claim audit |
 | `/citation-audit "paper/"` | Bibliography audit |

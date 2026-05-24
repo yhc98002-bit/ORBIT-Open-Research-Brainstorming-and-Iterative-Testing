@@ -712,8 +712,8 @@ Before scaling, confirm:
    generation, not an `ERROR` verdict.
 9. ALGORITHMIC_FORMALIZATION.md exists if scaling official experiments (G10).
 10. COMPONENT_BUNDLE_LADDER.md exists if running a new composed method (G9).
-11. The next scaled experiment supports a specific paper claim from CLAIM_CONSTRUCTION
-    (or a planned future claim in CONTROL_DESIGN).
+11. The next scaled experiment supports a specific paper claim from
+    `claims/claim_ledger.json` (or a planned future claim in CONTROL_DESIGN).
 12. **G15 + G19**: If mode = COMMITMENT or risk_score ≥ 4, HUMAN_DECISION_NOTE.md with
     final verdict `PROCEED` is required before SCALEUP_DECISION = PROCEED. Agent-written
     recommendations are context only.
@@ -762,7 +762,9 @@ Downgrade claims when evidence is partial.
 
 Do not generalize beyond the tested benchmark, regime, or control set.
 
-Write CLAIM_CONSTRUCTION.md.
+Write `claims/claim_ledger.json` as the canonical machine-readable ledger and
+`claims/CLAIM_LEDGER.md` as the human-readable view. `orbit-research/CLAIM_CONSTRUCTION.md`
+legacy compatibility view may also be written.
 ```
 
 ## 22. Tie / Negative Result / Reframing Strategy
@@ -804,7 +806,8 @@ Attack the project on:
 5. Baselines: Are the baselines strong enough?
 6. Controls: Do the controls isolate the mechanism?
 7. Null-result interpretation: Would failure be interpretable per NULL_RESULT_CONTRACT?
-8. Evidence: Do the results support the claims (cross-check against CLAIM_CONSTRUCTION)?
+8. Evidence: Do the results support the claims (cross-check against `claims/claim_ledger.json`;
+   use `CLAIM_CONSTRUCTION.md` only as a legacy compatibility view)?
 9. Overclaiming: Are conclusions stronger than evidence (G17)?
 10. Reproducibility: Are data, code, metrics, and settings clear enough?
 11. Limitations: Are limitations honest and specific?
@@ -823,29 +826,29 @@ The orchestrator dispatches this stage to ARIS /auto-review-loop, which manages 
 review → fix → re-review iterations. Output rolls up into RED_TEAM_REVIEW.md.
 ```
 
-## 24. Paper Writing / Paper Improvement Loop
+## 24. Paper Draft / From-Claims / Submission Package
 
 ```text
-Stage 24 is delegated to ARIS skills:
+Stage 24 is delegated to v2 ARIS paper entries:
 
-1. Refuse start if CLAIM_CONSTRUCTION.md is absent (G16, G18). The /paper-writing skill
-   has an inline guard for this.
-2. Refuse start if RED_TEAM_REVIEW.md does not end `READY_FOR_PAPER` or if
-   HUMAN_DECISION_NOTE.md does not end `PROCEED` (G19).
-3. Invoke /paper-writing with the existing CLAIM_CONSTRUCTION.md, NEGATIVE_RESULT_STRATEGY.md
-   (if applicable), and RED_TEAM_REVIEW.md as inputs. /paper-writing transitively invokes
-   /paper-plan, /paper-figure, /paper-write, /paper-compile, /auto-paper-improvement-loop,
-   /paper-claim-audit, and /citation-audit.
-4. Track all improvement-loop iterations in PAPER_IMPROVEMENT_LOG.md. Each entry: round
-   number, reviewer feedback, fix applied, audit verdicts (PAPER_CLAIM_AUDIT,
-   CITATION_AUDIT).
+1. For fast drafting, invoke `/paper-draft "<proposal or notes>"`. It does not require
+   STOP C approval, but unsupported claims must remain TODOs and the output is unaudited.
+2. For evidence-bound writing, refuse start if `claims/claim_ledger.json` is absent
+   (G16/G18), if `RED_TEAM_REVIEW.md` does not end `READY_FOR_PAPER`, or if
+   `HUMAN_DECISION_NOTE.md` does not end `PROCEED` (G19). Then invoke
+   `/paper-from-claims "claims/claim_ledger.json"`.
+3. For submission readiness, invoke `/submission-package "paper/"`. It owns compile,
+   claim audit, citation audit, proof/package checks, and `paper/paper_package.json`.
+4. `/paper-writing` is a compatibility router only; do not treat it as the canonical owner
+   of drafting, evidence-bound writing, audits, and submission readiness.
 5. If any ARIS skill is unavailable, print:
-       "ARIS skill <name> unavailable. Stage 24 degraded: <fallback or HUMAN_DECISION_REQUIRED>."
-   and continue gracefully. If the missing skill was load-bearing for a hard gate
-   (e.g. /paper-claim-audit for G16-equivalent paper checks), escalate to
+       "ARIS skill <name> unavailable. Stage 24 blocked or downgraded to draft:
+        <fallback or HUMAN_DECISION_REQUIRED>."
+   If the missing skill was load-bearing for a hard gate, escalate to
    HUMAN_DECISION_REQUIRED.
 
-Output: PAPER_IMPROVEMENT_LOG.md + paper/ tree.
+Output: paper/ tree plus `paper/CLAIM_TRACE.md` for paper-from-claims or
+`paper/paper_package.json` for submission-package.
 ```
 
 ## 25. Human Decision / Next Loop

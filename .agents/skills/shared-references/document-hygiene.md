@@ -22,8 +22,10 @@ correct artifact.
   paper-bearing assumptions and critical hypotheses.
 - `orbit-research/RESEARCH_DECISION_LOG.md`: failed/surprising diagnostic classification,
   routing decisions, and proposal status changes.
-- `orbit-research/CLAIM_CONSTRUCTION.md`: paper-level claim support, limitations, and
+- `claims/claim_ledger.json`: canonical paper-level claim support, limitations, and
   negative/tie framing.
+- `claims/CLAIM_LEDGER.md` and `orbit-research/CLAIM_CONSTRUCTION.md` legacy
+  compatibility view: generated/readable views of the claim ledger.
 - `orbit-research/RED_TEAM_REVIEW.md`: reviewer concerns and unresolved critique.
 - `orbit-research/RUN_LEDGER.jsonl`: canonical factual run provenance.
 - `refine-logs/EXPERIMENT_LOG.md`: human-readable run narrative, not factual authority.

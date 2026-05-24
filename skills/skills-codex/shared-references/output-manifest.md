@@ -33,8 +33,8 @@ Then append one row per output file written:
 | `validation` | /experiment-plan, /experiment-bridge, /experiment-audit, plan-code and diagnostic design artifacts |
 | `experiment-run` | /run-experiment, /experiment-queue, /monitor-experiment |
 | `interpretation` | /analyze-results, /diagnostic-to-review, RESULT_INTERPRETATION and RESEARCH_DECISION_LOG |
-| `claim` | /result-to-claim, /auto-review-loop, CLAIM_CONSTRUCTION and RED_TEAM_REVIEW |
-| `paper` | /paper-writing, /paper-write, /paper-compile |
+| `claim` | /result-to-claim, /auto-review-loop, claims/claim_ledger.json, CLAIM_CONSTRUCTION compatibility views, and RED_TEAM_REVIEW |
+| `paper` | /paper-draft, /paper-from-claims, /submission-package, /paper-write, /paper-compile |
 | `maintenance` | /proposal-revise, /research-doc-hygiene, state cleanup, manifest repair |
 
 Backward-compatible legacy values may appear in older manifests:

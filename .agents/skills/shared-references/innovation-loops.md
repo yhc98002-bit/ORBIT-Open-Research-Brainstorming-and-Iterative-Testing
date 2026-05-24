@@ -273,10 +273,10 @@ or failure, or when Stage 17 returned `REDESIGN_EXPERIMENT`.
 - ...
 ```
 
-**Anti-pattern (G17):** do **not** write the new mechanism into `CLAIM_CONSTRUCTION.md`
-or the paper as if it were a pre-planned hypothesis. Failure-to-innovation outputs are
-exploratory findings until they are validated by a fresh diagnostic; Stage 21 must label
-them as such.
+**Anti-pattern (G17):** do **not** write the new mechanism into
+`claims/claim_ledger.json`, any `CLAIM_CONSTRUCTION.md` compatibility view, or the paper
+as if it were a pre-planned hypothesis. Failure-to-innovation outputs are exploratory
+findings until they are validated by a fresh diagnostic; Stage 21 must label them as such.
 
 ## §6. Loop E — Re-read Literature (Stage 19)
 
@@ -371,8 +371,10 @@ ELSE:
 
 ### §7.1 Collaborative-mode prompt template (Codex side)
 
-Pass to `mcp__codex__codex` (model `gpt-5.5`, reasoning `xhigh`, sandbox
-`danger-full-access`):
+Pass to `mcp__codex__codex` with model `gpt-5.5` and reasoning `xhigh`.
+Do not pass `sandbox` or `approval-policy`; the Codex MCP server is registered
+with unsandboxed defaults (`danger-full-access`, `never`) in `~/.claude.json`
+and `~/.codex/config.toml`.
 
 ```
 You are a collaborative research innovator working alongside Claude.

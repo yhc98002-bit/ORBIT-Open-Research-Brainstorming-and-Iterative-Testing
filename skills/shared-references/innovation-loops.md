@@ -273,10 +273,10 @@ or failure, or when Stage 17 returned `REDESIGN_EXPERIMENT`.
 - ...
 ```
 
-**Anti-pattern (G17):** do **not** write the new mechanism into `CLAIM_CONSTRUCTION.md`
-or the paper as if it were a pre-planned hypothesis. Failure-to-innovation outputs are
-exploratory findings until they are validated by a fresh diagnostic; Stage 21 must label
-them as such.
+**Anti-pattern (G17):** do **not** write the new mechanism into
+`claims/claim_ledger.json`, any `CLAIM_CONSTRUCTION.md` compatibility view, or the paper
+as if it were a pre-planned hypothesis. Failure-to-innovation outputs are exploratory
+findings until they are validated by a fresh diagnostic; Stage 21 must label them as such.
 
 ## §6. Loop E — Re-read Literature (Stage 19)
 

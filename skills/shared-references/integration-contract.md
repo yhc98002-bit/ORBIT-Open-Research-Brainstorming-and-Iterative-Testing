@@ -14,7 +14,7 @@ pressure and the caller has no way to detect it.
 
 Two bugs in the same week, same pathology:
 
-1. **Assurance gate bypass (2026-04-21).** `/paper-writing` ran at
+1. **Assurance gate bypass (2026-04-21).** Legacy `/paper-writing` ran at
    `— effort: beast` silently skipped `/proof-checker`,
    `/paper-claim-audit`, and `/citation-audit` because each phase's
    content detector could return negative and the outer prose said
@@ -98,19 +98,19 @@ answer "did this integration run?"
 
 ### 4. Visible checklist — for long workflows
 
-If the integration fires inside a multi-step workflow (paper-writing
-Phase 6, idea-discovery Phase 7, etc.), render a **visible checkbox
+If the integration fires inside a multi-step workflow (`/submission-package`,
+idea-discovery Phase 7, etc.), render a **visible checkbox
 block** at the start of the phase so the executor has to confront each
 row before claiming done. Prose-only "MUST" inside a long SKILL.md is
 the first thing to get skipped.
 
 ```
-📋 Submission audits required before Final Report:
+📋 Submission audits required before /submission-package can mark paper_package ready:
    [ ] 1. /proof-checker   → paper/PROOF_AUDIT.json
    [ ] 2. /paper-claim-audit → paper/PAPER_CLAIM_AUDIT.json
    [ ] 3. /citation-audit  → paper/CITATION_AUDIT.json
    [ ] 4. bash "$VERIFY_AUDITS" paper/ --assurance submission
-   [ ] 5. Block Final Report iff verifier exit code != 0
+   [ ] 5. Block paper/paper_package.json status=ready iff verifier exit code != 0
 ```
 
 Cheap, and empirically resists lazy skipping. Skip only for single-step
@@ -169,7 +169,7 @@ When reviewing a new integration proposal, reject any of:
 
 | Integration | Predicate | Helper | Artifact | Checklist | Backfill | Verifier |
 |---|---|---|---|---|---|---|
-| Submission audits (`max`/`beast`) | `paper/.aris/assurance.txt = submission` | `verify_paper_audits.sh` + 3 audit skills emit JSON | `paper/PROOF_AUDIT.json`, `PAPER_CLAIM_AUDIT.json`, `CITATION_AUDIT.json` + `paper/.aris/audit-verifier-report.json` | Phase 6.0 pre-flight checklist | Rerun the failed audit | `verify_paper_audits.sh` (exit 1 blocks) |
+| Submission audits (`max`/`beast`) | `paper/.aris/assurance.txt = submission` or `paper/paper_package.json.status` target is `ready` | `verify_paper_audits.sh` + 3 audit skills emit JSON | `paper/PROOF_AUDIT.json`, `PAPER_CLAIM_AUDIT.json`, `CITATION_AUDIT.json` + `paper/.aris/audit-verifier-report.json` | `/submission-package` pre-flight checklist | Rerun the failed audit | `verify_paper_audits.sh` (exit 1 blocks) |
 | Research wiki ingest | `research-wiki/` exists | `research_wiki.py ingest_paper` | `research-wiki/papers/<slug>.md` + `log.md` entry | Step in each paper-reading skill | `research_wiki.py sync --arxiv-ids …` | `verify_wiki_coverage.sh` (diagnostic) |
 | paper-illustration-image2 finalization | `tools/paper_illustration_image2.py preflight --workspace <cwd>` returns `ok=true` | `paper_illustration_image2.py` (`preflight`, `finalize`, `verify`) | `figures/ai_generated/figure_final.png`, `latex_include.tex`, `review_log.json` | Step 0 checklist in `paper-illustration-image2` | `paper_illustration_image2.py finalize --workspace <cwd> --best-image <png>` | `paper_illustration_image2.py verify` (diagnostic, exit 1 on missing artifacts) |
 
@@ -179,7 +179,7 @@ and confirm all six columns are populated.
 ## See Also
 
 - `shared-references/assurance-contract.md` — implementation of the
-  paper-writing submission gate under this contract
+  `/submission-package` submission gate under this contract
 - `shared-references/reviewer-independence.md` — the adjacent contract
   for cross-model review (executor never filters reviewer inputs)
 - `verify_paper_audits.sh`, `research_wiki.py ingest_paper`,

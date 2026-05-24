@@ -27,9 +27,9 @@ ORBIT guides research **judgment**, not just execution. The default behaviour is
   **collaborative innovator** during invention loops
 - keep final claims evidence-bound: claim → evidence → control → scope → limitation
 - preserve human judgment at high-risk irreversible transitions
-- reuse mature ARIS execution skills (`/auto-review-loop`, `/paper-writing`,
-  `/auto-paper-improvement-loop`, `/paper-claim-audit`, `/citation-audit`,
-  `/experiment-audit`, `/experiment-bridge`); do not reimplement them
+- reuse mature ARIS execution skills (`/auto-review-loop`, `/paper-draft`,
+  `/paper-from-claims`, `/submission-package`, `/paper-claim-audit`,
+  `/citation-audit`, `/experiment-audit`, `/experiment-bridge`); do not reimplement them
 
 ## Four-Spine Framing
 
@@ -42,7 +42,7 @@ and only fire before COMMITMENT.
 | **Discovery** | 0, 1, 2, 2.5, 3 | Frame the problem and select a target. Routing, seed framing, literature mapping, problem reframing, problem selection. |
 | **Grounding** | 4, 5, 6, 7 | *Diagnostic support* for innovation, not innovation itself. Assumption ledger, abstract task / mechanism framing, artifact-triggered audit (only when data/env/benchmark exists), baseline ceiling. |
 | **Innovation** | 8, 9, 10, 18.5 | Divergent mechanism invention, analogy / cross-pollination, algorithm sketch tournament, failure-to-innovation. **Codex switches to collaborative mode here** — see `innovation-loops.md`. |
-| **Validation** | 11–25 | Hypothesis-mechanism-benchmark-control matrix, null-result contract, component bundle, formalization, plan-code audit, cheapest valid diagnostic, diagnostic run audit, result interpretation, scale-up, claim construction, tie/negative strategy, reviewer red-team, paper writing, human decision. |
+| **Validation** | 11-25 | Hypothesis-mechanism-benchmark-control matrix, null-result contract, component bundle, formalization, plan-code audit, cheapest valid diagnostic, diagnostic run audit, result interpretation, scale-up, structured claim ledger, tie/negative strategy, reviewer red-team, paper draft/from-claims/submission package, human decision. |
 
 Grounding (4–7) is the calibration layer that makes Innovation actually diagnosable. It is
 not where new methods are invented; it is where assumptions, abstract task framing, available
@@ -108,10 +108,12 @@ hard gates that apply at the user's risk level.
 18.5  Failure-to-Innovation Loop                      (innovation: Codex collaborative)
 19    Re-read Literature Loop
 20    Scale-up Decision
-21    Result-to-Claim Construction
+21    Result-to-Claim Ledger
 22    Tie / Negative Result / Reframing Strategy
 23    Reviewer Red-team Loop                          (review → fix → re-review)
-24    Paper Writing / Paper Improvement Loop
+24a   Paper Draft
+24b   Paper From Claims
+24c   Submission Package
 25    Human Decision / Next Loop
 ```
 
@@ -384,12 +386,17 @@ Required artifact: `SCALEUP_DECISION.md`
 
 Required ending: `PROCEED | HOLD | REDESIGN | HUMAN_DECISION_REQUIRED`
 
-### 21. Result-to-Claim Construction
+### 21. Result-to-Claim Ledger
 
 Build paper claims as `claim → evidence → control → scope → limitation`. Downgrade claims
 when evidence is partial. Each claim cites the specific artifact and run id that supports it.
 
-Required artifact: `CLAIM_CONSTRUCTION.md`
+Canonical artifact: `claims/claim_ledger.json`
+
+Compatibility views:
+
+- `claims/CLAIM_LEDGER.md`
+- `orbit-research/CLAIM_CONSTRUCTION.md` legacy compatibility view
 
 ### 22. Tie / Negative Result / Reframing Strategy
 
@@ -398,7 +405,8 @@ baseline ceiling analysis, failure taxonomy, negative result, regime map, evalua
 task ontology contribution, or controlled reproduction.
 
 If a result is being reframed post-hoc, label it explicitly as "exploratory finding, not
-pre-planned hypothesis" in CLAIM_CONSTRUCTION.md and the paper (G17).
+pre-planned hypothesis" in `claims/claim_ledger.json`, any compatibility
+`CLAIM_CONSTRUCTION.md` view, and the paper (G17).
 
 Stop if no contribution remains.
 
@@ -415,14 +423,31 @@ Required artifact: `RED_TEAM_REVIEW.md`
 
 Required ending: `READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED`
 
-### 24. Paper Writing / Paper Improvement Loop
+### 24a. Paper Draft
 
-Calls ARIS `/paper-writing` which transitively invokes `/auto-paper-improvement-loop`,
-`/paper-claim-audit`, `/citation-audit`. Refuses to start without `CLAIM_CONSTRUCTION.md`
-(G16, G18), `RED_TEAM_REVIEW.md` ending `READY_FOR_PAPER`, and human authorization in
+Calls ARIS `/paper-draft` for quick outlines, skeletons, or draft prose. This path may run
+without STOP C approval, but unsupported claims must remain TODOs and output must not be
+labelled submission-ready.
+
+Required artifact: `paper/DRAFT.md` or `paper/main.tex` with TODO markers.
+
+### 24b. Paper From Claims
+
+Calls ARIS `/paper-from-claims` for evidence-bound paper generation from
+`claims/claim_ledger.json`. Refuses claim-bearing writing without `claims/claim_ledger.json`
+(G16/G18), `RED_TEAM_REVIEW.md` ending `READY_FOR_PAPER`, and human authorization in
 `HUMAN_DECISION_NOTE.md` ending `PROCEED` (G19).
 
-Required artifact: `PAPER_IMPROVEMENT_LOG.md` + `paper/`
+Required artifact: `paper/CLAIM_TRACE.md` + `paper/`.
+
+### 24c. Submission Package
+
+Calls ARIS `/submission-package` for strict compile, claim audit, citation audit, proof
+audit when relevant, and package readiness. Claim-bearing packages require STOP C approval
+and must not mark `paper/paper_package.json.status` as `ready` without
+`HUMAN_DECISION_NOTE.md` ending `PROCEED`.
+
+Required artifact: `paper/paper_package.json` plus compile/audit artifacts.
 
 ### 25. Human Decision / Next Loop
 
@@ -519,7 +544,7 @@ G13 IF experiment uses test set anywhere in tuning/selection
     THEN block; require held-out test isolation.   (No exception.)
 
 G14 IF NULL_RESULT_CONTRACT triggered tie/failure AND RESULT_INTERPRETATION /
-    CLAIM_CONSTRUCTION contains positive framing
+    claims/claim_ledger.json or CLAIM_CONSTRUCTION compatibility view contains positive framing
     THEN block; require honest tie/failure framing or invoke Stage 22.   (No exception.)
 
 G15 IF scale-up requested AND (mode = COMMITMENT OR risk_score ≥ 4)
@@ -527,17 +552,21 @@ G15 IF scale-up requested AND (mode = COMMITMENT OR risk_score ≥ 4)
     SCALEUP_DECISION = PROCEED.
     No exception.
 
-G16 IF Stage 24 starts AND CLAIM_CONSTRUCTION.md absent
-    THEN block.   (No exception.)
+G16 IF Stage 24b evidence-bound paper writing starts AND claims/claim_ledger.json absent
+    THEN block. CLAIM_CONSTRUCTION.md may be consumed as a legacy view if claim_ledger.json
+    is absent, but new runs should generate claim_ledger.json.   (No exception for new runs.)
 
 G17 IF a result is framed post-hoc as "what we predicted"
     THEN block; require explicit "exploratory finding, not pre-planned hypothesis"
-    labelling in CLAIM_CONSTRUCTION.md and the paper.   (No exception.)
+    labelling in claims/claim_ledger.json, any CLAIM_CONSTRUCTION compatibility view,
+    and the paper.   (No exception.)
 
-G18 IF /paper-writing is invoked and CLAIM_CONSTRUCTION.md absent
-    THEN refuse start (inline guard in paper-writing/SKILL.md).   (No exception.)
+G18 IF /submission-package is invoked for submission readiness
+    THEN require compile, claim audit, citation audit, and proof/package checks to pass or
+    be explicitly NOT_APPLICABLE under the assurance contract.   (No exception.)
 
-G19 IF stage = 20 (scale-up), 24 (paper), or any "public release" transition
+G19 IF stage = 20 (scale-up), 24b (paper-from-claims), 24c (submission package), or any
+    "public release" transition
     THEN HUMAN_DECISION_NOTE.md with final verdict PROCEED is required. Agent-written
     recommendations do not satisfy this gate.   (No exception.)
 ```
@@ -625,10 +654,12 @@ objectives, not executor summaries or leading interpretations.
 | 9 Result Interpretation | 18 | Same role |
 | 10 Re-read Literature | 19 | Now explicitly a loop |
 | 11 Scale-up | 20 | + G15 + G19 (HUMAN_DECISION_NOTE) |
-| 12 Result-to-Claim | 21 | Same role |
+| 12 Result-to-Claim | 21 | Now writes canonical claims/claim_ledger.json |
 | 13 Tie / Negative | 22 | + G17 anti-post-hoc reframing |
 | 14 Reviewer Red-team | 23 | Now an explicit loop; calls ARIS `/auto-review-loop` |
-| (new) | 24 | Paper writing — calls ARIS `/paper-writing` chain |
+| (new) | 24a | Paper draft — calls ARIS `/paper-draft` |
+| (new) | 24b | Evidence-bound paper — calls ARIS `/paper-from-claims` |
+| (new) | 24c | Submission package — calls ARIS `/submission-package` |
 | 15 Human Decision | 25 | Same verdict tokens |
 
 ### Manual migration (no alias)
