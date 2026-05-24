@@ -68,9 +68,26 @@ it does not change workflow behavior.
    - Full `pytest -q` is documented as broader optional coverage that needs adequate
      timeout and optional test dependencies.
 
+9. Final ORBIT v2.1 release-blocker audit.
+   - Status: fixed by `chore(release): finalize v2.1 stabilization audit`.
+   - Required static checks and `make test-fast` passed on 2026-05-24.
+   - STOP C approval, `/orbit-status`, Codex handoff, diagnostic session, and legacy
+     paper-path documentation blockers are recorded as closed in
+     `docs/refactor/V2_STABILIZATION_SUMMARY.md`.
+
 ## Current Unresolved Stabilization Blockers
 
 - None for the scoped v2.1 stabilization blockers tracked in this file.
+
+## Non-Blocking Known Limitations
+
+- Validators remain lightweight and do not replace scientific or statistical review.
+- Legacy Markdown artifacts remain readable during migration, so consumers must prefer
+  JSON packs when both exist.
+- External API, GPU, live MCP transport, and full paper compilation are outside the golden
+  fixture and fast release gate.
+- Full `pytest -q` is broader coverage and needs an environment with adequate timeout and
+  optional dependencies; `make test-fast` is the v2.1 release-blocker gate.
 
 ## Baseline Validation Notes
 

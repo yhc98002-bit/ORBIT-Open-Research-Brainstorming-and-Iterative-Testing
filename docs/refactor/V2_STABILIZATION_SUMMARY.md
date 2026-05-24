@@ -125,6 +125,40 @@ Full `pytest -q` remains useful for broader local or CI coverage when the enviro
 adequate timeout and optional dependencies for unrelated MCP/server tests. It is not the
 fast release gate.
 
+## Final Release-Blocker Audit
+
+Status: **stable for the v2.1 stabilization release gate**.
+
+Checks run on 2026-05-24:
+
+| Check | Status |
+|---|---|
+| `python tools/orbit_repo_audit.py --repo . --out docs/refactor` | pass |
+| `python tools/list_skill_profiles.py --repo . --check` | pass |
+| `python tools/check_skill_mirror.py --repo .` | pass, 0 unexpected drift |
+| `python tools/check_prompt_assets.py --repo .` | pass |
+| `python tools/validate_orbit_pack.py --repo tests/fixtures/golden_minimal_project --all` | pass, 6 ok |
+| `make test-fast` | pass, 88 tests |
+
+Release-blocker checklist:
+
+- STOP C approval: draft, pending, degraded, and non-gating claim ledgers are blocked;
+  Markdown single-token verdicts are accepted; candidate-list/template verdicts are
+  rejected; diagnostic or ledger identity mismatch blocks by default.
+- `/orbit-status`: blocked paper packages are not reported completed; STOP/HOLD/template
+  human decisions do not route to paper handoff; per-diagnostic red-team reviews are
+  recognized; v2 public paper skill names are used instead of `/paper-writing`.
+- Codex handoff: generated prompts preserve producer STOP, skill, phase, diagnostic id,
+  target artifact, and resume command; imports update `ORBIT_STATE.json` with the resume
+  command; imported Codex review does not fabricate human approval.
+- Diagnostic sessions: terminal sessions are not silently reused; active sessions can be
+  resumed by matching `input_hash`; fresh reruns require explicit `create --fresh`.
+- Docs: `/paper-writing` is compatibility only; `claims/claim_ledger.json` is canonical;
+  `CLAIM_CONSTRUCTION.md` is legacy/compatibility view only; v1.3 methodology vs v2.1
+  runtime version semantics are documented.
+
+No P0 release blockers remain in the scoped v2.1 stabilization checklist.
+
 ## Remaining Known Limitations
 
 - Validators are intentionally lightweight and stdlib-based; they catch contract
@@ -134,3 +168,5 @@ fast release gate.
 - Reviewer overlays are intentionally different from canonical skills and must stay
   catalog-marked.
 - External API, GPU, and live MCP behavior is not exercised by the golden fixture.
+- Full `pytest -q` is broader coverage and should be run in CI or local environments with
+  adequate timeout; `make test-fast` is the release-blocker gate.
