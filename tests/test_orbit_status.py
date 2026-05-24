@@ -1,4 +1,5 @@
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -8,10 +9,30 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / "tools"
+FIXTURE = ROOT / "tests" / "fixtures" / "golden_minimal_project"
 sys.path.insert(0, str(TOOLS))
 
 from orbit_state import make_state, write_state  # noqa: E402
 from orbit_status import format_pretty, get_status  # noqa: E402
+
+
+def copy_fixture(test_case: unittest.TestCase) -> Path:
+    tmp = Path(tempfile.mkdtemp(prefix="orbit-status-"))
+    test_case.addCleanup(shutil.rmtree, tmp)
+    target = tmp / "project"
+    shutil.copytree(FIXTURE, target)
+    state_path = target / "orbit-research" / "ORBIT_STATE.json"
+    if state_path.exists():
+        state_path.unlink()
+    return target
+
+
+def load_json(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def write_json(path: Path, data: dict) -> None:
+    path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 class OrbitStatusTest(unittest.TestCase):
@@ -185,6 +206,102 @@ class OrbitStatusTest(unittest.TestCase):
             self.assertEqual(loaded["current_stop"], "STOP_A")
             self.assertEqual(loaded["current_phase"], "user_review")
             self.assertEqual(loaded["safe_next_command"], '/idea-to-proposal "topic"')
+
+    def test_blocked_paper_package_is_not_completed(self):
+        repo = copy_fixture(self)
+        package_path = repo / "paper" / "paper_package.json"
+        package = load_json(package_path)
+        package["status"] = "blocked"
+        package["blockers"] = [
+            {
+                "id": "PAPER_AUDIT",
+                "kind": "bad_verdict",
+                "artifact": "paper/PAPER_CLAIM_AUDIT.md",
+                "message": "claim audit failed",
+            }
+        ]
+        write_json(package_path, package)
+
+        state = get_status(repo)
+        self.assertEqual(state["current_stop"], "STOP_D")
+        self.assertEqual(state["current_skill"], "submission-package")
+        self.assertEqual(state["status"], "blocked")
+        self.assertNotEqual(state["status"], "completed")
+        self.assertIn("claim audit failed", state["blockers"][0]["message"])
+
+    def test_human_stop_does_not_suggest_paper_from_claims(self):
+        repo = copy_fixture(self)
+        (repo / "paper" / "paper_package.json").unlink()
+        human = repo / "orbit-research" / "HUMAN_DECISION_NOTE.md"
+        human.write_text(
+            "# Human Decision Note\n\nDiagnostic ID: diag_fixture\nClaim ledger hash: ledger_fixture_hash\n\n"
+            "Final verdict: STOP\n",
+            encoding="utf-8",
+        )
+
+        state = get_status(repo)
+        self.assertEqual(state["current_stop"], "STOP_C")
+        self.assertEqual(state["status"], "blocked")
+        self.assertEqual(state["current_skill"], "diagnostic-to-review")
+        self.assertNotIn("/paper-from-claims", state.get("safe_next_command") or "")
+        self.assertNotIn("/submission-package", state.get("safe_next_command") or "")
+
+    def test_human_decision_template_list_is_not_approval(self):
+        repo = copy_fixture(self)
+        (repo / "paper" / "paper_package.json").unlink()
+        human = repo / "orbit-research" / "HUMAN_DECISION_NOTE.md"
+        human.write_text(
+            "# Human Decision Note\n\nDiagnostic ID: diag_fixture\nClaim ledger hash: ledger_fixture_hash\n\n"
+            "Decision: PROCEED | STOP | HOLD\n",
+            encoding="utf-8",
+        )
+
+        state = get_status(repo)
+        self.assertEqual(state["current_stop"], "STOP_C")
+        self.assertNotEqual(state["status"], "completed")
+        self.assertNotIn("/paper-from-claims", state.get("safe_next_command") or "")
+
+    def test_per_diagnostic_red_team_review_is_recognized(self):
+        repo = copy_fixture(self)
+        (repo / "paper" / "paper_package.json").unlink()
+        legacy_review = repo / "orbit-research" / "RED_TEAM_REVIEW.md"
+        if legacy_review.exists():
+            legacy_review.unlink()
+
+        state = get_status(repo)
+        self.assertEqual(state["current_stop"], "STOP_D")
+        self.assertEqual(state["current_skill"], "paper-from-claims")
+        self.assertEqual(state["status"], "paused")
+        self.assertEqual(state["safe_next_command"], '/paper-from-claims "claims/claim_ledger.json"')
+        self.assertEqual(
+            state["stop_c"]["approval"]["red_team_review"],
+            "orbit-research/diagnostics/diag_fixture/RED_TEAM_REVIEW.md",
+        )
+
+    def test_missing_red_team_after_claim_ledger_blocks_stop_c(self):
+        repo = copy_fixture(self)
+        (repo / "paper" / "paper_package.json").unlink()
+        red_team = repo / "orbit-research" / "diagnostics" / "diag_fixture" / "RED_TEAM_REVIEW.md"
+        red_team.unlink()
+        legacy_review = repo / "orbit-research" / "RED_TEAM_REVIEW.md"
+        if legacy_review.exists():
+            legacy_review.unlink()
+
+        state = get_status(repo)
+        self.assertEqual(state["current_stop"], "STOP_C")
+        self.assertEqual(state["status"], "paused")
+        self.assertEqual(state["pause_reason"], "missing_prereq")
+        self.assertEqual(state["blockers"][0]["artifact"], "orbit-research/diagnostics/diag_fixture/RED_TEAM_REVIEW.md")
+        self.assertNotIn("/paper-from-claims", state.get("safe_next_command") or "")
+
+    def test_ready_paper_package_with_valid_approval_is_completed(self):
+        repo = copy_fixture(self)
+
+        state = get_status(repo)
+        self.assertEqual(state["current_stop"], "STOP_D")
+        self.assertEqual(state["current_skill"], "submission-package")
+        self.assertEqual(state["status"], "completed")
+        self.assertIsNone(state["safe_next_command"])
 
 
 if __name__ == "__main__":

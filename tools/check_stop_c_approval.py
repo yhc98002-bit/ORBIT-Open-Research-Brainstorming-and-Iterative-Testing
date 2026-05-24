@@ -22,6 +22,8 @@ RED_TEAM_VERDICTS = {
 
 HUMAN_VERDICTS = {
     "PROCEED",
+    "NARROW",
+    "REDESIGN",
     "REVISE",
     "STOP",
     "HOLD",

@@ -12,10 +12,17 @@ import argparse
 import json
 import re
 import sys
+from types import SimpleNamespace
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 
 try:
+    from check_stop_c_approval import (
+        HUMAN_PROCEED,
+        HUMAN_VERDICTS,
+        evaluate_stop_c_approval,
+        parse_final_verdict,
+    )
     from orbit_state import (
         DEFAULT_CANONICAL_PACKS,
         ORBIT_STATE_REL_PATH,
@@ -24,7 +31,14 @@ try:
         make_state,
         read_state,
     )
+    from validate_orbit_pack import validate_selection
 except ImportError:  # pragma: no cover - used when imported as tools.orbit_status
+    from tools.check_stop_c_approval import (
+        HUMAN_PROCEED,
+        HUMAN_VERDICTS,
+        evaluate_stop_c_approval,
+        parse_final_verdict,
+    )
     from tools.orbit_state import (
         DEFAULT_CANONICAL_PACKS,
         ORBIT_STATE_REL_PATH,
@@ -33,6 +47,7 @@ except ImportError:  # pragma: no cover - used when imported as tools.orbit_stat
         make_state,
         read_state,
     )
+    from tools.validate_orbit_pack import validate_selection
 
 
 COMMON_LEGACY_ARTIFACTS = (
@@ -395,6 +410,331 @@ def summarize_claim_ledger(repo: Path) -> Optional[Dict[str, Any]]:
     }
 
 
+def paper_package_validation_errors(repo: Path) -> List[str]:
+    args = SimpleNamespace(all=False, pack="paper_package", kind=None, path=None, json=False)
+    report = validate_selection(repo, args)
+    errors: List[str] = []
+    for result in report.get("results", []):
+        if result.get("name") != "paper_package":
+            continue
+        errors.extend(str(error) for error in result.get("errors", []))
+    return errors
+
+
+def package_blockers_from_errors(errors: Iterable[str], safe_next: str) -> List[Mapping[str, Any]]:
+    return [
+        make_blocker(
+            "STOP_D",
+            "bad_verdict",
+            "paper/paper_package.json",
+            error,
+            safe_next,
+        )
+        for error in errors
+    ]
+
+
+def state_from_paper_package(repo: Path, legacy_artifacts: List[str]) -> Optional[Dict[str, Any]]:
+    paper_path = repo / "paper/paper_package.json"
+    if not paper_path.exists():
+        return None
+
+    safe_next = '/submission-package "paper/"'
+    package = parse_json_file(paper_path)
+    if not isinstance(package, dict):
+        return state_with_legacy(
+            repo,
+            legacy_artifacts,
+            "STOP_D",
+            "submission-package",
+            "paper_package_invalid",
+            "blocked",
+            "ambiguous_resume",
+            [
+                make_blocker(
+                    "STOP_D",
+                    "bad_verdict",
+                    "paper/paper_package.json",
+                    "paper_package.json is missing, invalid, or not a JSON object",
+                    safe_next,
+                )
+            ],
+            safe_next,
+        )
+
+    package_status = package.get("status")
+    normalized_status = package_status.strip().lower() if isinstance(package_status, str) else None
+    errors = paper_package_validation_errors(repo)
+    blockers = package_blockers_from_errors(errors, safe_next)
+
+    if normalized_status == "ready" and not errors:
+        state = state_with_legacy(
+            repo,
+            legacy_artifacts,
+            "STOP_D",
+            "submission-package",
+            "paper_package_ready",
+            "completed",
+            None,
+            [],
+            None,
+        )
+        state["stop_d"] = {"paper_package_status": "ready"}
+        return state
+
+    if normalized_status == "blocked":
+        package_blockers = package.get("blockers")
+        if isinstance(package_blockers, list):
+            for index, blocker in enumerate(package_blockers):
+                if not isinstance(blocker, Mapping):
+                    continue
+                message = blocker.get("message")
+                if not isinstance(message, str) or not message.strip():
+                    message = "paper_package blocker %d" % index
+                artifact = blocker.get("artifact")
+                if not isinstance(artifact, str) or not artifact.strip():
+                    artifact = "paper/paper_package.json"
+                blockers.append(
+                    make_blocker(
+                        str(blocker.get("id") or "STOP_D"),
+                        str(blocker.get("kind") or "bad_verdict"),
+                        artifact,
+                        message,
+                        safe_next,
+                    )
+                )
+        if not blockers:
+            blockers = package_blockers_from_errors(
+                ["paper_package status is blocked"],
+                safe_next,
+            )
+        state = state_with_legacy(
+            repo,
+            legacy_artifacts,
+            "STOP_D",
+            "submission-package",
+            "paper_package_blocked",
+            "blocked",
+            "gate_failed",
+            blockers,
+            safe_next,
+        )
+        state["stop_d"] = {"paper_package_status": "blocked"}
+        return state
+
+    if normalized_status in {"draft", "in_progress"}:
+        state = state_with_legacy(
+            repo,
+            legacy_artifacts,
+            "STOP_D",
+            "submission-package",
+            "paper_package_%s" % normalized_status,
+            "in_progress" if normalized_status == "in_progress" else "paused",
+            "stop_review" if normalized_status == "draft" else None,
+            blockers,
+            safe_next,
+        )
+        state["stop_d"] = {"paper_package_status": normalized_status}
+        return state
+
+    if errors:
+        state = state_with_legacy(
+            repo,
+            legacy_artifacts,
+            "STOP_D",
+            "submission-package",
+            "paper_package_not_ready",
+            "blocked",
+            "gate_failed",
+            blockers,
+            safe_next,
+        )
+        state["stop_d"] = {"paper_package_status": normalized_status or "missing"}
+        return state
+
+    state = state_with_legacy(
+        repo,
+        legacy_artifacts,
+        "STOP_D",
+        "submission-package",
+        "paper_package_status_ambiguous",
+        "blocked",
+        "ambiguous_resume",
+        [
+            make_blocker(
+                "STOP_D",
+                "bad_verdict",
+                "paper/paper_package.json",
+                "paper_package.status is missing or not recognized: %r" % package_status,
+                safe_next,
+            )
+        ],
+        safe_next,
+    )
+    state["stop_d"] = {"paper_package_status": normalized_status or "missing"}
+    return state
+
+
+def human_decision_verdict(repo: Path) -> Optional[str]:
+    path = repo / "orbit-research/HUMAN_DECISION_NOTE.md"
+    if not path.exists():
+        return None
+    return parse_final_verdict(read_text(path), HUMAN_VERDICTS)
+
+
+def state_from_claim_ledger(repo: Path, legacy_artifacts: List[str]) -> Optional[Dict[str, Any]]:
+    if not (repo / "claims/claim_ledger.json").exists():
+        return None
+
+    summary = summarize_claim_ledger(repo) or {}
+    approval = evaluate_stop_c_approval(repo, "claims/claim_ledger.json")
+    if approval.get("status") == "approved":
+        state = state_with_legacy(
+            repo,
+            legacy_artifacts,
+            "STOP_D",
+            "paper-from-claims",
+            "ready_for_paper_from_claims",
+            "paused",
+            "stop_review",
+            [],
+            '/paper-from-claims "claims/claim_ledger.json"',
+        )
+        state["stop_c"] = {"claim_ledger": summary, "approval": approval}
+        return state
+
+    errors = [str(error) for error in approval.get("errors", [])]
+    joined_errors = "\n".join(errors)
+    red_team_path = approval.get("red_team_review") or "orbit-research/RED_TEAM_REVIEW.md"
+    if approval.get("diagnostic_id"):
+        red_team_path = (
+            "orbit-research/diagnostics/%s/RED_TEAM_REVIEW.md"
+            % approval["diagnostic_id"]
+        )
+
+    if (
+        "claim ledger must be 'ready'" in joined_errors
+        or "codex_review" in joined_errors
+        or "non-gating" in joined_errors
+    ):
+        command = '/result-to-claim "claims/claim_ledger.json"'
+        state = state_with_legacy(
+            repo,
+            legacy_artifacts,
+            "STOP_C",
+            "result-to-claim",
+            "claim_ledger_not_ready",
+            "blocked",
+            "gate_failed",
+            [
+                verdict_blocker(
+                    "G21",
+                    "claims/claim_ledger.json",
+                    error,
+                    command,
+                )
+                for error in errors
+            ],
+            command,
+        )
+        state["stop_c"] = {"claim_ledger": summary, "approval": approval}
+        return state
+
+    if any("missing RED_TEAM_REVIEW.md" in error for error in errors):
+        command = '/auto-review-loop "claims/claim_ledger.json" -- difficulty: hard -- orbit-red-team: true'
+        state = state_with_legacy(
+            repo,
+            legacy_artifacts,
+            "STOP_C",
+            "auto-review-loop",
+            "red_team_review_missing",
+            "paused",
+            "missing_prereq",
+            [
+                missing_blocker(
+                    "G23",
+                    red_team_path,
+                    "RED_TEAM_REVIEW is missing after claim_ledger",
+                    command,
+                )
+            ],
+            command,
+        )
+        state["stop_c"] = {"claim_ledger": summary, "approval": approval}
+        return state
+
+    verdict = human_decision_verdict(repo)
+    if verdict and verdict != HUMAN_PROCEED:
+        command = "Review STOP_C_REVIEW.md and update orbit-research/HUMAN_DECISION_NOTE.md only if the human decision changes."
+        state = state_with_legacy(
+            repo,
+            legacy_artifacts,
+            "STOP_C",
+            "diagnostic-to-review",
+            "human_decision_%s" % verdict.lower(),
+            "blocked",
+            "gate_failed",
+            [
+                verdict_blocker(
+                    "G19",
+                    "orbit-research/HUMAN_DECISION_NOTE.md",
+                    "HUMAN_DECISION_NOTE verdict %s does not permit paper handoff" % verdict,
+                    command,
+                )
+            ],
+            command,
+        )
+        state["stop_c"] = {"claim_ledger": summary, "approval": approval}
+        return state
+
+    if any("HUMAN_DECISION_NOTE" in error for error in errors):
+        command = "review orbit-research/RED_TEAM_REVIEW.md and write orbit-research/HUMAN_DECISION_NOTE.md ending PROCEED"
+        if approval.get("red_team_review"):
+            command = "review %s and write orbit-research/HUMAN_DECISION_NOTE.md ending PROCEED" % approval["red_team_review"]
+        state = state_with_legacy(
+            repo,
+            legacy_artifacts,
+            "STOP_C",
+            "diagnostic-to-review",
+            "awaiting_human_decision",
+            "paused",
+            "stop_review",
+            [
+                missing_blocker(
+                    "G19",
+                    "orbit-research/HUMAN_DECISION_NOTE.md",
+                    "HUMAN_DECISION_NOTE is missing or does not end PROCEED",
+                    command,
+                )
+            ],
+            command,
+        )
+        state["stop_c"] = {"claim_ledger": summary, "approval": approval}
+        return state
+
+    command = '/auto-review-loop "claims/claim_ledger.json" -- difficulty: hard -- orbit-red-team: true'
+    state = state_with_legacy(
+        repo,
+        legacy_artifacts,
+        "STOP_C",
+        "auto-review-loop",
+        "red_team_review",
+        "blocked",
+        "gate_failed",
+        [
+            verdict_blocker(
+                "G23",
+                red_team_path,
+                "; ".join(errors) if errors else "STOP C approval is blocked",
+                command,
+            )
+        ],
+        command,
+    )
+    state["stop_c"] = {"claim_ledger": summary, "approval": approval}
+    return state
+
+
 def state_from_experiment_pack(repo: Path, legacy_artifacts: List[str]) -> Optional[Dict[str, Any]]:
     pack = parse_json_file(experiment_pack_path(repo))
     if not pack:
@@ -521,18 +861,13 @@ def infer_from_legacy(repo: Path) -> Dict[str, Any]:
     red_team_review = repo / "orbit-research/RED_TEAM_REVIEW.md"
     human_note = repo / "orbit-research/HUMAN_DECISION_NOTE.md"
 
-    if (repo / "paper/paper_package.json").exists():
-        return state_with_legacy(
-            repo,
-            legacy_artifacts,
-            "COMPLETED",
-            "paper-writing",
-            "paper_package_detected",
-            "completed",
-            None,
-            [],
-            None,
-        )
+    paper_state = state_from_paper_package(repo, legacy_artifacts)
+    if paper_state is not None:
+        return paper_state
+
+    claim_state = state_from_claim_ledger(repo, legacy_artifacts)
+    if claim_state is not None:
+        return claim_state
 
     if red_team_review.exists():
         claim_source = "claims/claim_ledger.json" if claim_ledger.exists() else "orbit-research/CLAIM_CONSTRUCTION.md"
@@ -568,7 +903,7 @@ def infer_from_legacy(repo: Path) -> Dict[str, Any]:
                     repo,
                     legacy_artifacts,
                     "STOP_D",
-                    "paper-writing",
+                    "paper-writing" if not claim_ledger.exists() else "paper-from-claims",
                     "ready_for_paper_writing",
                     "paused",
                     "stop_review",
@@ -607,52 +942,6 @@ def infer_from_legacy(repo: Path) -> Dict[str, Any]:
             ],
             command,
         )
-
-    if claim_ledger.exists():
-        summary = summarize_claim_ledger(repo) or {}
-        pack_status = summary.get("pack_status", "draft")
-        if pack_status == "blocked":
-            command = '/result-to-claim "claims/claim_ledger.json"'
-            return state_with_legacy(
-                repo,
-                legacy_artifacts,
-                "STOP_C",
-                "result-to-claim",
-                "claim_ledger",
-                "blocked",
-                "gate_failed",
-                [
-                    verdict_blocker(
-                        "G21",
-                        "claims/claim_ledger.json",
-                        "claim_ledger status blocked",
-                        command,
-                    )
-                ],
-                command,
-            )
-
-        command = '/auto-review-loop "claims/claim_ledger.json" -- difficulty: hard -- orbit-red-team: true'
-        state = state_with_legacy(
-            repo,
-            legacy_artifacts,
-            "STOP_C",
-            "auto-review-loop",
-            "red_team_review_missing",
-            "paused",
-            "missing_prereq",
-            [
-                missing_blocker(
-                    "G23",
-                    "orbit-research/RED_TEAM_REVIEW.md",
-                    "RED_TEAM_REVIEW is missing after claim_ledger",
-                    command,
-                )
-            ],
-            command,
-        )
-        state["stop_c"] = {"claim_ledger": summary}
-        return state
 
     if claim_construction.exists():
         parsed = parse_verdict(claim_construction)
@@ -975,11 +1264,38 @@ def stale_state(repo: Path, error: Exception) -> Dict[str, Any]:
     )
 
 
+def normalize_existing_state(repo: Path, state: Dict[str, Any]) -> Dict[str, Any]:
+    """Keep explicit ORBIT_STATE, but correct unsafe v1/v2 paper inferences."""
+    normalized = dict(state)
+    skill = normalized.get("current_skill")
+    if skill == "paper-writing":
+        if (repo / "paper/paper_package.json").exists():
+            normalized["current_skill"] = "submission-package"
+        elif (repo / "claims/claim_ledger.json").exists():
+            normalized["current_skill"] = "paper-from-claims"
+
+    legacy_artifacts = existing_artifacts(repo, INFERENCE_ARTIFACTS)
+    paper_state = state_from_paper_package(repo, legacy_artifacts)
+    if paper_state is not None:
+        if paper_state.get("status") == "blocked" or normalized.get("current_stop") == "COMPLETED":
+            return paper_state
+
+    safe_next = normalized.get("safe_next_command")
+    if isinstance(safe_next, str) and (
+        "/paper-from-claims" in safe_next or "/submission-package" in safe_next
+    ):
+        claim_state = state_from_claim_ledger(repo, legacy_artifacts)
+        if claim_state is not None and claim_state.get("status") == "blocked":
+            return claim_state
+
+    return normalized
+
+
 def get_status(repo: Path) -> Dict[str, Any]:
     repo = repo.resolve()
     if (repo / ORBIT_STATE_REL_PATH).exists():
         try:
-            return read_state(repo)  # type: ignore[return-value]
+            return normalize_existing_state(repo, read_state(repo))  # type: ignore[arg-type]
         except (OSError, json.JSONDecodeError, OrbitStateError) as exc:
             return stale_state(repo, exc)
     return infer_from_legacy(repo)
