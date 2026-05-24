@@ -492,6 +492,19 @@ keeps Codex required; it only changes the transport from MCP to a manual Codex t
 Full contract: `skills/shared-references/codex-precondition.md` and
 `docs/refactor/CODEX_HANDOFF.md`.
 
+## Release Checks
+
+Use the fast stabilization target for v2.1 release sanity checks:
+
+```bash
+make release-check
+```
+
+This runs the repository audit, skill profile check, mirror drift check, prompt asset
+check, golden pack validation, and `make test-fast`. Full `pytest -q` is still useful for
+broader local or CI coverage when the environment has enough timeout and optional test
+dependencies, but it is not the fast release gate.
+
 ## Important Files
 
 - `skills/research-pipeline/SKILL.md` — v1.3 routing orchestrator

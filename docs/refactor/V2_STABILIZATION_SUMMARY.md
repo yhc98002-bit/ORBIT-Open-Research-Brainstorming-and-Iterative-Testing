@@ -98,15 +98,32 @@ mirrors and must match canonical. `skills/skills-codex-claude-review` and
 `skills/skills-codex-gemini-review` are catalog-governed overlays and may intentionally
 differ.
 
-## Release Gate Result
+## Release Checks
 
-- `python3 tools/orbit_repo_audit.py --repo . --out docs/refactor`: pass
-- `python3 tools/list_skill_profiles.py --repo . --check`: pass
-- `python3 tools/check_skill_mirror.py --repo .`: pass
-- `python3 tools/check_prompt_assets.py --repo .`: pass
-- `python3 tools/validate_orbit_pack.py --repo tests/fixtures/golden_minimal_project --all`: pass
-- `pytest -q`: pass after installing the test dependencies used by existing MCP-server
-  tests (`pytest`, `httpx`)
+Fast v2.1 stabilization release gate:
+
+```bash
+make release-check
+```
+
+This expands to:
+
+```bash
+python tools/orbit_repo_audit.py --repo . --out docs/refactor
+python tools/list_skill_profiles.py --repo . --check
+python tools/check_skill_mirror.py --repo .
+python tools/check_prompt_assets.py --repo .
+python tools/validate_orbit_pack.py --repo tests/fixtures/golden_minimal_project --all
+make test-fast
+```
+
+`make test-fast` covers the critical v2.1 stabilization surface: orbit status, STOP C
+approval, diagnostic session identity, pack validation, mirror policy, prompt assets,
+skill catalog, golden fixture workflow, Codex handoff, and static skill integrity.
+
+Full `pytest -q` remains useful for broader local or CI coverage when the environment has
+adequate timeout and optional dependencies for unrelated MCP/server tests. It is not the
+fast release gate.
 
 ## Remaining Known Limitations
 

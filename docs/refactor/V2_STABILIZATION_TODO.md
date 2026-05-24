@@ -61,13 +61,16 @@ it does not change workflow behavior.
      architecture (`ORBIT v2.1 pack/status workflow`), and legacy Markdown compatibility
      (`v1.x artifacts are compatibility views`).
 
+8. Test suite needs a fast stabilization test target.
+   - Status: fixed by `test(v2): add fast stabilization release checks`.
+   - `make test-fast` runs the critical v2.1 stabilization tests, while `make
+     release-check` runs static release checks plus `test-fast`.
+   - Full `pytest -q` is documented as broader optional coverage that needs adequate
+     timeout and optional test dependencies.
+
 ## Current Unresolved Stabilization Blockers
 
-1. Test suite needs a fast stabilization test target.
-   - Current risk: `pytest -q` passes, but it includes unrelated MCP-server tests and
-     external-service-adjacent suites.
-   - Expected stabilization: add a documented fast command that runs only ORBIT
-     stabilization tests without broad unrelated coverage.
+- None for the scoped v2.1 stabilization blockers tracked in this file.
 
 ## Baseline Validation Notes
 
@@ -76,6 +79,7 @@ it does not change workflow behavior.
 - `python3 tools/check_skill_mirror.py --repo .`: pass
 - `python3 tools/check_prompt_assets.py --repo .`: pass
 - `python3 tools/validate_orbit_pack.py --repo tests/fixtures/golden_minimal_project --all`: pass
+- `make test-fast`: pass
 
 ## Historical v2.0 Stabilization Work
 

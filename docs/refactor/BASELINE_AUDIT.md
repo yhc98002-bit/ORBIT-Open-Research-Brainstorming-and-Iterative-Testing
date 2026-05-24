@@ -50,23 +50,23 @@ This report is intended as a pre-refactor guardrail inventory.
 | --- | --- | --- | --- | --- | --- |
 | 1 | paper-poster | skills/paper-poster/SKILL.md | 1097 | 6320 | 49205 |
 | 2 | idea-to-proposal | skills/idea-to-proposal/SKILL.md | 904 | 5491 | 47008 |
-| 3 | research-pipeline | skills/research-pipeline/SKILL.md | 744 | 4283 | 35456 |
+| 3 | research-pipeline | skills/research-pipeline/SKILL.md | 744 | 4285 | 35464 |
 | 4 | paper-illustration | skills/paper-illustration/SKILL.md | 715 | 3555 | 31071 |
-| 5 | auto-review-loop | skills/auto-review-loop/SKILL.md | 682 | 4403 | 32221 |
+| 5 | auto-review-loop | skills/auto-review-loop/SKILL.md | 704 | 4500 | 33204 |
 | 6 | proposal-revise | skills/proposal-revise/SKILL.md | 630 | 3994 | 31806 |
 | 7 | grant-proposal | skills/grant-proposal/SKILL.md | 627 | 4118 | 30866 |
 | 8 | research-refine | skills/research-refine/SKILL.md | 625 | 4062 | 31418 |
 | 9 | run-experiment | skills/run-experiment/SKILL.md | 593 | 3364 | 26011 |
-| 10 | paper-slides | skills/paper-slides/SKILL.md | 570 | 2793 | 19253 |
-| 11 | paper-write | skills/paper-write/SKILL.md | 557 | 3748 | 27899 |
-| 12 | diagnostic-to-review | skills/diagnostic-to-review/SKILL.md | 529 | 2153 | 20402 |
+| 10 | diagnostic-to-review | skills/diagnostic-to-review/SKILL.md | 583 | 2426 | 22743 |
+| 11 | paper-slides | skills/paper-slides/SKILL.md | 570 | 2793 | 19253 |
+| 12 | paper-write | skills/paper-write/SKILL.md | 557 | 3748 | 27899 |
 | 13 | proof-checker | skills/proof-checker/SKILL.md | 495 | 3266 | 24273 |
 | 14 | auto-paper-improvement-loop | skills/auto-paper-improvement-loop/SKILL.md | 468 | 3246 | 23415 |
 | 15 | experiment-plan | skills/experiment-plan/SKILL.md | 461 | 3103 | 22903 |
 | 16 | mermaid-diagram | skills/mermaid-diagram/SKILL.md | 442 | 2462 | 17235 |
 | 17 | experiment-queue | skills/experiment-queue/SKILL.md | 433 | 2449 | 17652 |
-| 18 | research-wiki | skills/research-wiki/SKILL.md | 417 | 2136 | 16375 |
-| 19 | result-to-claim | skills/result-to-claim/SKILL.md | 415 | 2448 | 20611 |
+| 18 | result-to-claim | skills/result-to-claim/SKILL.md | 425 | 2540 | 21412 |
+| 19 | research-wiki | skills/research-wiki/SKILL.md | 417 | 2136 | 16375 |
 | 20 | research-lit | skills/research-lit/SKILL.md | 412 | 3022 | 22388 |
 
 ## Markdown Artifact Mentions
@@ -118,7 +118,7 @@ This report is intended as a pre-refactor guardrail inventory.
 | FINAL_PROPOSAL_SHORT.md | 7 | 4 | no | experiment-bridge, idea-to-proposal, research-doc-hygiene, research-refine |
 | GRANT_PROPOSAL.md | 3 | 1 | no | grant-proposal |
 | GRANT_REVIEW.md | 2 | 1 | no | grant-proposal |
-| HUMAN_DECISION_NOTE.md | 13 | 5 | no | auto-review-loop, diagnostic-to-review, research-pipeline, result-to-claim, submission-package |
+| HUMAN_DECISION_NOTE.md | 15 | 6 | no | auto-review-loop, diagnostic-to-review, import-codex-review, research-pipeline, result-to-claim, submission-package |
 | HYPOTHESIS.md | 1 | 1 | no | idea-discovery |
 | IDEA_CANDIDATES.md | 1 | 1 | no | paper-plan |
 | IDEA_REPORT.md | 6 | 3 | no | grant-proposal, paper-plan, patent-pipeline |
@@ -201,7 +201,7 @@ This report is intended as a pre-refactor guardrail inventory.
 | orbit-research/ARTIFACT_AUDIT.md | 2 | 1 | no | research-pipeline |
 | orbit-research/ASSUMPTION_LEDGER.md | 15 | 9 | no | diagnostic-to-review, experiment-bridge, experiment-plan, idea-to-proposal, proposal-revise, research-doc-hygiene, ... (9 total) |
 | orbit-research/BASELINE_CEILING.md | 9 | 5 | no | experiment-bridge, experiment-plan, idea-to-proposal, research-pipeline, research-refine |
-| orbit-research/CLAIM_CONSTRUCTION.md | 11 | 6 | no | diagnostic-to-review, paper-plan, paper-write, research-pipeline, research-refine, result-to-claim |
+| orbit-research/CLAIM_CONSTRUCTION.md | 12 | 7 | no | diagnostic-to-review, experiment-bridge, paper-plan, paper-write, research-pipeline, research-refine, ... (7 total) |
 | orbit-research/CODEX_RESULT_TO_CLAIM_REVIEW.md | 1 | 1 | no | result-to-claim |
 | orbit-research/COMPONENT_BUNDLE_LADDER.md | 7 | 5 | no | diagnostic-to-review, experiment-bridge, experiment-plan, experiment-queue, research-pipeline |
 | orbit-research/CONCURRENT_WORK_WATCHLIST.md | 3 | 3 | yes | idea-discovery, idea-to-proposal, novelty-check |
