@@ -115,9 +115,63 @@ def validate_updated_at(instance: Mapping[str, Any]) -> List[str]:
 def validate_pack_semantics(name: str, instance: Mapping[str, Any]) -> List[str]:
     errors: List[str] = []
 
-    if name == "claim_ledger" and instance.get("status") == "ready":
+    if name == "claim_ledger":
         errors.extend(claim_ledger_usage_errors(instance))
+    elif name == "figure_manifest":
+        errors.extend(duplicate_id_errors(instance.get("figures"), "id", "$.figures", "figure id"))
+    elif name == "citation_cache":
+        errors.extend(citation_cache_usage_errors(instance))
+    elif name == "paper_package":
+        errors.extend(paper_package_semantic_errors(instance))
 
+    return errors
+
+
+def validate_pack_warnings(repo: Path, name: str, instance: Mapping[str, Any]) -> List[str]:
+    warnings: List[str] = []
+
+    if name == "claim_ledger":
+        warnings.extend(claim_ledger_usage_warnings(instance))
+    elif name == "figure_manifest":
+        warnings.extend(figure_manifest_usage_warnings(repo, instance))
+
+    return warnings
+
+
+def non_empty_string(value: Any) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
+def non_empty_string_list(value: Any) -> bool:
+    return isinstance(value, list) and any(non_empty_string(item) for item in value)
+
+
+def has_clear_limitations(claim: Mapping[str, Any]) -> bool:
+    limitations = claim.get("limitations")
+    if non_empty_string(limitations):
+        return True
+    return non_empty_string_list(limitations)
+
+
+def duplicate_id_errors(items: Any, key: str, location: str, label: str) -> List[str]:
+    errors: List[str] = []
+    if not isinstance(items, list):
+        return errors
+
+    seen: Dict[str, int] = {}
+    for index, item in enumerate(items):
+        if not isinstance(item, dict):
+            continue
+        value = item.get(key)
+        if not non_empty_string(value):
+            continue
+        if value in seen:
+            errors.append(
+                "%s[%d].%s: duplicate %s %r also used at %s[%d]"
+                % (location, index, key, label, value, location, seen[value])
+            )
+        else:
+            seen[value] = index
     return errors
 
 
@@ -128,16 +182,35 @@ def claim_ledger_usage_errors(instance: Mapping[str, Any], location: str = "$") 
     if not isinstance(claims, list):
         return errors
 
+    errors.extend(duplicate_id_errors(claims, "id", "%s.claims" % location, "claim id"))
+
     for index, claim in enumerate(claims):
         if not isinstance(claim, dict):
             continue
-        if claim.get("status") != "unsupported":
-            continue
 
         claim_id = claim.get("id") or index
+        status = claim.get("status")
         role = claim.get("claim_role")
         paper_use = claim.get("paper_use")
         claim_loc = "%s.claims[%d]" % (location, index)
+
+        for key in ("id", "statement", "status"):
+            if not non_empty_string(claim.get(key)):
+                errors.append("%s.%s: claim must have a non-empty %s" % (claim_loc, key, key))
+
+        if paper_use == "allowed" and status not in {"supported", "partial"}:
+            errors.append(
+                "%s.paper_use: claim %r with paper_use='allowed' must be supported or partial, got %r"
+                % (claim_loc, claim_id, status)
+            )
+        if paper_use == "allowed" and status == "partial" and not has_clear_limitations(claim):
+            errors.append(
+                "%s.limitations: partial allowed claim %r must include clear limitations"
+                % (claim_loc, claim_id)
+            )
+
+        if status != "unsupported":
+            continue
 
         if paper_use == "allowed":
             errors.append(
@@ -169,11 +242,114 @@ def claim_ledger_usage_errors(instance: Mapping[str, Any], location: str = "$") 
     return errors
 
 
+def claim_ledger_usage_warnings(instance: Mapping[str, Any], location: str = "$") -> List[str]:
+    warnings: List[str] = []
+    claims = instance.get("claims")
+    if not isinstance(claims, list):
+        return warnings
+
+    for index, claim in enumerate(claims):
+        if not isinstance(claim, dict):
+            continue
+        if claim.get("paper_use") != "allowed":
+            continue
+        evidence_refs = claim.get("evidence_refs")
+        if non_empty_string_list(evidence_refs):
+            continue
+        claim_id = claim.get("id") or index
+        warnings.append(
+            "%s.claims[%d].evidence_refs: allowed claim %r has no evidence refs"
+            % (location, index, claim_id)
+        )
+    return warnings
+
+
+def figure_manifest_usage_warnings(repo: Path, instance: Mapping[str, Any], location: str = "$") -> List[str]:
+    warnings: List[str] = []
+    figures = instance.get("figures")
+    if not isinstance(figures, list):
+        return warnings
+    for index, figure in enumerate(figures):
+        if not isinstance(figure, dict):
+            continue
+        if figure.get("status") != "verified":
+            continue
+        output = figure.get("output")
+        if not non_empty_string(output):
+            continue
+        if (repo / output).exists():
+            continue
+        figure_id = figure.get("id") or index
+        warnings.append(
+            "%s.figures[%d].output: verified figure %r output path does not exist: %s"
+            % (location, index, figure_id, output)
+        )
+    return warnings
+
+
+def citation_cache_usage_errors(instance: Mapping[str, Any], location: str = "$") -> List[str]:
+    errors = duplicate_id_errors(instance.get("citations"), "key", "%s.citations" % location, "citation key")
+    citations = instance.get("citations")
+    if not isinstance(citations, list):
+        return errors
+
+    for index, citation in enumerate(citations):
+        if not isinstance(citation, dict):
+            continue
+        if citation.get("verified") is not True:
+            continue
+        if non_empty_string(citation.get("source")):
+            continue
+        key = citation.get("key") or index
+        errors.append(
+            "%s.citations[%d].source: verified citation %r must include a source"
+            % (location, index, key)
+        )
+    return errors
+
+
+def paper_package_semantic_errors(instance: Mapping[str, Any], location: str = "$") -> List[str]:
+    errors: List[str] = []
+    if instance.get("status") != "ready":
+        return errors
+
+    compile_status = instance.get("compile_status")
+    if not status_passes(compile_status):
+        errors.append("%s.compile_status: ready paper_package requires passing compile_status" % location)
+
+    audits = instance.get("audits")
+    if not isinstance(audits, list) or not audits:
+        errors.append("%s.audits: ready paper_package requires at least one audit" % location)
+    elif not all(audit_passes(audit) for audit in audits):
+        errors.append("%s.audits: ready paper_package contains a non-passing audit" % location)
+
+    return errors
+
+
+def status_passes(value: Any) -> bool:
+    passing = {"pass", "passed", "ok", "ready", "success"}
+    if isinstance(value, str):
+        return value.strip().lower() in passing
+    if isinstance(value, dict):
+        return status_passes(value.get("status"))
+    return False
+
+
+def audit_passes(value: Any) -> bool:
+    if isinstance(value, dict):
+        return status_passes(value.get("status"))
+    if isinstance(value, str):
+        return status_passes(value)
+    return False
+
+
 def errors_for_claim(errors: List[str], claim_location: str) -> bool:
     return any(error.startswith(claim_location + ".") for error in errors)
 
 
 def append_cross_pack_errors(repo: Path, report: Dict[str, Any]) -> None:
+    append_figure_claim_reference_errors(repo, report)
+    append_paper_package_readiness_errors(repo, report)
     append_stop_c_approval_errors(repo, report)
     append_claim_ledger_usage_errors(repo, report)
 
@@ -214,6 +390,193 @@ def append_cross_pack_errors(repo: Path, report: Dict[str, Any]) -> None:
             result["status"] = "error"
             result.setdefault("errors", []).extend(errors)
             return
+
+
+def result_for(report: Dict[str, Any], name: str) -> Optional[Dict[str, Any]]:
+    for result in report["results"]:
+        if result.get("name") == name:
+            return result
+    return None
+
+
+def add_result_errors(report: Dict[str, Any], name: str, errors: List[str]) -> None:
+    if not errors:
+        return
+    result = result_for(report, name)
+    if result is None:
+        return
+    result["status"] = "error"
+    result.setdefault("errors", []).extend(errors)
+
+
+def add_result_warnings(report: Dict[str, Any], name: str, warnings: List[str]) -> None:
+    if not warnings:
+        return
+    result = result_for(report, name)
+    if result is None:
+        return
+    if result.get("status") == "ok":
+        result["status"] = "warning"
+    result.setdefault("warnings", []).extend(warnings)
+
+
+def append_figure_claim_reference_errors(repo: Path, report: Dict[str, Any]) -> None:
+    if result_for(report, "figure_manifest") is None:
+        return
+    manifest_path = pack_path(repo, "figure_manifest")
+    ledger_path = pack_path(repo, "claim_ledger")
+    if not manifest_path.exists() or not ledger_path.exists():
+        return
+
+    manifest = parse_json_or_none(manifest_path)
+    ledger = parse_json_or_none(ledger_path)
+    if not isinstance(manifest, dict) or not isinstance(ledger, dict):
+        return
+
+    claim_ids = ids_from_items(ledger.get("claims"), "id")
+    errors: List[str] = []
+    for index, figure in enumerate(list_items(manifest.get("figures"))):
+        supports = figure.get("supports_claims")
+        if not isinstance(supports, list):
+            continue
+        for claim_id in supports:
+            if not non_empty_string(claim_id) or claim_id in claim_ids:
+                continue
+            figure_id = figure.get("id") or index
+            errors.append(
+                "$.figures[%d].supports_claims: figure %r references missing claim id %r"
+                % (index, figure_id, claim_id)
+            )
+    add_result_errors(report, "figure_manifest", errors)
+
+
+def append_paper_package_readiness_errors(repo: Path, report: Dict[str, Any]) -> None:
+    if result_for(report, "paper_package") is None:
+        return
+    paper_path = pack_path(repo, "paper_package")
+    if not paper_path.exists():
+        return
+
+    paper_package = parse_json_or_none(paper_path)
+    if not isinstance(paper_package, dict) or paper_package.get("status") != "ready":
+        return
+
+    errors: List[str] = []
+    errors.extend(validate_referenced_pack(repo, paper_package, "claim_ledger_ref", "claim_ledger"))
+    errors.extend(validate_paper_package_figure_refs(repo, paper_package))
+    errors.extend(validate_paper_package_citation_refs(repo, paper_package))
+    add_result_errors(report, "paper_package", errors)
+
+
+def validate_referenced_pack(repo: Path, paper_package: Mapping[str, Any], ref_key: str, pack_name: str) -> List[str]:
+    ref = paper_package.get(ref_key)
+    if not non_empty_string(ref):
+        return ["$.%s: ready paper_package requires %s" % (ref_key, ref_key)]
+    path = repo / ref
+    if not path.exists():
+        return ["$.%s: referenced %s does not exist: %s" % (ref_key, pack_name, ref)]
+    result = validate_pack_file(repo, pack_name, path)
+    return [
+        "$.%s: referenced %s validation failed: %s" % (ref_key, pack_name, error)
+        for error in result.get("errors", [])
+    ]
+
+
+def validate_paper_package_figure_refs(repo: Path, paper_package: Mapping[str, Any]) -> List[str]:
+    refs = string_refs_from_fields(
+        paper_package,
+        ("figure_refs", "figure_ids", "referenced_figures", "figures"),
+    )
+    if not refs:
+        return []
+
+    ref = paper_package.get("figure_manifest_ref")
+    if not non_empty_string(ref):
+        return ["$.figure_manifest_ref: ready paper_package has figure refs but no figure_manifest_ref"]
+    manifest_path = repo / ref
+    if not manifest_path.exists():
+        return ["$.figure_manifest_ref: referenced figure_manifest does not exist: %s" % ref]
+    manifest = parse_json_or_none(manifest_path)
+    if not isinstance(manifest, dict):
+        return ["$.figure_manifest_ref: referenced figure_manifest is not valid JSON: %s" % ref]
+
+    figure_ids = ids_from_items(manifest.get("figures"), "id")
+    errors = []
+    for figure_id in refs:
+        if figure_id not in figure_ids:
+            errors.append("$.figure_refs: referenced figure id %r is missing from figure_manifest" % figure_id)
+    return errors
+
+
+def validate_paper_package_citation_refs(repo: Path, paper_package: Mapping[str, Any]) -> List[str]:
+    refs = string_refs_from_fields(
+        paper_package,
+        ("citation_refs", "citation_keys", "referenced_citations", "citations"),
+    )
+    ref = paper_package.get("citation_cache_ref")
+    if not non_empty_string(ref):
+        return ["$.citation_cache_ref: ready paper_package requires citation_cache_ref"]
+    cache_path = repo / ref
+    if not cache_path.exists():
+        return ["$.citation_cache_ref: referenced citation_cache does not exist: %s" % ref]
+    cache = parse_json_or_none(cache_path)
+    if not isinstance(cache, dict):
+        return ["$.citation_cache_ref: referenced citation_cache is not valid JSON: %s" % ref]
+
+    citations = {
+        str(citation.get("key")): citation
+        for citation in list_items(cache.get("citations"))
+        if non_empty_string(citation.get("key"))
+    }
+    keys_to_check = refs or sorted(citations)
+    errors: List[str] = []
+    for key in keys_to_check:
+        citation = citations.get(key)
+        if citation is None:
+            errors.append("$.citation_refs: referenced citation key %r is missing from citation_cache" % key)
+            continue
+        if citation.get("verified") is not True:
+            errors.append("$.citation_refs: referenced citation key %r is not verified" % key)
+    return errors
+
+
+def list_items(value: Any) -> List[Mapping[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, dict)]
+
+
+def ids_from_items(items: Any, key: str) -> set[str]:
+    return {
+        str(item.get(key))
+        for item in list_items(items)
+        if non_empty_string(item.get(key))
+    }
+
+
+def string_refs_from_fields(instance: Mapping[str, Any], keys: tuple[str, ...]) -> List[str]:
+    refs: List[str] = []
+    for key in keys:
+        refs.extend(string_refs_from_value(instance.get(key)))
+    return sorted(set(refs))
+
+
+def string_refs_from_value(value: Any) -> List[str]:
+    if isinstance(value, str) and value.strip():
+        return [value.strip()]
+    if not isinstance(value, list):
+        return []
+    refs: List[str] = []
+    for item in value:
+        if isinstance(item, str) and item.strip():
+            refs.append(item.strip())
+        elif isinstance(item, dict):
+            for key in ("id", "key", "figure_id", "citation_key"):
+                maybe = item.get(key)
+                if isinstance(maybe, str) and maybe.strip():
+                    refs.append(maybe.strip())
+                    break
+    return refs
 
 
 def append_claim_ledger_usage_errors(repo: Path, report: Dict[str, Any]) -> None:
@@ -357,15 +720,20 @@ def validate_pack_file(repo: Path, name: str, path: Path) -> Dict[str, Any]:
         return result
 
     errors = validate_schema_subset(schema, instance)
+    warnings: List[str] = []
     if isinstance(instance, dict):
         errors.extend(validate_updated_at(instance))
         errors.extend(validate_pack_semantics(name, instance))
+        warnings.extend(validate_pack_warnings(repo, name, instance))
     else:
         errors.append("$: pack root must be a JSON object")
 
     if errors:
         result["status"] = "error"
         result["errors"].extend(errors)
+    elif warnings:
+        result["status"] = "warning"
+        result["warnings"].extend(warnings)
     return result
 
 

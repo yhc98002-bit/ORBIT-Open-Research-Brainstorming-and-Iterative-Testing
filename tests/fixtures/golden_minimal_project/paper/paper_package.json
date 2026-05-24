@@ -9,6 +9,12 @@
   "claim_ledger_ref": "claims/claim_ledger.json",
   "figure_manifest_ref": "figures/figure_manifest.json",
   "citation_cache_ref": "references/citation_cache.json",
+  "figure_refs": [
+    "fig:fixture_metric"
+  ],
+  "citation_refs": [
+    "fixture2026"
+  ],
   "compile_status": {
     "status": "pass",
     "pdf": "paper/main.pdf"
