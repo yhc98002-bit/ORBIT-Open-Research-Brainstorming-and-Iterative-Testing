@@ -72,7 +72,7 @@ state from legacy artifacts including:
 - `refine-logs/REFINE_STATE.json`
 - `orbit-research/PLAN_CODE_AUDIT.md`
 - `orbit-research/DIAGNOSTIC_RUN_AUDIT.md`
-- `orbit-research/CLAIM_CONSTRUCTION.md`
+- `orbit-research/CLAIM_CONSTRUCTION.md` legacy compatibility view
 - `orbit-research/RED_TEAM_REVIEW.md`
 - `orbit-research/HUMAN_DECISION_NOTE.md`
 

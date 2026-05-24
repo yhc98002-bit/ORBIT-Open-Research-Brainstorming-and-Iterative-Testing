@@ -420,8 +420,8 @@ baseline ceiling analysis, failure taxonomy, negative result, regime map, evalua
 task ontology contribution, or controlled reproduction.
 
 If a result is being reframed post-hoc, label it explicitly as "exploratory finding, not
-pre-planned hypothesis" in `claims/claim_ledger.json`, any compatibility
-`CLAIM_CONSTRUCTION.md` view, and the paper (G17).
+pre-planned hypothesis" in `claims/claim_ledger.json`, the
+`CLAIM_CONSTRUCTION.md` legacy compatibility view, and the paper (G17).
 
 Stop if no contribution remains.
 

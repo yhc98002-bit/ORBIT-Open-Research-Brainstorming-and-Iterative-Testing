@@ -1,5 +1,10 @@
 # ORBIT / ARIS Skills 功能与 Pipeline Review
 
+> Archived pre-v2 review. Some `/paper-writing` and `CLAIM_CONSTRUCTION.md` references
+> reflect the old architecture. Current v2.1 guidance uses `/paper-draft`,
+> `/paper-from-claims`, `/submission-package`, and canonical
+> `claims/claim_ledger.json`; `CLAIM_CONSTRUCTION.md` is now a compatibility view.
+
 **日期**：2026-05-08  
 **范围**：本文件基于仓库当前 `skills/`、`skills/shared-references/`、`README.md`、`AGENT_GUIDE.md`、关键 orchestrator skill 与模板文件的实际内容整理。  
 **结论**：这个仓库不是一组松散的工具 skill，而是一个以 **ORBIT v1.3 research-methodology routing harness** 为核心、复用 ARIS 执行技能的科研流水线系统。它的主线是：从研究方向/想法出发，经过 Discovery、Grounding、Innovation、Validation，再进入实验、结果解释、claim 构造、red-team 和论文写作。

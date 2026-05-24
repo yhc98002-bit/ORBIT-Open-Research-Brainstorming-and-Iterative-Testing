@@ -63,7 +63,7 @@ diagnostics.
 `/experiment-bridge` must not create:
 
 - `claims/claim_ledger.json`
-- `CLAIM_CONSTRUCTION.md`
+- `orbit-research/CLAIM_CONSTRUCTION.md` legacy compatibility view
 - `RED_TEAM_REVIEW.md`
 
 If a probe changes paper-level claim scope, STOP B should stop and hand off to:

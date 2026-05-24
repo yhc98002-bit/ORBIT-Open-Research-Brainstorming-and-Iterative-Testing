@@ -771,8 +771,8 @@ Downgrade claims when evidence is partial.
 Do not generalize beyond the tested benchmark, regime, or control set.
 
 Write `claims/claim_ledger.json` as the canonical machine-readable ledger and
-`claims/CLAIM_LEDGER.md` as the human-readable view. `orbit-research/CLAIM_CONSTRUCTION.md`
-legacy compatibility view may also be written.
+`claims/CLAIM_LEDGER.md` as the human-readable view. The
+`orbit-research/CLAIM_CONSTRUCTION.md` legacy compatibility view may also be written.
 ```
 
 ## 22. Tie / Negative Result / Reframing Strategy

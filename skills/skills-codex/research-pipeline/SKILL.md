@@ -510,8 +510,8 @@ might answer.
 2. **Gate G17:** label exploratory findings explicitly as "exploratory finding, not
    pre-planned hypothesis." Do not present post-hoc reframings as pre-planned hypotheses.
 3. Write `claims/claim_ledger.json` as the canonical claim/evidence ledger and
-   `claims/CLAIM_LEDGER.md` as a generated view. `orbit-research/CLAIM_CONSTRUCTION.md`
-   legacy compatibility view may also be written.
+   `claims/CLAIM_LEDGER.md` as a generated view. The
+   `orbit-research/CLAIM_CONSTRUCTION.md` legacy compatibility view may also be written.
 
 **Gate G16:** Stage 24b (paper-from-claims) refuses to start without
 `claims/claim_ledger.json`. `CLAIM_CONSTRUCTION.md` may be consumed only as a legacy view
@@ -682,9 +682,9 @@ G14 NULL_RESULT_CONTRACT-triggered tie/failure cannot have positive framing in
 G15 Scale-up in mode = COMMITMENT OR risk ≥ 4 requires HUMAN_DECISION_NOTE.md ending
     PROCEED before SCALEUP_DECISION = PROCEED. No exception.
 
-G16 Evidence-bound paper writing requires claims/claim_ledger.json. CLAIM_CONSTRUCTION.md
-    legacy compatibility view may be consumed if claim_ledger.json is absent, but new runs
-    should generate claim_ledger.json. No exception for new runs.
+G16 Evidence-bound paper writing requires claims/claim_ledger.json. The
+    CLAIM_CONSTRUCTION.md legacy compatibility view may be consumed if claim_ledger.json
+    is absent, but new runs should generate claim_ledger.json. No exception for new runs.
 
 G17 Post-hoc result framings must be labelled "exploratory finding, not pre-planned
     hypothesis" in claims/claim_ledger.json, any CLAIM_CONSTRUCTION compatibility view,
@@ -722,8 +722,8 @@ this orchestrator verifies the hard preconditions (G16, G18, G19):
   `/auto-review-loop` at Stage 23)
 - `orbit-research/NEGATIVE_RESULT_STRATEGY.md` if `result-to-claim` returned `partial` or `no`
 
-`claims/CLAIM_LEDGER.md` and `orbit-research/CLAIM_CONSTRUCTION.md` may be consumed as
-legacy compatibility views when `claim_ledger.json` is absent, but new runs should
+`claims/CLAIM_LEDGER.md` and the `orbit-research/CLAIM_CONSTRUCTION.md` legacy
+compatibility view may be consumed when `claim_ledger.json` is absent, but new runs should
 generate the ledger and treat Markdown as a view. If any gate is missing or has a
 blocking verdict, do not invoke `/paper-from-claims` or mark `/submission-package` ready;
 route the user back to the producing skill or to human STOP C decision.

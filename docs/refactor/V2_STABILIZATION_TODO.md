@@ -34,37 +34,40 @@ it does not change workflow behavior.
      STOP C approval semantics, recognizes per-diagnostic red-team reviews, and refuses
      paper handoff when `HUMAN_DECISION_NOTE.md` does not end `PROCEED`.
 
+4. Codex standalone handoff must preserve and restore producer workflow context.
+   - Status: fixed by `fix(codex): preserve workflow context across standalone review
+     handoff`.
+   - Handoff metadata now preserves producer STOP, skill, phase, diagnostic id, target
+     artifact, and resume command; successful import updates `ORBIT_STATE.json` to
+     `codex_review_imported` without treating import as human approval.
+
+5. Diagnostic sessions need clearer rerun, resume, and fresh-run semantics.
+   - Status: fixed by `fix(diagnostics): clarify session resume and fresh rerun
+     semantics`.
+   - `tools/diagnostic_session.py create` now reuses only active matching sessions,
+     terminal sessions require explicit `resume` or `create --fresh`, and tests cover
+     active reuse, terminal blocking, fresh rerun, and mismatched resume refusal.
+
+6. Residual pre-v2 paper-writing / CLAIM_CONSTRUCTION wording must be cleaned or
+   archived.
+   - Status: fixed by `docs(v2): clean legacy paper-writing and version guidance`.
+   - Current guidance describes `/paper-draft`, `/paper-from-claims`, and
+     `/submission-package`; `/paper-writing` is compatibility only; the historical Chinese
+     pipeline review is archived as pre-v2 guidance.
+
+7. Version terminology needs one documented convention.
+   - Status: fixed by `docs(v2): clean legacy paper-writing and version guidance`.
+   - README now separates methodology contract (`ORBIT v1.3 stage/gate model`), runtime
+     architecture (`ORBIT v2.1 pack/status workflow`), and legacy Markdown compatibility
+     (`v1.x artifacts are compatibility views`).
+
 ## Current Unresolved Stabilization Blockers
 
-1. Codex standalone handoff must preserve and restore producer workflow context.
-   - Current risk: imported Codex responses may validate review text but lose the
-     producing phase, target artifact, pack field, or expected destination.
-   - Expected stabilization: exported prompts and imports should carry enough structured
-     context to resume the original workflow safely.
-
-2. Diagnostic sessions need clearer rerun, resume, and fresh-run semantics.
-   - Current risk: completed diagnostic sessions may be silently reused when a fresh run
-     is needed, or old fixed-path artifacts may influence a new diagnostic.
-   - Expected stabilization: require explicit user intent for rerun vs resume vs fresh
-     session, using `diagnostic_id`, `input_hash`, `run_id`, and result paths.
-
-3. Residual pre-v2 paper-writing / CLAIM_CONSTRUCTION wording must be cleaned or
-   archived.
-   - Current risk: compatibility references are mostly labeled, but residual prose can
-     still imply `/paper-writing` or `CLAIM_CONSTRUCTION.md` is canonical.
-   - Expected stabilization: keep only explicit compatibility-router or compatibility-view
-     references in current docs; move historical language to archived notes if needed.
-
-4. Test suite needs a fast stabilization test target.
+1. Test suite needs a fast stabilization test target.
    - Current risk: `pytest -q` passes, but it includes unrelated MCP-server tests and
      external-service-adjacent suites.
    - Expected stabilization: add a documented fast command that runs only ORBIT
      stabilization tests without broad unrelated coverage.
-
-5. Version terminology needs one documented convention.
-   - Current risk: docs mention v1.3, v1.4, v2, v2.0, and v2.1 in overlapping ways.
-   - Expected stabilization: document which labels mean architecture generation,
-     compatibility version, and stabilization patch line.
 
 ## Baseline Validation Notes
 

@@ -273,5 +273,11 @@ conditional-required claim/review routing.
 /idea-to-proposal      -> proposal candidate + STOP A
 /experiment-bridge     -> experiment plan + implementation + PLAN_CODE_AUDIT + STOP B
 /diagnostic-to-review  -> formal diagnostic + interpretation + decision log + conditional-required claim/review
-/paper-writing         -> manuscript after CLAIM_CONSTRUCTION exists
+/paper-draft           -> fast draft, no submission gates
+/paper-from-claims     -> evidence-bound paper after STOP C approval and claims/claim_ledger.json
+/submission-package    -> strict compile/audit/package readiness after STOP C approval
 ```
+
+`/paper-writing` is only a compatibility router for the three paper entries above.
+`orbit-research/CLAIM_CONSTRUCTION.md` is a legacy compatibility view generated alongside
+or from `claims/claim_ledger.json`, not the canonical v2 source of truth.

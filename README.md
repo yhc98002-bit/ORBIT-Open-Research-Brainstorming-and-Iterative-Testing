@@ -24,6 +24,10 @@ later when paper-level claims exist. Similar or concurrent work goes to
 **Language note:** ORBIT's persistent research artifacts default to English even when the
 chat is in Chinese. Chinese templates are manual opt-in only.
 
+**Version terminology:** Methodology contract = ORBIT v1.3 stage/gate model. Runtime
+architecture = ORBIT v2.1 pack/status workflow. Legacy Markdown compatibility = v1.x
+artifacts are still read as compatibility views when needed.
+
 ## Public Entry Points
 
 The full repository contains many specialist subskills, but new users should start with

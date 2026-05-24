@@ -1,8 +1,12 @@
-# ORBIT v2 Stabilization Summary
+# ORBIT v2 / v2.1 Stabilization Summary
 
-This release gate closes the v2 stabilization pass. It does not introduce a new
-architecture; it verifies that the v2 contracts are internally consistent and that legacy
-surfaces are clearly marked as compatibility paths.
+This release gate summarizes the v2 architecture and v2.1 stabilization pass. It does not
+introduce a new architecture; it verifies that the v2 contracts are internally consistent
+and that legacy surfaces are clearly marked as compatibility paths.
+
+Version terminology: methodology contract = ORBIT v1.3 stage/gate model; runtime
+architecture = ORBIT v2.1 pack/status workflow; legacy Markdown compatibility = v1.x
+artifacts remain readable as compatibility views.
 
 ## What Changed
 
@@ -18,6 +22,10 @@ surfaces are clearly marked as compatibility paths.
   per-session diagnostic directories.
 - Added standalone Codex review handoff so Codex remains required even when MCP transport
   fails.
+- Stabilized Codex handoff context restore: imports preserve producer STOP, skill, phase,
+  diagnostic id, target artifact, and resume command without counting as human approval.
+- Stabilized diagnostic session rerun semantics: active sessions may resume, while
+  terminal sessions require explicit `resume` or `create --fresh`.
 - Synced full mirrors and made mirror drift CI-checkable.
 
 ## Public Entrypoints
@@ -79,6 +87,9 @@ Codex review remains required by default. MCP/auth/sandbox failure exports a sta
 prompt under `orbit-research/codex-prompts/` and waits for a response imported through
 `/import-codex-review`. A single-model fallback does not satisfy commitment gates unless
 the user explicitly requests degraded mode and later accepts degraded artifacts.
+Importing a standalone response repairs the Codex transport gap only; it does not create
+`HUMAN_DECISION_NOTE.md`, does not approve STOP C, and resumes the producer skill using
+the handoff metadata.
 
 ## Mirror Policy
 
