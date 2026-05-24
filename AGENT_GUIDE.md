@@ -73,6 +73,17 @@ Legacy wrappers such as `/paper-writing`, `/research-pipeline`, and
 recommendation. `/import-codex-review` is a public recovery utility for Codex handoff
 imports, not a normal workflow starting point.
 
+Canonical v2 flow:
+
+```text
+/idea-to-proposal
+/experiment-bridge
+/diagnostic-to-review
+/paper-draft OR /paper-from-claims
+/submission-package
+/orbit-status whenever stuck
+```
+
 ## Common Parameters
 
 ```

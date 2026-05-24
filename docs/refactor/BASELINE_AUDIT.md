@@ -15,7 +15,7 @@ This report is intended as a pre-refactor guardrail inventory.
 
 | Mirror root | Exists | Mirror skills | Identical | Content drift | Missing | Extra |
 | --- | --- | --- | --- | --- | --- | --- |
-| .agents/skills | yes | 77 | 74 | 3 | 0 | 0 |
+| .agents/skills | yes | 77 | 77 | 0 | 0 | 0 |
 | skills/skills-codex | yes | 77 | 77 | 0 | 0 | 0 |
 | skills/skills-codex-gemini-review | yes | 15 | 0 | 15 | 62 | 0 |
 | skills/skills-codex-claude-review | yes | 8 | 0 | 8 | 69 | 0 |
@@ -24,7 +24,7 @@ This report is intended as a pre-refactor guardrail inventory.
 
 - Missing: none
 - Extra: none
-- Content drift: auto-paper-improvement-loop, novelty-check, research-review
+- Content drift: none
 
 ### `skills/skills-codex`
 
@@ -50,31 +50,31 @@ This report is intended as a pre-refactor guardrail inventory.
 | --- | --- | --- | --- | --- | --- |
 | 1 | paper-poster | skills/paper-poster/SKILL.md | 1097 | 6320 | 49205 |
 | 2 | idea-to-proposal | skills/idea-to-proposal/SKILL.md | 904 | 5491 | 47008 |
-| 3 | research-pipeline | skills/research-pipeline/SKILL.md | 722 | 4099 | 34065 |
+| 3 | research-pipeline | skills/research-pipeline/SKILL.md | 744 | 4283 | 35456 |
 | 4 | paper-illustration | skills/paper-illustration/SKILL.md | 715 | 3555 | 31071 |
-| 5 | proposal-revise | skills/proposal-revise/SKILL.md | 630 | 3994 | 31806 |
-| 6 | grant-proposal | skills/grant-proposal/SKILL.md | 627 | 4118 | 30866 |
-| 7 | research-refine | skills/research-refine/SKILL.md | 625 | 4062 | 31418 |
-| 8 | auto-review-loop | skills/auto-review-loop/SKILL.md | 580 | 3692 | 27179 |
-| 9 | paper-slides | skills/paper-slides/SKILL.md | 570 | 2793 | 19253 |
-| 10 | paper-write | skills/paper-write/SKILL.md | 557 | 3748 | 27899 |
-| 11 | run-experiment | skills/run-experiment/SKILL.md | 499 | 3044 | 22709 |
-| 12 | proof-checker | skills/proof-checker/SKILL.md | 495 | 3266 | 24273 |
-| 13 | auto-paper-improvement-loop | skills/auto-paper-improvement-loop/SKILL.md | 468 | 3246 | 23415 |
-| 14 | experiment-plan | skills/experiment-plan/SKILL.md | 461 | 3103 | 22903 |
-| 15 | diagnostic-to-review | skills/diagnostic-to-review/SKILL.md | 461 | 1884 | 17893 |
+| 5 | auto-review-loop | skills/auto-review-loop/SKILL.md | 682 | 4403 | 32221 |
+| 6 | proposal-revise | skills/proposal-revise/SKILL.md | 630 | 3994 | 31806 |
+| 7 | grant-proposal | skills/grant-proposal/SKILL.md | 627 | 4118 | 30866 |
+| 8 | research-refine | skills/research-refine/SKILL.md | 625 | 4062 | 31418 |
+| 9 | run-experiment | skills/run-experiment/SKILL.md | 593 | 3364 | 26011 |
+| 10 | paper-slides | skills/paper-slides/SKILL.md | 570 | 2793 | 19253 |
+| 11 | paper-write | skills/paper-write/SKILL.md | 557 | 3748 | 27899 |
+| 12 | diagnostic-to-review | skills/diagnostic-to-review/SKILL.md | 529 | 2153 | 20402 |
+| 13 | proof-checker | skills/proof-checker/SKILL.md | 495 | 3266 | 24273 |
+| 14 | auto-paper-improvement-loop | skills/auto-paper-improvement-loop/SKILL.md | 468 | 3246 | 23415 |
+| 15 | experiment-plan | skills/experiment-plan/SKILL.md | 461 | 3103 | 22903 |
 | 16 | mermaid-diagram | skills/mermaid-diagram/SKILL.md | 442 | 2462 | 17235 |
 | 17 | experiment-queue | skills/experiment-queue/SKILL.md | 433 | 2449 | 17652 |
 | 18 | research-wiki | skills/research-wiki/SKILL.md | 417 | 2136 | 16375 |
-| 19 | research-lit | skills/research-lit/SKILL.md | 412 | 3022 | 22388 |
-| 20 | idea-discovery | skills/idea-discovery/SKILL.md | 411 | 2524 | 18977 |
+| 19 | result-to-claim | skills/result-to-claim/SKILL.md | 415 | 2448 | 20611 |
+| 20 | research-lit | skills/research-lit/SKILL.md | 412 | 3022 | 22388 |
 
 ## Markdown Artifact Mentions
 
 | Category | Distinct paths |
 | --- | --- |
-| Likely generated runtime artifacts | 207 |
-| Docs/shared references/templates | 41 |
+| Likely generated runtime artifacts | 209 |
+| Docs/shared references/templates | 39 |
 | Other | 86 |
 | All distinct `.md` paths | 334 |
 
@@ -94,7 +94,7 @@ This report is intended as a pre-refactor guardrail inventory.
 | BASELINE_CEILING.md | 4 | 4 | no | experiment-plan, idea-to-proposal, proposal-revise, research-pipeline |
 | CITATION_AUDIT.md | 3 | 1 | no | citation-audit |
 | CLAIMS_FROM_RESULTS.md | 3 | 1 | no | paper-plan |
-| CLAIM_CONSTRUCTION.md | 15 | 8 | no | auto-review-loop, diagnostic-to-review, idea-to-proposal, paper-write, proposal-revise, research-doc-hygiene, ... (8 total) |
+| CLAIM_CONSTRUCTION.md | 12 | 8 | no | auto-review-loop, diagnostic-to-review, idea-to-proposal, paper-write, proposal-revise, research-doc-hygiene, ... (8 total) |
 | CLAIM_LEDGER.md | 2 | 1 | no | result-to-claim |
 | COMPONENT_BUNDLE_LADDER.md | 6 | 5 | no | experiment-plan, idea-to-proposal, proposal-revise, research-pipeline, research-refine |
 | COMPONENT_LADDER.md | 7 | 5 | no | experiment-plan, experiment-queue, monitor-experiment, research-pipeline, research-refine |
@@ -103,8 +103,8 @@ This report is intended as a pre-refactor guardrail inventory.
 | DERIVATION_PACKAGE.md | 3 | 1 | no | formula-derivation |
 | DIAGNOSTIC_EXPERIMENT_PLAN.md | 1 | 1 | no | proposal-revise |
 | DIAGNOSTIC_RUN_*.md | 1 | 1 | no | idea-to-proposal |
-| DIAGNOSTIC_RUN_AUDIT.md | 10 | 3 | no | experiment-bridge, research-pipeline, run-experiment |
-| DIAGNOSTIC_RUN_REPORT.md | 7 | 2 | no | experiment-bridge, run-experiment |
+| DIAGNOSTIC_RUN_AUDIT.md | 8 | 3 | no | experiment-bridge, research-pipeline, run-experiment |
+| DIAGNOSTIC_RUN_REPORT.md | 4 | 2 | no | experiment-bridge, run-experiment |
 | EXPERIMENT_AUDIT.md | 3 | 1 | no | experiment-audit |
 | EXPERIMENT_LOG.md | 10 | 6 | no | ablation-planner, auto-review-loop, experiment-audit, meta-optimize, paper-claim-audit, paper-plan |
 | EXPERIMENT_PLAN.md | 18 | 6 | no | experiment-bridge, experiment-plan, idea-to-proposal, proposal-revise, research-refine, research-refine-pipeline |
@@ -118,7 +118,7 @@ This report is intended as a pre-refactor guardrail inventory.
 | FINAL_PROPOSAL_SHORT.md | 7 | 4 | no | experiment-bridge, idea-to-proposal, research-doc-hygiene, research-refine |
 | GRANT_PROPOSAL.md | 3 | 1 | no | grant-proposal |
 | GRANT_REVIEW.md | 2 | 1 | no | grant-proposal |
-| HUMAN_DECISION_NOTE.md | 11 | 3 | no | diagnostic-to-review, research-pipeline, result-to-claim |
+| HUMAN_DECISION_NOTE.md | 13 | 5 | no | auto-review-loop, diagnostic-to-review, research-pipeline, result-to-claim, submission-package |
 | HYPOTHESIS.md | 1 | 1 | no | idea-discovery |
 | IDEA_CANDIDATES.md | 1 | 1 | no | paper-plan |
 | IDEA_REPORT.md | 6 | 3 | no | grant-proposal, paper-plan, patent-pipeline |
@@ -131,7 +131,7 @@ This report is intended as a pre-refactor guardrail inventory.
 | MECHANISM_IDEATION.md | 4 | 3 | no | proposal-revise, research-pipeline, run-experiment |
 | METHOD_SPEC.md | 6 | 3 | no | experiment-bridge, idea-to-proposal, research-refine |
 | MODE_ROUTING.md | 5 | 1 | no | research-pipeline |
-| NARRATIVE_REPORT.md | 13 | 10 | no | auto-review-loop, experiment-audit, figure-spec, grant-proposal, idea-to-proposal, paper-claim-audit, ... (10 total) |
+| NARRATIVE_REPORT.md | 11 | 10 | no | auto-review-loop, experiment-audit, figure-spec, grant-proposal, idea-to-proposal, paper-claim-audit, ... (10 total) |
 | NEGATIVE_RESULT_STRATEGY.md | 3 | 2 | no | diagnostic-to-review, result-to-claim |
 | NEXT_PROPOSAL.md | 1 | 1 | no | auto-review-loop |
 | NOVELTY_ASSESSMENT.md | 1 | 1 | no | invention-structuring |
@@ -141,7 +141,7 @@ This report is intended as a pre-refactor guardrail inventory.
 | PAPER_IMPROVEMENT_LOG.md | 5 | 1 | no | auto-paper-improvement-loop |
 | PAPER_PLAN.md | 9 | 6 | no | experiment-audit, figure-spec, paper-claim-audit, paper-figure, paper-plan, paper-write |
 | PIPELINE_INTAKE.md | 7 | 1 | no | idea-to-proposal |
-| PLAN_CODE_AUDIT.md | 11 | 6 | no | diagnostic-to-review, experiment-bridge, idea-to-proposal, research-pipeline, research-refine, run-experiment |
+| PLAN_CODE_AUDIT.md | 10 | 6 | no | diagnostic-to-review, experiment-bridge, idea-to-proposal, research-pipeline, research-refine, run-experiment |
 | POSTER_CONTENT_PLAN.md | 2 | 1 | no | paper-poster |
 | POSTER_REVIEW.md | 1 | 1 | no | paper-poster |
 | POSTER_SPEECH.md | 2 | 1 | no | paper-poster |
@@ -153,7 +153,7 @@ This report is intended as a pre-refactor guardrail inventory.
 | PROOF_PACKAGE.md | 3 | 1 | no | proof-writer |
 | PROOF_SKELETON.md | 3 | 1 | no | proof-checker |
 | REBUTTAL_STATE.md | 1 | 1 | no | rebuttal |
-| RED_TEAM_REVIEW.md | 10 | 7 | no | auto-review-loop, diagnostic-to-review, paper-draft, proposal-revise, research-doc-hygiene, research-pipeline, ... (7 total) |
+| RED_TEAM_REVIEW.md | 12 | 7 | no | auto-review-loop, diagnostic-to-review, paper-draft, proposal-revise, research-doc-hygiene, research-pipeline, ... (7 total) |
 | REFINEMENT_REPORT.md | 2 | 1 | no | research-refine |
 | RESEARCH_BRIEF.md | 4 | 2 | no | idea-discovery, research-wiki |
 | RESEARCH_DECISION_LOG.md | 11 | 5 | no | diagnostic-to-review, experiment-bridge, idea-to-proposal, proposal-revise, research-doc-hygiene |
@@ -164,13 +164,13 @@ This report is intended as a pre-refactor guardrail inventory.
 | REVISION_INTAKE.md | 4 | 1 | no | proposal-revise |
 | REVISION_PLAN.md | 3 | 1 | no | rebuttal |
 | REVISION_REPORT.md | 6 | 1 | no | proposal-revise |
-| RUN_AUDIT.md | 4 | 1 | no | diagnostic-to-review |
-| RUN_REPORT.md | 3 | 1 | no | diagnostic-to-review |
+| RUN_AUDIT.md | 6 | 2 | no | diagnostic-to-review, run-experiment |
+| RUN_REPORT.md | 6 | 2 | no | diagnostic-to-review, run-experiment |
 | SCALEUP_DECISION.md | 1 | 1 | no | research-pipeline |
 | SEED_FRAMING.md | 2 | 1 | no | research-pipeline |
 | SLIDES_REVIEW.md | 1 | 1 | no | paper-slides |
 | SLIDE_OUTLINE.md | 2 | 1 | no | paper-slides |
-| STOP_C_REVIEW.md | 4 | 1 | no | diagnostic-to-review |
+| STOP_C_REVIEW.md | 7 | 4 | no | auto-review-loop, diagnostic-to-review, paper-from-claims, paper-writing |
 | STORY.md | 3 | 3 | no | grant-proposal, paper-plan, research-review |
 | STRATEGY_PLAN.md | 3 | 1 | no | rebuttal |
 | TALK_SCRIPT.md | 2 | 1 | no | paper-slides |
@@ -179,7 +179,7 @@ This report is intended as a pre-refactor guardrail inventory.
 | TINY_RUN_PLAN.md | 4 | 3 | no | experiment-plan, research-pipeline, run-experiment |
 | TINY_RUN_REPORT.md | 3 | 2 | no | research-pipeline, run-experiment |
 | _RUN_CARD.md | 2 | 1 | no | experiment-plan |
-| claims/CLAIM_LEDGER.md | 9 | 4 | no | auto-review-loop, diagnostic-to-review, paper-claim-audit, result-to-claim |
+| claims/CLAIM_LEDGER.md | 12 | 5 | no | auto-review-loop, diagnostic-to-review, paper-claim-audit, research-pipeline, result-to-claim |
 | dse_results/DSE_REPORT.md | 2 | 1 | no | dse-loop |
 | experiment/EXPERIMENT_PLAN.md | 3 | 1 | no | experiment-bridge |
 | experiment/EXPERIMENT_PLAN_EXEC.md | 4 | 2 | no | diagnostic-to-review, experiment-bridge |
@@ -202,14 +202,15 @@ This report is intended as a pre-refactor guardrail inventory.
 | orbit-research/ASSUMPTION_LEDGER.md | 15 | 9 | no | diagnostic-to-review, experiment-bridge, experiment-plan, idea-to-proposal, proposal-revise, research-doc-hygiene, ... (9 total) |
 | orbit-research/BASELINE_CEILING.md | 9 | 5 | no | experiment-bridge, experiment-plan, idea-to-proposal, research-pipeline, research-refine |
 | orbit-research/CLAIM_CONSTRUCTION.md | 11 | 6 | no | diagnostic-to-review, paper-plan, paper-write, research-pipeline, research-refine, result-to-claim |
+| orbit-research/CODEX_RESULT_TO_CLAIM_REVIEW.md | 1 | 1 | no | result-to-claim |
 | orbit-research/COMPONENT_BUNDLE_LADDER.md | 7 | 5 | no | diagnostic-to-review, experiment-bridge, experiment-plan, experiment-queue, research-pipeline |
 | orbit-research/CONCURRENT_WORK_WATCHLIST.md | 3 | 3 | yes | idea-discovery, idea-to-proposal, novelty-check |
 | orbit-research/CONTROL_DESIGN.md | 6 | 5 | no | experiment-bridge, experiment-plan, experiment-queue, research-pipeline, result-to-claim |
 | orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md | 5 | 4 | no | experiment-bridge, experiment-plan, research-pipeline, run-experiment |
-| orbit-research/DIAGNOSTIC_RUN_AUDIT.md | 8 | 5 | no | diagnostic-to-review, experiment-bridge, experiment-queue, research-pipeline, run-experiment |
-| orbit-research/DIAGNOSTIC_RUN_REPORT.md | 8 | 4 | no | diagnostic-to-review, experiment-bridge, research-pipeline, run-experiment |
+| orbit-research/DIAGNOSTIC_RUN_AUDIT.md | 10 | 5 | no | diagnostic-to-review, experiment-bridge, experiment-queue, research-pipeline, run-experiment |
+| orbit-research/DIAGNOSTIC_RUN_REPORT.md | 10 | 4 | no | diagnostic-to-review, experiment-bridge, research-pipeline, run-experiment |
 | orbit-research/FAILURE_TO_INNOVATION.md | 3 | 2 | no | research-pipeline, result-to-claim |
-| orbit-research/HUMAN_DECISION_NOTE.md | 9 | 5 | no | diagnostic-to-review, experiment-queue, paper-draft, research-pipeline, result-to-claim |
+| orbit-research/HUMAN_DECISION_NOTE.md | 15 | 8 | no | diagnostic-to-review, experiment-queue, paper-draft, paper-from-claims, paper-writing, research-pipeline, ... (8 total) |
 | orbit-research/HUMAN_DECISION_NOTE.template.md | 1 | 1 | no | diagnostic-to-review |
 | orbit-research/LITERATURE_MAP.md | 4 | 2 | no | research-lit, research-pipeline |
 | orbit-research/LITERATURE_REREAD_NOTE.md | 2 | 1 | no | research-pipeline |
@@ -217,20 +218,21 @@ This report is intended as a pre-refactor guardrail inventory.
 | orbit-research/MODE_ROUTING.md | 2 | 1 | no | research-pipeline |
 | orbit-research/NEGATIVE_RESULT_STRATEGY.md | 8 | 5 | no | diagnostic-to-review, paper-plan, paper-write, research-pipeline, result-to-claim |
 | orbit-research/NULL_RESULT_CONTRACT.md | 10 | 6 | no | diagnostic-to-review, experiment-bridge, experiment-plan, research-pipeline, research-refine, result-to-claim |
-| orbit-research/PAPER_IMPROVEMENT_LOG.md | 3 | 1 | no | research-pipeline |
 | orbit-research/PIPELINE_INTAKE.md | 9 | 1 | no | idea-to-proposal |
 | orbit-research/PIPELINE_SUMMARY.md | 10 | 4 | no | diagnostic-to-review, experiment-bridge, idea-to-proposal, research-refine-pipeline |
 | orbit-research/PLAN_CODE_AUDIT.md | 10 | 5 | no | diagnostic-to-review, experiment-bridge, experiment-queue, research-pipeline, run-experiment |
 | orbit-research/PROBLEM_REFRAMING.md | 2 | 1 | no | research-pipeline |
 | orbit-research/PROBLEM_SELECTION.md | 16 | 7 | no | experiment-bridge, experiment-plan, idea-discovery, idea-to-proposal, proposal-revise, research-pipeline, ... (7 total) |
 | orbit-research/PROPOSAL_STABILITY.md | 1 | 1 | yes | idea-to-proposal |
-| orbit-research/RED_TEAM_REVIEW.md | 11 | 6 | no | auto-review-loop, diagnostic-to-review, paper-write, paper-writing, research-pipeline, research-refine |
+| orbit-research/RED_TEAM_REVIEW.md | 15 | 8 | no | auto-review-loop, diagnostic-to-review, paper-from-claims, paper-write, paper-writing, research-pipeline, ... (8 total) |
 | orbit-research/RESEARCH_DECISION_LOG.md | 7 | 5 | no | diagnostic-to-review, experiment-bridge, experiment-plan, proposal-revise, research-refine |
-| orbit-research/RESULT_INTERPRETATION.md | 7 | 5 | no | analyze-results, diagnostic-to-review, experiment-queue, research-pipeline, result-to-claim |
+| orbit-research/RESULT_INTERPRETATION.md | 8 | 5 | no | analyze-results, diagnostic-to-review, experiment-queue, research-pipeline, result-to-claim |
 | orbit-research/SCALEUP_DECISION.md | 3 | 2 | no | experiment-queue, research-pipeline |
 | orbit-research/SEED_FRAMING.md | 3 | 2 | no | research-lit, research-pipeline |
 | orbit-research/STOP_C_REVIEW.md | 1 | 1 | no | diagnostic-to-review |
 | orbit-research/TINY_RUN_AUDIT.md | 1 | 1 | no | experiment-queue |
+| orbit-research/codex-imports/result-to-claim.claim-evaluation.response.md | 1 | 1 | no | result-to-claim |
+| orbit-research/codex-prompts/result-to-claim.claim-evaluation.md | 1 | 1 | no | result-to-claim |
 | paper/CITATION_AUDIT.md | 1 | 1 | no | submission-package |
 | paper/CLAIM_TRACE.md | 2 | 1 | no | paper-from-claims |
 | paper/DRAFT.md | 2 | 1 | no | paper-draft |
@@ -301,12 +303,11 @@ This report is intended as a pre-refactor guardrail inventory.
 | b/skills/auto-review-loop/SKILL.md | 1 | 1 | no | meta-optimize |
 | docs/research_contract.md | 1 | 1 | no | ablation-planner |
 | experiment-plan/SKILL.md | 1 | 1 | no | research-refine-pipeline |
-| paper-writing/SKILL.md | 1 | 1 | no | research-pipeline |
 | research-refine/SKILL.md | 1 | 1 | no | research-refine-pipeline |
 | research-wiki/SKILL.md | 1 | 1 | no | idea-creator |
 | shared-references/assurance-contract.md | 3 | 3 | no | citation-audit, paper-claim-audit, proof-checker |
 | shared-references/citation-discipline.md | 4 | 2 | no | citation-audit, paper-write |
-| shared-references/codex-precondition.md | 14 | 4 | no | diagnostic-to-review, idea-to-proposal, proposal-revise, research-pipeline |
+| shared-references/codex-precondition.md | 15 | 5 | no | diagnostic-to-review, idea-to-proposal, proposal-revise, research-pipeline, result-to-claim |
 | shared-references/continuation-contract.md | 15 | 9 | no | auto-paper-improvement-loop, auto-review-loop, diagnostic-to-review, experiment-plan, idea-to-proposal, proposal-revise, ... (9 total) |
 | shared-references/document-hygiene.md | 6 | 6 | no | diagnostic-to-review, experiment-plan, idea-to-proposal, research-doc-hygiene, research-refine, research-refine-pipeline |
 | shared-references/experiment-integrity.md | 3 | 3 | no | diagnostic-to-review, experiment-audit, result-to-claim |
@@ -332,7 +333,6 @@ This report is intended as a pre-refactor guardrail inventory.
 | shared-references/venue-checklists.md | 4 | 2 | no | paper-plan, paper-write |
 | shared-references/wiki-helper-resolution.md | 15 | 8 | no | alphaxiv, arxiv, deepxiv, exa-search, idea-to-proposal, research-lit, ... (8 total) |
 | shared-references/writing-principles.md | 5 | 2 | no | paper-plan, paper-write |
-| skills/paper-writing/SKILL.md | 1 | 1 | yes | research-pipeline |
 | skills/shared-references/research-agent-pipeline.md | 3 | 3 | yes | experiment-plan, monitor-experiment, research-refine |
 | templates/RESEARCH_BRIEF_TEMPLATE.md | 1 | 1 | yes | idea-discovery |
 

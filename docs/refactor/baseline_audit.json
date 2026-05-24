@@ -313,12 +313,12 @@
       "words": 1625
     },
     {
-      "bytes": 27179,
-      "lines": 580,
+      "bytes": 32221,
+      "lines": 682,
       "path": "skills/auto-review-loop/SKILL.md",
-      "sha256": "9621ea70d4aed71f976fe6f020700901686635ffe7aeacf4f1db09026f13633a",
+      "sha256": "0c1be60fb569d7847b1fe7a8f674cc889e626934f9130611ba2b5ed068398bce",
       "skill": "auto-review-loop",
-      "words": 3692
+      "words": 4403
     },
     {
       "bytes": 17388,
@@ -353,12 +353,12 @@
       "words": 973
     },
     {
-      "bytes": 17893,
-      "lines": 461,
+      "bytes": 20402,
+      "lines": 529,
       "path": "skills/diagnostic-to-review/SKILL.md",
-      "sha256": "5494404fb065da04cf74360c77e48bd70b290f61850dc81fef6f6f22ad2f5481",
+      "sha256": "54a8f42a887230cfb49c9a897df2f8f88bb4bec5c18e4d323a98685915cde438",
       "skill": "diagnostic-to-review",
-      "words": 1884
+      "words": 2153
     },
     {
       "bytes": 12920,
@@ -393,12 +393,12 @@
       "words": 1392
     },
     {
-      "bytes": 11387,
-      "lines": 258,
+      "bytes": 12569,
+      "lines": 277,
       "path": "skills/experiment-bridge/SKILL.md",
-      "sha256": "db6e527090db5c5ce4820e465d7feb3c6e17ffe2aa0cd4613cb57ee1afc571f6",
+      "sha256": "52e4af9b92c4e49ae7feca6c7251aeccf8fa5cf05ac0e1f2d9098a59b7289249",
       "skill": "experiment-bridge",
-      "words": 1226
+      "words": 1360
     },
     {
       "bytes": 22903,
@@ -577,12 +577,12 @@
       "words": 1489
     },
     {
-      "bytes": 2218,
-      "lines": 63,
+      "bytes": 2595,
+      "lines": 69,
       "path": "skills/paper-draft/SKILL.md",
-      "sha256": "857fab480b75a1bce9783a42f98889111ab02f0b6f9700e7622246a322656303",
+      "sha256": "952bb9f45d2ac2da69afa1016849a428ffc568c4536058a8ba6120c5f029ceb2",
       "skill": "paper-draft",
-      "words": 300
+      "words": 363
     },
     {
       "bytes": 12595,
@@ -593,12 +593,12 @@
       "words": 1657
     },
     {
-      "bytes": 3282,
-      "lines": 81,
+      "bytes": 4908,
+      "lines": 120,
       "path": "skills/paper-from-claims/SKILL.md",
-      "sha256": "482e9b7b9096ea61ebceb34efd8a07ca794177b3ca1162594dc835a13f69c75a",
+      "sha256": "62cc1a334ae4b1c3d2b955183ee1436e85b9a1956deea95dadba0a55aee0c3a2",
       "skill": "paper-from-claims",
-      "words": 412
+      "words": 607
     },
     {
       "bytes": 17771,
@@ -649,12 +649,12 @@
       "words": 3748
     },
     {
-      "bytes": 1951,
-      "lines": 47,
+      "bytes": 2585,
+      "lines": 58,
       "path": "skills/paper-writing/SKILL.md",
-      "sha256": "ae9769e8b0f01001df2da3fe3bd8af9764531762d57b4add6ed6cd0264612079",
+      "sha256": "453b3cd0ea9d8dc7b937101ef3f7dad486b7a7141d1afd63f1b5eb801f6705dd",
       "skill": "paper-writing",
-      "words": 240
+      "words": 312
     },
     {
       "bytes": 5765,
@@ -753,12 +753,12 @@
       "words": 3022
     },
     {
-      "bytes": 34065,
-      "lines": 722,
+      "bytes": 35456,
+      "lines": 744,
       "path": "skills/research-pipeline/SKILL.md",
-      "sha256": "114cd0749ec5e68873dba19c2364ad7ae9646d5ffcedff5496ffb5f6274f841e",
+      "sha256": "59830e0a8fe754e6cf86cb57e086d57e9a3ee00753444ef582b285cb4ac5efb0",
       "skill": "research-pipeline",
-      "words": 4099
+      "words": 4283
     },
     {
       "bytes": 8191,
@@ -793,20 +793,20 @@
       "words": 2136
     },
     {
-      "bytes": 16849,
-      "lines": 346,
+      "bytes": 20611,
+      "lines": 415,
       "path": "skills/result-to-claim/SKILL.md",
-      "sha256": "7e7bd46551081734429b911985ce2b5e43f64334ad723124b546aaba7cc30489",
+      "sha256": "3729f4bdeca7b3685b28dd6194ed2737ba5115e82ed4ac5967668a862f0cb219",
       "skill": "result-to-claim",
-      "words": 2067
+      "words": 2448
     },
     {
-      "bytes": 22709,
-      "lines": 499,
+      "bytes": 26011,
+      "lines": 593,
       "path": "skills/run-experiment/SKILL.md",
-      "sha256": "88a0c86301e1568fe4613266d21cef26879b990b7ac20571ec90a61756624bfa",
+      "sha256": "4abb545fe7b928cab0ddde7b5a930a68ae99de84e41e9fe00a12c816e1131361",
       "skill": "run-experiment",
-      "words": 3044
+      "words": 3364
     },
     {
       "bytes": 11464,
@@ -833,12 +833,12 @@
       "words": 1115
     },
     {
-      "bytes": 2861,
-      "lines": 80,
+      "bytes": 4287,
+      "lines": 111,
       "path": "skills/submission-package/SKILL.md",
-      "sha256": "0f0ed962ef7ba44997dd8edaf1af629a8337fe9b14846c797fe17d2a821c9fd5",
+      "sha256": "1a10c12ea9c849691e602b9a6bc3af542a0b4e60627d42c38777c5e1cb8995dc",
       "skill": "submission-package",
-      "words": 345
+      "words": 510
     },
     {
       "bytes": 4557,
@@ -1749,12 +1749,12 @@
       "words": 5491
     },
     {
-      "bytes": 34065,
-      "lines": 722,
+      "bytes": 35456,
+      "lines": 744,
       "path": "skills/research-pipeline/SKILL.md",
-      "sha256": "114cd0749ec5e68873dba19c2364ad7ae9646d5ffcedff5496ffb5f6274f841e",
+      "sha256": "59830e0a8fe754e6cf86cb57e086d57e9a3ee00753444ef582b285cb4ac5efb0",
       "skill": "research-pipeline",
-      "words": 4099
+      "words": 4283
     },
     {
       "bytes": 31071,
@@ -1763,6 +1763,14 @@
       "sha256": "c310488299beb49697c19039de73a08d9b2c3f7badd87ed1cd77b81b3ce89ae8",
       "skill": "paper-illustration",
       "words": 3555
+    },
+    {
+      "bytes": 32221,
+      "lines": 682,
+      "path": "skills/auto-review-loop/SKILL.md",
+      "sha256": "0c1be60fb569d7847b1fe7a8f674cc889e626934f9130611ba2b5ed068398bce",
+      "skill": "auto-review-loop",
+      "words": 4403
     },
     {
       "bytes": 31806,
@@ -1789,12 +1797,12 @@
       "words": 4062
     },
     {
-      "bytes": 27179,
-      "lines": 580,
-      "path": "skills/auto-review-loop/SKILL.md",
-      "sha256": "9621ea70d4aed71f976fe6f020700901686635ffe7aeacf4f1db09026f13633a",
-      "skill": "auto-review-loop",
-      "words": 3692
+      "bytes": 26011,
+      "lines": 593,
+      "path": "skills/run-experiment/SKILL.md",
+      "sha256": "4abb545fe7b928cab0ddde7b5a930a68ae99de84e41e9fe00a12c816e1131361",
+      "skill": "run-experiment",
+      "words": 3364
     },
     {
       "bytes": 19253,
@@ -1813,12 +1821,12 @@
       "words": 3748
     },
     {
-      "bytes": 22709,
-      "lines": 499,
-      "path": "skills/run-experiment/SKILL.md",
-      "sha256": "88a0c86301e1568fe4613266d21cef26879b990b7ac20571ec90a61756624bfa",
-      "skill": "run-experiment",
-      "words": 3044
+      "bytes": 20402,
+      "lines": 529,
+      "path": "skills/diagnostic-to-review/SKILL.md",
+      "sha256": "54a8f42a887230cfb49c9a897df2f8f88bb4bec5c18e4d323a98685915cde438",
+      "skill": "diagnostic-to-review",
+      "words": 2153
     },
     {
       "bytes": 24273,
@@ -1845,14 +1853,6 @@
       "words": 3103
     },
     {
-      "bytes": 17893,
-      "lines": 461,
-      "path": "skills/diagnostic-to-review/SKILL.md",
-      "sha256": "5494404fb065da04cf74360c77e48bd70b290f61850dc81fef6f6f22ad2f5481",
-      "skill": "diagnostic-to-review",
-      "words": 1884
-    },
-    {
       "bytes": 17235,
       "lines": 442,
       "path": "skills/mermaid-diagram/SKILL.md",
@@ -1877,20 +1877,20 @@
       "words": 2136
     },
     {
+      "bytes": 20611,
+      "lines": 415,
+      "path": "skills/result-to-claim/SKILL.md",
+      "sha256": "3729f4bdeca7b3685b28dd6194ed2737ba5115e82ed4ac5967668a862f0cb219",
+      "skill": "result-to-claim",
+      "words": 2448
+    },
+    {
       "bytes": 22388,
       "lines": 412,
       "path": "skills/research-lit/SKILL.md",
       "sha256": "e98f6370b9ce2fc52bd73c29d1ace79a9ed0ad4b078f3612c564706a84f2dfaa",
       "skill": "research-lit",
       "words": 3022
-    },
-    {
-      "bytes": 18977,
-      "lines": 411,
-      "path": "skills/idea-discovery/SKILL.md",
-      "sha256": "62b0fc54f9e7949b2409722e40e545732fa3d97f4f08aa4eb4da0e8133e7ed3d",
-      "skill": "idea-discovery",
-      "words": 2524
     }
   ],
   "md_artifacts": {
@@ -2001,19 +2001,6 @@
           "category": "docs_shared_references_templates",
           "exists": false,
           "mention_count": 1,
-          "path": "paper-writing/SKILL.md",
-          "raw_mentions": [
-            "paper-writing/SKILL.md"
-          ],
-          "skill_count": 1,
-          "skills": [
-            "research-pipeline"
-          ]
-        },
-        {
-          "category": "docs_shared_references_templates",
-          "exists": false,
-          "mention_count": 1,
           "path": "research-refine/SKILL.md",
           "raw_mentions": [
             "/research-refine/SKILL.md"
@@ -2068,17 +2055,18 @@
         {
           "category": "docs_shared_references_templates",
           "exists": false,
-          "mention_count": 14,
+          "mention_count": 15,
           "path": "shared-references/codex-precondition.md",
           "raw_mentions": [
             "/shared-references/codex-precondition.md"
           ],
-          "skill_count": 4,
+          "skill_count": 5,
           "skills": [
             "diagnostic-to-review",
             "idea-to-proposal",
             "proposal-revise",
-            "research-pipeline"
+            "research-pipeline",
+            "result-to-claim"
           ]
         },
         {
@@ -2550,19 +2538,6 @@
         {
           "category": "docs_shared_references_templates",
           "exists": true,
-          "mention_count": 1,
-          "path": "skills/paper-writing/SKILL.md",
-          "raw_mentions": [
-            "skills/paper-writing/SKILL.md"
-          ],
-          "skill_count": 1,
-          "skills": [
-            "research-pipeline"
-          ]
-        },
-        {
-          "category": "docs_shared_references_templates",
-          "exists": true,
           "mention_count": 3,
           "path": "skills/shared-references/research-agent-pipeline.md",
           "raw_mentions": [
@@ -2773,7 +2748,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 15,
+          "mention_count": 12,
           "path": "CLAIM_CONSTRUCTION.md",
           "raw_mentions": [
             "CLAIM_CONSTRUCTION.md"
@@ -2907,7 +2882,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 10,
+          "mention_count": 8,
           "path": "DIAGNOSTIC_RUN_AUDIT.md",
           "raw_mentions": [
             "DIAGNOSTIC_RUN_AUDIT.md"
@@ -2922,7 +2897,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 7,
+          "mention_count": 4,
           "path": "DIAGNOSTIC_RUN_REPORT.md",
           "raw_mentions": [
             "DIAGNOSTIC_RUN_REPORT.md"
@@ -3134,16 +3109,18 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 11,
+          "mention_count": 13,
           "path": "HUMAN_DECISION_NOTE.md",
           "raw_mentions": [
             "HUMAN_DECISION_NOTE.md"
           ],
-          "skill_count": 3,
+          "skill_count": 5,
           "skills": [
+            "auto-review-loop",
             "diagnostic-to-review",
             "research-pipeline",
-            "result-to-claim"
+            "result-to-claim",
+            "submission-package"
           ]
         },
         {
@@ -3328,7 +3305,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 13,
+          "mention_count": 11,
           "path": "NARRATIVE_REPORT.md",
           "raw_mentions": [
             "NARRATIVE_REPORT.md"
@@ -3478,7 +3455,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 11,
+          "mention_count": 10,
           "path": "PLAN_CODE_AUDIT.md",
           "raw_mentions": [
             "PLAN_CODE_AUDIT.md"
@@ -3643,7 +3620,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 10,
+          "mention_count": 12,
           "path": "RED_TEAM_REVIEW.md",
           "raw_mentions": [
             "RED_TEAM_REVIEW.md"
@@ -3800,27 +3777,29 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 4,
+          "mention_count": 6,
           "path": "RUN_AUDIT.md",
           "raw_mentions": [
             "RUN_AUDIT.md"
           ],
-          "skill_count": 1,
+          "skill_count": 2,
           "skills": [
-            "diagnostic-to-review"
+            "diagnostic-to-review",
+            "run-experiment"
           ]
         },
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 3,
+          "mention_count": 6,
           "path": "RUN_REPORT.md",
           "raw_mentions": [
             "RUN_REPORT.md"
           ],
-          "skill_count": 1,
+          "skill_count": 2,
           "skills": [
-            "diagnostic-to-review"
+            "diagnostic-to-review",
+            "run-experiment"
           ]
         },
         {
@@ -3878,14 +3857,17 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 4,
+          "mention_count": 7,
           "path": "STOP_C_REVIEW.md",
           "raw_mentions": [
             "STOP_C_REVIEW.md"
           ],
-          "skill_count": 1,
+          "skill_count": 4,
           "skills": [
-            "diagnostic-to-review"
+            "auto-review-loop",
+            "diagnostic-to-review",
+            "paper-from-claims",
+            "paper-writing"
           ]
         },
         {
@@ -4006,16 +3988,17 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 9,
+          "mention_count": 12,
           "path": "claims/CLAIM_LEDGER.md",
           "raw_mentions": [
             "claims/CLAIM_LEDGER.md"
           ],
-          "skill_count": 4,
+          "skill_count": 5,
           "skills": [
             "auto-review-loop",
             "diagnostic-to-review",
             "paper-claim-audit",
+            "research-pipeline",
             "result-to-claim"
           ]
         },
@@ -4353,6 +4336,19 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
+          "mention_count": 1,
+          "path": "orbit-research/CODEX_RESULT_TO_CLAIM_REVIEW.md",
+          "raw_mentions": [
+            "orbit-research/CODEX_RESULT_TO_CLAIM_REVIEW.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "result-to-claim"
+          ]
+        },
+        {
+          "category": "likely_generated_runtime",
+          "exists": false,
           "mention_count": 7,
           "path": "orbit-research/COMPONENT_BUNDLE_LADDER.md",
           "raw_mentions": [
@@ -4418,7 +4414,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 8,
+          "mention_count": 10,
           "path": "orbit-research/DIAGNOSTIC_RUN_AUDIT.md",
           "raw_mentions": [
             "orbit-research/DIAGNOSTIC_RUN_AUDIT.md"
@@ -4435,7 +4431,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 8,
+          "mention_count": 10,
           "path": "orbit-research/DIAGNOSTIC_RUN_REPORT.md",
           "raw_mentions": [
             "orbit-research/DIAGNOSTIC_RUN_REPORT.md"
@@ -4465,18 +4461,21 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 9,
+          "mention_count": 15,
           "path": "orbit-research/HUMAN_DECISION_NOTE.md",
           "raw_mentions": [
             "orbit-research/HUMAN_DECISION_NOTE.md"
           ],
-          "skill_count": 5,
+          "skill_count": 8,
           "skills": [
             "diagnostic-to-review",
             "experiment-queue",
             "paper-draft",
+            "paper-from-claims",
+            "paper-writing",
             "research-pipeline",
-            "result-to-claim"
+            "result-to-claim",
+            "submission-package"
           ]
         },
         {
@@ -4586,19 +4585,6 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 3,
-          "path": "orbit-research/PAPER_IMPROVEMENT_LOG.md",
-          "raw_mentions": [
-            "orbit-research/PAPER_IMPROVEMENT_LOG.md"
-          ],
-          "skill_count": 1,
-          "skills": [
-            "research-pipeline"
-          ]
-        },
-        {
-          "category": "likely_generated_runtime",
-          "exists": false,
           "mention_count": 9,
           "path": "orbit-research/PIPELINE_INTAKE.md",
           "raw_mentions": [
@@ -4690,19 +4676,21 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 11,
+          "mention_count": 15,
           "path": "orbit-research/RED_TEAM_REVIEW.md",
           "raw_mentions": [
             "orbit-research/RED_TEAM_REVIEW.md"
           ],
-          "skill_count": 6,
+          "skill_count": 8,
           "skills": [
             "auto-review-loop",
             "diagnostic-to-review",
+            "paper-from-claims",
             "paper-write",
             "paper-writing",
             "research-pipeline",
-            "research-refine"
+            "research-refine",
+            "submission-package"
           ]
         },
         {
@@ -4726,7 +4714,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 7,
+          "mention_count": 8,
           "path": "orbit-research/RESULT_INTERPRETATION.md",
           "raw_mentions": [
             "orbit-research/RESULT_INTERPRETATION.md"
@@ -4792,6 +4780,32 @@
           "skill_count": 1,
           "skills": [
             "experiment-queue"
+          ]
+        },
+        {
+          "category": "likely_generated_runtime",
+          "exists": false,
+          "mention_count": 1,
+          "path": "orbit-research/codex-imports/result-to-claim.claim-evaluation.response.md",
+          "raw_mentions": [
+            "orbit-research/codex-imports/result-to-claim.claim-evaluation.response.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "result-to-claim"
+          ]
+        },
+        {
+          "category": "likely_generated_runtime",
+          "exists": false,
+          "mention_count": 1,
+          "path": "orbit-research/codex-prompts/result-to-claim.claim-evaluation.md",
+          "raw_mentions": [
+            "orbit-research/codex-prompts/result-to-claim.claim-evaluation.md"
+          ],
+          "skill_count": 1,
+          "skills": [
+            "result-to-claim"
           ]
         },
         {
@@ -6872,19 +6886,6 @@
         "category": "docs_shared_references_templates",
         "exists": false,
         "mention_count": 1,
-        "path": "paper-writing/SKILL.md",
-        "raw_mentions": [
-          "paper-writing/SKILL.md"
-        ],
-        "skill_count": 1,
-        "skills": [
-          "research-pipeline"
-        ]
-      },
-      {
-        "category": "docs_shared_references_templates",
-        "exists": false,
-        "mention_count": 1,
         "path": "research-refine/SKILL.md",
         "raw_mentions": [
           "/research-refine/SKILL.md"
@@ -6939,17 +6940,18 @@
       {
         "category": "docs_shared_references_templates",
         "exists": false,
-        "mention_count": 14,
+        "mention_count": 15,
         "path": "shared-references/codex-precondition.md",
         "raw_mentions": [
           "/shared-references/codex-precondition.md"
         ],
-        "skill_count": 4,
+        "skill_count": 5,
         "skills": [
           "diagnostic-to-review",
           "idea-to-proposal",
           "proposal-revise",
-          "research-pipeline"
+          "research-pipeline",
+          "result-to-claim"
         ]
       },
       {
@@ -7421,19 +7423,6 @@
       {
         "category": "docs_shared_references_templates",
         "exists": true,
-        "mention_count": 1,
-        "path": "skills/paper-writing/SKILL.md",
-        "raw_mentions": [
-          "skills/paper-writing/SKILL.md"
-        ],
-        "skill_count": 1,
-        "skills": [
-          "research-pipeline"
-        ]
-      },
-      {
-        "category": "docs_shared_references_templates",
-        "exists": true,
         "mention_count": 3,
         "path": "skills/shared-references/research-agent-pipeline.md",
         "raw_mentions": [
@@ -7642,7 +7631,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 15,
+        "mention_count": 12,
         "path": "CLAIM_CONSTRUCTION.md",
         "raw_mentions": [
           "CLAIM_CONSTRUCTION.md"
@@ -7776,7 +7765,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 10,
+        "mention_count": 8,
         "path": "DIAGNOSTIC_RUN_AUDIT.md",
         "raw_mentions": [
           "DIAGNOSTIC_RUN_AUDIT.md"
@@ -7791,7 +7780,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 7,
+        "mention_count": 4,
         "path": "DIAGNOSTIC_RUN_REPORT.md",
         "raw_mentions": [
           "DIAGNOSTIC_RUN_REPORT.md"
@@ -8003,16 +7992,18 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 11,
+        "mention_count": 13,
         "path": "HUMAN_DECISION_NOTE.md",
         "raw_mentions": [
           "HUMAN_DECISION_NOTE.md"
         ],
-        "skill_count": 3,
+        "skill_count": 5,
         "skills": [
+          "auto-review-loop",
           "diagnostic-to-review",
           "research-pipeline",
-          "result-to-claim"
+          "result-to-claim",
+          "submission-package"
         ]
       },
       {
@@ -8197,7 +8188,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 13,
+        "mention_count": 11,
         "path": "NARRATIVE_REPORT.md",
         "raw_mentions": [
           "NARRATIVE_REPORT.md"
@@ -8347,7 +8338,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 11,
+        "mention_count": 10,
         "path": "PLAN_CODE_AUDIT.md",
         "raw_mentions": [
           "PLAN_CODE_AUDIT.md"
@@ -8512,7 +8503,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 10,
+        "mention_count": 12,
         "path": "RED_TEAM_REVIEW.md",
         "raw_mentions": [
           "RED_TEAM_REVIEW.md"
@@ -8669,27 +8660,29 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 4,
+        "mention_count": 6,
         "path": "RUN_AUDIT.md",
         "raw_mentions": [
           "RUN_AUDIT.md"
         ],
-        "skill_count": 1,
+        "skill_count": 2,
         "skills": [
-          "diagnostic-to-review"
+          "diagnostic-to-review",
+          "run-experiment"
         ]
       },
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 3,
+        "mention_count": 6,
         "path": "RUN_REPORT.md",
         "raw_mentions": [
           "RUN_REPORT.md"
         ],
-        "skill_count": 1,
+        "skill_count": 2,
         "skills": [
-          "diagnostic-to-review"
+          "diagnostic-to-review",
+          "run-experiment"
         ]
       },
       {
@@ -8747,14 +8740,17 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 4,
+        "mention_count": 7,
         "path": "STOP_C_REVIEW.md",
         "raw_mentions": [
           "STOP_C_REVIEW.md"
         ],
-        "skill_count": 1,
+        "skill_count": 4,
         "skills": [
-          "diagnostic-to-review"
+          "auto-review-loop",
+          "diagnostic-to-review",
+          "paper-from-claims",
+          "paper-writing"
         ]
       },
       {
@@ -8875,16 +8871,17 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 9,
+        "mention_count": 12,
         "path": "claims/CLAIM_LEDGER.md",
         "raw_mentions": [
           "claims/CLAIM_LEDGER.md"
         ],
-        "skill_count": 4,
+        "skill_count": 5,
         "skills": [
           "auto-review-loop",
           "diagnostic-to-review",
           "paper-claim-audit",
+          "research-pipeline",
           "result-to-claim"
         ]
       },
@@ -9222,6 +9219,19 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
+        "mention_count": 1,
+        "path": "orbit-research/CODEX_RESULT_TO_CLAIM_REVIEW.md",
+        "raw_mentions": [
+          "orbit-research/CODEX_RESULT_TO_CLAIM_REVIEW.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "result-to-claim"
+        ]
+      },
+      {
+        "category": "likely_generated_runtime",
+        "exists": false,
         "mention_count": 7,
         "path": "orbit-research/COMPONENT_BUNDLE_LADDER.md",
         "raw_mentions": [
@@ -9287,7 +9297,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 8,
+        "mention_count": 10,
         "path": "orbit-research/DIAGNOSTIC_RUN_AUDIT.md",
         "raw_mentions": [
           "orbit-research/DIAGNOSTIC_RUN_AUDIT.md"
@@ -9304,7 +9314,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 8,
+        "mention_count": 10,
         "path": "orbit-research/DIAGNOSTIC_RUN_REPORT.md",
         "raw_mentions": [
           "orbit-research/DIAGNOSTIC_RUN_REPORT.md"
@@ -9334,18 +9344,21 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 9,
+        "mention_count": 15,
         "path": "orbit-research/HUMAN_DECISION_NOTE.md",
         "raw_mentions": [
           "orbit-research/HUMAN_DECISION_NOTE.md"
         ],
-        "skill_count": 5,
+        "skill_count": 8,
         "skills": [
           "diagnostic-to-review",
           "experiment-queue",
           "paper-draft",
+          "paper-from-claims",
+          "paper-writing",
           "research-pipeline",
-          "result-to-claim"
+          "result-to-claim",
+          "submission-package"
         ]
       },
       {
@@ -9455,19 +9468,6 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 3,
-        "path": "orbit-research/PAPER_IMPROVEMENT_LOG.md",
-        "raw_mentions": [
-          "orbit-research/PAPER_IMPROVEMENT_LOG.md"
-        ],
-        "skill_count": 1,
-        "skills": [
-          "research-pipeline"
-        ]
-      },
-      {
-        "category": "likely_generated_runtime",
-        "exists": false,
         "mention_count": 9,
         "path": "orbit-research/PIPELINE_INTAKE.md",
         "raw_mentions": [
@@ -9559,19 +9559,21 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 11,
+        "mention_count": 15,
         "path": "orbit-research/RED_TEAM_REVIEW.md",
         "raw_mentions": [
           "orbit-research/RED_TEAM_REVIEW.md"
         ],
-        "skill_count": 6,
+        "skill_count": 8,
         "skills": [
           "auto-review-loop",
           "diagnostic-to-review",
+          "paper-from-claims",
           "paper-write",
           "paper-writing",
           "research-pipeline",
-          "research-refine"
+          "research-refine",
+          "submission-package"
         ]
       },
       {
@@ -9595,7 +9597,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 7,
+        "mention_count": 8,
         "path": "orbit-research/RESULT_INTERPRETATION.md",
         "raw_mentions": [
           "orbit-research/RESULT_INTERPRETATION.md"
@@ -9661,6 +9663,32 @@
         "skill_count": 1,
         "skills": [
           "experiment-queue"
+        ]
+      },
+      {
+        "category": "likely_generated_runtime",
+        "exists": false,
+        "mention_count": 1,
+        "path": "orbit-research/codex-imports/result-to-claim.claim-evaluation.response.md",
+        "raw_mentions": [
+          "orbit-research/codex-imports/result-to-claim.claim-evaluation.response.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "result-to-claim"
+        ]
+      },
+      {
+        "category": "likely_generated_runtime",
+        "exists": false,
+        "mention_count": 1,
+        "path": "orbit-research/codex-prompts/result-to-claim.claim-evaluation.md",
+        "raw_mentions": [
+          "orbit-research/codex-prompts/result-to-claim.claim-evaluation.md"
+        ],
+        "skill_count": 1,
+        "skills": [
+          "result-to-claim"
         ]
       },
       {
@@ -11634,8 +11662,8 @@
     ],
     "summary": {
       "distinct_paths": 334,
-      "docs_shared_references_templates": 41,
-      "likely_generated_runtime": 207,
+      "docs_shared_references_templates": 39,
+      "likely_generated_runtime": 209,
       "other": 86
     }
   },
@@ -11643,30 +11671,8 @@
     {
       "canonical_count": 77,
       "common_count": 77,
-      "drifted": [
-        {
-          "canonical_path": "skills/auto-paper-improvement-loop/SKILL.md",
-          "canonical_sha256": "d239a0c14bcd0246c0d4dda4e7dbf4ae4da1a960264db6040684f638c3009892",
-          "mirror_path": ".agents/skills/auto-paper-improvement-loop/SKILL.md",
-          "mirror_sha256": "1456352d7bb17f7a5c4ee06cd4dbc10e17515ce06648c4780b2f47dce9663cb6",
-          "skill": "auto-paper-improvement-loop"
-        },
-        {
-          "canonical_path": "skills/novelty-check/SKILL.md",
-          "canonical_sha256": "4578902507b633b3237b066b9811259b966fd5ebe1078f3ab304ca18d4e71238",
-          "mirror_path": ".agents/skills/novelty-check/SKILL.md",
-          "mirror_sha256": "c89f03e5b37870519a9eb3a41971a3b7dd4f2e9b39c7fc26d18800e8d06368a5",
-          "skill": "novelty-check"
-        },
-        {
-          "canonical_path": "skills/research-review/SKILL.md",
-          "canonical_sha256": "56d2d06276a0a2cfec3dc30c358ccfa0ad82c33aa40d963933bade44d88958d5",
-          "mirror_path": ".agents/skills/research-review/SKILL.md",
-          "mirror_sha256": "760a307e43ae95b9a188f0f7270ba7acbebe8e49142d74f71679fa4264203b25",
-          "skill": "research-review"
-        }
-      ],
-      "drifted_count": 3,
+      "drifted": [],
+      "drifted_count": 0,
       "exists": true,
       "extra": [],
       "extra_count": 0,
@@ -11675,6 +11681,7 @@
         "alphaxiv",
         "analyze-results",
         "arxiv",
+        "auto-paper-improvement-loop",
         "auto-review-loop",
         "auto-review-loop-llm",
         "auto-review-loop-minimax",
@@ -11705,6 +11712,7 @@
         "mermaid-diagram",
         "meta-optimize",
         "monitor-experiment",
+        "novelty-check",
         "orbit-status",
         "overleaf-sync",
         "paper-claim-audit",
@@ -11734,6 +11742,7 @@
         "research-pipeline",
         "research-refine",
         "research-refine-pipeline",
+        "research-review",
         "research-wiki",
         "result-to-claim",
         "run-experiment",
@@ -11746,7 +11755,7 @@
         "vast-gpu",
         "writing-systems-papers"
       ],
-      "identical_count": 74,
+      "identical_count": 77,
       "mirror_count": 77,
       "mirror_root": ".agents/skills",
       "missing": [],
@@ -11858,7 +11867,7 @@
         },
         {
           "canonical_path": "skills/auto-review-loop/SKILL.md",
-          "canonical_sha256": "9621ea70d4aed71f976fe6f020700901686635ffe7aeacf4f1db09026f13633a",
+          "canonical_sha256": "0c1be60fb569d7847b1fe7a8f674cc889e626934f9130611ba2b5ed068398bce",
           "mirror_path": "skills/skills-codex-gemini-review/auto-review-loop/SKILL.md",
           "mirror_sha256": "fc8f3061af608b7d2a9acffc22d694e6d6d64b03adfb04f1f1b014efc7725b48",
           "skill": "auto-review-loop"
@@ -11935,7 +11944,7 @@
         },
         {
           "canonical_path": "skills/paper-writing/SKILL.md",
-          "canonical_sha256": "ae9769e8b0f01001df2da3fe3bd8af9764531762d57b4add6ed6cd0264612079",
+          "canonical_sha256": "453b3cd0ea9d8dc7b937101ef3f7dad486b7a7141d1afd63f1b5eb801f6705dd",
           "mirror_path": "skills/skills-codex-gemini-review/paper-writing/SKILL.md",
           "mirror_sha256": "d3fbf9cfd607ef42d5656ceb8b595dc74a25a7a7693b627fb1afc35cfbf84fde",
           "skill": "paper-writing"
@@ -12042,7 +12051,7 @@
         },
         {
           "canonical_path": "skills/auto-review-loop/SKILL.md",
-          "canonical_sha256": "9621ea70d4aed71f976fe6f020700901686635ffe7aeacf4f1db09026f13633a",
+          "canonical_sha256": "0c1be60fb569d7847b1fe7a8f674cc889e626934f9130611ba2b5ed068398bce",
           "mirror_path": "skills/skills-codex-claude-review/auto-review-loop/SKILL.md",
           "mirror_sha256": "8f5075059ec318d680ad780a20b81a77b3ce46b3225499d151989c48680ff6e1",
           "skill": "auto-review-loop"

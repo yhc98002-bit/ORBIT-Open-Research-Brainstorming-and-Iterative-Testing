@@ -289,7 +289,7 @@ claim review is adversarial.
 
 ## Standard HITL Flow — 4 Stops
 
-ORBIT v1.3 is built around **human-in-the-loop at 4 designed checkpoints**, not full
+ORBIT v2 preserves **human-in-the-loop at 4 designed checkpoints**, not full
 automation. Within each segment the agent runs continuously; between segments it pauses
 (`status = awaiting_human_continue` per the [continuation contract](skills/shared-references/continuation-contract.md))
 so a human can review the milestone artifact and decide whether to continue, revise, or
@@ -314,9 +314,10 @@ abandon.
    RESULT_INTERPRETATION.md + RESEARCH_DECISION_LOG.md.
    Paper-bearing diagnostics must run /result-to-claim and /auto-review-loop,
    producing claims/claim_ledger.json, RED_TEAM_REVIEW.md, and HUMAN_DECISION_NOTE.md.
-   Aborts cleanly on any verdict-line bottleneck (FIX_BEFORE_GPU, claim_supported=no,
-   irrecoverable review score, G14/G17 violations) — abort is awaiting_human_continue
-   with clear next_action, never a silent failure
+   Aborts cleanly on integrity bottlenecks (FIX_BEFORE_GPU, corrupt evidence,
+   G14/G17 violations). Unsupported hypotheses become STOP C negative/reframe
+   outcomes through the claim ledger and NEGATIVE_RESULT_STRATEGY, not default
+   runtime aborts.
    ⏸ STOP C: adversarial paper-claim review when paper-bearing; review RESULT_INTERPRETATION + RESEARCH_DECISION_LOG;
               if paper-bearing, also review claims/claim_ledger.json +
               RED_TEAM_REVIEW + HUMAN_DECISION_NOTE jointly
@@ -345,8 +346,10 @@ based on phase progress, artifact presence, and 24h staleness.
 /idea-to-proposal "Discrete Diffusion VLA post-training"   # STOP A: review proposal
 /experiment-bridge "refine-logs/FINAL_PROPOSAL.md"         # STOP B: plan + code + audit + probe
 /diagnostic-to-review "[diagnostic command]"               # STOP C: review decision; claim + red-team if paper-bearing
-/paper-from-claims "claims/claim_ledger.json"              # STOP D draft: evidence-bound paper
+/paper-draft "proposal/proposal_pack.json"                 # optional fast draft, no submission gates
+/paper-from-claims "claims/claim_ledger.json"              # STOP D draft: evidence-bound paper after STOP C approval
 /submission-package "paper/"                               # STOP D package: strict submission assurance
+/orbit-status                                              # read-only status doctor whenever stuck
 ```
 
 For long notes where the idea is not settled yet, pass the file as context:
