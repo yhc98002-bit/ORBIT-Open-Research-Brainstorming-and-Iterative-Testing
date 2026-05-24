@@ -25,6 +25,7 @@ VALID_PAUSE_REASONS = {
     "missing_prereq",
     "gate_failed",
     "codex_review_needed",
+    "codex_review_imported",
     "ambiguous_resume",
     "external_dependency",
     None,

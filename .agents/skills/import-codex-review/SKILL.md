@@ -13,7 +13,8 @@ Import standalone Codex review response: **$ARGUMENTS**
 
 This skill completes a required Codex review when the MCP path failed but the user ran the
 exported prompt in a standalone Codex terminal. It does not replace Codex with local
-single-model judgment.
+single-model judgment. Import satisfies only the Codex transport gap; it is not human
+approval and does not authorize STOP C paper handoff by itself.
 
 ## Preconditions
 
@@ -43,18 +44,26 @@ If any prerequisite is missing, stop with a blocker. Do not mark review passed.
 
 4. Confirm the target artifact or pack field was written.
 
-5. Update local state only after a successful import:
+5. Confirm `orbit-research/ORBIT_STATE.json` now preserves the producer context from the
+   handoff metadata:
    - review source: `standalone_codex_import`
    - imported response path: `$ARGUMENTS`
-   - status: ready for the producer skill to resume
+   - status: `paused`
+   - `pause_reason: codex_review_imported`
+   - safe next command: resume the producer skill, or `/orbit-status` if the original
+     context was unknown
 
 ## Rules
 
 - Do not accept a response that omits required sections from the exported prompt.
 - Do not summarize the response into a pass verdict by yourself.
 - Do not fabricate missing reviewer findings or verdict tokens.
+- Do not treat import as `HUMAN_DECISION_NOTE.md` approval or STOP C `PROCEED`.
 - Do not continue downstream gates unless an MCP response or imported standalone response
   exists.
+- After import, resume the producer skill or inspect the relevant STOP review. Do not jump
+  directly to `/paper-from-claims` or `/submission-package` unless STOP C approval gates
+  are already satisfied.
 
 ## Recovery
 

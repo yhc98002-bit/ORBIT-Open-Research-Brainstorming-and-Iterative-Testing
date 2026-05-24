@@ -24,6 +24,11 @@ python3 tools/codex_review_handoff.py generate \
   --output-format "<required schema/verdict format>" \
   --required-section "VERDICT" \
   --output-artifact "<expected review artifact>" \
+  --current-stop "<STOP_A|STOP_B|STOP_C|STOP_D>" \
+  --producer-skill "<skill that requested Codex>" \
+  --producer-phase "<phase that requested Codex>" \
+  --diagnostic-id "<diagnostic_id if applicable>" \
+  --resume-command "<command to resume the producer workflow after import>" \
   --write-orbit-state
 ```
 
@@ -31,6 +36,9 @@ python3 tools/codex_review_handoff.py generate \
 
 ```json
 {
+  "current_stop": "<producer STOP>",
+  "current_skill": "<producer skill>",
+  "current_phase": "<producer phase>",
   "pause_reason": "codex_review_needed",
   "safe_next_command": "/import-codex-review orbit-research/codex-imports/<phase-id>.response.md"
 }
@@ -60,6 +68,12 @@ The import path is conservative:
 - A response saying it could not access/read the files blocks import.
 - A short/non-substantive response blocks import.
 - Import copies the response into the expected review artifact only after validation.
+- Import records `imported_at`, response path, producer skill/phase, diagnostic id when
+  available, and the output artifact in the prompt metadata.
+- Import updates `ORBIT_STATE.json` to `pause_reason: codex_review_imported` and points
+  back to the producer resume command.
 
 This is not a single-model fallback. Review is marked satisfied only when an MCP Codex
 response or an imported standalone Codex response exists.
+It is also not human approval; STOP C paper handoff still requires the appropriate STOP
+review and `HUMAN_DECISION_NOTE.md` final decision.

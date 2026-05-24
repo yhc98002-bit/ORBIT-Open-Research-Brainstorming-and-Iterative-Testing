@@ -141,6 +141,10 @@ python3 tools/codex_review_handoff.py generate \
   --required-section "claim_supported" \
   --required-section "claim_ledger_entries" \
   --output-artifact "orbit-research/CODEX_RESULT_TO_CLAIM_REVIEW.md" \
+  --current-stop "STOP_C" \
+  --producer-skill "result-to-claim" \
+  --producer-phase "claim-evaluation" \
+  --resume-command "/result-to-claim \"$ARGUMENTS\" -- resume:true" \
   --write-orbit-state
 ```
 
@@ -403,10 +407,12 @@ if research-wiki/ exists:
 - If `confidence` is low, treat the judgment as inconclusive and add experiments rather than committing to a claim.
 - If Codex MCP is unavailable or a Codex call fails, use
   `tools/codex_review_handoff.py` and `/import-codex-review`; update
-  `orbit-research/ORBIT_STATE.json` with `pause_reason: "codex_review_needed"` and the
-  import command. A draft `claims/claim_ledger.json` is allowed only when it is
-  explicitly non-gating: `status: "draft"`, `codex_review: "pending"`,
-  `gating: false`.
+  `orbit-research/ORBIT_STATE.json` with producer context, `pause_reason:
+  "codex_review_needed"`, and the import command. Keep the literal state marker
+  `pause_reason: "codex_review_needed"` visible for tooling. After import,
+  `ORBIT_STATE.json` should show `pause_reason: "codex_review_imported"` and a resume
+  command for `/result-to-claim`; this still does not equal human approval. A draft `claims/claim_ledger.json` is allowed only when it is explicitly non-gating:
+  `status: "draft"`, `codex_review: "pending"`, `gating: false`.
 - Do not let a non-gating or degraded draft ledger satisfy paper gates. Downstream
   `/paper-from-claims` and `/submission-package` still require Codex-reviewed claims,
   STOP C red-team `READY_FOR_PAPER`, and human `PROCEED`.

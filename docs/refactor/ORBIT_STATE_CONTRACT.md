@@ -49,6 +49,10 @@ Every state object uses `schema_version: "0.1"` and includes:
 - `safe_next_command`
 - `updated_at`
 
+`pause_reason` includes ordinary STOP waits plus recoverable Codex transport states:
+`stop_review`, `missing_prereq`, `gate_failed`, `codex_review_needed`,
+`codex_review_imported`, `ambiguous_resume`, `external_dependency`, or `null`.
+
 Blockers use:
 
 - `id`: gate or state identifier, such as `G11`;

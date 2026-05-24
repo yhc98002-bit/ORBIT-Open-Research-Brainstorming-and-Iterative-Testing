@@ -175,6 +175,11 @@ python3 tools/codex_review_handoff.py generate \
   --output-format "<required schema/verdict format>" \
   --required-section "VERDICT" \
   --output-artifact "<expected review artifact>" \
+  --current-stop "<STOP_A|STOP_B|STOP_C|STOP_D>" \
+  --producer-skill "<skill that requested Codex>" \
+  --producer-phase "<phase that requested Codex>" \
+  --diagnostic-id "<diagnostic_id if applicable>" \
+  --resume-command "<command to resume the producer workflow after import>" \
   --write-orbit-state
 ```
 
@@ -184,6 +189,23 @@ This writes:
 orbit-research/codex-prompts/<phase-id>.md
 orbit-research/codex-prompts/<phase-id>.json
 ```
+
+The metadata MUST preserve the original producer context when known:
+
+```json
+{
+  "producer_skill": "<skill>",
+  "producer_phase": "<phase>",
+  "current_stop": "<STOP>",
+  "diagnostic_id": "<diagnostic_id or null>",
+  "resume_command": "<producer resume command>"
+}
+```
+
+While waiting for import, `ORBIT_STATE.json` must keep the original STOP, skill, and
+phase with `pause_reason: codex_review_needed`. After a successful import, it should
+change to `pause_reason: codex_review_imported` and point to the producer resume command.
+Import satisfies the Codex transport gap only; it is not human approval.
 
 The standalone prompt must include:
 

@@ -495,8 +495,29 @@ The prompt should contain:
   response at `orbit-research/codex-imports/<diagnostic_id>.<phase>.response.md`.
 
 Use `tools/codex_review_handoff.py generate` when possible so the prompt, metadata,
-expected import path, and ORBIT_STATE are consistent. Set `pause_reason:
-codex_review_needed` and safe next command:
+expected import path, producer context, and ORBIT_STATE are consistent. Include the
+diagnostic session context when generating the prompt:
+
+```bash
+python3 tools/codex_review_handoff.py generate \
+  --repo . \
+  --phase-id "<diagnostic_id>.<phase>" \
+  --role "<Stage 17 audit or Stage 23 red-team Codex role>" \
+  --file "orbit-research/diagnostics/<diagnostic_id>/DIAGNOSTIC_CONTEXT.json" \
+  --file "<artifact requiring Codex review>" \
+  --objective "<phase-specific review objective>" \
+  --output-format "<required verdict schema>" \
+  --required-section "VERDICT" \
+  --output-artifact "orbit-research/diagnostics/<diagnostic_id>/<review-artifact>.md" \
+  --current-stop "STOP_C" \
+  --producer-skill "diagnostic-to-review" \
+  --producer-phase "<phase>" \
+  --diagnostic-id "<diagnostic_id>" \
+  --resume-command "/diagnostic-to-review \"$ARGUMENTS\" -- resume:true" \
+  --write-orbit-state
+```
+
+Set `pause_reason: codex_review_needed` and safe next command:
 
 ```text
 /import-codex-review orbit-research/codex-imports/<diagnostic_id>.<phase>.response.md
@@ -506,6 +527,10 @@ This prompt does not satisfy the gate by itself. The gate is satisfied only afte
 Codex-backed artifact exists, either from MCP or imported standalone response, or the user
 explicitly passes `-- codex-required: false`, which must mark downstream artifacts as
 degraded.
+After successful import, `ORBIT_STATE.json` should preserve `STOP_C`,
+`diagnostic-to-review`, the original phase, and the resume command with
+`pause_reason: codex_review_imported`; this still does not create
+`HUMAN_DECISION_NOTE.md` or authorize paper handoff.
 
 ## What This Skill Deliberately Does Not Do
 

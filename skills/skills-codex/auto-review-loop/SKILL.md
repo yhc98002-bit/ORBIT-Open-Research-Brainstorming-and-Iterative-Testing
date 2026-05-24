@@ -74,11 +74,33 @@ new algorithmic breakthrough.
 
 Codex review remains required for the review rounds unless the user explicitly selects a
 non-Codex reviewer backend. If Codex MCP/auth/sandbox fails, do not synthesize a local
-review. Export a standalone prompt with `tools/codex_review_handoff.py generate`, write
-`orbit-research/codex-prompts/<phase-id>.md`, require the user to save the standalone
-Codex response to `orbit-research/codex-imports/<phase-id>.response.md`, and resume only
-after `/import-codex-review` validates/imports it. Set ORBIT_STATE
-`pause_reason: codex_review_needed`.
+review. Export a standalone prompt with `tools/codex_review_handoff.py generate`, passing
+producer context:
+
+```bash
+python3 tools/codex_review_handoff.py generate \
+  --repo . \
+  --phase-id "<diagnostic_id>.red-team" \
+  --role "Independent ORBIT STOP C red-team reviewer" \
+  --file "claims/claim_ledger.json" \
+  --file "orbit-research/diagnostics/<diagnostic_id>/DIAGNOSTIC_CONTEXT.json" \
+  --objective "Red-team the claim ledger and evidence for STOP C readiness." \
+  --output-format "Include VERDICT and one final token: READY_FOR_PAPER, REQUIRES_FIXES, REDESIGN_REQUIRED, or HUMAN_DECISION_REQUIRED." \
+  --required-section "VERDICT" \
+  --output-artifact "orbit-research/diagnostics/<diagnostic_id>/RED_TEAM_REVIEW.md" \
+  --current-stop "STOP_C" \
+  --producer-skill "auto-review-loop" \
+  --producer-phase "orbit-red-team" \
+  --diagnostic-id "<diagnostic_id>" \
+  --resume-command "/diagnostic-to-review \"$ARGUMENTS\" -- resume:true" \
+  --write-orbit-state
+```
+
+Require the user to save the standalone Codex response to
+`orbit-research/codex-imports/<phase-id>.response.md`, and resume only after
+`/import-codex-review` validates/imports it. Set ORBIT_STATE `pause_reason:
+codex_review_needed`; after import, the state should become `codex_review_imported` and
+point back to the producer resume command. Import is not human approval.
 
 For paper-bearing STOP C diagnostics, review `claims/claim_ledger.json` as the canonical
 claim source. Do not review only `CLAIM_CONSTRUCTION.md` prose when the ledger exists.

@@ -79,6 +79,35 @@ def write_json(path: Path, data: Mapping[str, Any]) -> None:
         handle.write("\n")
 
 
+def rel_to_repo(repo: Path, path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(repo.resolve()))
+    except ValueError:
+        return str(path)
+
+
+def clean_optional(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    stripped = value.strip()
+    return stripped or None
+
+
+def producer_context_from_args(args: argparse.Namespace) -> Dict[str, Optional[str]]:
+    current_stop = clean_optional(getattr(args, "current_stop", None)) or "NONE"
+    producer_skill = clean_optional(getattr(args, "producer_skill", None))
+    producer_phase = clean_optional(getattr(args, "producer_phase", None))
+    diagnostic_id = clean_optional(getattr(args, "diagnostic_id", None))
+    resume_command = clean_optional(getattr(args, "resume_command", None))
+    return {
+        "producer_skill": producer_skill,
+        "producer_phase": producer_phase,
+        "current_stop": current_stop,
+        "diagnostic_id": diagnostic_id,
+        "resume_command": resume_command,
+    }
+
+
 def render_prompt(
     phase_id: str,
     role: str,
@@ -88,15 +117,44 @@ def render_prompt(
     required_sections: Sequence[str],
     response_path: str,
     output_artifact: Optional[str],
+    producer_context: Optional[Mapping[str, Optional[str]]] = None,
 ) -> str:
     files_block = "\n".join("- `%s`" % item for item in files) if files else "- No files listed. Ask the user for missing files rather than guessing."
     sections_block = "\n".join("- `%s`" % item for item in required_sections) if required_sections else "- Non-empty review response"
     artifact_line = output_artifact or "None. Import should validate only unless caller supplies an artifact path."
+    context_lines: List[str] = []
+    has_known_context = bool(
+        producer_context
+        and (
+            producer_context.get("current_stop") not in (None, "NONE")
+            or producer_context.get("producer_skill")
+            or producer_context.get("producer_phase")
+            or producer_context.get("diagnostic_id")
+            or producer_context.get("resume_command")
+        )
+    )
+    if producer_context and has_known_context:
+        labels = (
+            ("Current STOP", "current_stop"),
+            ("Producer skill", "producer_skill"),
+            ("Producer phase", "producer_phase"),
+            ("Diagnostic ID", "diagnostic_id"),
+            ("Resume command", "resume_command"),
+        )
+        for label, key in labels:
+            value = producer_context.get(key)
+            if value:
+                context_lines.append("- %s: `%s`" % (label, value))
+    context_block = context_lines or ["- Producer context unknown. Preserve this fact in the response metadata."]
     return "\n".join(
         [
             "# Standalone Codex Review Prompt",
             "",
             "Phase ID: `%s`" % phase_id,
+            "",
+            "## Workflow Context",
+            "",
+            "\n".join(context_block),
             "",
             "## Role",
             "",
@@ -150,6 +208,7 @@ def generate(args: argparse.Namespace) -> int:
     required_sections = tuple(args.required_section or DEFAULT_REQUIRED_SECTIONS)
     prompt_rel = "orbit-research/codex-prompts/%s.md" % phase_id
     response_rel = "orbit-research/codex-imports/%s.response.md" % phase_id
+    producer_context = producer_context_from_args(args)
 
     prompt = render_prompt(
         phase_id=phase_id,
@@ -160,6 +219,7 @@ def generate(args: argparse.Namespace) -> int:
         required_sections=required_sections,
         response_path=response_rel,
         output_artifact=args.output_artifact,
+        producer_context=producer_context,
     )
 
     p_path = prompt_path(repo, phase_id)
@@ -178,11 +238,17 @@ def generate(args: argparse.Namespace) -> int:
         "output_format": args.output_format,
         "required_sections": list(required_sections),
         "generated_at": utc_now_iso(),
+        "producer_context": producer_context,
+        "producer_skill": producer_context["producer_skill"],
+        "producer_phase": producer_context["producer_phase"],
+        "current_stop": producer_context["current_stop"],
+        "diagnostic_id": producer_context["diagnostic_id"],
+        "resume_command": producer_context["resume_command"],
     }
     write_json(metadata_path(repo, phase_id), metadata)
 
     if args.write_orbit_state:
-        write_handoff_state(repo, phase_id, response_rel)
+        write_handoff_state(repo, phase_id, response_rel, metadata)
 
     print("Wrote %s" % prompt_rel)
     print("Expected response %s" % response_rel)
@@ -254,6 +320,40 @@ def validate(args: argparse.Namespace) -> int:
 def import_review(args: argparse.Namespace) -> int:
     repo = Path(args.repo).resolve()
     response = repo_path(repo, args.response)
+    phase_id = phase_id_from_response(response)
+    m_path = metadata_path(repo, phase_id)
+    metadata: Dict[str, Any] = read_json(m_path) if m_path.exists() else {
+        "schema_version": "0.1",
+        "phase_id": phase_id,
+        "response_path": rel_to_repo(repo, response),
+        "producer_context": {
+            "producer_skill": None,
+            "producer_phase": None,
+            "current_stop": "NONE",
+            "diagnostic_id": None,
+            "resume_command": None,
+        },
+        "producer_skill": None,
+        "producer_phase": None,
+        "current_stop": "NONE",
+        "diagnostic_id": None,
+        "resume_command": None,
+    }
+    metadata.setdefault("producer_skill", None)
+    metadata.setdefault("producer_phase", None)
+    metadata.setdefault("current_stop", "NONE")
+    metadata.setdefault("diagnostic_id", None)
+    metadata.setdefault("resume_command", None)
+    metadata.setdefault(
+        "producer_context",
+        {
+            "producer_skill": metadata.get("producer_skill"),
+            "producer_phase": metadata.get("producer_phase"),
+            "current_stop": metadata.get("current_stop"),
+            "diagnostic_id": metadata.get("diagnostic_id"),
+            "resume_command": metadata.get("resume_command"),
+        },
+    )
     sections = required_sections_for(repo, response, args.required_section)
     text = response.read_text(encoding="utf-8", errors="replace")
     result = validate_response_text(text, sections)
@@ -266,13 +366,9 @@ def import_review(args: argparse.Namespace) -> int:
 
     output_artifact = args.output_artifact
     if output_artifact is None:
-        phase_id = phase_id_from_response(response)
-        m_path = metadata_path(repo, phase_id)
-        if m_path.exists():
-            metadata = read_json(m_path)
-            value = metadata.get("output_artifact")
-            if isinstance(value, str) and value:
-                output_artifact = value
+        value = metadata.get("output_artifact")
+        if isinstance(value, str) and value:
+            output_artifact = value
 
     copied_to: Optional[str] = None
     if output_artifact:
@@ -285,7 +381,28 @@ def import_review(args: argparse.Namespace) -> int:
             shutil.copyfile(response, target)
         copied_to = output_artifact
 
-    report = {"valid": True, "copied_to": copied_to, "warnings": result["warnings"], "errors": []}
+    imported_at = utc_now_iso()
+    metadata.update(
+        {
+            "imported_at": imported_at,
+            "imported_response_path": rel_to_repo(repo, response),
+            "imported_output_artifact": copied_to,
+            "import_valid": True,
+        }
+    )
+    write_json(m_path, metadata)
+    write_imported_state(repo, phase_id, metadata)
+
+    report = {
+        "valid": True,
+        "copied_to": copied_to,
+        "warnings": result["warnings"],
+        "errors": [],
+        "producer_skill": metadata.get("producer_skill"),
+        "producer_phase": metadata.get("producer_phase"),
+        "diagnostic_id": metadata.get("diagnostic_id"),
+        "resume_command": metadata.get("resume_command"),
+    }
     if args.json:
         print(json.dumps(report, indent=2, sort_keys=True, ensure_ascii=True))
     else:
@@ -295,17 +412,20 @@ def import_review(args: argparse.Namespace) -> int:
     return 0
 
 
-def write_handoff_state(repo: Path, phase_id: str, response_rel: str) -> None:
+def write_handoff_state(repo: Path, phase_id: str, response_rel: str, metadata: Mapping[str, Any]) -> None:
     try:
         from orbit_state import make_blocker, make_state, write_state
     except ImportError:  # pragma: no cover
         from tools.orbit_state import make_blocker, make_state, write_state
 
     command = "/import-codex-review %s" % response_rel
+    current_stop = metadata.get("current_stop") if isinstance(metadata.get("current_stop"), str) else "NONE"
+    current_skill = metadata.get("producer_skill") if isinstance(metadata.get("producer_skill"), str) and metadata.get("producer_skill") else "codex-review-handoff"
+    current_phase = metadata.get("producer_phase") if isinstance(metadata.get("producer_phase"), str) and metadata.get("producer_phase") else phase_id
     state = make_state(
-        current_stop="NONE",
-        current_skill="codex-review-handoff",
-        current_phase=phase_id,
+        current_stop=current_stop,
+        current_skill=current_skill,
+        current_phase=current_phase,
         status="blocked",
         pause_reason="codex_review_needed",
         blockers=[
@@ -318,6 +438,28 @@ def write_handoff_state(repo: Path, phase_id: str, response_rel: str) -> None:
             )
         ],
         safe_next_command=command,
+    )
+    write_state(repo, state)
+
+
+def write_imported_state(repo: Path, phase_id: str, metadata: Mapping[str, Any]) -> None:
+    try:
+        from orbit_state import make_state, write_state
+    except ImportError:  # pragma: no cover
+        from tools.orbit_state import make_state, write_state
+
+    current_stop = metadata.get("current_stop") if isinstance(metadata.get("current_stop"), str) else "NONE"
+    current_skill = metadata.get("producer_skill") if isinstance(metadata.get("producer_skill"), str) and metadata.get("producer_skill") else "codex-review-handoff"
+    current_phase = metadata.get("producer_phase") if isinstance(metadata.get("producer_phase"), str) and metadata.get("producer_phase") else phase_id
+    resume_command = metadata.get("resume_command") if isinstance(metadata.get("resume_command"), str) and metadata.get("resume_command") else "/orbit-status"
+    state = make_state(
+        current_stop=current_stop,
+        current_skill=current_skill,
+        current_phase=current_phase,
+        status="paused",
+        pause_reason="codex_review_imported",
+        blockers=[],
+        safe_next_command=resume_command,
     )
     write_state(repo, state)
 
@@ -335,6 +477,11 @@ def build_parser() -> argparse.ArgumentParser:
     gen.add_argument("--output-format", required=True, help="Required response schema or format.")
     gen.add_argument("--required-section", action="append", help="Required response section/token. Repeatable.")
     gen.add_argument("--output-artifact", help="Artifact path to copy imported response into.")
+    gen.add_argument("--current-stop", choices=("NONE", "STOP_A", "STOP_B", "STOP_C", "STOP_D", "COMPLETED"), default="NONE", help="Original ORBIT stop that requested the Codex review.")
+    gen.add_argument("--producer-skill", help="Skill that requested the Codex review, e.g. diagnostic-to-review.")
+    gen.add_argument("--producer-phase", help="Producer phase that requested the Codex review.")
+    gen.add_argument("--diagnostic-id", help="Diagnostic session id, if applicable.")
+    gen.add_argument("--resume-command", help="Command to resume the producer workflow after successful import.")
     gen.add_argument("--write-orbit-state", action="store_true", help="Write ORBIT_STATE blocked with codex_review_needed.")
     gen.set_defaults(func=generate)
 
