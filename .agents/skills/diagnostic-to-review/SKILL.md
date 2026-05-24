@@ -298,7 +298,18 @@ Phase artifact map:
 
 ### Phase 1: Formal Run
 
-Run the formal diagnostic:
+Read `diagnostic_id` and `output_root` from
+`orbit-research/diagnostics/<diagnostic_id>/DIAGNOSTIC_CONTEXT.json`. Call
+`/run-experiment` with that diagnostic_id and output_root so the run writes into the
+session directory, not only legacy fixed paths.
+
+Preferred call:
+
+```text
+/run-experiment "<formal command or manifest from DIAGNOSTIC_CONTEXT.json>" — diagnostic-id: "<diagnostic_id>" — output-root: "orbit-research/diagnostics/<diagnostic_id>/"
+```
+
+Equivalent environment form:
 
 ```bash
 ORBIT_DIAGNOSTIC_ID="<diagnostic_id>" \
@@ -306,8 +317,7 @@ ORBIT_DIAGNOSTIC_OUTPUT_ROOT="orbit-research/diagnostics/<diagnostic_id>" \
 /run-experiment "<formal command or manifest from DIAGNOSTIC_CONTEXT.json>"
 ```
 
-`/run-experiment` writes the run ledger and formal diagnostic report/audit. Copy or render
-the current session's outputs into:
+`/run-experiment` writes the run ledger and formal diagnostic report/audit directly into:
 
 ```text
 orbit-research/diagnostics/<diagnostic_id>/RUN_REPORT.md

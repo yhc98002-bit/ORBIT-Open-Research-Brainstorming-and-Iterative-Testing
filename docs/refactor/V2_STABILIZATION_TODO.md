@@ -44,6 +44,7 @@ stabilization areas only; it does not change workflow behavior.
 
 7. Run-experiment fixed-path diagnostic artifacts
    - Status: Prompt 5 documents `ORBIT_DIAGNOSTIC_ID` / `ORBIT_DIAGNOSTIC_OUTPUT_ROOT` and per-session `RUN_REPORT.md` / `RUN_AUDIT.md` as preferred formal diagnostic outputs.
+   - Status: Prompt 11 makes `/run-experiment` treat per-diagnostic output roots as canonical for formal diagnostics while retaining fixed legacy latest copies only for compatibility.
    - Ensure experiment-bridge probes remain separate from formal diagnostic artifacts.
 
 8. G12 semantics consistency

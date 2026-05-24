@@ -129,18 +129,38 @@ ORBIT_DIAGNOSTIC_ID=<diagnostic_id>
 ORBIT_DIAGNOSTIC_OUTPUT_ROOT=orbit-research/diagnostics/<diagnostic_id>/
 ```
 
-When either form is present, prefer per-diagnostic formal output paths:
+When either form is present, this is a formal diagnostic session. If
+`— output-root:` / `ORBIT_DIAGNOSTIC_OUTPUT_ROOT` is missing but `diagnostic_id` is known,
+default the output root to `orbit-research/diagnostics/<diagnostic_id>/`. Create the
+directory before writing reports.
+
+Per-diagnostic formal output paths are canonical:
 
 ```text
 orbit-research/diagnostics/<diagnostic_id>/RUN_REPORT.md
 orbit-research/diagnostics/<diagnostic_id>/RUN_AUDIT.md
 ```
 
+Do not write only the legacy fixed paths for formal diagnostics. The session directory is
+the resume-safe source that `/diagnostic-to-review` uses for `diagnostic_id` /
+`input_hash` matching.
+
 Compatibility latest copies may still be written to:
 
 ```text
 orbit-research/DIAGNOSTIC_RUN_REPORT.md
 orbit-research/DIAGNOSTIC_RUN_AUDIT.md
+```
+
+After `run_id` and result paths are known, update the diagnostic context through the
+session helper when available:
+
+```bash
+python3 tools/diagnostic_session.py update-run \
+  --repo . \
+  --diagnostic-id "<diagnostic_id>" \
+  --run-id "<run_id>" \
+  --result-path "<exact result path>"
 ```
 
 ### Phase artifact map (for idempotent skip)

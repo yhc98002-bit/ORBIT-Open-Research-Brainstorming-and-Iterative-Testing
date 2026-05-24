@@ -331,6 +331,41 @@ class SkillIntegrityTest(unittest.TestCase):
 
         self.assertEqual(missing, [])
 
+    def test_run_experiment_supports_diagnostic_session_output_root(self):
+        run_text = (SKILLS_DIR / "run-experiment" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        diagnostic_text = (
+            SKILLS_DIR / "diagnostic-to-review" / "SKILL.md"
+        ).read_text(encoding="utf-8")
+
+        run_required = [
+            "— diagnostic-id: <id>",
+            "— output-root: orbit-research/diagnostics/<diagnostic_id>/",
+            "ORBIT_DIAGNOSTIC_ID=<diagnostic_id>",
+            "ORBIT_DIAGNOSTIC_OUTPUT_ROOT=orbit-research/diagnostics/<diagnostic_id>/",
+            "Per-diagnostic formal output paths are canonical",
+            "orbit-research/diagnostics/<diagnostic_id>/RUN_REPORT.md",
+            "orbit-research/diagnostics/<diagnostic_id>/RUN_AUDIT.md",
+            "Do not write only the legacy fixed paths for formal diagnostics",
+            "Compatibility latest copies may still be written to:",
+            "python3 tools/diagnostic_session.py update-run",
+        ]
+        diagnostic_required = [
+            "Call\n`/run-experiment` with that diagnostic_id and output_root",
+            "— diagnostic-id: \"<diagnostic_id>\"",
+            "— output-root: \"orbit-research/diagnostics/<diagnostic_id>/\"",
+            "ORBIT_DIAGNOSTIC_ID=\"<diagnostic_id>\"",
+            "ORBIT_DIAGNOSTIC_OUTPUT_ROOT=\"orbit-research/diagnostics/<diagnostic_id>\"",
+            "directly into:",
+            "Compatibility latest copies may be written to:",
+        ]
+
+        missing = [item for item in run_required if item not in run_text]
+        missing.extend(item for item in diagnostic_required if item not in diagnostic_text)
+
+        self.assertEqual(missing, [])
+
     def test_install_docs_do_not_recommend_dangerous_copy_patterns(self):
         docs = [
             ROOT / "README.md",
