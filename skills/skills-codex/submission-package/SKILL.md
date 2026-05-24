@@ -60,13 +60,21 @@ For claim-bearing papers, submission packaging must not run as a substitute for 
 human approval. Before marking `paper/paper_package.json.status` as `ready`, require:
 
 1. `claims/claim_ledger.json` exists and validates.
-2. A red-team review exists at either
+2. The claim ledger is gating-ready:
+   - `status` is `ready`
+   - `gating` is not `false`
+   - `codex_review` is `passed` or `imported`
+   - draft, pending, degraded, or non-gating ledgers are blocked by default
+3. A red-team review exists at either
    `orbit-research/diagnostics/<diagnostic_id>/RED_TEAM_REVIEW.md` or
    `orbit-research/RED_TEAM_REVIEW.md`, and its final verdict is `READY_FOR_PAPER`.
-3. `orbit-research/HUMAN_DECISION_NOTE.md` exists and its final verdict is `PROCEED`.
-4. Claim audit passes.
-5. Citation audit passes.
-6. Compile passes.
+4. `orbit-research/HUMAN_DECISION_NOTE.md` exists and its final verdict is `PROCEED`.
+5. If the claim ledger contains `diagnostic_id` or `ledger_hash`, the red-team review and
+   human decision note reference the same identity unless an explicit legacy compatibility
+   flag is used.
+6. Claim audit passes.
+7. Citation audit passes.
+8. Compile passes.
 
 Run the approval checker before finalizing a claim-bearing package:
 

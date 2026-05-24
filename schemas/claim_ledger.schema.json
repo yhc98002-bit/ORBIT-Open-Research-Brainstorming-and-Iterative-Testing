@@ -26,6 +26,19 @@
         "deprecated"
       ]
     },
+    "codex_review": {
+      "type": "string",
+      "enum": [
+        "passed",
+        "pending",
+        "imported",
+        "degraded",
+        "not_required"
+      ]
+    },
+    "gating": {
+      "type": "boolean"
+    },
     "updated_at": {
       "type": "string",
       "format": "date-time"

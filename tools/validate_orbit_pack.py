@@ -12,10 +12,10 @@ from typing import Any, Dict, List, Mapping, Optional
 
 try:
     from orbit_pack import PACK_SPECS, get_pack_spec, pack_names, pack_path, schema_path
-    from check_stop_c_approval import evaluate_stop_c_approval
+    from check_stop_c_approval import claim_ledger_readiness_errors, evaluate_stop_c_approval
 except ImportError:  # pragma: no cover - used when imported as tools.validate_orbit_pack
     from tools.orbit_pack import PACK_SPECS, get_pack_spec, pack_names, pack_path, schema_path
-    from tools.check_stop_c_approval import evaluate_stop_c_approval
+    from tools.check_stop_c_approval import claim_ledger_readiness_errors, evaluate_stop_c_approval
 
 
 TOOL_REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -267,6 +267,9 @@ def claim_ledger_usage_errors(instance: Mapping[str, Any], location: str = "$") 
     claims = instance.get("claims")
     if not isinstance(claims, list):
         return errors
+
+    if instance.get("status") == "ready":
+        errors.extend(claim_ledger_readiness_errors(instance, location))
 
     errors.extend(duplicate_id_errors(claims, "id", "%s.claims" % location, "claim id"))
 

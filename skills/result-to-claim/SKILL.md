@@ -42,7 +42,7 @@ Run `mkdir -p claims orbit-research/`. Always write or update:
 {
   "schema_version": "0.1",
   "status": "draft|ready|blocked|deprecated",
-  "codex_review": "passed|pending|imported|degraded",
+  "codex_review": "passed|pending|imported|degraded|not_required",
   "gating": true,
   "updated_at": "<ISO-8601 UTC>",
   "source_markdown": ["orbit-research/RESULT_INTERPRETATION.md"],
@@ -153,6 +153,10 @@ and points `ORBIT_STATE.json` at:
 
 Do not mark `claims/claim_ledger.json` as `ready` until a Codex MCP response exists or
 the standalone response has been imported with `/import-codex-review`.
+Paper-bearing ledgers that satisfy downstream gates must keep `gating: true` and use
+`codex_review: "passed"` or `"imported"`. If Codex is pending, degraded, or explicitly
+not required, the ledger must remain non-gating (`status: "draft"` or `blocked`, or
+`gating: false`) until the human explicitly accepts the degraded path.
 
 Send the collected results to Codex for objective evaluation:
 

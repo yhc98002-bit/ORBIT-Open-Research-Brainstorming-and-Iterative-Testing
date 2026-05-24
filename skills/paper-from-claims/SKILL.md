@@ -41,15 +41,20 @@ python tools/check_stop_c_approval.py --repo . --claim-ledger claims/claim_ledge
 Proceed only if all of these are true:
 
 1. `claims/claim_ledger.json` exists and validates.
-2. A red-team review exists at either
+2. The claim ledger is gating-ready:
+   - `status` is `ready`
+   - `gating` is not `false`
+   - `codex_review` is `passed` or `imported`
+   - draft, pending, degraded, or non-gating ledgers are blocked by default
+3. A red-team review exists at either
    `orbit-research/diagnostics/<diagnostic_id>/RED_TEAM_REVIEW.md` or
    `orbit-research/RED_TEAM_REVIEW.md`, and its final verdict is `READY_FOR_PAPER`.
-3. `orbit-research/HUMAN_DECISION_NOTE.md` exists and its final verdict is `PROCEED`.
+4. `orbit-research/HUMAN_DECISION_NOTE.md` exists and its final verdict is `PROCEED`.
 
-If `claims/claim_ledger.json` contains `diagnostic_id` or `ledger_hash`, prefer a
-matching per-diagnostic red-team review and a human decision note that mentions the same
-identifier. TODO: make this match mandatory once the claim ledger schema standardizes
-these identity fields.
+If `claims/claim_ledger.json` contains `diagnostic_id` or `ledger_hash`, the red-team
+review and human decision note must reference the same identity by default. Legacy
+unmatched approvals require an explicit compatibility flag and must not be treated as the
+normal path.
 
 If STOP C approval is missing, refuse evidence-bound writing. Suggest one of:
 

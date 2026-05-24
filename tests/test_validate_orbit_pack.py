@@ -103,6 +103,52 @@ class ValidateOrbitPackTest(unittest.TestCase):
         self.assertIn("unsupported claim", result.stdout)
         self.assertIn("paper_use='allowed'", result.stdout)
 
+    def test_ready_claim_ledger_missing_codex_review_fails(self):
+        project = copy_fixture(self)
+        ledger_path = project / "claims" / "claim_ledger.json"
+        ledger = load_json(ledger_path)
+        ledger.pop("codex_review", None)
+        write_json(ledger_path, ledger)
+
+        result = run_validator(project, "--pack", "claim_ledger")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("ready claim ledger must record Codex review", result.stdout)
+
+    def test_ready_claim_ledger_pending_codex_review_fails(self):
+        project = copy_fixture(self)
+        ledger_path = project / "claims" / "claim_ledger.json"
+        ledger = load_json(ledger_path)
+        ledger["codex_review"] = "pending"
+        write_json(ledger_path, ledger)
+
+        result = run_validator(project, "--pack", "claim_ledger")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("pending", result.stdout)
+        self.assertIn("cannot satisfy STOP C approval", result.stdout)
+
+    def test_ready_claim_ledger_degraded_codex_review_fails(self):
+        project = copy_fixture(self)
+        ledger_path = project / "claims" / "claim_ledger.json"
+        ledger = load_json(ledger_path)
+        ledger["codex_review"] = "degraded"
+        write_json(ledger_path, ledger)
+
+        result = run_validator(project, "--pack", "claim_ledger")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("degraded", result.stdout)
+        self.assertIn("cannot satisfy STOP C approval", result.stdout)
+
+    def test_ready_claim_ledger_non_gating_fails(self):
+        project = copy_fixture(self)
+        ledger_path = project / "claims" / "claim_ledger.json"
+        ledger = load_json(ledger_path)
+        ledger["gating"] = False
+        write_json(ledger_path, ledger)
+
+        result = run_validator(project, "--pack", "claim_ledger")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("non-gating claim ledger", result.stdout)
+
     def test_negative_original_hypothesis_do_not_claim_passes(self):
         project = copy_fixture(self)
         ledger_path = project / "claims" / "claim_ledger.json"

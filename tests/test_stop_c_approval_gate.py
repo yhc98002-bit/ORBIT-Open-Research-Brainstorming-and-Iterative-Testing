@@ -30,6 +30,10 @@ def copy_fixture(test_case: unittest.TestCase) -> Path:
     return target
 
 
+def write_json(path: Path, data: dict) -> None:
+    path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
 class StopCApprovalGateTest(unittest.TestCase):
     def test_paper_from_claims_mentions_human_decision_note(self):
         text = (SKILLS / "paper-from-claims" / "SKILL.md").read_text(encoding="utf-8")
@@ -88,6 +92,193 @@ class StopCApprovalGateTest(unittest.TestCase):
         self.assertEqual(payload["status"], "approved")
         self.assertEqual(payload["red_team_verdict"], "READY_FOR_PAPER")
         self.assertEqual(payload["human_decision_verdict"], "PROCEED")
+
+    def test_stop_c_helper_blocks_draft_claim_ledger(self):
+        project = copy_fixture(self)
+        ledger_path = project / "claims" / "claim_ledger.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        ledger["status"] = "draft"
+        write_json(ledger_path, ledger)
+
+        result = run_tool(
+            str(TOOLS / "check_stop_c_approval.py"),
+            "--repo",
+            str(project),
+            "--claim-ledger",
+            "claims/claim_ledger.json",
+        )
+
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("claim ledger must be 'ready'", result.stdout)
+
+    def test_stop_c_helper_blocks_pending_codex_review(self):
+        project = copy_fixture(self)
+        ledger_path = project / "claims" / "claim_ledger.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        ledger["codex_review"] = "pending"
+        write_json(ledger_path, ledger)
+
+        result = run_tool(
+            str(TOOLS / "check_stop_c_approval.py"),
+            "--repo",
+            str(project),
+            "--claim-ledger",
+            "claims/claim_ledger.json",
+        )
+
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("pending", result.stdout)
+        self.assertIn("cannot satisfy STOP C approval", result.stdout)
+
+    def test_stop_c_helper_blocks_degraded_codex_review(self):
+        project = copy_fixture(self)
+        ledger_path = project / "claims" / "claim_ledger.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        ledger["codex_review"] = "degraded"
+        write_json(ledger_path, ledger)
+
+        result = run_tool(
+            str(TOOLS / "check_stop_c_approval.py"),
+            "--repo",
+            str(project),
+            "--claim-ledger",
+            "claims/claim_ledger.json",
+        )
+
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("degraded", result.stdout)
+        self.assertIn("cannot satisfy STOP C approval", result.stdout)
+
+    def test_stop_c_helper_blocks_non_gating_ledger(self):
+        project = copy_fixture(self)
+        ledger_path = project / "claims" / "claim_ledger.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        ledger["gating"] = False
+        write_json(ledger_path, ledger)
+
+        result = run_tool(
+            str(TOOLS / "check_stop_c_approval.py"),
+            "--repo",
+            str(project),
+            "--claim-ledger",
+            "claims/claim_ledger.json",
+        )
+
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("non-gating claim ledger", result.stdout)
+
+    def test_stop_c_helper_accepts_markdown_wrapped_verdicts(self):
+        project = copy_fixture(self)
+        red_team = project / "orbit-research" / "diagnostics" / "diag_fixture" / "RED_TEAM_REVIEW.md"
+        human = project / "orbit-research" / "HUMAN_DECISION_NOTE.md"
+        red_team.write_text(
+            "# Red-Team Review\n\nDiagnostic ID: diag_fixture\nClaim ledger hash: ledger_fixture_hash\n\n"
+            "Final verdict: **READY_FOR_PAPER**\n",
+            encoding="utf-8",
+        )
+        human.write_text(
+            "# Human Decision Note\n\nDiagnostic ID: diag_fixture\nClaim ledger hash: ledger_fixture_hash\n\n"
+            "Final decision: `PROCEED`\n",
+            encoding="utf-8",
+        )
+
+        result = run_tool(
+            str(TOOLS / "check_stop_c_approval.py"),
+            "--repo",
+            str(project),
+            "--claim-ledger",
+            "claims/claim_ledger.json",
+            "--json",
+        )
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["red_team_verdict"], "READY_FOR_PAPER")
+        self.assertEqual(payload["human_decision_verdict"], "PROCEED")
+
+    def test_stop_c_helper_rejects_red_team_candidate_list(self):
+        project = copy_fixture(self)
+        red_team = project / "orbit-research" / "diagnostics" / "diag_fixture" / "RED_TEAM_REVIEW.md"
+        red_team.write_text(
+            "# Red-Team Review\n\nDiagnostic ID: diag_fixture\nClaim ledger hash: ledger_fixture_hash\n\n"
+            "Final verdict: READY_FOR_PAPER | REQUIRES_FIXES\n",
+            encoding="utf-8",
+        )
+
+        result = run_tool(
+            str(TOOLS / "check_stop_c_approval.py"),
+            "--repo",
+            str(project),
+            "--claim-ledger",
+            "claims/claim_ledger.json",
+        )
+
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("RED_TEAM_REVIEW final verdict must be READY_FOR_PAPER", result.stdout)
+
+    def test_stop_c_helper_rejects_human_decision_candidate_list(self):
+        project = copy_fixture(self)
+        human = project / "orbit-research" / "HUMAN_DECISION_NOTE.md"
+        human.write_text(
+            "# Human Decision Note\n\nDiagnostic ID: diag_fixture\nClaim ledger hash: ledger_fixture_hash\n\n"
+            "Decision: PROCEED | STOP\n",
+            encoding="utf-8",
+        )
+
+        result = run_tool(
+            str(TOOLS / "check_stop_c_approval.py"),
+            "--repo",
+            str(project),
+            "--claim-ledger",
+            "claims/claim_ledger.json",
+        )
+
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("HUMAN_DECISION_NOTE final verdict must be PROCEED", result.stdout)
+
+    def test_stop_c_helper_blocks_identity_mismatch_by_default(self):
+        project = copy_fixture(self)
+        human = project / "orbit-research" / "HUMAN_DECISION_NOTE.md"
+        human.write_text(
+            "# Human Decision Note\n\nDiagnostic ID: other_diag\nClaim ledger hash: other_hash\n\n"
+            "Final verdict: PROCEED\n",
+            encoding="utf-8",
+        )
+
+        result = run_tool(
+            str(TOOLS / "check_stop_c_approval.py"),
+            "--repo",
+            str(project),
+            "--claim-ledger",
+            "claims/claim_ledger.json",
+        )
+
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("does not reference diagnostic_id diag_fixture", result.stdout)
+        self.assertIn("does not reference ledger_hash ledger_fixture_hash", result.stdout)
+
+    def test_stop_c_helper_can_allow_unmatched_legacy_approval(self):
+        project = copy_fixture(self)
+        human = project / "orbit-research" / "HUMAN_DECISION_NOTE.md"
+        human.write_text(
+            "# Human Decision Note\n\nLegacy approval note.\n\nFinal verdict: PROCEED\n",
+            encoding="utf-8",
+        )
+
+        result = run_tool(
+            str(TOOLS / "check_stop_c_approval.py"),
+            "--repo",
+            str(project),
+            "--claim-ledger",
+            "claims/claim_ledger.json",
+            "--allow-unmatched-legacy-approval",
+            "--json",
+        )
+
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["status"], "approved")
+        self.assertTrue(payload["warnings"])
 
 
 if __name__ == "__main__":
