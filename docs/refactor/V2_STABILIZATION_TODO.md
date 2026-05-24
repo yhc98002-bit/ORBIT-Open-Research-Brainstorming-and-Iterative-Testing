@@ -39,11 +39,11 @@ stabilization areas only; it does not change workflow behavior.
    - CI should run `python tools/check_skill_mirror.py --repo .`.
 
 6. Diagnostic session helper missing
-   - Add or document helper support for `diagnostic_id`, `input_hash`, diagnostic context, and per-diagnostic artifact paths.
+   - Status: Prompt 5 adds `tools/diagnostic_session.py` for `diagnostic_id`, `input_hash`, diagnostic context, run updates, and structured audit updates.
    - Keep `/diagnostic-to-review` recoverable without reusing stale fixed-path artifacts.
 
 7. Run-experiment fixed-path diagnostic artifacts
-   - Audit `/run-experiment` for old `DIAGNOSTIC_RUN_REPORT.md` and `DIAGNOSTIC_RUN_AUDIT.md` fixed-path assumptions.
+   - Status: Prompt 5 documents `ORBIT_DIAGNOSTIC_ID` / `ORBIT_DIAGNOSTIC_OUTPUT_ROOT` and per-session `RUN_REPORT.md` / `RUN_AUDIT.md` as preferred formal diagnostic outputs.
    - Ensure experiment-bridge probes remain separate from formal diagnostic artifacts.
 
 8. G12 semantics consistency

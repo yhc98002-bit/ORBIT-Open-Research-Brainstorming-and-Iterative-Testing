@@ -73,6 +73,8 @@ Schema:
   "phase": "step-5-launched" | "step-6-monitoring" | "step-7-completed",
   "status": "in_progress" | "awaiting_human_continue" | "awaiting_user_action" | "completed",
   "run_id": "run_<timestamp>_<short-hash-of-cmd>",
+  "diagnostic_id": "<optional ORBIT_DIAGNOSTIC_ID>",
+  "diagnostic_output_root": "orbit-research/diagnostics/<diagnostic_id>",
   "command": "<verbatim command sent to the GPU>",
   "server": "<ssh alias OR local OR vast:<id> OR modal:<app>>",
   "screen_name": "<screen session name on the remote>",
@@ -84,6 +86,8 @@ Schema:
   "timestamp": "<ISO 8601 UTC>",
   "artifact_inventory": [
     "orbit-research/RUN_LEDGER.jsonl",
+    "orbit-research/diagnostics/<diagnostic_id>/RUN_REPORT.md",
+    "orbit-research/diagnostics/<diagnostic_id>/RUN_AUDIT.md",
     "orbit-research/DIAGNOSTIC_RUN_REPORT.md",
     "orbit-research/DIAGNOSTIC_RUN_AUDIT.md"
   ]
@@ -114,14 +118,38 @@ Schema:
 - `— fresh: true` — delete STATE; start fresh.
 - `— queue: true` — force route to `/experiment-queue` regardless of detected job count.
 - `— solo: true` — force inline run regardless of detected job count.
+- `— diagnostic-id: <id>` — attach this run to an existing STOP C diagnostic session.
+- `— output-root: orbit-research/diagnostics/<diagnostic_id>/` — write formal
+  diagnostic report/audit into this per-session directory.
+
+`/diagnostic-to-review` may also pass session identity through environment variables:
+
+```text
+ORBIT_DIAGNOSTIC_ID=<diagnostic_id>
+ORBIT_DIAGNOSTIC_OUTPUT_ROOT=orbit-research/diagnostics/<diagnostic_id>/
+```
+
+When either form is present, prefer per-diagnostic formal output paths:
+
+```text
+orbit-research/diagnostics/<diagnostic_id>/RUN_REPORT.md
+orbit-research/diagnostics/<diagnostic_id>/RUN_AUDIT.md
+```
+
+Compatibility latest copies may still be written to:
+
+```text
+orbit-research/DIAGNOSTIC_RUN_REPORT.md
+orbit-research/DIAGNOSTIC_RUN_AUDIT.md
+```
 
 ### Phase artifact map (for idempotent skip)
 
 | Phase | Expected artifact |
 |---|---|
 | step-5-launched | `orbit-research/RUN_LEDGER.jsonl` run-start + `RUN_EXPERIMENT_STATE.json` with `screen_name` set |
-| step-6-monitoring | `orbit-research/DIAGNOSTIC_RUN_REPORT.md` (interim updates) |
-| step-7-completed | `orbit-research/RUN_LEDGER.jsonl` run-final + `DIAGNOSTIC_RUN_REPORT.md` finalised + `DIAGNOSTIC_RUN_AUDIT.md` written |
+| step-6-monitoring | per-session `RUN_REPORT.md` when `diagnostic_id` exists; otherwise `orbit-research/DIAGNOSTIC_RUN_REPORT.md` interim updates |
+| step-7-completed | `orbit-research/RUN_LEDGER.jsonl` run-final + per-session `RUN_REPORT.md`/`RUN_AUDIT.md` finalized; compatibility latest copies may also be written |
 
 ## ORBIT v1.3 Run Gates
 
@@ -146,12 +174,28 @@ sanity run, verify:
   names the exact diagnostic run.
 - The first run is a diagnostic / sanity run unless the user explicitly overrides.
 
-After the diagnostic run, write or update `orbit-research/DIAGNOSTIC_RUN_REPORT.md`
-(v1.0 alias on read: `TINY_RUN_REPORT.md`). Always write `orbit-research/DIAGNOSTIC_RUN_AUDIT.md`
-(v1.0 alias on read: `TINY_RUN_AUDIT.md`) with the verdict line `PASS`, `FIX_BEFORE_GPU`,
-or `REDESIGN_EXPERIMENT`. Do not proceed to full runs until the verdict is `PASS`.
-`DIAGNOSTIC_RUN_REPORT.md` must include the ledger `run_id` and the paths to the matching
-`RUN_LEDGER.jsonl` start/final records.
+After a formal STOP C diagnostic run, write or update the session report/audit when
+`diagnostic_id` is known:
+
+```text
+orbit-research/diagnostics/<diagnostic_id>/RUN_REPORT.md
+orbit-research/diagnostics/<diagnostic_id>/RUN_AUDIT.md
+```
+
+Also write compatibility latest copies to `orbit-research/DIAGNOSTIC_RUN_REPORT.md`
+(v1.0 alias on read: `TINY_RUN_REPORT.md`) and
+`orbit-research/DIAGNOSTIC_RUN_AUDIT.md` (v1.0 alias on read: `TINY_RUN_AUDIT.md`) when
+needed by legacy consumers. The audit must include structured fields:
+
+```yaml
+verdict: PASS | FIX_BEFORE_GPU | REDESIGN_EXPERIMENT | ERROR
+regime_preserved: true | false | unknown
+mechanism_rejected: true | false
+```
+
+Do not proceed to full runs until the verdict is `PASS`. `RUN_REPORT.md` and any
+compatibility `DIAGNOSTIC_RUN_REPORT.md` must include the ledger `run_id` and the paths
+to the matching `RUN_LEDGER.jsonl` start/final records.
 
 **G12 regime-aware failure interpretation (mandatory):** if the diagnostic run failed in
 a regime that violates the mechanism's necessary preconditions (e.g. scale-dependent
@@ -387,7 +431,7 @@ Check process is running and GPU is allocated.
 When the run reaches any terminal state, append the `run-final` record to
 `orbit-research/RUN_LEDGER.jsonl` before writing the final diagnostic report. Terminal
 states include success, script exception, OOM, timeout, killed process, missing output, or
-partial results. Then write `DIAGNOSTIC_RUN_REPORT.md` with:
+partial results. Then write the formal diagnostic report with:
 
 - `run_id`
 - exact command
@@ -397,9 +441,38 @@ partial results. Then write `DIAGNOSTIC_RUN_REPORT.md` with:
 - W&B run id, if present
 - status and failure type when not completed
 
-If no result file is produced, still write `DIAGNOSTIC_RUN_REPORT.md` and
-`DIAGNOSTIC_RUN_AUDIT.md`; the audit verdict should be `FIX_BEFORE_GPU`,
-`REDESIGN_EXPERIMENT`, or `ERROR` with a reason rather than silently omitting the run.
+When `ORBIT_DIAGNOSTIC_ID` or `— diagnostic-id:` is present, the preferred formal
+diagnostic paths are the per-session files:
+
+```text
+orbit-research/diagnostics/<diagnostic_id>/RUN_REPORT.md
+orbit-research/diagnostics/<diagnostic_id>/RUN_AUDIT.md
+```
+
+Also write compatibility latest copies to `orbit-research/DIAGNOSTIC_RUN_REPORT.md` and
+`orbit-research/DIAGNOSTIC_RUN_AUDIT.md` if legacy consumers still need them. If no
+`diagnostic_id` is available, write only the compatibility latest files.
+
+If no result file is produced, still write the report and audit; the audit verdict should
+be `FIX_BEFORE_GPU`, `REDESIGN_EXPERIMENT`, or `ERROR` with a reason rather than silently
+omitting the run.
+
+Then update executable session state:
+
+```bash
+python3 tools/diagnostic_session.py update-run \
+  --repo . \
+  --diagnostic-id "<diagnostic_id>" \
+  --run-id "<run_id>" \
+  --result-path "<result path>"
+
+python3 tools/diagnostic_session.py update-audit \
+  --repo . \
+  --diagnostic-id "<diagnostic_id>" \
+  --verdict "<PASS|FIX_BEFORE_GPU|REDESIGN_EXPERIMENT|ERROR>" \
+  --regime-preserved "<true|false|unknown>" \
+  --mechanism-rejected "<true|false>"
+```
 
 ### Step 6: Feishu Notification (if configured)
 

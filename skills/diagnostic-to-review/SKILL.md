@@ -111,16 +111,22 @@ Also inspect when present:
 
 Phase 0 creates a deterministic context for this run:
 
-- `input_hash`: SHA-256 over normalized `$ARGUMENTS`, referenced manifest or
-  `experiment_pack` content hash, selected diagnostic command, and relevant prereq
-  artifact hashes (`PLAN_CODE_AUDIT.md`, `experiment_pack`, null-result contract).
-- `diagnostic_id`: `diag_<UTC YYYYMMDDTHHMMSSZ>_<input_hash[0:8]>` for a fresh run.
-  On resume, reuse the existing `diagnostic_id` only if its
-  `DIAGNOSTIC_CONTEXT.json.input_hash` matches the new `input_hash`.
+- `input_hash`: SHA-256 over normalized formal diagnostic input. The executable helper
+  computes it so repeated invocations do not drift by prompt interpretation.
+- `diagnostic_id`: `diag_<UTC YYYYMMDD_HHMMSS>_<input_hash prefix>` for a fresh run.
+  On resume, reuse an existing `diagnostic_id` only if its
+  `DIAGNOSTIC_CONTEXT.json.input_hash` matches the current input hash.
 - `diagnostic_kind`: one of
-  `sanity | provenance | implementation | local_mechanism_probe | paper_bearing | scaleup | unknown`.
+  `implementation_smoke | headroom_probe | local_mechanism_probe | paper_bearing_main |
+  paper_bearing_ablation | scaleup_candidate | unknown`.
 - `claim_relevance`: one of
-  `none | local_only | affects_claim_scope | paper_bearing | unknown`.
+  `none | local | paper_scope_affecting | primary_evidence | unknown`.
+
+Use the helper instead of hand-rolling these fields:
+
+```bash
+python3 tools/diagnostic_session.py create --repo . --input "$ARGUMENTS"
+```
 
 ## Phase 0: Context, Preflight, Codex Precondition
 
@@ -131,17 +137,29 @@ Steps:
 
 1. Parse `$ARGUMENTS` as a diagnostic command, manifest path, grid spec, or
    `experiment/experiment_pack.json`.
-2. Compute `diagnostic_id` and `input_hash`.
-3. Classify or accept `diagnostic_kind`.
-4. Classify `claim_relevance`.
-5. Create:
+2. Create or reuse the session context with:
+
+   ```bash
+   python3 tools/diagnostic_session.py create --repo . --input "$ARGUMENTS"
+   ```
+
+   If the user explicitly resumes, first run:
+
+   ```bash
+   python3 tools/diagnostic_session.py validate-resume --repo . --input "$ARGUMENTS"
+   ```
+
+   Treat a nonzero result as a resume blocker; do not fall back to old fixed paths.
+3. Read `diagnostic_id`, `input_hash`, `diagnostic_kind`, and `claim_relevance` from
+   `orbit-research/diagnostics/<diagnostic_id>/DIAGNOSTIC_CONTEXT.json`.
+4. Create:
 
    ```text
    orbit-research/diagnostics/<diagnostic_id>/
    orbit-research/codex-prompts/
    ```
 
-6. Verify prerequisites:
+5. Verify prerequisites:
    - G11: `orbit-research/PLAN_CODE_AUDIT.md` verdict is `MATCHES_PLAN` or scoped
      `PARTIAL_MISMATCH` irrelevant to this diagnostic.
    - G8: null-result interpretation exists in `experiment_pack.null_result_contract` or
@@ -151,12 +169,9 @@ Steps:
      single-component baseline reproduction.
    - The input resolves to a formal diagnostic command/manifest/grid, not only STOP B
      probe artifacts.
-7. Check Codex precondition using `codex-precondition.md` section 3.
-8. Write:
-
-   ```text
-   orbit-research/diagnostics/<diagnostic_id>/DIAGNOSTIC_CONTEXT.json
-   ```
+6. Check Codex precondition using `codex-precondition.md` section 3.
+7. Update `DIAGNOSTIC_CONTEXT.json` only through `tools/diagnostic_session.py` when
+   recording run or audit state.
 
 `DIAGNOSTIC_CONTEXT.json` must include:
 
@@ -164,19 +179,19 @@ Steps:
 {
   "schema_version": "0.1",
   "diagnostic_id": "<diagnostic_id>",
+  "input": "$ARGUMENTS",
   "input_hash": "<sha256>",
-  "raw_arguments": "$ARGUMENTS",
-  "diagnostic_kind": "paper_bearing",
-  "claim_relevance": "paper_bearing",
-  "formal_input": {
-    "kind": "command|manifest|grid|experiment_pack",
-    "value": "<resolved command or path>"
-  },
-  "result_candidates": [],
-  "expected_result_paths": [],
+  "diagnostic_kind": "paper_bearing_main",
+  "claim_relevance": "primary_evidence",
+  "status": "initialized",
   "run_id": null,
-  "created_at": "<ISO 8601 UTC>",
-  "codex_precondition": {"ready": true}
+  "result_paths": [],
+  "audit": {
+    "verdict": null,
+    "regime_preserved": "unknown",
+    "mechanism_rejected": false
+  },
+  "artifact_inventory": []
 }
 ```
 
@@ -248,10 +263,18 @@ Required fields:
 
 Do not skip a phase merely because a fixed legacy path exists.
 
+Before approving a resume, run:
+
+```bash
+python3 tools/diagnostic_session.py validate-resume --repo . --input "$ARGUMENTS"
+```
+
 A phase may be skipped only if all of these are true:
 
-1. `DIAGNOSTIC_TO_REVIEW_STATE.json.diagnostic_id` matches the current `diagnostic_id`.
-2. `DIAGNOSTIC_TO_REVIEW_STATE.json.input_hash` matches the current `input_hash`.
+1. `DIAGNOSTIC_CONTEXT.json.diagnostic_id` and
+   `DIAGNOSTIC_TO_REVIEW_STATE.json.diagnostic_id` match the current `diagnostic_id`.
+2. `DIAGNOSTIC_CONTEXT.json.input_hash` and
+   `DIAGNOSTIC_TO_REVIEW_STATE.json.input_hash` match the current `input_hash`.
 3. The required per-diagnostic artifact exists under
    `orbit-research/diagnostics/<diagnostic_id>/`.
 4. The artifact references the same `run_id` or exact result path recorded in
@@ -278,6 +301,8 @@ Phase artifact map:
 Run the formal diagnostic:
 
 ```bash
+ORBIT_DIAGNOSTIC_ID="<diagnostic_id>" \
+ORBIT_DIAGNOSTIC_OUTPUT_ROOT="orbit-research/diagnostics/<diagnostic_id>" \
 /run-experiment "<formal command or manifest from DIAGNOSTIC_CONTEXT.json>"
 ```
 
@@ -297,6 +322,16 @@ Update `DIAGNOSTIC_CONTEXT.json` with:
 - W&B run IDs or dashboard URLs
 - log paths
 - ledger start/final record references
+
+Record the run in executable session state:
+
+```bash
+python3 tools/diagnostic_session.py update-run \
+  --repo . \
+  --diagnostic-id "<diagnostic_id>" \
+  --run-id "<run_id>" \
+  --result-path "<exact result path>"
+```
 
 Compatibility latest copies may be written to:
 
@@ -326,6 +361,17 @@ Routing:
 
 There is no route where G12 regime failure rejects the mechanism. If the diagnostic regime
 did not preserve mechanism preconditions, the diagnostic is invalid for mechanism rejection.
+
+After parsing `RUN_AUDIT.md`, record the structured audit fields:
+
+```bash
+python3 tools/diagnostic_session.py update-audit \
+  --repo . \
+  --diagnostic-id "<diagnostic_id>" \
+  --verdict PASS \
+  --regime-preserved true \
+  --mechanism-rejected false
+```
 
 ### Phase 2: Analyze Exact Results
 
