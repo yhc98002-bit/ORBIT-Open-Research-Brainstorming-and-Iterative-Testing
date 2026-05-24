@@ -1,17 +1,18 @@
 ---
-name: "research-review"
-description: "Get a deep critical review of research from Claude via claude-review MCP. Use when user says \"review my research\", \"help me review\", \"get external review\", or wants critical feedback on research ideas, papers, or experimental results."
+name: research-review
+description: Get a deep critical review of research from GPT via Codex MCP. Use when user says "review my research", "help me review", "get external review", or wants critical feedback on research ideas, papers, or experimental results.
+argument-hint: [topic-or-scope]
+allowed-tools: Bash(*), Read, Grep, Glob, Write, Edit, Agent, mcp__codex__codex, mcp__codex__codex-reply
 ---
 
-> Override for Codex users who want **Claude Code**, not a second Codex agent, to act as the reviewer. Install this package **after** `skills/skills-codex/*`.
-
-# Research Review via `claude-review` MCP (high-rigor review)
+# Research Review via Codex MCP (xhigh reasoning)
 
 Get a multi-round critical review of research work from an external LLM with maximum reasoning depth.
 
 ## Constants
 
-- **REVIEWER_MODEL = `claude-review`** — Claude reviewer invoked through the local `claude-review` MCP bridge. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
+- REVIEWER_MODEL = `gpt-5.5` — Model used via Codex MCP. Must be an OpenAI model (e.g., `gpt-5.5`, `o3`, `gpt-4o`)
+- **REVIEWER_BACKEND = `codex`** — Default: Codex MCP (xhigh). Override with `— reviewer: oracle-pro` for GPT-5.5 Pro via Oracle MCP. See `../shared-references/reviewer-routing.md`.
 - **PAPER_MODE = `normal`** — Default review target is a normal publishable AI paper,
   not breakthrough-only.
 - **REVIEW_POSTURE = `collaborator` before STOP A/B; `adversarial` after STOP C** —
@@ -21,14 +22,11 @@ Get a multi-round critical review of research work from an external LLM with max
 
 ## Prerequisites
 
-- Install the base Codex-native skills first: copy `skills/skills-codex/*` into `~/.codex/skills/`.
-- Then install this overlay package: copy `skills/skills-codex-claude-review/*` into `~/.codex/skills/` and allow it to overwrite the same skill names.
-- Register the local reviewer bridge:
+- **Codex MCP Server** configured in Claude Code:
   ```bash
-  codex mcp add claude-review -- python3 ~/.codex/mcp-servers/claude-review/server.py
+  claude mcp add codex -s user -- codex mcp-server
   ```
-- This gives Codex access to `mcp__claude-review__review_start`, `mcp__claude-review__review_reply_start`, and `mcp__claude-review__review_status`.
-
+- This gives Claude Code access to `mcp__codex__codex` and `mcp__codex__codex-reply` tools
 
 ## Workflow
 
@@ -49,10 +47,11 @@ Before calling the external reviewer, compile a comprehensive briefing:
 3. Identify: core claims, methodology, key results, known weaknesses
 
 ### Step 2: Initial Review (Round 1)
-Send a detailed prompt with high-rigor review:
+Send a detailed prompt with xhigh reasoning:
 
 ```
-mcp__claude-review__review_start:
+mcp__codex__codex:
+  config: {"model_reasoning_effort": "xhigh"}
   prompt: |
     [Full research context + specific questions]
     Use REVIEW_POSTURE from the current ORBIT stop boundary.
@@ -74,10 +73,8 @@ mcp__claude-review__review_start:
     4. Whether the work can survive as normal / benchmark / reproduction-plus / system / audit
 ```
 
-After this start call, immediately save the returned `jobId` and poll `mcp__claude-review__review_status` with a bounded `waitSeconds` until `done=true`. Treat the completed status payload's `response` as the reviewer output, and save the completed `threadId` for any follow-up round.
-
 ### Step 3: Iterative Dialogue (Rounds 2-N)
-Use `mcp__claude-review__review_reply_start` with the saved completed `threadId`, then poll `mcp__claude-review__review_status` with the returned `jobId` until `done=true` to continue the conversation:
+Use `mcp__codex__codex-reply` with the returned `threadId` to continue the conversation:
 
 For each round:
 1. **Respond** to criticisms with evidence/counterarguments
@@ -109,7 +106,7 @@ Update project memory/notes with key review conclusions.
 
 ## Key Rules
 
-- Always ask the Claude reviewer for strict, high-rigor feedback.
+- ALWAYS use `config: {"model_reasoning_effort": "xhigh"}` for reviews
 - Send comprehensive context in Round 1 — the external model cannot read your files
 - Be honest about weaknesses — hiding them leads to worse feedback
 - Before STOP A/B, preserve promising ideas and include a survival route for every major
@@ -117,7 +114,7 @@ Update project memory/notes with key review conclusions.
 - After STOP C, adversarial review is appropriate for paper-level claims.
 - Push back on criticisms you disagree with, but accept valid ones
 - Focus on ACTIONABLE feedback — "what experiment would fix this?"
-- Document the completed `threadId` for potential future resumption
+- Document the threadId for potential future resumption
 - The review document should be self-contained (readable without the conversation)
 
 ## Prompt Templates
@@ -142,3 +139,7 @@ ML reviewer and stress-test claims, baselines, controls, reproducibility, and ov
 
 ### For mock review:
 "Please write a mock NeurIPS review with: Summary, Strengths, Weaknesses, Questions for Authors, Score, Confidence, and What Would Move Toward Accept."
+
+## Review Tracing
+
+After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).

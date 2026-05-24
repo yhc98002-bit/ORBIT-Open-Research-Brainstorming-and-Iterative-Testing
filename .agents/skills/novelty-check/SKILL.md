@@ -1,9 +1,9 @@
 ---
-name: "novelty-check"
-description: "Verify research idea novelty against recent literature. Use when user says \"查新\", \"novelty check\", \"有没有人做过\", \"check novelty\", or wants to verify a research idea is novel before implementing."
+name: novelty-check
+description: Verify research idea novelty against recent literature. Use when user says "查新", "novelty check", "有没有人做过", "check novelty", or wants to verify a research idea is novel before implementing.
+argument-hint: [method-or-idea-description]
+allowed-tools: WebSearch, WebFetch, Grep, Read, Glob, mcp__codex__codex
 ---
-
-> Override for Codex users who want **Claude Code**, not a second Codex agent, to act as the reviewer. Install this package **after** `skills/skills-codex/*`.
 
 # Novelty Check Skill
 
@@ -11,7 +11,7 @@ Classify novelty risk and positioning routes for: **$ARGUMENTS**
 
 ## Constants
 
-- **REVIEWER_MODEL = `claude-review`** — Claude reviewer invoked through the local `claude-review` MCP bridge. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
+- REVIEWER_MODEL = `gpt-5.5` — Model used via Codex MCP. Must be an OpenAI model (e.g., `gpt-5.5`, `o3`, `gpt-4o`)
 - **NOVELTY_POLICY = `positioning-first`** — Load `../shared-references/research-posture.md`
   before judging novelty. Similar work is not automatically fatal.
 - **CONCURRENT_WORK_WINDOW = `3 months`** — Recent work goes to
@@ -47,14 +47,10 @@ For EACH core claim, search using ALL available sources:
 3. **Read abstracts**: For each potentially overlapping paper, WebFetch its abstract and related work section
 
 ### Phase C: Cross-Model Positioning Review
-Call REVIEWER_MODEL via `mcp__claude-review__review_start` with high-rigor review:
+Call REVIEWER_MODEL via Codex MCP (`mcp__codex__codex`) with xhigh reasoning:
 ```
-mcp__claude-review__review_start:
-  prompt: |
-    [Full novelty briefing + prior work list + specific novelty questions]
+config: {"model_reasoning_effort": "xhigh"}
 ```
-
-After this start call, immediately save the returned `jobId` and poll `mcp__claude-review__review_status` with a bounded `waitSeconds` until `done=true`. Treat the completed status payload's `response` as the reviewer output, and save the completed `threadId` for any follow-up round.
 Prompt should include:
 - The proposed method description
 - All papers found in Phase B
@@ -122,3 +118,7 @@ STRONG_BLOCKER.]
   concurrent by default and add it to the watchlist
 - After STOP A, ordinary new related work should not destabilize a frozen proposal. Use
   the watchlist unless the work is a `STRONG_BLOCKER`.
+
+## Review Tracing
+
+After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).

@@ -8,7 +8,7 @@ stabilization areas only; it does not change workflow behavior.
 - Canonical skills: 77
 - All `SKILL.md` files: 254
 - `skills/skills-codex` full mirror status: no drift detected by the baseline audit
-- `.agents/skills` full mirror status: drift remains in 3 skills
+- `.agents/skills` full mirror status: Prompt 4 syncs known drift back to canonical
 - Review overlays remain intentionally partial and catalog-governed
 
 ## Known Stabilization Areas
@@ -34,11 +34,9 @@ stabilization areas only; it does not change workflow behavior.
    - Replace stale source-of-truth language with `claim_ledger.json` and the split paper paths where appropriate.
 
 5. Mirror drift
-   - `python tools/check_skill_mirror.py --repo .` currently reports unexpected `.agents/skills` drift in:
-     - `auto-paper-improvement-loop`
-     - `novelty-check`
-     - `research-review`
-   - Do not edit `.agents/skills` by hand; resolve through the documented mirror policy or sync tooling in a dedicated prompt.
+   - Status: Prompt 4 syncs `.agents/skills` from canonical and adds mirror policy regression tests.
+   - Full mirrors must remain generated from canonical `skills/`; do not edit `.agents/skills` by hand.
+   - CI should run `python tools/check_skill_mirror.py --repo .`.
 
 6. Diagnostic session helper missing
    - Add or document helper support for `diagnostic_id`, `input_hash`, diagnostic context, and per-diagnostic artifact paths.
@@ -66,5 +64,5 @@ stabilization areas only; it does not change workflow behavior.
 
 ## Baseline Validation Notes
 
-- `tools/check_skill_mirror.py` is expected to fail until `.agents/skills` drift is resolved.
+- `tools/check_skill_mirror.py` should pass after Prompt 4; future nonzero exits indicate new mirror drift.
 - This baseline refresh intentionally does not fix mirror drift, schema issues, skill behavior, or shared-reference semantics.
