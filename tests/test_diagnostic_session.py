@@ -126,6 +126,31 @@ class DiagnosticSessionTest(unittest.TestCase):
             self.assertFalse(audit["mechanism_rejected"])
             self.assertEqual(updated["context"]["status"], "blocked")
 
+    def test_update_audit_rejects_mechanism_rejection_when_regime_not_preserved(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            created = run_json("create", "--repo", str(repo), "--input", "python train.py --smoke")
+
+            result = run_tool(
+                "update-audit",
+                "--repo",
+                str(repo),
+                "--diagnostic-id",
+                created["diagnostic_id"],
+                "--verdict",
+                "REDESIGN_EXPERIMENT",
+                "--regime-preserved",
+                "false",
+                "--mechanism-rejected",
+                "true",
+                "--json",
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["status"], "error")
+            self.assertIn("regime_preserved=false", payload["message"])
+
     def test_diagnostic_to_review_references_session_helper(self):
         text = (SKILLS / "diagnostic-to-review" / "SKILL.md").read_text(encoding="utf-8")
 

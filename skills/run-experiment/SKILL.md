@@ -201,8 +201,9 @@ to the matching `RUN_LEDGER.jsonl` start/final records.
 a regime that violates the mechanism's necessary preconditions (e.g. scale-dependent
 emergent behaviour ablated by running at too small a scale, or a precondition from
 `ABSTRACT_TASK_MECHANISM.md` / `MECHANISM_IDEATION.md` that the diagnostic regime
-ablated), do NOT issue `REDESIGN_EXPERIMENT`. Instead, recommend redesigning the
-diagnostic to a regime where the mechanism could in principle manifest, and document
+ablated), return `REDESIGN_EXPERIMENT` with `regime_preserved=false` and
+`mechanism_rejected=false`. If `regime_preserved=false`, do not reject the mechanism.
+Route to diagnostic redesign in a regime where the mechanism could manifest, and document
 the regime check explicitly in `DIAGNOSTIC_RUN_AUDIT.md`. If the regime check is
 unanswerable, return `ERROR` with reason `regime_check_unanswerable` and escalate to
 `HUMAN_DECISION_REQUIRED` rather than rejecting the mechanism. (See

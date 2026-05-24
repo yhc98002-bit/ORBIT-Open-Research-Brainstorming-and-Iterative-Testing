@@ -361,6 +361,12 @@ Routing:
 
 There is no route where G12 regime failure rejects the mechanism. If the diagnostic regime
 did not preserve mechanism preconditions, the diagnostic is invalid for mechanism rejection.
+If `regime_preserved=false`, do not reject the mechanism. Route to diagnostic redesign in
+a regime where the mechanism could manifest, and keep `mechanism_rejected=false`.
+
+Future v2.1 may split `REDESIGN_EXPERIMENT` into `REDESIGN_DIAGNOSTIC` and
+`MECHANISM_NOT_SUPPORTED`. For v2.0, keep the legacy verdict token but require structured
+regime fields.
 
 After parsing `RUN_AUDIT.md`, record the structured audit fields:
 

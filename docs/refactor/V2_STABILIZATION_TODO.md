@@ -47,7 +47,7 @@ stabilization areas only; it does not change workflow behavior.
    - Ensure experiment-bridge probes remain separate from formal diagnostic artifacts.
 
 8. G12 semantics consistency
-   - Ensure regime-check semantics consistently distinguish `regime_preserved=false` from mechanism rejection.
+   - Status: Prompt 6 normalizes G12 around `verdict`, `regime_preserved`, and `mechanism_rejected`.
    - Route failed regime checks to diagnostic redesign, not automatic mechanism rejection.
 
 9. Claim ledger negative result semantics

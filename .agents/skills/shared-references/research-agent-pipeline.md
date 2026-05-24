@@ -328,12 +328,27 @@ config, and produce logs sufficient for null-result diagnosis.
 
 **G12 check (regime-aware):** if the run failed in a regime that violates the mechanism's
 necessary preconditions (e.g., scale-dependent emergent behaviour ablated), do not reject
-the mechanism — recommend redesign to a regime where the mechanism could manifest.
+the mechanism. Return `REDESIGN_EXPERIMENT` with `regime_preserved=false` and
+`mechanism_rejected=false`, then route to diagnostic redesign in a regime where the
+mechanism could manifest.
 
 Required artifacts: `RUN_LEDGER.jsonl` + `DIAGNOSTIC_RUN_REPORT.md` + `DIAGNOSTIC_RUN_AUDIT.md`
 *(v1.0 aliases: `TINY_RUN_REPORT.md` + `TINY_RUN_AUDIT.md`)*
 
-Required ending: `PASS | FIX_BEFORE_GPU | REDESIGN_EXPERIMENT`
+Required structured footer:
+
+```yaml
+verdict: PASS | FIX_BEFORE_GPU | REDESIGN_EXPERIMENT | ERROR
+regime_preserved: true | false | unknown
+mechanism_rejected: true | false
+```
+
+Future v2.1 may split `REDESIGN_EXPERIMENT` into `REDESIGN_DIAGNOSTIC` and
+`MECHANISM_NOT_SUPPORTED`. For v2.0, keep the legacy verdict token but require structured
+regime fields.
+
+If `regime_preserved=false`, do not reject the mechanism. Route to diagnostic redesign in
+a regime where the mechanism could manifest.
 
 `RUN_LEDGER.jsonl` is append-only. Every run writes a `run-start` record before execution
 and a `run-final` record after completion, failure, OOM, timeout, kill, no-result, or
@@ -537,8 +552,9 @@ G11 IF PLAN_CODE_AUDIT.md verdict = CRITICAL_MISMATCH
 
 G12 IF a tiny / diagnostic run failed in a regime that violates the mechanism's necessary
     preconditions
-    THEN do NOT reject the mechanism; require diagnostic redesign to a regime where the
-    mechanism could in principle manifest.   (Replaces v1.0 "tiny-run failure → kill idea.")
+    THEN set regime_preserved=false and mechanism_rejected=false; do NOT reject the
+    mechanism; require diagnostic redesign to a regime where the mechanism could in
+    principle manifest.   (Replaces v1.0 "tiny-run failure → kill idea.")
 
 G13 IF experiment uses test set anywhere in tuning/selection
     THEN block; require held-out test isolation.   (No exception.)
@@ -633,7 +649,7 @@ objectives, not executor summaries or leading interpretations.
 | `COMPONENT_LADDER.md` | `COMPONENT_BUNDLE_LADDER.md` | Generalised: single component OR smallest mechanism-preserving bundle |
 | `TINY_RUN_PLAN.md` | `DIAGNOSTIC_EXPERIMENT_PLAN.md` | Cheapest valid diagnostic, not always tiny |
 | `TINY_RUN_REPORT.md` | `DIAGNOSTIC_RUN_REPORT.md` | Same role, regime-aware |
-| `TINY_RUN_AUDIT.md` | `DIAGNOSTIC_RUN_AUDIT.md` | Same verdict tokens (`PASS \| FIX_BEFORE_GPU \| REDESIGN_EXPERIMENT`) |
+| `TINY_RUN_AUDIT.md` | `DIAGNOSTIC_RUN_AUDIT.md` | Same v2.0 verdict token family plus structured `regime_preserved` / `mechanism_rejected` fields |
 
 ### Stage renames (verdict tokens preserved)
 
@@ -650,7 +666,7 @@ objectives, not executor summaries or leading interpretations.
 | 7 Min Diagnostic Plan | 16 | "Cheapest valid diagnostic" |
 | 7.5 Plan-Code Audit | 15 | Now an explicit loop; same verdict tokens |
 | 8 Tiny Run | (folded into 16/17) | Diagnostic, not necessarily tiny |
-| 8.5 Tiny Run Audit | 17 | Same verdict tokens; G12 added |
+| 8.5 Tiny Run Audit | 17 | Same v2.0 verdict token family; G12 now requires structured regime fields |
 | 9 Result Interpretation | 18 | Same role |
 | 10 Re-read Literature | 19 | Now explicitly a loop |
 | 11 Scale-up | 20 | + G15 + G19 (HUMAN_DECISION_NOTE) |

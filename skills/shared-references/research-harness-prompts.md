@@ -565,13 +565,20 @@ Check:
 7. Does the run reveal implementation mismatch?
 8. **G12 regime check (mandatory):** if the run failed, did the failure regime preserve
    the mechanism's necessary preconditions (per ABSTRACT_TASK_MECHANISM and
-   MECHANISM_IDEATION)? If the regime ablated a precondition the mechanism needs, do
-   NOT recommend REDESIGN_EXPERIMENT — recommend redesigning the diagnostic to a regime
-   where the mechanism could in principle manifest. Document the regime check explicitly.
+   MECHANISM_IDEATION)? If the regime ablated a precondition the mechanism needs, return
+   REDESIGN_EXPERIMENT with `regime_preserved: false` and `mechanism_rejected: false`;
+   route to diagnostic redesign in a regime where the mechanism could in principle
+   manifest. Document the regime check explicitly.
 9. Should we proceed, fix code, or redesign?
 
-Return on its own line, exactly one of:
-PASS | FIX_BEFORE_GPU | REDESIGN_EXPERIMENT
+Return this structured footer:
+
+verdict: PASS | FIX_BEFORE_GPU | REDESIGN_EXPERIMENT | ERROR
+regime_preserved: true | false | unknown
+mechanism_rejected: true | false
+
+If `regime_preserved=false`, do not reject the mechanism. Route to diagnostic redesign in
+a regime where the mechanism could manifest.
 
 Write DIAGNOSTIC_RUN_AUDIT.md (v1.0 alias: TINY_RUN_AUDIT.md).
 ```
@@ -624,8 +631,9 @@ RESULT_INTERPRETATION.md.
 You are at Stage 18.5. Codex is in COLLABORATIVE mode.
 
 Trigger: RESULT_INTERPRETATION shows tie or failure, or Stage 17 returned
-REDESIGN_EXPERIMENT (with a regime that DID preserve mechanism preconditions — otherwise
-G12 routes back to Stage 16, not here).
+REDESIGN_EXPERIMENT with `regime_preserved=true` and a valid mechanism-rejection argument.
+If `regime_preserved=false`, G12 routes back to Stage 16 diagnostic redesign and
+`mechanism_rejected=false`; do not use invalid-regime evidence to kill the mechanism.
 
 Inputs:
 - RESULT_INTERPRETATION.md
@@ -898,7 +906,7 @@ Verdict-token contracts are preserved verbatim where indicated.
 | 7 | 16 | "Cheapest valid diagnostic" framing |
 | 7.5 | 15 | `MATCHES_PLAN \| PARTIAL_MISMATCH \| CRITICAL_MISMATCH \| ERROR` preserved; required artifacts list expanded to v1.3 set |
 | 8 | (folded into 16/17) | "Tiny run" replaced by diagnostic run |
-| 8.5 | 17 | `PASS \| FIX_BEFORE_GPU \| REDESIGN_EXPERIMENT` preserved; G12 regime check added |
+| 8.5 | 17 | `PASS \| FIX_BEFORE_GPU \| REDESIGN_EXPERIMENT \| ERROR` preserved for v2.0; G12 now requires structured regime fields |
 | 9 | 18 | Same prompt body |
 | 10 | 19 | Now explicitly a loop |
 | 11 | 20 | + G15 + G19 (HUMAN_DECISION_NOTE) |

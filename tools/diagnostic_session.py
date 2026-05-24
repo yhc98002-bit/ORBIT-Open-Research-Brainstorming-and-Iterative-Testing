@@ -214,6 +214,10 @@ def validate_context(context: Mapping[str, Any]) -> None:
         raise DiagnosticSessionError("invalid audit.regime_preserved: %r" % audit.get("regime_preserved"))
     if not isinstance(audit.get("mechanism_rejected"), bool):
         raise DiagnosticSessionError("audit.mechanism_rejected must be boolean")
+    if audit.get("regime_preserved") == "false" and audit.get("mechanism_rejected") is True:
+        raise DiagnosticSessionError(
+            "invalid G12 audit: regime_preserved=false cannot reject the mechanism"
+        )
 
 
 def iter_context_paths(repo: Path) -> Iterable[Path]:
@@ -397,6 +401,10 @@ def update_audit(args: argparse.Namespace) -> Dict[str, Any]:
     repo = Path(args.repo).resolve()
     path = context_path(repo, args.diagnostic_id)
     context = load_context(path)
+    if args.regime_preserved == "false" and args.mechanism_rejected is True:
+        raise DiagnosticSessionError(
+            "invalid G12 audit: regime_preserved=false requires mechanism_rejected=false"
+        )
     context["audit"] = {
         "verdict": args.verdict,
         "regime_preserved": args.regime_preserved,

@@ -149,11 +149,11 @@
           },
           "kind": {
             "type": "string",
-            "description": "Diagnostic class, for example paper_bearing_main, sanity, implementation, or scaleup."
+            "description": "Diagnostic class, for example implementation_smoke, headroom_probe, local_mechanism_probe, paper_bearing_main, paper_bearing_ablation, scaleup_candidate, or unknown."
           },
           "claim_relevance": {
             "type": "string",
-            "description": "How this diagnostic relates to claims, for example primary_evidence, scope_check, local_only, or none."
+            "description": "How this diagnostic relates to claims, for example none, local, paper_scope_affecting, primary_evidence, or unknown."
           },
           "command": {
             "type": [

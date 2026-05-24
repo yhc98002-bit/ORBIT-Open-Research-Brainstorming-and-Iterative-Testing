@@ -206,16 +206,26 @@ Check:
    the mechanism's necessary preconditions (per ABSTRACT_TASK_MECHANISM and the chosen
    candidate from MECHANISM_IDEATION / ALGORITHM_TOURNAMENT)? If the regime ablated a
    precondition the mechanism needs (e.g. scale-dependent emergent behaviour ablated by
-   running at too small a scale), do NOT recommend REDESIGN_EXPERIMENT — recommend
-   redesigning the diagnostic to a regime where the mechanism could in principle manifest.
-   Document the regime check explicitly in the audit body. If you cannot determine
-   whether the regime was preserved, return ERROR with reason "regime_check_unanswerable"
-   and escalate to HUMAN_DECISION_REQUIRED.
+   running at too small a scale), return REDESIGN_EXPERIMENT with `regime_preserved:
+   false` and `mechanism_rejected: false`; route to diagnostic redesign in a regime where
+   the mechanism could in principle manifest. Document the regime check explicitly in the
+   audit body. If you cannot determine whether the regime was preserved, return ERROR with
+   reason "regime_check_unanswerable" and escalate to HUMAN_DECISION_REQUIRED.
 9. Should we proceed, fix code, or redesign?
 
-Return on its own line, exactly one of:
-PASS | FIX_BEFORE_GPU | REDESIGN_EXPERIMENT
+Return this structured footer:
+
+verdict: PASS | FIX_BEFORE_GPU | REDESIGN_EXPERIMENT | ERROR
+regime_preserved: true | false | unknown
+mechanism_rejected: true | false
 ```
+
+If `regime_preserved=false`, do not reject the mechanism. Route to diagnostic redesign in
+a regime where the mechanism could manifest.
+
+Future v2.1 may split REDESIGN_EXPERIMENT into REDESIGN_DIAGNOSTIC and
+MECHANISM_NOT_SUPPORTED. For v2.0, keep the legacy verdict token but require structured
+regime fields.
 
 The audit artifact is named `DIAGNOSTIC_RUN_AUDIT.md` in v1.3. Consumers (experiment-queue,
 research-pipeline) accept the v1.0 alias `TINY_RUN_AUDIT.md` for one major version.
@@ -229,8 +239,8 @@ research-pipeline) accept the v1.0 alias `TINY_RUN_AUDIT.md` for one major versi
   are irrelevant to the scale-up wave.
 - `FIX_BEFORE_GPU` (Diagnostic Run Audit) blocks full run; loop fix → re-audit.
 - `REDESIGN_EXPERIMENT` (Diagnostic Run Audit) sends the project back to Stage 16
-  (Cheapest Valid Diagnostic) — but only if G12's regime check passed; otherwise the
-  audit should have recommended diagnostic redesign without rejecting the mechanism.
+  (Cheapest Valid Diagnostic). If `regime_preserved=false`, do not reject the mechanism;
+  redesign the diagnostic regime and record `mechanism_rejected=false`.
 - `ERROR` (audit could not complete because required inputs are incomplete or a regime
   check is unanswerable) blocks any run that would rely on the failed audit. Fix the input
   set or obtain an explicit human decision for the unanswerable regime before continuing.
