@@ -38,6 +38,46 @@ def write_json(path: Path, data: dict) -> None:
 
 
 class ValidateOrbitPackTest(unittest.TestCase):
+    def test_experiment_pack_missing_formal_diagnostic_command_fails(self):
+        project = copy_fixture(self)
+        pack_path = project / "experiment" / "experiment_pack.json"
+        pack = load_json(pack_path)
+        diagnostic = pack["formal_diagnostics"][0]
+        diagnostic["command"] = ""
+        diagnostic.pop("manifest", None)
+        diagnostic.pop("manifest_path", None)
+        diagnostic.pop("grid_spec", None)
+        write_json(pack_path, pack)
+
+        result = run_validator(project, "--pack", "experiment_pack")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("must include command, manifest, manifest_path, or grid_spec", result.stdout)
+
+    def test_experiment_pack_duplicate_formal_diagnostic_id_fails(self):
+        project = copy_fixture(self)
+        pack_path = project / "experiment" / "experiment_pack.json"
+        pack = load_json(pack_path)
+        pack["formal_diagnostics"].append(dict(pack["formal_diagnostics"][0]))
+        write_json(pack_path, pack)
+
+        result = run_validator(project, "--pack", "experiment_pack")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("duplicate formal diagnostic id", result.stdout)
+
+    def test_experiment_pack_rejects_probe_as_formal_diagnostic(self):
+        project = copy_fixture(self)
+        pack_path = project / "experiment" / "experiment_pack.json"
+        pack = load_json(pack_path)
+        diagnostic = pack["formal_diagnostics"][0]
+        diagnostic["id"] = pack["probes"][0]["id"]
+        diagnostic["command"] = "experiment/PROBE_REPORT.md"
+        write_json(pack_path, pack)
+
+        result = run_validator(project, "--pack", "experiment_pack")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("reuses a probe id", result.stdout)
+        self.assertIn("STOP B probe artifact", result.stdout)
+
     def test_duplicate_claim_id_fails(self):
         project = copy_fixture(self)
         ledger_path = project / "claims" / "claim_ledger.json"

@@ -50,11 +50,15 @@ Canonical flow:
 - **`plan-only`**: approved proposal -> experiment plan artifacts only.
 - **`audit-only`**: experiment plan -> implementation -> `PLAN_CODE_AUDIT.md`, no GPU/probe.
 - **`probe`**: default. Plan -> implementation -> audit -> limited sanity/probe.
-- **`full-bridge`**: explicit opt-in. After plan/audit/probe, call
-  `/diagnostic-to-review` for formal diagnostic execution. This mode must not call
-  `/auto-review-loop` directly.
+- **`full-bridge`**: explicit opt-in only. After plan/audit/probe, call
+  `/diagnostic-to-review` for formal diagnostic execution only when the user passes
+  `— confirm-stop-b-reviewed: true`. This mode must not call `/auto-review-loop`
+  directly.
 
 Parse mode from `— mode: <plan-only|audit-only|probe|full-bridge>`. Default: `probe`.
+If `— mode: full-bridge` is present without `— confirm-stop-b-reviewed: true`, treat it
+as normal STOP B handoff: write the pack/views/probe outputs, stop, and set the safe next
+command to `/diagnostic-to-review "experiment/experiment_pack.json"`.
 
 ## Inputs
 
@@ -110,7 +114,8 @@ compatibility views:
 - `orbit-research/ALGORITHMIC_FORMALIZATION.md`
 - `orbit-research/DIAGNOSTIC_EXPERIMENT_PLAN.md`
 - `experiment_pack.formal_diagnostics[]` entries with `id`, `kind`,
-  `claim_relevance`, a `command` or manifest path, and `expected_result_paths[]`.
+  `claim_relevance`, a `command` or manifest path, `expected_result_paths[]`,
+  `success_signal`, and `null_result_interpretation`.
 
 Implementation/audit outputs:
 
@@ -127,8 +132,8 @@ Probe outputs when implementation/headroom probes are used:
 - `experiment_pack.probes[]`
 - concise probe notes in `refine-logs/EXPERIMENT_TRACKER.md` or `orbit-research/PIPELINE_SUMMARY.md`
 
-Formal diagnostic outputs are **not** produced by this skill. They remain owned by
-`/diagnostic-to-review`:
+Formal diagnostic outputs are **not** produced by this skill. STOP B probes are
+implementation/headroom aids; formal diagnostics belong to `/diagnostic-to-review`:
 
 - `orbit-research/RUN_LEDGER.jsonl`
 - `orbit-research/DIAGNOSTIC_RUN_REPORT.md`
@@ -219,8 +224,16 @@ Is this code/plan/probe status good enough for formal diagnostics?
 ```
 
 If mode is `full-bridge`, call `/diagnostic-to-review` after writing the STOP B summary.
-Do not call `/auto-review-loop` directly; `/diagnostic-to-review` owns conditional-required
-claim/review routing.
+This call is allowed only when `— confirm-stop-b-reviewed: true` is present, meaning the
+user explicitly approved STOP B plan/code/probe status for formal diagnostics. Without
+that confirmation, do not call `/diagnostic-to-review`; leave the safe next command as:
+
+```text
+/diagnostic-to-review "experiment/experiment_pack.json"
+```
+
+Do not call `/auto-review-loop` directly; `/diagnostic-to-review` owns
+conditional-required claim/review routing.
 
 ## Output Protocols
 
@@ -238,6 +251,10 @@ claim/review routing.
   generated views or compatibility copies.
 - Probe artifacts are `experiment/PROBE_REPORT.md`, `experiment/PROBE_AUDIT.md`, and
   `experiment/HEADROOM_NOTE.md`; formal diagnostic artifacts are not probe artifacts.
+- `experiment_pack.formal_diagnostics[]` is the only handoff list for formal diagnostics.
+  Probe entries in `experiment_pack.probes[]` do not satisfy formal diagnostics.
+- `full-bridge` must not bypass STOP B review; it requires
+  `— confirm-stop-b-reviewed: true`.
 - Every committed experiment must change a research decision. Paper-claim defense applies
   only to paper-bearing experiments.
 - Never compare predictions against another model's output as ground truth; use dataset

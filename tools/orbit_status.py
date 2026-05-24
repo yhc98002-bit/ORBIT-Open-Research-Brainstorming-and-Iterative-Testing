@@ -100,6 +100,22 @@ REVIEW_BAD = {
 PROBE_GOOD = {"PASS", "PASSED", "OK", "COMPLETE", "COMPLETED", "READY"}
 PROBE_BAD = {"FAIL", "FAILED", "BLOCKED", "ERROR", "CRITICAL_MISMATCH"}
 PROBE_RUNNING = {"RUNNING", "IN_PROGRESS", "STARTED"}
+VALID_DIAGNOSTIC_KINDS = {
+    "implementation_smoke",
+    "headroom_probe",
+    "local_mechanism_probe",
+    "paper_bearing_main",
+    "paper_bearing_ablation",
+    "scaleup_candidate",
+    "unknown",
+}
+VALID_CLAIM_RELEVANCE = {
+    "none",
+    "local",
+    "paper_scope_affecting",
+    "primary_evidence",
+    "unknown",
+}
 
 
 def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
@@ -268,6 +284,10 @@ def formal_diagnostic_entries(pack: Mapping[str, Any]) -> List[Mapping[str, Any]
     entries: List[Mapping[str, Any]] = []
     for item in diagnostics:
         if not isinstance(item, Mapping):
+            continue
+        if item.get("kind") not in VALID_DIAGNOSTIC_KINDS:
+            continue
+        if item.get("claim_relevance") not in VALID_CLAIM_RELEVANCE:
             continue
         if formal_diagnostic_input(item):
             entries.append(item)

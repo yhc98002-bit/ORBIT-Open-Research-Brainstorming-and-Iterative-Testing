@@ -141,7 +141,11 @@
         "type": "object",
         "required": [
           "id",
-          "status"
+          "kind",
+          "claim_relevance",
+          "expected_result_paths",
+          "success_signal",
+          "null_result_interpretation"
         ],
         "properties": {
           "id": {
@@ -190,6 +194,18 @@
             "items": {
               "type": "string"
             }
+          },
+          "success_signal": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "null_result_interpretation": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "expected_report": {
             "type": [

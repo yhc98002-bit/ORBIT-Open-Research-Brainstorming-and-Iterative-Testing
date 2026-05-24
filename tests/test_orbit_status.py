@@ -112,6 +112,8 @@ class OrbitStatusTest(unittest.TestCase):
                                 "claim_relevance": "primary_evidence",
                                 "command": "python train.py --diag main",
                                 "expected_result_paths": ["results/diag_main/"],
+                                "success_signal": "main diagnostic improves the primary metric",
+                                "null_result_interpretation": "record unsupported hypothesis",
                                 "status": "planned",
                             }
                         ],

@@ -366,6 +366,22 @@ class SkillIntegrityTest(unittest.TestCase):
 
         self.assertEqual(missing, [])
 
+    def test_experiment_bridge_full_bridge_requires_stop_b_confirmation(self):
+        text = (SKILLS_DIR / "experiment-bridge" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        required = [
+            "— confirm-stop-b-reviewed: true",
+            "full-bridge` is present without `— confirm-stop-b-reviewed: true`",
+            'safe next\ncommand to `/diagnostic-to-review "experiment/experiment_pack.json"`',
+            "STOP B probes are\nimplementation/headroom aids; formal diagnostics belong to `/diagnostic-to-review`",
+            "Probe entries in `experiment_pack.probes[]` do not satisfy formal diagnostics.",
+            "`full-bridge` must not bypass STOP B review",
+        ]
+        missing = [item for item in required if item not in text]
+
+        self.assertEqual(missing, [])
+
     def test_install_docs_do_not_recommend_dangerous_copy_patterns(self):
         docs = [
             ROOT / "README.md",

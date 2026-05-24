@@ -59,6 +59,8 @@
       "expected_result_paths": [
         "results/diag_fixture/"
       ],
+      "success_signal": "Fixture metric improves over control.",
+      "null_result_interpretation": "Record unsupported original hypothesis and stop for STOP C decision.",
       "status": "planned",
       "owner": "diagnostic-to-review",
       "expected_report": "orbit-research/diagnostics/diag_fixture/RUN_REPORT.md",

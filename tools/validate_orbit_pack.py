@@ -20,6 +20,23 @@ except ImportError:  # pragma: no cover - used when imported as tools.validate_o
 
 TOOL_REPO_ROOT = Path(__file__).resolve().parents[1]
 
+VALID_DIAGNOSTIC_KINDS = {
+    "implementation_smoke",
+    "headroom_probe",
+    "local_mechanism_probe",
+    "paper_bearing_main",
+    "paper_bearing_ablation",
+    "scaleup_candidate",
+    "unknown",
+}
+VALID_CLAIM_RELEVANCE = {
+    "none",
+    "local",
+    "paper_scope_affecting",
+    "primary_evidence",
+    "unknown",
+}
+
 JSON_TYPE_NAMES = {
     "object": dict,
     "array": list,
@@ -115,7 +132,9 @@ def validate_updated_at(instance: Mapping[str, Any]) -> List[str]:
 def validate_pack_semantics(name: str, instance: Mapping[str, Any]) -> List[str]:
     errors: List[str] = []
 
-    if name == "claim_ledger":
+    if name == "experiment_pack":
+        errors.extend(experiment_pack_usage_errors(instance))
+    elif name == "claim_ledger":
         errors.extend(claim_ledger_usage_errors(instance))
     elif name == "figure_manifest":
         errors.extend(duplicate_id_errors(instance.get("figures"), "id", "$.figures", "figure id"))
@@ -173,6 +192,73 @@ def duplicate_id_errors(items: Any, key: str, location: str, label: str) -> List
         else:
             seen[value] = index
     return errors
+
+
+def experiment_pack_usage_errors(instance: Mapping[str, Any], location: str = "$") -> List[str]:
+    errors: List[str] = []
+    diagnostics = instance.get("formal_diagnostics")
+    if not isinstance(diagnostics, list):
+        return errors
+
+    errors.extend(
+        duplicate_id_errors(
+            diagnostics,
+            "id",
+            "%s.formal_diagnostics" % location,
+            "formal diagnostic id",
+        )
+    )
+
+    probe_ids = ids_from_items(instance.get("probes"), "id")
+    probe_artifacts = {
+        "experiment/PROBE_REPORT.md",
+        "experiment/PROBE_AUDIT.md",
+        "experiment/HEADROOM_NOTE.md",
+    }
+
+    for index, diagnostic in enumerate(list_items(diagnostics)):
+        diag_id = diagnostic.get("id") or index
+        diag_loc = "%s.formal_diagnostics[%d]" % (location, index)
+
+        if diagnostic.get("id") in probe_ids:
+            errors.append(
+                "%s.id: formal diagnostic %r reuses a probe id; probes do not satisfy formal diagnostics"
+                % (diag_loc, diag_id)
+            )
+
+        kind = diagnostic.get("kind")
+        if kind not in VALID_DIAGNOSTIC_KINDS:
+            errors.append("%s.kind: invalid formal diagnostic kind %r" % (diag_loc, kind))
+
+        relevance = diagnostic.get("claim_relevance")
+        if relevance not in VALID_CLAIM_RELEVANCE:
+            errors.append(
+                "%s.claim_relevance: invalid claim relevance %r"
+                % (diag_loc, relevance)
+            )
+
+        if not formal_diagnostic_input(diagnostic):
+            errors.append(
+                "%s.command: formal diagnostic %r must include command, manifest, manifest_path, or grid_spec"
+                % (diag_loc, diag_id)
+            )
+
+        for key in ("command", "manifest", "manifest_path", "grid_spec", "expected_report", "expected_audit"):
+            value = diagnostic.get(key)
+            if non_empty_string(value) and str(value).strip() in probe_artifacts:
+                errors.append(
+                    "%s.%s: formal diagnostic %r points at STOP B probe artifact %s"
+                    % (diag_loc, key, diag_id, value)
+                )
+    return errors
+
+
+def formal_diagnostic_input(entry: Mapping[str, Any]) -> Optional[str]:
+    for key in ("command", "manifest", "manifest_path", "grid_spec"):
+        value = entry.get(key)
+        if non_empty_string(value):
+            return str(value).strip()
+    return None
 
 
 def claim_ledger_usage_errors(instance: Mapping[str, Any], location: str = "$") -> List[str]:
