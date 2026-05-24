@@ -61,6 +61,7 @@ stabilization areas only; it does not change workflow behavior.
     - If Codex MCP/auth/sandbox fails, export a standalone review prompt and require import before marking review complete.
 
 11. Auto-review-loop red-team mode separation
+    - Status: Prompt 9 separates generic improvement mode from ORBIT red-team verdict mode and documents that STOP C readiness uses only the final verdict token.
     - Keep research review, claim ledger review, paper claim audit, and red-team STOP C review distinct.
     - Avoid treating red-team prose or scores as equivalent to a structured STOP C verdict.
 

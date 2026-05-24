@@ -14,7 +14,9 @@ Autonomously iterate: review → implement fixes → re-review, until the extern
 ## Constants
 
 - MAX_ROUNDS = 4
-- POSITIVE_THRESHOLD: score >= 6/10, or verdict contains "accept", "sufficient", "ready for submission"
+- GENERIC_POSITIVE_THRESHOLD: score >= 6/10, or verdict contains "accept", "sufficient",
+  "ready for submission". This applies only when `ORBIT_RED_TEAM_ONLY = false`; it is
+  never a STOP C paper-readiness rule.
 - REVIEW_DOC: `review-stage/AUTO_REVIEW.md` (cumulative log) *(fall back to `./AUTO_REVIEW.md` for legacy projects)*
 - REVIEWER_MODEL = `gpt-5.5` — Model used via Codex MCP for ORBIT review gates.
 - **REVIEWER_BACKEND = `codex`** — Default: Codex MCP (`gpt-5.5`, xhigh). Override with `— reviewer: oracle-pro` only if explicitly requested. See `../shared-references/reviewer-routing.md`.
@@ -23,10 +25,11 @@ Autonomously iterate: review → implement fixes → re-review, until the extern
   against a normal publishable-paper bar, not a breakthrough-only bar.
 - **HUMAN_CHECKPOINT = false** — When `true`, pause after each round's review (Phase B) and present the score + weaknesses to the user. Wait for user input before proceeding to Phase C. The user can: approve the suggested fixes, provide custom modification instructions, skip specific fixes, or stop the loop early. When `false` (default), the loop runs fully autonomously.
 - **COMPACT = false** — When `true`, (1) read `EXPERIMENT_LOG.md` and `findings.md` instead of parsing full logs on session recovery, (2) append key findings to `findings.md` after each round.
-- **ORBIT_RED_TEAM_ONLY = false** — Set by `— orbit-red-team: true` when called from
-  `/diagnostic-to-review` Stage 23. In this mode the loop may review, weaken claims, and
-  write required-fix routing, but must not launch experiments, patch implementation, or
-  invoke `/result-to-claim`.
+- **ORBIT_RED_TEAM_ONLY = false** — Set by `— orbit-red-team: true`,
+  `ORBIT_RED_TEAM_ONLY=true`, a scope that includes `claims/claim_ledger.json`, or a call
+  from `/diagnostic-to-review` Phase 4 / Stage 23. In this mode the skill reviews once,
+  writes STOP C red-team routing, and must not launch experiments, patch implementation,
+  invoke `/result-to-claim`, or use a score threshold as readiness.
 - **REVIEWER_DIFFICULTY = medium** — Controls how adversarial the reviewer is. Three levels:
   - `medium` (default): Current behavior — MCP-based review, Claude controls what context GPT sees.
   - `hard`: Adds **Reviewer Memory** (GPT tracks its own suspicions across rounds) + **Debate Protocol** (Claude can rebut, GPT rules).
@@ -34,9 +37,26 @@ Autonomously iterate: review → implement fixes → re-review, until the extern
 
 > 💡 Override: `/auto-review-loop "topic" — compact: true, human checkpoint: true, difficulty: hard`
 
-## ORBIT Red-team Gate
+## Mode Selection
 
-This gate is always-on. Before starting any review round, load:
+Use **generic improvement mode** when the user asks for iterative review/fix/re-review,
+paper polishing, or autonomous improvement without a STOP C claim ledger gate. In generic
+mode, keep the existing score-based positive threshold, multi-round loop, and direct fix
+implementation behavior.
+
+Use **ORBIT red-team mode** when any of these are true:
+
+- `$ARGUMENTS` includes `— orbit-red-team: true`;
+- `ORBIT_RED_TEAM_ONLY=true` is set;
+- the review scope includes `claims/claim_ledger.json`;
+- `/diagnostic-to-review` calls this skill from Phase 4.
+
+ORBIT red-team mode is not an improvement loop. It is a STOP C gate review over the
+claim ledger and evidence, and it produces routing for human decision.
+
+## ORBIT red-team Mode
+
+When ORBIT red-team mode is active, before starting the review, load:
 
 - `../shared-references/research-agent-pipeline.md` — v1.3 stage map and Stage 23 (Reviewer
   Red-team Loop) responsibilities
@@ -70,10 +90,31 @@ The red-team review must check each ledger claim row for:
 - forbidden overclaims being complete enough to constrain paper writing;
 - allowed paper sections being appropriate for the evidence strength.
 
+In ORBIT red-team mode:
+
+- Prefer a fresh independent review context. Do not use wording such as "since your last
+  review" unless the user explicitly selected generic improvement mode.
+- Do not implement fixes directly. Code, experiment, benchmark, and claim-ledger changes
+  become required-fix routes for `/diagnostic-to-review`, `/experiment-bridge`,
+  `/result-to-claim`, or human decision.
+- Do not use score >= 4, score >= 6, or any numeric threshold as STOP C readiness.
+- Require exactly one final verdict token:
+  `READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED`.
+- Only `READY_FOR_PAPER` may be interpreted as paper-ready, and even then paper writing
+  still requires `HUMAN_DECISION_NOTE.md` ending `PROCEED`.
+
 Run `mkdir -p orbit-research/`, then write or update `orbit-research/RED_TEAM_REVIEW.md` with
 top rejection risks, essential fixes, claims to weaken, and submit-readiness.
 The file must end with exactly one of:
 `READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED`.
+
+For ORBIT red-team mode, `RED_TEAM_REVIEW.md` must include:
+
+- reviewed claim ledger path;
+- `diagnostic_id` if available;
+- evidence paths and result refs reviewed;
+- final verdict token;
+- required fixes, weakened claims, or redesign route.
 
 When `ORBIT_RED_TEAM_ONLY = true`, any required new experiment, code change, benchmark
 change, or Stage 11 redesign is recorded as a blocker and routed to the owning skill. Do
@@ -151,6 +192,22 @@ Recommended optional fields: `next_action`, `next_skill_hint`, `artifact_invento
 #### Phase A: Review
 
 **Route by REVIEWER_DIFFICULTY:**
+
+If `ORBIT_RED_TEAM_ONLY = true`, use a fresh STOP C red-team prompt instead of the
+generic round prompt. The prompt must ask Codex to read `claims/claim_ledger.json`,
+the current diagnostic context, result paths, and evidence refs, then write a review with:
+
+```text
+Reviewed claim ledger:
+Diagnostic ID:
+Evidence paths reviewed:
+Claim-by-claim findings:
+Required fixes or redesign route:
+Final verdict: READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED
+```
+
+Do not ask for a score-based readiness decision in this mode. A score may be recorded as
+secondary color, but it cannot control STOP C readiness.
 
 ##### Medium (default) — MCP Review
 
@@ -251,16 +308,30 @@ PROMPT
 
 **CRITICAL: Save the FULL raw response** from the external reviewer verbatim (store in a variable for Phase E). Do NOT discard or summarize — the raw text is the primary record.
 
-Then extract structured fields:
+If `ORBIT_RED_TEAM_ONLY = true`, extract these structured fields:
+
+- **Final verdict token**:
+  `READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED`
+- Reviewed claim ledger path
+- Diagnostic ID, if present
+- Evidence paths reviewed
+- Required fixes, weakened claims, blockers, or redesign route
+
+**ORBIT RED-TEAM STOP CONDITION:** STOP after the red-team review is written. STOP C readiness is determined only by the final verdict token. Do not use score >= 4, score >= 6, "almost ready", or any other score threshold for ORBIT red-team readiness.
+
+If `ORBIT_RED_TEAM_ONLY = false`, extract generic improvement-loop fields:
+
 - **Score** (numeric 1-10)
 - **Verdict** ("ready" / "almost" / "not ready")
 - **Action items** (ranked list of fixes)
 
-**STOP CONDITION**: If score >= 6 AND verdict contains "ready" or "almost" → stop loop, document final state.
+**GENERIC STOP CONDITION**: If score >= 6 AND verdict contains "ready" or "almost" →
+stop loop, document final state. This condition is generic-mode only and must not be used
+for ORBIT red-team mode.
 
 #### Phase B.5: Reviewer Memory Update (hard + nightmare only)
 
-**Skip entirely if `REVIEWER_DIFFICULTY = medium`.**
+**Skip entirely if `REVIEWER_DIFFICULTY = medium` or `ORBIT_RED_TEAM_ONLY = true`.**
 
 After parsing the assessment, update `REVIEWER_MEMORY.md` in the project root:
 
@@ -285,7 +356,7 @@ After parsing the assessment, update `REVIEWER_MEMORY.md` in the project root:
 
 #### Phase B.6: Debate Protocol (hard + nightmare only)
 
-**Skip entirely if `REVIEWER_DIFFICULTY = medium`.**
+**Skip entirely if `REVIEWER_DIFFICULTY = medium` or `ORBIT_RED_TEAM_ONLY = true`.**
 
 After parsing the review, Claude (the author) gets a chance to **rebut**:
 
@@ -390,10 +461,14 @@ Wait for the user's response. Parse their input:
 
 #### Feishu Notification (if configured)
 
-After parsing the score, check if `~/.claude/feishu.json` exists and mode is not `"off"`:
+In generic improvement mode, after parsing the score, check if `~/.claude/feishu.json`
+exists and mode is not `"off"`:
 - Send a `review_scored` notification: "Round N: X/10 — [verdict]" with top 3 weaknesses
 - If **interactive** mode and verdict is "almost": send as checkpoint, wait for user reply on whether to continue or stop
 - If config absent or mode off: skip entirely (no-op)
+
+In ORBIT red-team mode, send only the final verdict token and top blockers if configured;
+do not present a score as the readiness signal.
 
 #### Phase C: Implement Fixes (if not stopping)
 
@@ -486,7 +561,7 @@ Increment round counter → back to Phase A.
 
 ### Termination
 
-When loop ends (positive assessment or max rounds):
+When the generic improvement loop ends (positive assessment or max rounds):
 
 1. Update `review-stage/REVIEW_STATE.json` with `"status": "completed"`
 2. Write final summary to `review-stage/AUTO_REVIEW.md`
@@ -504,26 +579,50 @@ When loop ends (positive assessment or max rounds):
    - List remaining blockers
    - Estimate effort needed for each
    - Suggest whether to continue manually or pivot
-7. End `orbit-research/RED_TEAM_REVIEW.md` with exactly one verdict token:
+7. If this run also produced `orbit-research/RED_TEAM_REVIEW.md`, end it with exactly one verdict token:
    `READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED`.
 8. **Feishu notification** (if configured): Send `pipeline_done` with final score progression table
+
+When `ORBIT_RED_TEAM_ONLY = true`, use ORBIT red-team termination instead:
+
+1. Write `orbit-research/RED_TEAM_REVIEW.md` and compatibility copies required by the
+   caller.
+2. End the file with exactly one final verdict token:
+   `READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED`.
+3. Do not invoke `/result-to-claim`, patch code, launch experiments, or mark paper-ready
+   from a score.
+4. Return control to `/diagnostic-to-review` Phase 5 so it can write `STOP_C_REVIEW.md`
+   and pause for the human decision.
 
 ## Key Rules
 
 - **Large file handling**: If the Write tool fails due to file size, immediately retry using Bash (`cat << 'EOF' > file`) to write in chunks. Do NOT ask the user for permission — just do it silently.
 
 - ALWAYS use `config: {"model_reasoning_effort": "xhigh"}` for maximum reasoning depth
-- Save threadId from first call, use `mcp__codex__codex-reply` for subsequent rounds
+- In generic improvement mode, save threadId from first call and use
+  `mcp__codex__codex-reply` for subsequent rounds. In ORBIT red-team mode, prefer a
+  fresh independent review context unless the user explicitly asks for improvement mode.
 - **Anti-hallucination citations**: When adding references during fixes, NEVER fabricate BibTeX. Use the same DBLP → CrossRef → `[VERIFY]` chain as `/paper-write`: (1) `curl -s "https://dblp.org/search/publ/api?q=TITLE&format=json"` → get key → `curl -s "https://dblp.org/rec/{key}.bib"`, (2) if not found, `curl -sLH "Accept: application/x-bibtex" "https://doi.org/{doi}"`, (3) if both fail, mark with `% [VERIFY]`. Do NOT generate BibTeX from memory.
 - Be honest — include negative results and failed experiments
 - Do NOT hide weaknesses to game a positive score
-- Implement fixes BEFORE re-reviewing (don't just promise to fix)
-- **Exhaust before surrendering** — before marking any reviewer concern as "cannot address": (1) try at least 2 different solution paths, (2) for experiment issues, adjust hyperparameters or try an alternative baseline, (3) for theory issues, provide a weaker version of the result or an alternative argument, (4) only then concede narrowly and bound the damage. Never give up on the first attempt.
+- In generic improvement mode, implement fixes BEFORE re-reviewing; do not just promise
+  to fix. In ORBIT red-team mode, record required fixes and route them to the owning
+  STOP instead of applying them here.
+- **Exhaust before surrendering** — in generic improvement mode, before marking any
+  reviewer concern as "cannot address": (1) try at least 2 different solution paths, (2)
+  for experiment issues, adjust hyperparameters or try an alternative baseline, (3) for
+  theory issues, provide a weaker version of the result or an alternative argument, (4)
+  only then concede narrowly and bound the damage. In ORBIT red-team mode, convert these
+  unresolved concerns into explicit required-fix or redesign routes.
 - If an experiment takes > 30 minutes, launch it and continue with other fixes while waiting
 - Document EVERYTHING — the review log should be self-contained
 - Update project notes after each round, not just at the end
 
-## Prompt Template for Round 2+
+## Prompt Template for Round 2+ (Generic Improvement Mode Only)
+
+Do not use this template for ORBIT red-team mode. It contains "since your last review"
+language and score-based re-assessment, which are appropriate for generic iterative
+improvement but not for a fresh STOP C red-team verdict.
 
 ```
 mcp__codex__codex-reply:
@@ -550,9 +649,12 @@ After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save 
 
 ## Stage-Chain Integration (ORBIT v1.3 Stage 23 — Reviewer Red-team Loop)
 
-This skill implements ORBIT v1.3 Stage 23 (Reviewer Red-team Loop). It is an **explicit
-loop**: review → fix → re-review until issues are addressed or explicitly accepted as
-residual risk. (See `../shared-references/research-agent-pipeline.md` Stage 23 and
+This skill implements ORBIT v1.3 Stage 23 (Reviewer Red-team Loop). In generic
+convergence-first mode it is an **explicit loop**: review → fix → re-review until issues
+are addressed or explicitly accepted as residual risk. In ORBIT red-team mode it is a
+STOP C verdict pass: review the claim ledger and evidence, write `RED_TEAM_REVIEW.md`,
+route required fixes, and return to `/diagnostic-to-review` for STOP C human decision.
+(See `../shared-references/research-agent-pipeline.md` Stage 23 and
 `../shared-references/research-harness-prompts.md` §23.) The loop output is
 `orbit-research/RED_TEAM_REVIEW.md`.
 

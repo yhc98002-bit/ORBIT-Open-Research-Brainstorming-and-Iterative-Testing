@@ -311,6 +311,26 @@ class SkillIntegrityTest(unittest.TestCase):
 
         self.assertEqual(failures, [])
 
+    def test_auto_review_loop_separates_orbit_red_team_mode(self):
+        text = (SKILLS_DIR / "auto-review-loop" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        required = [
+            "Use **generic improvement mode**",
+            "## ORBIT red-team Mode",
+            "GENERIC_POSITIVE_THRESHOLD",
+            "never a STOP C paper-readiness rule",
+            "Do not use score >= 4, score >= 6, or any numeric threshold as STOP C readiness.",
+            "ORBIT RED-TEAM STOP CONDITION",
+            "STOP C readiness is determined only by the final verdict token",
+            "Do not implement fixes directly.",
+            "Prompt Template for Round 2+ (Generic Improvement Mode Only)",
+            "READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED",
+        ]
+        missing = [item for item in required if item not in text]
+
+        self.assertEqual(missing, [])
+
     def test_install_docs_do_not_recommend_dangerous_copy_patterns(self):
         docs = [
             ROOT / "README.md",
