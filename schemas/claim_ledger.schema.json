@@ -49,7 +49,9 @@
         "required": [
           "id",
           "statement",
+          "claim_role",
           "status",
+          "paper_use",
           "evidence_refs",
           "controls",
           "scope",
@@ -64,6 +66,17 @@
           "statement": {
             "type": "string"
           },
+          "claim_role": {
+            "type": "string",
+            "enum": [
+              "main_claim",
+              "supporting_claim",
+              "original_hypothesis",
+              "negative_result_claim",
+              "limitation",
+              "exploratory"
+            ]
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -71,6 +84,15 @@
               "partial",
               "unsupported",
               "exploratory"
+            ]
+          },
+          "paper_use": {
+            "type": "string",
+            "enum": [
+              "allowed",
+              "limitations_only",
+              "do_not_claim",
+              "future_work_only"
             ]
           },
           "evidence_refs": {

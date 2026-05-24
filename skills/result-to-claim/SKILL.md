@@ -50,7 +50,9 @@ Run `mkdir -p claims orbit-research/`. Always write or update:
     {
       "id": "C1",
       "statement": "Evidence-bounded claim text.",
+      "claim_role": "main_claim|supporting_claim|original_hypothesis|negative_result_claim|limitation|exploratory",
       "status": "supported|partial|unsupported|exploratory",
+      "paper_use": "allowed|limitations_only|do_not_claim|future_work_only",
       "evidence_refs": ["run_id:<id>", "path/to/result.json"],
       "controls": ["baseline/control/run refs"],
       "scope": "datasets, regimes, metrics, and conditions where the claim is allowed",
@@ -151,13 +153,17 @@ mcp__codex__codex:
     5. suggested_claim_revision: if the claim should be strengthened, weakened, or reframed
     6. next_experiments_needed: specific experiments to fill gaps (if any)
     7. confidence: high | medium | low
-    8. claim_ledger_entries: proposed ledger rows with id, statement, support status
-       (supported | partial | unsupported | exploratory), evidence_refs, controls, scope,
-       limitations, forbidden_overclaims, and allowed_paper_sections
+    8. claim_ledger_entries: proposed ledger rows with id, statement, claim_role
+       (main_claim | supporting_claim | original_hypothesis | negative_result_claim |
+       limitation | exploratory), support status (supported | partial | unsupported |
+       exploratory), paper_use (allowed | limitations_only | do_not_claim |
+       future_work_only), evidence_refs, controls, scope, limitations,
+       forbidden_overclaims, and allowed_paper_sections
 
     Be honest. Do not inflate claims beyond what the data supports.
     A single positive result on one dataset does not support a general claim.
-    If the method ties or fails, do not force a positive story. Identify whether a negative-result contribution remains.
+    If the method ties or fails, do not force a positive story. Encode the original
+    unsupported hypothesis separately from any supported negative-result contribution.
 ```
 
 ### Step 3: Parse and Normalize
@@ -176,7 +182,9 @@ Extract structured fields from Codex response:
 - claim_ledger_entries:
   - id:
   - statement:
+  - claim_role:
   - status:
+  - paper_use:
   - evidence_refs:
   - controls:
   - scope:
@@ -187,11 +195,18 @@ Extract structured fields from Codex response:
 
 Normalize into `claims/claim_ledger.json`. Use:
 
-- `status: "ready"` only when all primary paper-bearing claims are `supported` or
-  intentionally `partial`/`exploratory` with explicit scope and forbidden overclaims.
+- `status: "ready"` only when all `paper_use: "allowed"` primary paper-bearing claims
+  are `supported` or intentionally `partial`/`exploratory` with explicit scope and
+  forbidden overclaims.
 - `status: "draft"` when evidence is still being reconciled or Codex review is pending.
 - `status: "blocked"` only for invalid/corrupt evidence, missing provenance, or integrity
   failure that prevents a defensible ledger.
+- Unsupported original hypotheses are valid STOP C outcomes when encoded as
+  `claim_role: "original_hypothesis"` with `paper_use: "do_not_claim"` or
+  `paper_use: "limitations_only"`. They must not become main paper claims.
+- Supported negative-result contributions must be separate rows with
+  `claim_role: "negative_result_claim"` and may use `paper_use: "allowed"` only when the
+  negative-result statement itself is supported by evidence.
 
 Render `claims/CLAIM_LEDGER.md` from the JSON. During migration, also render
 `orbit-research/CLAIM_CONSTRUCTION.md` from the same JSON instead of maintaining a
@@ -230,16 +245,22 @@ reconciled.
 
 #### `no` — Claim not supported
 
-1. Write a ledger entry with `status: "unsupported"` or `status: "exploratory"` if a
-   negative/reframed contribution remains.
-2. Add explicit `forbidden_overclaims` so downstream writing cannot imply the original
+1. Write the original hypothesis as `claim_role: "original_hypothesis"`,
+   `status: "unsupported"`, and `paper_use: "do_not_claim"` or
+   `paper_use: "limitations_only"`.
+2. If the run supports a bounded negative-result contribution, write a separate
+   `claim_role: "negative_result_claim"` row with `status: "supported"` or
+   `status: "partial"` and a narrow `scope`.
+3. If only a reframed exploratory observation remains, mark it
+   `claim_role: "exploratory"` and do not present it as pre-planned.
+4. Add explicit `forbidden_overclaims` so downstream writing cannot imply the original
    claim was supported.
-3. Record postmortem in findings.md (Research Findings section):
+5. Record postmortem in findings.md (Research Findings section):
    - What was tested, what failed, hypotheses for why
    - Constraints for future attempts (what NOT to try again)
-4. Write `orbit-research/NEGATIVE_RESULT_STRATEGY.md`.
-5. Update CLAUDE.md Pipeline Status.
-6. Stop for STOP C decision; do not treat unsupported claims as a runtime abort unless
+6. Write `orbit-research/NEGATIVE_RESULT_STRATEGY.md`.
+7. Update CLAUDE.md Pipeline Status.
+8. Stop for STOP C decision; do not treat unsupported hypotheses as a runtime abort unless
    evidence is invalid/corrupt.
 
 #### `partial` — Claim partially supported

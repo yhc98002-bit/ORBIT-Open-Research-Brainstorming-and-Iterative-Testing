@@ -14,7 +14,9 @@
     {
       "id": "C1",
       "statement": "The fixture result supports a bounded diagnostic claim.",
+      "claim_role": "main_claim",
       "status": "supported",
+      "paper_use": "allowed",
       "evidence_refs": [
         "results/diag_fixture/metrics.json"
       ],

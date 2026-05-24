@@ -78,8 +78,15 @@ Compilation is useful but not the gate here. Strict submission assurance belongs
 - Every main contribution, abstract claim, introduction contribution bullet, result claim,
   and conclusion claim must map to one or more `claim_ledger.claims[].id` values.
 - Do not create new main claims that are absent from `claims/claim_ledger.json`.
-- `unsupported` claims may appear only in limitations, negative-result discussion, or
-  future work if allowed by `allowed_paper_sections`.
+- Generate paper claims only from ledger rows with `paper_use: "allowed"`.
+- Never present an `unsupported` row as a main claim, even if its prose is tempting.
+- `unsupported` original hypotheses are allowed only when
+  `claim_role: "original_hypothesis"` and `paper_use` is `do_not_claim` or
+  `limitations_only`; use them only as limitations, negative-result context, or
+  future-work framing as permitted by `allowed_paper_sections`.
+- `negative_result_claim` rows may be used as paper claims only when their `status` is
+  `supported` or intentionally `partial` with explicit scope.
+- Rows with `paper_use: "future_work_only"` belong only in future work.
 - `exploratory` claims must be labeled as exploratory and not pre-planned.
 - Honor every `forbidden_overclaims` entry.
 - Keep wording within each claim's `scope` and `limitations`.

@@ -55,7 +55,9 @@ class GoldenOrbitWorkflowTest(unittest.TestCase):
         project = copy_fixture(self)
         ledger_path = project / "claims" / "claim_ledger.json"
         ledger = load_json(ledger_path)
+        ledger["claims"][0]["claim_role"] = "main_claim"
         ledger["claims"][0]["status"] = "unsupported"
+        ledger["claims"][0]["paper_use"] = "allowed"
         write_json(ledger_path, ledger)
 
         result = run_tool(
@@ -67,6 +69,56 @@ class GoldenOrbitWorkflowTest(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
         self.assertIn("unsupported claim", result.stdout)
+        self.assertIn("paper_use='allowed'", result.stdout)
+
+    def test_claim_ledger_allows_unsupported_original_hypothesis_with_negative_result(self):
+        project = copy_fixture(self)
+        ledger_path = project / "claims" / "claim_ledger.json"
+        ledger = load_json(ledger_path)
+        ledger["claims"] = [
+            {
+                "id": "H0",
+                "statement": "The original hypothesis is unsupported in this diagnostic.",
+                "claim_role": "original_hypothesis",
+                "status": "unsupported",
+                "paper_use": "do_not_claim",
+                "evidence_refs": ["results/diag_fixture/metrics.json"],
+                "controls": ["control_baseline"],
+                "scope": "Golden fixture only.",
+                "limitations": [
+                    "The unsupported original hypothesis may be discussed only as context."
+                ],
+                "forbidden_overclaims": [
+                    "Do not claim the original hypothesis was supported."
+                ],
+                "allowed_paper_sections": ["limitations"],
+            },
+            {
+                "id": "N1",
+                "statement": "The diagnostic supports a bounded negative-result claim.",
+                "claim_role": "negative_result_claim",
+                "status": "supported",
+                "paper_use": "allowed",
+                "evidence_refs": ["results/diag_fixture/metrics.json"],
+                "controls": ["control_baseline"],
+                "scope": "Golden fixture only.",
+                "limitations": ["Negative-result fixture only."],
+                "forbidden_overclaims": [
+                    "Do not generalize beyond the fixture."
+                ],
+                "allowed_paper_sections": ["results", "limitations"],
+            },
+        ]
+        write_json(ledger_path, ledger)
+
+        result = run_tool(
+            str(TOOLS / "validate_orbit_pack.py"),
+            "--repo",
+            str(project),
+            "--pack",
+            "claim_ledger",
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_figure_manifest_validator_rejects_missing_output_and_status(self):
         project = copy_fixture(self)
@@ -98,6 +150,26 @@ class GoldenOrbitWorkflowTest(unittest.TestCase):
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
         self.assertIn("unverified citation", result.stdout)
         self.assertIn("fixture2026", result.stdout)
+
+    def test_ready_paper_package_rejects_unsupported_allowed_claim(self):
+        project = copy_fixture(self)
+        ledger_path = project / "claims" / "claim_ledger.json"
+        ledger = load_json(ledger_path)
+        ledger["claims"][0]["claim_role"] = "main_claim"
+        ledger["claims"][0]["status"] = "unsupported"
+        ledger["claims"][0]["paper_use"] = "allowed"
+        write_json(ledger_path, ledger)
+
+        result = run_tool(
+            str(TOOLS / "validate_orbit_pack.py"),
+            "--repo",
+            str(project),
+            "--pack",
+            "paper_package",
+        )
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("paper_package", result.stdout)
+        self.assertIn("unsupported claim", result.stdout)
 
     def test_mirror_checker_report_mode_outputs_json(self):
         result = run_tool(str(TOOLS / "check_skill_mirror.py"), "--repo", str(ROOT), "--json")

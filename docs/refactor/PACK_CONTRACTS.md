@@ -73,10 +73,13 @@ pipeline can migrate incrementally.
 - `claims`
 - `result_refs`
 
-Each claim should include `id`, `statement`, `status`, `evidence_refs`,
-`controls`, `scope`, `limitations`, `forbidden_overclaims`, and
-`allowed_paper_sections`. Valid claim support statuses are `supported`,
-`partial`, `unsupported`, and `exploratory`.
+Each claim should include `id`, `statement`, `claim_role`, `status`,
+`paper_use`, `evidence_refs`, `controls`, `scope`, `limitations`,
+`forbidden_overclaims`, and `allowed_paper_sections`. Valid claim support
+statuses are `supported`, `partial`, `unsupported`, and `exploratory`.
+Unsupported original hypotheses may remain in a ready ledger only when marked
+`claim_role: original_hypothesis` and `paper_use: do_not_claim` or
+`limitations_only`; unsupported claims cannot be allowed main paper claims.
 
 `figures/figure_manifest.json` records `figures`. Each figure should include
 `id`, `type`, `supports_claims`, `data_source`, `generator`, `output`,

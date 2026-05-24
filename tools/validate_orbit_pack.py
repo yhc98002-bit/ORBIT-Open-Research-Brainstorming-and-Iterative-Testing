@@ -116,24 +116,66 @@ def validate_pack_semantics(name: str, instance: Mapping[str, Any]) -> List[str]
     errors: List[str] = []
 
     if name == "claim_ledger" and instance.get("status") == "ready":
-        claims = instance.get("claims")
-        if isinstance(claims, list):
-            for index, claim in enumerate(claims):
-                if not isinstance(claim, dict):
-                    continue
-                if claim.get("status") != "unsupported":
-                    continue
-                claim_id = claim.get("id") or index
-                errors.append(
-                    "$.claims[%d].status: unsupported claim %r cannot appear in a ready claim_ledger"
-                    % (index, claim_id)
-                )
+        errors.extend(claim_ledger_usage_errors(instance))
 
     return errors
 
 
+def claim_ledger_usage_errors(instance: Mapping[str, Any], location: str = "$") -> List[str]:
+    """Return semantic errors that would let unsupported claims leak into paper prose."""
+    errors: List[str] = []
+    claims = instance.get("claims")
+    if not isinstance(claims, list):
+        return errors
+
+    for index, claim in enumerate(claims):
+        if not isinstance(claim, dict):
+            continue
+        if claim.get("status") != "unsupported":
+            continue
+
+        claim_id = claim.get("id") or index
+        role = claim.get("claim_role")
+        paper_use = claim.get("paper_use")
+        claim_loc = "%s.claims[%d]" % (location, index)
+
+        if paper_use == "allowed":
+            errors.append(
+                "%s.paper_use: unsupported claim %r cannot have paper_use='allowed'"
+                % (claim_loc, claim_id)
+            )
+        if role == "main_claim":
+            errors.append(
+                "%s.claim_role: unsupported claim %r cannot be a main_claim"
+                % (claim_loc, claim_id)
+            )
+        if role == "negative_result_claim":
+            errors.append(
+                "%s.claim_role: negative_result_claim %r must be supported or partial, not unsupported"
+                % (claim_loc, claim_id)
+            )
+
+        allowed_unsupported = (
+            role == "original_hypothesis"
+            and paper_use in {"do_not_claim", "limitations_only"}
+        )
+        if not allowed_unsupported and not errors_for_claim(errors, claim_loc):
+            errors.append(
+                "%s.status: unsupported claim %r is allowed in a ready ledger only as "
+                "claim_role='original_hypothesis' with paper_use='do_not_claim' or 'limitations_only'"
+                % (claim_loc, claim_id)
+            )
+
+    return errors
+
+
+def errors_for_claim(errors: List[str], claim_location: str) -> bool:
+    return any(error.startswith(claim_location + ".") for error in errors)
+
+
 def append_cross_pack_errors(repo: Path, report: Dict[str, Any]) -> None:
     append_stop_c_approval_errors(repo, report)
+    append_claim_ledger_usage_errors(repo, report)
 
     paper_path = pack_path(repo, "paper_package")
     citation_path = pack_path(repo, "citation_cache")
@@ -169,6 +211,36 @@ def append_cross_pack_errors(repo: Path, report: Dict[str, Any]) -> None:
 
     for result in report["results"]:
         if result.get("name") == "citation_cache":
+            result["status"] = "error"
+            result.setdefault("errors", []).extend(errors)
+            return
+
+
+def append_claim_ledger_usage_errors(repo: Path, report: Dict[str, Any]) -> None:
+    paper_path = pack_path(repo, "paper_package")
+    if not paper_path.exists():
+        return
+
+    paper_package = parse_json_or_none(paper_path)
+    if not isinstance(paper_package, dict) or paper_package.get("status") != "ready":
+        return
+    claim_ledger_ref = paper_package.get("claim_ledger_ref")
+    if not isinstance(claim_ledger_ref, str) or not claim_ledger_ref:
+        return
+
+    ledger_path = repo / claim_ledger_ref
+    ledger = parse_json_or_none(ledger_path)
+    if not isinstance(ledger, dict):
+        return
+    errors = [
+        "claim ledger usage blocks ready paper_package: %s" % error
+        for error in claim_ledger_usage_errors(ledger, "$")
+    ]
+    if not errors:
+        return
+
+    for result in report["results"]:
+        if result.get("name") == "paper_package":
             result["status"] = "error"
             result.setdefault("errors", []).extend(errors)
             return

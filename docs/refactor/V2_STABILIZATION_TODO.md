@@ -51,6 +51,7 @@ stabilization areas only; it does not change workflow behavior.
    - Route failed regime checks to diagnostic redesign, not automatic mechanism rejection.
 
 9. Claim ledger negative result semantics
+   - Status: Prompt 7 adds `claim_role` and `paper_use` to claim ledger entries and validator checks that unsupported claims cannot become allowed main paper claims.
    - Ensure unsupported or partial claims become structured claim ledger states and STOP C decisions.
    - Do not treat `claim_supported=no` as a default runtime abort unless evidence integrity is invalid.
 

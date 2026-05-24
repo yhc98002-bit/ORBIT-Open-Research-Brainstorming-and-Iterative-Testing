@@ -16,9 +16,11 @@
         "Do not claim generalization beyond the fixture benchmark."
       ],
       "id": "C1",
+      "claim_role": "main_claim",
       "limitations": [
         "Fixture covers one diagnostic only."
       ],
+      "paper_use": "allowed",
       "scope": "Minimal STOP C fixture benchmark.",
       "statement": "The fixture result supports a bounded diagnostic claim.",
       "status": "supported"

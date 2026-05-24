@@ -391,6 +391,12 @@ Load and follow [claim_relevance.md](prompts/claim_relevance.md). Local diagnost
 after interpretation and decision log; paper-bearing diagnostics must update
 `claims/claim_ledger.json`. Validate with `python3 tools/validate_orbit_pack.py --repo . --pack claim_ledger`.
 
+For negative or unsupported outcomes, do not treat `claim_supported=no` as a runtime abort
+by default. Encode the failed original hypothesis as `claim_role: "original_hypothesis"`,
+`status: "unsupported"`, and `paper_use: "do_not_claim"` or `limitations_only`; encode any
+supported negative-result contribution as a separate `claim_role: "negative_result_claim"`
+row. Abort only for invalid/corrupt evidence, missing provenance, or integrity failure.
+
 ### Phase 4: Red-team Review
 
 Load and follow [red_team_review.md](prompts/red_team_review.md). Parse the final verdict
