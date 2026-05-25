@@ -257,6 +257,72 @@ class StopCApprovalGateTest(unittest.TestCase):
         self.assertIn("does not reference diagnostic_id diag_fixture", result.stdout)
         self.assertIn("does not reference ledger_hash ledger_fixture_hash", result.stdout)
 
+    @unittest.expectedFailure
+    def test_regression_per_diagnostic_red_team_requires_fixes_must_not_fallback_to_ready_legacy(self):
+        project = copy_fixture(self)
+        per_diagnostic_review = (
+            project
+            / "orbit-research"
+            / "diagnostics"
+            / "diag_fixture"
+            / "RED_TEAM_REVIEW.md"
+        )
+        legacy_review = project / "orbit-research" / "RED_TEAM_REVIEW.md"
+        per_diagnostic_review.write_text(
+            "# Red-Team Review\n\n"
+            "Diagnostic ID: diag_fixture\n"
+            "Claim ledger hash: ledger_fixture_hash\n\n"
+            "Final verdict: REQUIRES_FIXES\n",
+            encoding="utf-8",
+        )
+        legacy_review.write_text(
+            "# Legacy Red-Team Review\n\n"
+            "Diagnostic ID: diag_fixture\n"
+            "Claim ledger hash: ledger_fixture_hash\n\n"
+            "Final verdict: READY_FOR_PAPER\n",
+            encoding="utf-8",
+        )
+
+        result = run_tool(
+            str(TOOLS / "check_stop_c_approval.py"),
+            "--repo",
+            str(project),
+            "--claim-ledger",
+            "claims/claim_ledger.json",
+            "--json",
+        )
+
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["status"], "blocked")
+        self.assertEqual(
+            payload["red_team_review"],
+            "orbit-research/diagnostics/diag_fixture/RED_TEAM_REVIEW.md",
+        )
+        self.assertIn("REQUIRES_FIXES", "\n".join(payload["errors"]))
+
+    @unittest.expectedFailure
+    def test_regression_unsupported_allowed_main_claim_blocks_stop_c_approval(self):
+        project = copy_fixture(self)
+        ledger_path = project / "claims" / "claim_ledger.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        ledger["claims"][0]["claim_role"] = "main_claim"
+        ledger["claims"][0]["status"] = "unsupported"
+        ledger["claims"][0]["paper_use"] = "allowed"
+        write_json(ledger_path, ledger)
+
+        result = run_tool(
+            str(TOOLS / "check_stop_c_approval.py"),
+            "--repo",
+            str(project),
+            "--claim-ledger",
+            "claims/claim_ledger.json",
+        )
+
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("unsupported claim", result.stdout)
+        self.assertIn("paper_use", result.stdout)
+
     def test_stop_c_helper_can_allow_unmatched_legacy_approval(self):
         project = copy_fixture(self)
         human = project / "orbit-research" / "HUMAN_DECISION_NOTE.md"

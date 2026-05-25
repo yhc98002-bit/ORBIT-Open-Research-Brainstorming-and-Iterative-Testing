@@ -207,6 +207,38 @@ class OrbitStatusTest(unittest.TestCase):
             self.assertEqual(loaded["current_phase"], "user_review")
             self.assertEqual(loaded["safe_next_command"], '/idea-to-proposal "topic"')
 
+    @unittest.expectedFailure
+    def test_regression_stale_orbit_state_submission_safe_next_is_blocked_by_invalid_claim_ledger(self):
+        repo = copy_fixture(self)
+        package_path = repo / "paper" / "paper_package.json"
+        if package_path.exists():
+            package_path.unlink()
+        ledger_path = repo / "claims" / "claim_ledger.json"
+        ledger = load_json(ledger_path)
+        ledger["claims"][0]["claim_role"] = "main_claim"
+        ledger["claims"][0]["status"] = "unsupported"
+        ledger["claims"][0]["paper_use"] = "allowed"
+        write_json(ledger_path, ledger)
+        stale_state = make_state(
+            current_stop="STOP_D",
+            current_skill="submission-package",
+            current_phase="paper_package_ready",
+            status="paused",
+            pause_reason="stop_review",
+            safe_next_command='/submission-package "paper/"',
+        )
+        write_state(repo, stale_state)
+
+        state = get_status(repo)
+
+        self.assertEqual(state["current_stop"], "STOP_C")
+        self.assertEqual(state["status"], "blocked")
+        self.assertNotIn("/submission-package", state.get("safe_next_command") or "")
+        self.assertTrue(
+            any("unsupported claim" in blocker.get("message", "") for blocker in state.get("blockers", [])),
+            state,
+        )
+
     def test_blocked_paper_package_is_not_completed(self):
         repo = copy_fixture(self)
         package_path = repo / "paper" / "paper_package.json"

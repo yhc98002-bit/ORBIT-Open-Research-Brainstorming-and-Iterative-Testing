@@ -149,6 +149,58 @@ class CodexReviewHandoffTest(unittest.TestCase):
         self.assertIn("imported_at", metadata)
         self.assertTrue((self.tmp / "orbit-research" / "diagnostics" / "diag_123" / "RED_TEAM_REVIEW.md").exists())
 
+    @unittest.expectedFailure
+    def test_regression_import_rejects_verdict_heading_without_concrete_token(self):
+        phase_id = "diag_123.phase-4-review"
+        self.run_tool(
+            "generate",
+            "--repo",
+            str(self.tmp),
+            "--phase-id",
+            phase_id,
+            "--role",
+            "Independent STOP C reviewer",
+            "--objective",
+            "Review STOP C claims.",
+            "--output-format",
+            "Include VERDICT.",
+            "--output-artifact",
+            "orbit-research/diagnostics/diag_123/RED_TEAM_REVIEW.md",
+            "--current-stop",
+            "STOP_C",
+            "--producer-skill",
+            "diagnostic-to-review",
+            "--producer-phase",
+            "phase-4-review",
+            "--diagnostic-id",
+            "diag_123",
+            "--resume-command",
+            '/diagnostic-to-review "experiment/experiment_pack.json" -- resume:true',
+            "--write-orbit-state",
+        )
+        response = self.tmp / "orbit-research" / "codex-imports" / ("%s.response.md" % phase_id)
+        response.parent.mkdir(parents=True, exist_ok=True)
+        response.write_text(
+            "# VERDICT\n\n"
+            "The response has the expected heading and enough explanatory prose, but it "
+            "intentionally omits a concrete review token so import must reject it.\n",
+            encoding="utf-8",
+        )
+
+        code = codex_review_handoff.main(
+            [
+                "import",
+                "orbit-research/codex-imports/%s.response.md" % phase_id,
+                "--repo",
+                str(self.tmp),
+            ]
+        )
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(
+            (self.tmp / "orbit-research" / "diagnostics" / "diag_123" / "RED_TEAM_REVIEW.md").exists()
+        )
+
     def test_missing_producer_context_still_writes_unknown_context_state(self):
         self.run_tool(
             "generate",

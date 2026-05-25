@@ -409,6 +409,35 @@ class SkillIntegrityTest(unittest.TestCase):
 
         self.assertEqual(failures, [])
 
+    def test_fast_target_runs_measurable_stabilization_suite(self):
+        makefile = ROOT / "Makefile"
+        self.assertTrue(makefile.exists())
+        text = makefile.read_text(encoding="utf-8")
+        required = [
+            ".PHONY: test-fast",
+            "test-fast:",
+            "tests/test_orbit_status.py",
+            "tests/test_diagnostic_session.py",
+            "tests/test_stop_c_approval_gate.py",
+            "tests/test_validate_orbit_pack.py",
+            "tests/test_codex_review_handoff.py",
+            "tests/test_skill_integrity.py",
+        ]
+        missing = [item for item in required if item not in text]
+        self.assertEqual(missing, [])
+
+        dry_run = subprocess.run(
+            ["make", "-n", "test-fast"],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+        )
+        self.assertEqual(dry_run.returncode, 0, dry_run.stderr + dry_run.stdout)
+        self.assertIn("pytest -q", dry_run.stdout)
+        self.assertIn("tests/test_orbit_status.py", dry_run.stdout)
+        self.assertIn("tests/test_stop_c_approval_gate.py", dry_run.stdout)
+        self.assertNotIn("echo", dry_run.stdout)
+
 
 @unittest.skipUnless(shutil.which("bash"), "bash is required for installer tests")
 class InstallerRegressionTest(unittest.TestCase):
