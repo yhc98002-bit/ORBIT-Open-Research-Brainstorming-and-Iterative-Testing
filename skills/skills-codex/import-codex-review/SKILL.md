@@ -36,8 +36,8 @@ If any prerequisite is missing, stop with a blocker. Do not mark review passed.
    The validator reads `orbit-research/codex-prompts/<phase-id>.json`. If the metadata
    sets `verdict_required: true`, it must find exactly one final verdict token from
    `expected_verdict_tokens`. Markdown wrappers such as `Final verdict:
-   **REQUIRES_FIXES**` are allowed. Candidate lists such as `Final verdict:
-   READY_FOR_PAPER | REQUIRES_FIXES` and vague `# VERDICT` prose are rejected.
+   **REQUIRES_FIXES**` are allowed. Candidate lists with pipe separators after
+   `Final verdict:` and vague `# VERDICT` prose are rejected.
 
 2. If validation fails, report the missing sections/tokens and keep ORBIT blocked or
    paused with `pause_reason: codex_review_needed`.

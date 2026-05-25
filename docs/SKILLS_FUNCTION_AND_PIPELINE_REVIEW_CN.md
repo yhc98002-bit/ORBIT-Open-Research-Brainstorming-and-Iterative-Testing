@@ -1,7 +1,8 @@
 # ORBIT / ARIS Skills 功能与 Pipeline Review
 
-> Archived pre-v2 review. Some `/paper-writing` and `CLAIM_CONSTRUCTION.md` references
-> reflect the old architecture. Current v2.1 guidance uses `/paper-draft`,
+> Archived pre-v2 review. Do not use as current ORBIT v2.1 guidance.
+> Some `/paper-writing` and `CLAIM_CONSTRUCTION.md` references reflect the old architecture.
+> Current v2.1 guidance uses `/paper-draft`,
 > `/paper-from-claims`, `/submission-package`, and canonical
 > `claims/claim_ledger.json`; `CLAIM_CONSTRUCTION.md` is now a compatibility view.
 

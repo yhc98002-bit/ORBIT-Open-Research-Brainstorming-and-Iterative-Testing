@@ -66,7 +66,16 @@ Use this structure:
 - Result pattern: positive | negative | mixed | tie | surprising | no_result | invalid
 - Affected hypotheses: H1-Hk
 - Failure type: implementation/config issue | invalid diagnostic | mechanism issue | benchmark/headroom issue | central paper-breaking hypothesis false | literature conflict | inconclusive | integrity failure
-- Decision: continue | local patch | change diagnostic | re-read literature | failure-to-innovation | proposal-revise | archive | human decision
+- Decision: <ONE_DECISION_TOKEN>
+- Allowed decision tokens:
+  - continue
+  - local patch
+  - change diagnostic
+  - re-read literature
+  - failure-to-innovation
+  - proposal-revise
+  - archive
+  - human decision
 - Local patch target: experiment-bridge | experiment-plan | proposal-revise | research-lit | failure-to-innovation | manual
 - Proposal revision needed: no | proposal-only | plan-only | both | assumption-only | mechanism-only | benchmark/control-only | diagnostic-branch-only
 - Next skill hint: <exact skill or human decision>

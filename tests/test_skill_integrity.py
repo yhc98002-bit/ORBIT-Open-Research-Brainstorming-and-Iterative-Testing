@@ -300,7 +300,8 @@ class SkillIntegrityTest(unittest.TestCase):
             SKILLS_DIR / "shared-references" / "research-harness-prompts.md",
         ]
         required = [
-            "READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED",
+            "Allowed final verdict tokens:",
+            "Final verdict: <ONE_TOKEN>",
             "RED_TEAM_REVIEW.md`  *(must end `READY_FOR_PAPER`)",
             "— orbit-red-team: true",
         ]
@@ -325,7 +326,8 @@ class SkillIntegrityTest(unittest.TestCase):
             "STOP C readiness is determined only by the final verdict token",
             "Do not implement fixes directly.",
             "Prompt Template for Round 2+ (Generic Improvement Mode Only)",
-            "READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED",
+            "Allowed final verdict tokens:",
+            "Final verdict: <ONE_TOKEN>",
         ]
         missing = [item for item in required if item not in text]
 

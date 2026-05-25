@@ -96,10 +96,10 @@ claims/claim_ledger.json                       (canonical Stage 21 claim/evidenc
 claims/CLAIM_LEDGER.md                         (generated view)
 orbit-research/CLAIM_CONSTRUCTION.md           (legacy compatibility view)
 orbit-research/NEGATIVE_RESULT_STRATEGY.md    (when tie/failure)
-orbit-research/RED_TEAM_REVIEW.md             (loop output from /auto-review-loop; verdict: READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED)
+orbit-research/RED_TEAM_REVIEW.md             (loop output from /auto-review-loop; final verdict token)
 paper/paper_package.json                       (Stage 24c submission package)
 orbit-research/AGENT_DECISION_RECOMMENDATION.md
-orbit-research/HUMAN_DECISION_NOTE.md         (human-authored/confirmed; verdict line: PROCEED | NARROW | REDESIGN | RE-READ | CHANGE BENCHMARK | STOP | HUMAN_DECISION_REQUIRED)
+orbit-research/HUMAN_DECISION_NOTE.md         (human-authored/confirmed; final decision token)
 ```
 
 Also reuse existing ARIS outputs when present:
@@ -535,8 +535,15 @@ Apply G17 anti-post-hoc check.
 
 **Action:** review → fix → re-review iterations managed by `/auto-review-loop`. Output
 rolls up into `orbit-research/RED_TEAM_REVIEW.md` (the ARIS skill writes here directly per
-its inline gate; this orchestrator does not duplicate the writing). The file must end with
-`READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED`.
+its inline gate; this orchestrator does not duplicate the writing). Allowed final verdict
+tokens are:
+
+- `READY_FOR_PAPER`
+- `REQUIRES_FIXES`
+- `REDESIGN_REQUIRED`
+- `HUMAN_DECISION_REQUIRED`
+
+The file must end with exactly `Final verdict: <ONE_TOKEN>`.
 
 ### Stage 24a: Paper Draft
 

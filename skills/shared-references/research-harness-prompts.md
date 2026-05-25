@@ -827,8 +827,14 @@ Per round, return:
 - which claims should be weakened;
 - whether the paper is currently submit-ready.
 
-Write RED_TEAM_REVIEW.md ending with exactly one of:
-READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED
+Allowed final verdict tokens:
+- READY_FOR_PAPER
+- REQUIRES_FIXES
+- REDESIGN_REQUIRED
+- HUMAN_DECISION_REQUIRED
+
+Write RED_TEAM_REVIEW.md ending with exactly:
+Final verdict: <ONE_TOKEN>
 
 The orchestrator dispatches this stage to ARIS /auto-review-loop, which manages the
 review → fix → re-review iterations. Output rolls up into RED_TEAM_REVIEW.md.

@@ -436,7 +436,14 @@ explicitly accepted as residual risk. Calls ARIS `/auto-review-loop`.
 
 Required artifact: `RED_TEAM_REVIEW.md`
 
-Required ending: `READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED`
+Allowed final verdict tokens:
+
+- `READY_FOR_PAPER`
+- `REQUIRES_FIXES`
+- `REDESIGN_REQUIRED`
+- `HUMAN_DECISION_REQUIRED`
+
+Required ending: `Final verdict: <ONE_TOKEN>`
 
 ### 24a. Paper Draft
 

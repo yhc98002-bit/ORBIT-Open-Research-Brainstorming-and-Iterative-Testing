@@ -127,15 +127,21 @@ In ORBIT red-team mode:
   become required-fix routes for `/diagnostic-to-review`, `/experiment-bridge`,
   `/result-to-claim`, or human decision.
 - Do not use score >= 4, score >= 6, or any numeric threshold as STOP C readiness.
-- Require exactly one final verdict token:
-  `READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED`.
+- Require exactly one final verdict token.
+- Allowed final verdict tokens:
+  - `READY_FOR_PAPER`
+  - `REQUIRES_FIXES`
+  - `REDESIGN_REQUIRED`
+  - `HUMAN_DECISION_REQUIRED`
+- At the very end, write exactly:
+  `Final verdict: <ONE_TOKEN>`
 - Only `READY_FOR_PAPER` may be interpreted as paper-ready, and even then paper writing
   still requires `HUMAN_DECISION_NOTE.md` ending `PROCEED`.
 
 Run `mkdir -p orbit-research/`, then write or update `orbit-research/RED_TEAM_REVIEW.md` with
 top rejection risks, essential fixes, claims to weaken, and submit-readiness.
-The file must end with exactly one of:
-`READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED`.
+The file must end with exactly:
+`Final verdict: <ONE_TOKEN>`.
 
 For ORBIT red-team mode, `RED_TEAM_REVIEW.md` must include:
 
@@ -232,7 +238,15 @@ Diagnostic ID:
 Evidence paths reviewed:
 Claim-by-claim findings:
 Required fixes or redesign route:
-Final verdict: READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED
+
+Allowed final verdict tokens:
+- READY_FOR_PAPER
+- REQUIRES_FIXES
+- REDESIGN_REQUIRED
+- HUMAN_DECISION_REQUIRED
+
+At the very end, write exactly:
+Final verdict: <ONE_TOKEN>
 ```
 
 Do not ask for a score-based readiness decision in this mode. A score may be recorded as
@@ -340,7 +354,10 @@ PROMPT
 If `ORBIT_RED_TEAM_ONLY = true`, extract these structured fields:
 
 - **Final verdict token**:
-  `READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED`
+  - `READY_FOR_PAPER`
+  - `REQUIRES_FIXES`
+  - `REDESIGN_REQUIRED`
+  - `HUMAN_DECISION_REQUIRED`
 - Reviewed claim ledger path
 - Diagnostic ID, if present
 - Evidence paths reviewed
@@ -608,16 +625,16 @@ When the generic improvement loop ends (positive assessment or max rounds):
    - List remaining blockers
    - Estimate effort needed for each
    - Suggest whether to continue manually or pivot
-7. If this run also produced `orbit-research/RED_TEAM_REVIEW.md`, end it with exactly one verdict token:
-   `READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED`.
+7. If this run also produced `orbit-research/RED_TEAM_REVIEW.md`, end it with exactly
+   `Final verdict: <ONE_TOKEN>` using one allowed final verdict token.
 8. **Feishu notification** (if configured): Send `pipeline_done` with final score progression table
 
 When `ORBIT_RED_TEAM_ONLY = true`, use ORBIT red-team termination instead:
 
 1. Write `orbit-research/RED_TEAM_REVIEW.md` and compatibility copies required by the
    caller.
-2. End the file with exactly one final verdict token:
-   `READY_FOR_PAPER | REQUIRES_FIXES | REDESIGN_REQUIRED | HUMAN_DECISION_REQUIRED`.
+2. End the file with exactly `Final verdict: <ONE_TOKEN>` using one allowed final
+   verdict token.
 3. Do not invoke `/result-to-claim`, patch code, launch experiments, or mark paper-ready
    from a score.
 4. Return control to `/diagnostic-to-review` Phase 5 so it can write `STOP_C_REVIEW.md`

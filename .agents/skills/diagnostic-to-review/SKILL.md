@@ -448,15 +448,38 @@ Load and follow [stop_c_review.md](prompts/stop_c_review.md). Always write the S
 review and `HUMAN_DECISION_NOTE.template.md`; final safe next action is human STOP C
 decision unless a human-authored `HUMAN_DECISION_NOTE.md` already exists and ends PROCEED.
 
-The human template must ask for an explicit final verdict, for example:
+The human template must ask for an explicit final decision.
+
+Allowed final decision tokens:
+
+- `PROCEED`
+- `FIX_FIRST`
+- `REDESIGN_DIAGNOSTIC`
+- `REFRAME_CLAIM`
+- `ARCHIVE`
+- `SCALE_UP`
+
+At the very end, the human must write exactly:
+`Final decision: <ONE_TOKEN>`.
+
+Example template:
 
 ```markdown
 # HUMAN_DECISION_NOTE
 
 - Diagnostic ID:
 - Reviewed STOP_C_REVIEW.md: yes/no
-- Decision: PROCEED | FIX_FIRST | REDESIGN_DIAGNOSTIC | REFRAME_CLAIM | ARCHIVE | SCALE_UP
 - Rationale:
+
+Allowed final decision tokens:
+- PROCEED
+- FIX_FIRST
+- REDESIGN_DIAGNOSTIC
+- REFRAME_CLAIM
+- ARCHIVE
+- SCALE_UP
+
+Final decision: <ONE_TOKEN>
 ```
 
 Compatibility latest copies:
@@ -555,7 +578,7 @@ For Phase 1 diagnostic audit, use expected verdict tokens:
 For Phase 4 STOP C red-team review, use expected verdict tokens:
 `READY_FOR_PAPER`, `REQUIRES_FIXES`, `REDESIGN_REQUIRED`, `HUMAN_DECISION_REQUIRED`.
 The imported standalone response must contain exactly one final verdict token. Candidate
-lists such as `READY_FOR_PAPER | REQUIRES_FIXES` and vague `# VERDICT` prose are blockers.
+lists with pipe separators and vague `# VERDICT` prose are blockers.
 Importing a Codex response satisfies only the Codex transport gap; it is not
 `HUMAN_DECISION_NOTE.md` approval.
 
