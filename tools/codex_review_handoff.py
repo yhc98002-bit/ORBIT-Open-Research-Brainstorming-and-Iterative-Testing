@@ -17,6 +17,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
 
+try:
+    from orbit_verdicts import extract_final_token
+except ImportError:  # pragma: no cover - used when imported as tools.codex_review_handoff
+    from tools.orbit_verdicts import extract_final_token
+
 
 DEFAULT_REQUIRED_SECTIONS = ("VERDICT",)
 NEGATIVE_PATTERNS = (
@@ -311,86 +316,14 @@ def section_present(text: str, section: str) -> bool:
     return needle.lower() in text.lower()
 
 
-def strip_markdown_token(value: str) -> str:
-    value = value.strip().rstrip(".").strip()
-    previous = None
-    while previous != value:
-        previous = value
-        value = value.strip().strip("*_`").strip()
-    return value.upper()
-
-
-def allowed_tokens_in_line(line: str, allowed_set: set[str]) -> List[str]:
-    upper = line.upper()
-    return sorted(
-        {
-            token
-            for token in allowed_set
-            if re.search(r"(?<![A-Z0-9_])%s(?![A-Z0-9_])" % re.escape(token), upper)
-        }
-    )
-
-
 def extract_final_verdict(text: str, expected_tokens: Sequence[str]) -> Dict[str, Any]:
-    allowed_set = set(normalize_verdict_tokens(expected_tokens))
-    errors: List[str] = []
-    occurrences: List[Dict[str, Any]] = []
-    if not allowed_set:
+    normalized_tokens = normalize_verdict_tokens(expected_tokens)
+    if not normalized_tokens:
         return {
             "verdict": None,
             "errors": ["verdict_required is true but expected_verdict_tokens is empty"],
         }
-
-    verdict_re = re.compile(
-        r"^(?:final\s+)?(?:verdict|decision)\s*[:=\-]\s*(.+)$",
-        re.IGNORECASE,
-    )
-    for line_no, raw_line in enumerate(text.splitlines(), start=1):
-        line = raw_line.strip()
-        if not line:
-            continue
-        token_matches = allowed_tokens_in_line(line, allowed_set)
-        if token_matches and "|" in line:
-            errors.append("line %d contains a verdict candidate list, not a final verdict" % line_no)
-            continue
-        if len(token_matches) > 1:
-            errors.append(
-                "line %d contains multiple expected verdict tokens: %s"
-                % (line_no, ", ".join(token_matches))
-            )
-            continue
-        if not token_matches:
-            continue
-
-        clean = re.sub(r"^[#>\-\s]+", "", line).strip()
-        match = verdict_re.search(clean)
-        if match:
-            value = strip_markdown_token(match.group(1))
-            if value in allowed_set:
-                occurrences.append({"line": line_no, "verdict": value})
-            else:
-                errors.append(
-                    "line %d mentions a verdict token but is not exactly one expected final verdict"
-                    % line_no
-                )
-            continue
-
-        value = strip_markdown_token(clean)
-        if value in allowed_set:
-            occurrences.append({"line": line_no, "verdict": value})
-
-    if len(occurrences) == 0:
-        errors.append("missing exactly one final verdict token from expected_verdict_tokens")
-    elif len(occurrences) > 1:
-        errors.append(
-            "expected exactly one final verdict token, found %d at lines %s"
-            % (len(occurrences), ", ".join(str(item["line"]) for item in occurrences))
-        )
-
-    return {
-        "verdict": occurrences[0]["verdict"] if len(occurrences) == 1 and not errors else None,
-        "errors": errors,
-    }
+    return extract_final_token(text, normalized_tokens, require_exactly_one=True)
 
 
 def validate_response_text(

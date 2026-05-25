@@ -604,6 +604,7 @@ def state_from_claim_ledger(repo: Path, legacy_artifacts: List[str]) -> Optional
         return state
 
     errors = [str(error) for error in approval.get("errors", [])]
+    semantic_errors = [str(error) for error in approval.get("claim_ledger_semantic_errors", [])]
     joined_errors = "\n".join(errors)
     red_team_path = approval.get("red_team_review") or "orbit-research/RED_TEAM_REVIEW.md"
     if approval.get("diagnostic_id"):
@@ -616,8 +617,10 @@ def state_from_claim_ledger(repo: Path, legacy_artifacts: List[str]) -> Optional
         "claim ledger must be 'ready'" in joined_errors
         or "codex_review" in joined_errors
         or "non-gating" in joined_errors
+        or bool(semantic_errors)
     ):
         command = '/result-to-claim "claims/claim_ledger.json"'
+        routed_errors = semantic_errors or errors
         state = state_with_legacy(
             repo,
             legacy_artifacts,
@@ -633,7 +636,7 @@ def state_from_claim_ledger(repo: Path, legacy_artifacts: List[str]) -> Optional
                     error,
                     command,
                 )
-                for error in errors
+                for error in routed_errors
             ],
             command,
         )

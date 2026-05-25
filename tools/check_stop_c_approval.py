@@ -5,9 +5,13 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Tuple
+
+try:
+    from orbit_verdicts import parse_final_token
+except ImportError:  # pragma: no cover - used when imported as tools.check_stop_c_approval
+    from tools.orbit_verdicts import parse_final_token
 
 
 RED_TEAM_READY = "READY_FOR_PAPER"
@@ -86,56 +90,8 @@ def extract_metadata(ledger: Mapping[str, Any]) -> Dict[str, Optional[str]]:
     }
 
 
-def strip_markdown_token(value: str) -> str:
-    value = value.strip().rstrip(".").strip()
-    previous = None
-    while previous != value:
-        previous = value
-        value = value.strip().strip("*_`").strip()
-    return value.upper()
-
-
-def allowed_tokens_in_line(line: str, allowed_set: set[str]) -> List[str]:
-    upper = line.upper()
-    return sorted(
-        {
-            token
-            for token in allowed_set
-            if re.search(r"(?<![A-Z0-9_])%s(?![A-Z0-9_])" % re.escape(token), upper)
-        }
-    )
-
-
-def parse_final_verdict(text: str, allowed: Iterable[str]) -> Optional[str]:
-    allowed_set = {item.upper() for item in allowed}
-    verdict_re = re.compile(
-        r"^(?:final\s+)?(?:verdict|decision)\s*[:=\-]\s*(.+)$",
-        re.IGNORECASE,
-    )
-
-    for raw_line in reversed(text.splitlines()):
-        line = raw_line.strip()
-        if not line:
-            continue
-
-        # Candidate lists/templates are not final approvals.
-        if "|" in line:
-            continue
-        if len(allowed_tokens_in_line(line, allowed_set)) > 1:
-            continue
-
-        line = re.sub(r"^[#>\-\s]+", "", line).strip()
-        match = verdict_re.search(line)
-        if match:
-            value = strip_markdown_token(match.group(1))
-            if value in allowed_set:
-                return value
-            continue
-
-        normalized = strip_markdown_token(line)
-        if normalized in allowed_set:
-            return normalized
-    return None
+def parse_final_verdict(text: str, allowed: List[str] | set[str] | Tuple[str, ...]) -> Optional[str]:
+    return parse_final_token(text, allowed)
 
 
 def claim_ledger_readiness_errors(

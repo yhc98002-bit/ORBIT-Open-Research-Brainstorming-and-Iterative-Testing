@@ -89,8 +89,9 @@ file records current blockers only; it does not change workflow behavior.
 - `orbit-core` profile installs must include Codex standalone recovery support, or the
   installer must always include that recovery utility.
 
-Status: tests added by `test(v2): add final stable blocker regressions`; fixes still
-pending in subsequent v2.2 stabilization prompts.
+Status: parser hardening and invalid-claim `/orbit-status` recovery route fixed by
+`fix(approval): reject template verdicts and list-token approvals`; profile install
+support for Codex recovery remains pending in a subsequent v2.2 stabilization prompt.
 
 ## Non-Blocking Known Limitations
 
