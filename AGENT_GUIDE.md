@@ -2,6 +2,10 @@
 
 > **For AI agents reading this repo.** If you are a human, see [README.md](README.md).
 
+Release status: **ORBIT v2.2 stable candidate**. Methodology contract remains ORBIT
+v1.3; runtime architecture is the ORBIT v2.2 pack/status workflow; legacy Markdown
+artifacts are compatibility views only.
+
 ORBIT (Open Research Brainstorming and Iterative Testing) v1.3 is a research-methodology routing harness built on
 ARIS execution skills. It routes through 26 stages organised into four spines (Discovery /
 Grounding / Innovation / Validation) by mode (EXPLORATION / INNOVATION / COMMITMENT) and

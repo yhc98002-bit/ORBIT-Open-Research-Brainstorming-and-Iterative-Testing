@@ -1,5 +1,9 @@
 # ORBIT — AI 辅助科研流水线
 
+Release status: **ORBIT v2.2 stable candidate**. Methodology contract remains the
+ORBIT v1.3 stage/gate model; runtime architecture is the ORBIT v2.2 pack/status workflow;
+legacy Markdown artifacts are compatibility views.
+
 ORBIT 是一套给 **Claude Code + Codex** 使用的科研工作流技能包。它的目标不是让 agent 盲目从 idea 一路跑到论文，而是帮你把科研过程拆成几个清楚的阶段：
 
 1. 找方向、形成 proposal
@@ -417,6 +421,14 @@ import-codex-review
 ```
 
 否则完整 idea-to-paper flow 可能缺命令。
+
+推荐的精简完整 profile 是：
+
+```bash
+bash tools/install_aris.sh --profile research-paper
+```
+
+`orbit-core` 不是完整 paper workflow；它只覆盖 STOP A 到 STOP C 和 Codex recovery。
 
 ---
 

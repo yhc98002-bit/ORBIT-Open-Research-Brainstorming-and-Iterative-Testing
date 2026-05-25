@@ -1,11 +1,11 @@
-# ORBIT v2 / v2.1 Stabilization Summary
+# ORBIT v2.2 Stabilization Summary
 
-This release gate summarizes the v2 architecture and v2.1 stabilization pass. It does not
-introduce a new architecture; it verifies that the v2 contracts are internally consistent
-and that legacy surfaces are clearly marked as compatibility paths.
+This release gate summarizes the v2 architecture and the v2.2 final stabilization pass.
+It does not introduce a new architecture; it verifies that the v2 contracts are
+internally consistent and that legacy surfaces are clearly marked as compatibility paths.
 
 Version terminology: methodology contract = ORBIT v1.3 stage/gate model; runtime
-architecture = ORBIT v2.1 pack/status workflow; legacy Markdown compatibility = v1.x
+architecture = ORBIT v2.2 pack/status workflow; legacy Markdown compatibility = v1.x
 artifacts remain readable as compatibility views.
 
 ## What Changed
@@ -26,6 +26,12 @@ artifacts remain readable as compatibility views.
   diagnostic id, target artifact, and resume command without counting as human approval.
 - Stabilized diagnostic session rerun semantics: active sessions may resume, while
   terminal sessions require explicit `resume` or `create --fresh`.
+- Hardened final verdict parsing so unfinished templates, allowed-token bullet lists,
+  candidate lists, and vague Codex handoff responses cannot approve STOP C.
+- Added the `research-paper` install profile and included `/import-codex-review` in
+  `orbit-core` so Claude Code main workflows retain Codex standalone recovery.
+- Routed semantically invalid claim ledgers to `/result-to-claim` repair instead of
+  ORBIT red-team review.
 - Synced full mirrors and made mirror drift CI-checkable.
 
 ## Public Entrypoints
@@ -100,7 +106,7 @@ differ.
 
 ## Release Checks
 
-Fast v2.1 stabilization release gate:
+Fast v2.2 stabilization release gate:
 
 ```bash
 make release-check
@@ -133,12 +139,12 @@ The core tests import helper functions directly, for example
 `codex_review_handoff.py`, and `diagnostic_session.py`.
 
 Full `pytest -q` remains useful for broader local or CI coverage when the environment has
-adequate timeout and optional dependencies for unrelated MCP/server tests. It is not the
-fast release gate.
+adequate timeout and optional dependencies for unrelated MCP/server tests. It was not run
+for this final v2.2 audit; `make test-fast` is the fast release gate.
 
 ## Final Release-Blocker Audit
 
-Status: **ORBIT v2.1 stable candidate**.
+Status: **ORBIT v2.2 stable candidate**.
 
 Checks run on 2026-05-25:
 
@@ -149,10 +155,11 @@ Checks run on 2026-05-25:
 | `python tools/check_skill_mirror.py --repo .` | pass, 0 unexpected drift |
 | `python tools/check_prompt_assets.py --repo .` | pass |
 | `python tools/validate_orbit_pack.py --repo tests/fixtures/golden_minimal_project --all` | pass, 6 ok |
-| `make test-core` | pass, 70 passed / 3 CLI tests deselected |
+| `make test-core` | pass, 77 passed / 3 CLI tests deselected |
 | `make test-cli` | pass |
 | `make test-static` | pass, 19 passed / 3 installer tests deselected |
 | `make test-fast` | pass, composed from `test-core`, `test-cli`, and `test-static` |
+| Full `pytest -q` | not run in this audit; broader optional coverage requires adequate timeout |
 
 Release-blocker checklist:
 
@@ -160,16 +167,23 @@ Release-blocker checklist:
   `diagnostic_id` is present; invalid claim ledgers block approval; missing diagnostic or
   ledger identity blocks by default; draft, pending, degraded, and non-gating claim
   ledgers are blocked; human decision must parse as `PROCEED`; Markdown single-token
-  verdicts are accepted; candidate-list/template verdicts are rejected.
+  verdicts are accepted; candidate-list/template verdicts, bullet-list tokens, and
+  unfilled `<ONE_TOKEN>` templates are rejected.
 - `/orbit-status`: blocked paper packages are not reported completed; STOP/HOLD/template
   human decisions do not route to paper handoff; stale `ORBIT_STATE.json` cannot override
-  validation; ready paper packages require validator pass; per-diagnostic red-team
-  reviews are recognized; v2 public paper skill names are used instead of
+  validation; invalid claim ledgers route to `/result-to-claim` repair; valid unreviewed
+  claim ledgers route to ORBIT red-team review; approved claim ledgers route to
+  `/paper-from-claims`; ready paper packages require validator pass; per-diagnostic
+  red-team reviews are recognized; v2 public paper skill names are used instead of
   `/paper-writing`.
 - Codex handoff: generated prompts preserve producer STOP, skill, phase, diagnostic id,
   target artifact, and resume command; imports update `ORBIT_STATE.json` with the resume
   command; verdict-required handoffs validate exactly one final token; imported Codex
   review does not fabricate human approval.
+- Installation/profile: default install remains the full workflow; `orbit-core` includes
+  `/import-codex-review`; `research-paper` contains the complete idea-to-paper public
+  workflow; docs state that profile installs reconcile to one profile and are not
+  additive.
 - Package validation: ready paper packages require a declared PDF that exists, referenced
   verified figure outputs that exist, verified citation keys, a valid claim ledger, and
   strict STOP C approval.

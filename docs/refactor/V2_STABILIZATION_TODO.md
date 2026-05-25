@@ -1,7 +1,7 @@
 # ORBIT v2.1 / v2.2 Stabilization TODO
 
 Generated for the v2.1 stabilization baseline and v2.2 final stable regression pass. This
-file records current blockers only; it does not change workflow behavior.
+file records release blockers and known limitations; it does not change workflow behavior.
 
 ## Current Baseline
 
@@ -76,23 +76,40 @@ file records current blockers only; it does not change workflow behavior.
      session, and legacy paper-path documentation blockers are recorded as closed in
      `docs/refactor/V2_STABILIZATION_SUMMARY.md`.
 
+## Closed in v2.2 Final Stable Pass
+
+1. Verdict parsers must reject unfinished templates such as allowed-token bullet lists
+   followed by `Final verdict: <ONE_TOKEN>` or `Final decision: <ONE_TOKEN>`.
+   - Status: fixed by `fix(approval): reject template verdicts and list-token approvals`.
+   - Shared final-token parsing now rejects list items, placeholders, candidate lists,
+     multiple allowed tokens on one line, and vague verdict-required Codex responses.
+
+2. Bullet-list tokens such as `- PROCEED` or `- READY_FOR_PAPER` must never count as
+   final approvals.
+   - Status: fixed by `fix(approval): reject template verdicts and list-token approvals`.
+
+3. Invalid semantic claim ledgers must route `/orbit-status` to `/result-to-claim` or
+   claim-ledger repair, not to `/auto-review-loop`.
+   - Status: fixed by `fix(status): route invalid claim ledgers to claim repair`.
+   - Valid but unreviewed claim ledgers still route to ORBIT red-team review.
+
+4. `orbit-core` profile installs must include Codex standalone recovery support, and the
+   full idea-to-paper workflow must have a clear recommended profile.
+   - Status: fixed by `fix(installer): add complete research-paper profile and Codex
+     recovery utility`.
+   - `orbit-core` includes `/import-codex-review`; `research-paper` includes the complete
+     idea-to-paper public workflow.
+
+5. Final ORBIT v2.2 release-blocker audit.
+   - Status: fixed by `chore(release): complete ORBIT v2.2 stable audit`.
+   - Required static checks and `make test-fast` passed on 2026-05-25.
+   - Full `pytest -q` was not run in this audit; it remains broader optional coverage for
+     environments with adequate timeout.
+
 ## Current Unresolved Stabilization Blockers
 
-### v2.2 final stable blockers now covered by regression tests
-
-- Verdict parsers must reject unfinished templates such as allowed-token bullet lists
-  followed by `Final verdict: <ONE_TOKEN>` or `Final decision: <ONE_TOKEN>`.
-- Bullet-list tokens such as `- PROCEED` or `- READY_FOR_PAPER` must never count as final
-  approvals.
-- Invalid semantic claim ledgers must route `/orbit-status` to `/result-to-claim` or
-  claim-ledger repair, not to `/auto-review-loop`.
-- `orbit-core` profile installs must include Codex standalone recovery support, and the
-  full idea-to-paper workflow must have a clear recommended profile.
-
-Status: parser hardening and invalid-claim `/orbit-status` recovery route fixed by
-`fix(approval): reject template verdicts and list-token approvals`; profile install
-support for Codex recovery and the explicit `research-paper` profile are fixed by
-`fix(installer): add complete research-paper profile and Codex recovery utility`.
+No known P0 parser, profile-install, STOP C approval, package-readiness, or
+`/orbit-status` recovery blockers remain after the v2.2 fast/static release gate.
 
 ## Non-Blocking Known Limitations
 
@@ -102,7 +119,7 @@ support for Codex recovery and the explicit `research-paper` profile are fixed b
 - External API, GPU, live MCP transport, and full paper compilation are outside the golden
   fixture and fast release gate.
 - Full `pytest -q` is broader coverage and needs an environment with adequate timeout and
-  optional dependencies; `make test-fast` is the v2.1 release-blocker gate.
+  optional dependencies; `make test-fast` is the v2.2 release-blocker gate.
 
 ## Baseline Validation Notes
 
