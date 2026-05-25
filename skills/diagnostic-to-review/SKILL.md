@@ -537,6 +537,9 @@ python3 tools/codex_review_handoff.py generate \
   --objective "<phase-specific review objective>" \
   --output-format "<required verdict schema>" \
   --required-section "VERDICT" \
+  --verdict-required \
+  --expected-verdict-token "<PHASE_TOKEN_1>" \
+  --expected-verdict-token "<PHASE_TOKEN_2>" \
   --output-artifact "orbit-research/diagnostics/<diagnostic_id>/<review-artifact>.md" \
   --current-stop "STOP_C" \
   --producer-skill "diagnostic-to-review" \
@@ -545,6 +548,16 @@ python3 tools/codex_review_handoff.py generate \
   --resume-command "/diagnostic-to-review \"$ARGUMENTS\" -- resume:true" \
   --write-orbit-state
 ```
+
+For Phase 1 diagnostic audit, use expected verdict tokens:
+`PASS`, `FIX_BEFORE_GPU`, `REDESIGN_EXPERIMENT`, `ERROR`.
+
+For Phase 4 STOP C red-team review, use expected verdict tokens:
+`READY_FOR_PAPER`, `REQUIRES_FIXES`, `REDESIGN_REQUIRED`, `HUMAN_DECISION_REQUIRED`.
+The imported standalone response must contain exactly one final verdict token. Candidate
+lists such as `READY_FOR_PAPER | REQUIRES_FIXES` and vague `# VERDICT` prose are blockers.
+Importing a Codex response satisfies only the Codex transport gap; it is not
+`HUMAN_DECISION_NOTE.md` approval.
 
 Set `pause_reason: codex_review_needed` and safe next command:
 

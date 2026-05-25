@@ -33,6 +33,12 @@ If any prerequisite is missing, stop with a blocker. Do not mark review passed.
    python3 tools/codex_review_handoff.py validate "$ARGUMENTS" --repo .
    ```
 
+   The validator reads `orbit-research/codex-prompts/<phase-id>.json`. If the metadata
+   sets `verdict_required: true`, it must find exactly one final verdict token from
+   `expected_verdict_tokens`. Markdown wrappers such as `Final verdict:
+   **REQUIRES_FIXES**` are allowed. Candidate lists such as `Final verdict:
+   READY_FOR_PAPER | REQUIRES_FIXES` and vague `# VERDICT` prose are rejected.
+
 2. If validation fails, report the missing sections/tokens and keep ORBIT blocked or
    paused with `pause_reason: codex_review_needed`.
 
@@ -56,6 +62,8 @@ If any prerequisite is missing, stop with a blocker. Do not mark review passed.
 ## Rules
 
 - Do not accept a response that omits required sections from the exported prompt.
+- For phase-specific load-bearing reviews, do not accept a response that lacks exactly
+  one configured final verdict token.
 - Do not summarize the response into a pass verdict by yourself.
 - Do not fabricate missing reviewer findings or verdict tokens.
 - Do not treat import as `HUMAN_DECISION_NOTE.md` approval or STOP C `PROCEED`.

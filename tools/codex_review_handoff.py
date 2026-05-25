@@ -93,6 +93,20 @@ def clean_optional(value: Optional[str]) -> Optional[str]:
     return stripped or None
 
 
+def normalize_verdict_tokens(tokens: Optional[Sequence[str]]) -> List[str]:
+    normalized: List[str] = []
+    seen = set()
+    for token in tokens or []:
+        value = token.strip().upper()
+        if not value or value in seen:
+            continue
+        if not re.match(r"^[A-Z0-9_][A-Z0-9_-]*$", value):
+            raise ValueError("expected verdict token must be uppercase token-like text: %r" % token)
+        seen.add(value)
+        normalized.append(value)
+    return normalized
+
+
 def producer_context_from_args(args: argparse.Namespace) -> Dict[str, Optional[str]]:
     current_stop = clean_optional(getattr(args, "current_stop", None)) or "NONE"
     producer_skill = clean_optional(getattr(args, "producer_skill", None))
@@ -118,10 +132,34 @@ def render_prompt(
     response_path: str,
     output_artifact: Optional[str],
     producer_context: Optional[Mapping[str, Optional[str]]] = None,
+    verdict_required: bool = False,
+    expected_verdict_tokens: Sequence[str] = (),
 ) -> str:
     files_block = "\n".join("- `%s`" % item for item in files) if files else "- No files listed. Ask the user for missing files rather than guessing."
     sections_block = "\n".join("- `%s`" % item for item in required_sections) if required_sections else "- Non-empty review response"
     artifact_line = output_artifact or "None. Import should validate only unless caller supplies an artifact path."
+    verdict_lines: List[str] = []
+    if verdict_required:
+        token_list = ", ".join(expected_verdict_tokens) if expected_verdict_tokens else "<configured expected verdict tokens>"
+        verdict_lines = [
+            "",
+            "Verdict import validation is enabled for this handoff.",
+            "",
+            "End the response with exactly one final verdict line using one of:",
+            "",
+            "```text",
+            token_list,
+            "```",
+            "",
+            "Accepted form:",
+            "",
+            "```text",
+            "Final verdict: <ONE_TOKEN>",
+            "```",
+            "",
+            "Do not write a candidate list such as `A | B`; import rejects templates.",
+            "",
+        ]
     context_lines: List[str] = []
     has_known_context = bool(
         producer_context
@@ -175,6 +213,7 @@ def render_prompt(
             "The response must include these required sections or tokens:",
             "",
             sections_block,
+            *verdict_lines,
             "",
             "## Import Instructions",
             "",
@@ -206,6 +245,9 @@ def generate(args: argparse.Namespace) -> int:
     repo = Path(args.repo).resolve()
     phase_id = safe_phase_id(args.phase_id)
     required_sections = tuple(args.required_section or DEFAULT_REQUIRED_SECTIONS)
+    expected_verdict_tokens = normalize_verdict_tokens(args.expected_verdict_token)
+    if args.verdict_required and not expected_verdict_tokens:
+        raise ValueError("--verdict-required requires at least one --expected-verdict-token")
     prompt_rel = "orbit-research/codex-prompts/%s.md" % phase_id
     response_rel = "orbit-research/codex-imports/%s.response.md" % phase_id
     producer_context = producer_context_from_args(args)
@@ -220,6 +262,8 @@ def generate(args: argparse.Namespace) -> int:
         response_path=response_rel,
         output_artifact=args.output_artifact,
         producer_context=producer_context,
+        verdict_required=args.verdict_required,
+        expected_verdict_tokens=expected_verdict_tokens,
     )
 
     p_path = prompt_path(repo, phase_id)
@@ -237,6 +281,8 @@ def generate(args: argparse.Namespace) -> int:
         "objective": args.objective,
         "output_format": args.output_format,
         "required_sections": list(required_sections),
+        "verdict_required": bool(args.verdict_required),
+        "expected_verdict_tokens": list(expected_verdict_tokens),
         "generated_at": utc_now_iso(),
         "producer_context": producer_context,
         "producer_skill": producer_context["producer_skill"],
@@ -265,7 +311,94 @@ def section_present(text: str, section: str) -> bool:
     return needle.lower() in text.lower()
 
 
-def validate_response_text(text: str, required_sections: Iterable[str]) -> Dict[str, Any]:
+def strip_markdown_token(value: str) -> str:
+    value = value.strip().rstrip(".").strip()
+    previous = None
+    while previous != value:
+        previous = value
+        value = value.strip().strip("*_`").strip()
+    return value.upper()
+
+
+def allowed_tokens_in_line(line: str, allowed_set: set[str]) -> List[str]:
+    upper = line.upper()
+    return sorted(
+        {
+            token
+            for token in allowed_set
+            if re.search(r"(?<![A-Z0-9_])%s(?![A-Z0-9_])" % re.escape(token), upper)
+        }
+    )
+
+
+def extract_final_verdict(text: str, expected_tokens: Sequence[str]) -> Dict[str, Any]:
+    allowed_set = set(normalize_verdict_tokens(expected_tokens))
+    errors: List[str] = []
+    occurrences: List[Dict[str, Any]] = []
+    if not allowed_set:
+        return {
+            "verdict": None,
+            "errors": ["verdict_required is true but expected_verdict_tokens is empty"],
+        }
+
+    verdict_re = re.compile(
+        r"^(?:final\s+)?(?:verdict|decision)\s*[:=\-]\s*(.+)$",
+        re.IGNORECASE,
+    )
+    for line_no, raw_line in enumerate(text.splitlines(), start=1):
+        line = raw_line.strip()
+        if not line:
+            continue
+        token_matches = allowed_tokens_in_line(line, allowed_set)
+        if token_matches and "|" in line:
+            errors.append("line %d contains a verdict candidate list, not a final verdict" % line_no)
+            continue
+        if len(token_matches) > 1:
+            errors.append(
+                "line %d contains multiple expected verdict tokens: %s"
+                % (line_no, ", ".join(token_matches))
+            )
+            continue
+        if not token_matches:
+            continue
+
+        clean = re.sub(r"^[#>\-\s]+", "", line).strip()
+        match = verdict_re.search(clean)
+        if match:
+            value = strip_markdown_token(match.group(1))
+            if value in allowed_set:
+                occurrences.append({"line": line_no, "verdict": value})
+            else:
+                errors.append(
+                    "line %d mentions a verdict token but is not exactly one expected final verdict"
+                    % line_no
+                )
+            continue
+
+        value = strip_markdown_token(clean)
+        if value in allowed_set:
+            occurrences.append({"line": line_no, "verdict": value})
+
+    if len(occurrences) == 0:
+        errors.append("missing exactly one final verdict token from expected_verdict_tokens")
+    elif len(occurrences) > 1:
+        errors.append(
+            "expected exactly one final verdict token, found %d at lines %s"
+            % (len(occurrences), ", ".join(str(item["line"]) for item in occurrences))
+        )
+
+    return {
+        "verdict": occurrences[0]["verdict"] if len(occurrences) == 1 and not errors else None,
+        "errors": errors,
+    }
+
+
+def validate_response_text(
+    text: str,
+    required_sections: Iterable[str],
+    verdict_required: bool = False,
+    expected_verdict_tokens: Sequence[str] = (),
+) -> Dict[str, Any]:
     errors: List[str] = []
     warnings: List[str] = []
     stripped = text.strip()
@@ -281,7 +414,12 @@ def validate_response_text(text: str, required_sections: Iterable[str]) -> Dict[
         errors.append("missing required sections/tokens: %s" % ", ".join(missing))
     if "verdict" not in lowered:
         warnings.append("response does not contain the word verdict")
-    return {"valid": not errors, "errors": errors, "warnings": warnings}
+    verdict: Optional[str] = None
+    if verdict_required:
+        verdict_result = extract_final_verdict(stripped, expected_verdict_tokens)
+        verdict = verdict_result["verdict"]
+        errors.extend(verdict_result["errors"])
+    return {"valid": not errors, "errors": errors, "warnings": warnings, "verdict": verdict}
 
 
 def required_sections_for(repo: Path, response: Path, explicit: Optional[Sequence[str]]) -> List[str]:
@@ -297,15 +435,46 @@ def required_sections_for(repo: Path, response: Path, explicit: Optional[Sequenc
     return list(DEFAULT_REQUIRED_SECTIONS)
 
 
+def metadata_for_response(repo: Path, response: Path) -> Dict[str, Any]:
+    phase_id = phase_id_from_response(response)
+    m_path = metadata_path(repo, phase_id)
+    return read_json(m_path) if m_path.exists() else {}
+
+
+def verdict_requirements_for(
+    metadata: Mapping[str, Any],
+    verdict_required_override: bool = False,
+    token_override: Optional[Sequence[str]] = None,
+) -> Dict[str, Any]:
+    verdict_required = bool(verdict_required_override or metadata.get("verdict_required"))
+    if token_override:
+        expected_tokens = normalize_verdict_tokens(token_override)
+    else:
+        metadata_tokens = metadata.get("expected_verdict_tokens")
+        expected_tokens = normalize_verdict_tokens(
+            metadata_tokens if isinstance(metadata_tokens, list) else []
+        )
+    return {
+        "verdict_required": verdict_required,
+        "expected_verdict_tokens": expected_tokens,
+    }
+
+
 def validate(args: argparse.Namespace) -> int:
     repo = Path(args.repo).resolve()
     response = repo_path(repo, args.response)
+    metadata = metadata_for_response(repo, response)
     sections = required_sections_for(repo, response, args.required_section)
+    verdict_requirements = verdict_requirements_for(
+        metadata,
+        verdict_required_override=args.verdict_required,
+        token_override=args.expected_verdict_token,
+    )
     try:
         text = response.read_text(encoding="utf-8", errors="replace")
-        result = validate_response_text(text, sections)
+        result = validate_response_text(text, sections, **verdict_requirements)
     except OSError as exc:
-        result = {"valid": False, "errors": ["could not read response: %s" % exc], "warnings": []}
+        result = {"valid": False, "errors": ["could not read response: %s" % exc], "warnings": [], "verdict": None}
     if args.json:
         print(json.dumps(result, indent=2, sort_keys=True, ensure_ascii=True))
     else:
@@ -356,7 +525,12 @@ def import_review(args: argparse.Namespace) -> int:
     )
     sections = required_sections_for(repo, response, args.required_section)
     text = response.read_text(encoding="utf-8", errors="replace")
-    result = validate_response_text(text, sections)
+    verdict_requirements = verdict_requirements_for(
+        metadata,
+        verdict_required_override=args.verdict_required,
+        token_override=args.expected_verdict_token,
+    )
+    result = validate_response_text(text, sections, **verdict_requirements)
     if not result["valid"]:
         print(json.dumps(result, indent=2, sort_keys=True, ensure_ascii=True) if args.json else "invalid response")
         for error in result["errors"]:
@@ -388,6 +562,7 @@ def import_review(args: argparse.Namespace) -> int:
             "imported_response_path": rel_to_repo(repo, response),
             "imported_output_artifact": copied_to,
             "import_valid": True,
+            "imported_verdict": result.get("verdict"),
         }
     )
     write_json(m_path, metadata)
@@ -398,6 +573,7 @@ def import_review(args: argparse.Namespace) -> int:
         "copied_to": copied_to,
         "warnings": result["warnings"],
         "errors": [],
+        "verdict": result.get("verdict"),
         "producer_skill": metadata.get("producer_skill"),
         "producer_phase": metadata.get("producer_phase"),
         "diagnostic_id": metadata.get("diagnostic_id"),
@@ -476,6 +652,8 @@ def build_parser() -> argparse.ArgumentParser:
     gen.add_argument("--objective", required=True, help="Review objective.")
     gen.add_argument("--output-format", required=True, help="Required response schema or format.")
     gen.add_argument("--required-section", action="append", help="Required response section/token. Repeatable.")
+    gen.add_argument("--verdict-required", action="store_true", help="Require exactly one final verdict token during import.")
+    gen.add_argument("--expected-verdict-token", action="append", help="Allowed final verdict token. Repeatable.")
     gen.add_argument("--output-artifact", help="Artifact path to copy imported response into.")
     gen.add_argument("--current-stop", choices=("NONE", "STOP_A", "STOP_B", "STOP_C", "STOP_D", "COMPLETED"), default="NONE", help="Original ORBIT stop that requested the Codex review.")
     gen.add_argument("--producer-skill", help="Skill that requested the Codex review, e.g. diagnostic-to-review.")
@@ -489,6 +667,8 @@ def build_parser() -> argparse.ArgumentParser:
     val.add_argument("response", help="Path to orbit-research/codex-imports/<phase-id>.response.md.")
     val.add_argument("--repo", default=".", help="Repository root.")
     val.add_argument("--required-section", action="append", help="Required section/token override. Repeatable.")
+    val.add_argument("--verdict-required", action="store_true", help="Require exactly one final verdict token.")
+    val.add_argument("--expected-verdict-token", action="append", help="Allowed final verdict token override. Repeatable.")
     val.add_argument("--json", action="store_true", help="Emit JSON report.")
     val.set_defaults(func=validate)
 
@@ -496,6 +676,8 @@ def build_parser() -> argparse.ArgumentParser:
     imp.add_argument("response", help="Path to orbit-research/codex-imports/<phase-id>.response.md.")
     imp.add_argument("--repo", default=".", help="Repository root.")
     imp.add_argument("--required-section", action="append", help="Required section/token override. Repeatable.")
+    imp.add_argument("--verdict-required", action="store_true", help="Require exactly one final verdict token.")
+    imp.add_argument("--expected-verdict-token", action="append", help="Allowed final verdict token override. Repeatable.")
     imp.add_argument("--output-artifact", help="Override target review artifact.")
     imp.add_argument("--mode", choices=("copy", "append"), default="copy", help="How to write the target artifact.")
     imp.add_argument("--json", action="store_true", help="Emit JSON report.")

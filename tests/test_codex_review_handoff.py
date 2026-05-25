@@ -38,6 +38,49 @@ class CodexReviewHandoffTest(unittest.TestCase):
         )
         return response
 
+    def write_response_text(self, phase_id: str, text: str) -> Path:
+        response = self.tmp / "orbit-research" / "codex-imports" / ("%s.response.md" % phase_id)
+        response.parent.mkdir(parents=True, exist_ok=True)
+        response.write_text(text, encoding="utf-8")
+        return response
+
+    def generate_red_team_handoff(self, phase_id: str = "diag_123.phase-4-review") -> None:
+        self.run_tool(
+            "generate",
+            "--repo",
+            str(self.tmp),
+            "--phase-id",
+            phase_id,
+            "--role",
+            "Independent STOP C reviewer",
+            "--objective",
+            "Review STOP C claims.",
+            "--output-format",
+            "Include VERDICT and one final ORBIT red-team token.",
+            "--output-artifact",
+            "orbit-research/diagnostics/diag_123/RED_TEAM_REVIEW.md",
+            "--current-stop",
+            "STOP_C",
+            "--producer-skill",
+            "diagnostic-to-review",
+            "--producer-phase",
+            "phase-4-review",
+            "--diagnostic-id",
+            "diag_123",
+            "--resume-command",
+            '/diagnostic-to-review "experiment/experiment_pack.json" -- resume:true',
+            "--verdict-required",
+            "--expected-verdict-token",
+            "READY_FOR_PAPER",
+            "--expected-verdict-token",
+            "REQUIRES_FIXES",
+            "--expected-verdict-token",
+            "REDESIGN_REQUIRED",
+            "--expected-verdict-token",
+            "HUMAN_DECISION_REQUIRED",
+            "--write-orbit-state",
+        )
+
     def test_generate_with_producer_context_writes_orbit_state(self):
         self.run_tool(
             "generate",
@@ -149,42 +192,14 @@ class CodexReviewHandoffTest(unittest.TestCase):
         self.assertIn("imported_at", metadata)
         self.assertTrue((self.tmp / "orbit-research" / "diagnostics" / "diag_123" / "RED_TEAM_REVIEW.md").exists())
 
-    @unittest.expectedFailure
     def test_regression_import_rejects_verdict_heading_without_concrete_token(self):
         phase_id = "diag_123.phase-4-review"
-        self.run_tool(
-            "generate",
-            "--repo",
-            str(self.tmp),
-            "--phase-id",
+        self.generate_red_team_handoff(phase_id)
+        self.write_response_text(
             phase_id,
-            "--role",
-            "Independent STOP C reviewer",
-            "--objective",
-            "Review STOP C claims.",
-            "--output-format",
-            "Include VERDICT.",
-            "--output-artifact",
-            "orbit-research/diagnostics/diag_123/RED_TEAM_REVIEW.md",
-            "--current-stop",
-            "STOP_C",
-            "--producer-skill",
-            "diagnostic-to-review",
-            "--producer-phase",
-            "phase-4-review",
-            "--diagnostic-id",
-            "diag_123",
-            "--resume-command",
-            '/diagnostic-to-review "experiment/experiment_pack.json" -- resume:true',
-            "--write-orbit-state",
-        )
-        response = self.tmp / "orbit-research" / "codex-imports" / ("%s.response.md" % phase_id)
-        response.parent.mkdir(parents=True, exist_ok=True)
-        response.write_text(
             "# VERDICT\n\n"
             "The response has the expected heading and enough explanatory prose, but it "
             "intentionally omits a concrete review token so import must reject it.\n",
-            encoding="utf-8",
         )
 
         code = codex_review_handoff.main(
@@ -200,6 +215,97 @@ class CodexReviewHandoffTest(unittest.TestCase):
         self.assertFalse(
             (self.tmp / "orbit-research" / "diagnostics" / "diag_123" / "RED_TEAM_REVIEW.md").exists()
         )
+
+    def test_import_accepts_markdown_wrapped_phase_specific_verdict(self):
+        phase_id = "diag_123.phase-4-review"
+        self.generate_red_team_handoff(phase_id)
+        self.write_response_text(
+            phase_id,
+            "# VERDICT\n\n"
+            "The standalone Codex review checked the claim ledger, evidence paths, and "
+            "STOP C blockers. It found issues that must be fixed before paper handoff.\n\n"
+            "Final verdict: **REQUIRES_FIXES**\n",
+        )
+
+        self.run_tool(
+            "import",
+            "orbit-research/codex-imports/%s.response.md" % phase_id,
+            "--repo",
+            str(self.tmp),
+        )
+
+        metadata = read_json(self.tmp / "orbit-research" / "codex-prompts" / ("%s.json" % phase_id))
+        self.assertTrue(metadata["verdict_required"])
+        self.assertEqual(
+            metadata["expected_verdict_tokens"],
+            [
+                "READY_FOR_PAPER",
+                "REQUIRES_FIXES",
+                "REDESIGN_REQUIRED",
+                "HUMAN_DECISION_REQUIRED",
+            ],
+        )
+        self.assertEqual(metadata["imported_verdict"], "REQUIRES_FIXES")
+        artifact = self.tmp / "orbit-research" / "diagnostics" / "diag_123" / "RED_TEAM_REVIEW.md"
+        self.assertIn("Final verdict: **REQUIRES_FIXES**", artifact.read_text(encoding="utf-8"))
+
+    def test_import_rejects_phase_specific_verdict_candidate_list(self):
+        phase_id = "diag_123.phase-4-review"
+        self.generate_red_team_handoff(phase_id)
+        self.write_response_text(
+            phase_id,
+            "# VERDICT\n\n"
+            "The standalone Codex review text is long enough and describes several issues, "
+            "but it leaves the final decision as a template instead of choosing one.\n\n"
+            "Final verdict: READY_FOR_PAPER | REQUIRES_FIXES\n",
+        )
+
+        code = codex_review_handoff.main(
+            [
+                "import",
+                "orbit-research/codex-imports/%s.response.md" % phase_id,
+                "--repo",
+                str(self.tmp),
+            ]
+        )
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(
+            (self.tmp / "orbit-research" / "diagnostics" / "diag_123" / "RED_TEAM_REVIEW.md").exists()
+        )
+
+    def test_generic_handoff_without_verdict_required_remains_flexible(self):
+        phase_id = "generic.phase"
+        self.run_tool(
+            "generate",
+            "--repo",
+            str(self.tmp),
+            "--phase-id",
+            phase_id,
+            "--role",
+            "Independent reviewer",
+            "--objective",
+            "Review an artifact.",
+            "--output-format",
+            "Include VERDICT.",
+            "--output-artifact",
+            "orbit-research/GENERIC_REVIEW.md",
+        )
+        self.write_response_text(
+            phase_id,
+            "# VERDICT\n\n"
+            "This generic standalone Codex response contains a substantive review narrative "
+            "without a phase-specific final token, which is acceptable for non-gating handoff.\n",
+        )
+
+        self.run_tool(
+            "import",
+            "orbit-research/codex-imports/%s.response.md" % phase_id,
+            "--repo",
+            str(self.tmp),
+        )
+
+        self.assertTrue((self.tmp / "orbit-research" / "GENERIC_REVIEW.md").exists())
 
     def test_missing_producer_context_still_writes_unknown_context_state(self):
         self.run_tool(

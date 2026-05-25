@@ -87,6 +87,11 @@ python3 tools/codex_review_handoff.py generate \
   --objective "Red-team the claim ledger and evidence for STOP C readiness." \
   --output-format "Include VERDICT and one final token: READY_FOR_PAPER, REQUIRES_FIXES, REDESIGN_REQUIRED, or HUMAN_DECISION_REQUIRED." \
   --required-section "VERDICT" \
+  --verdict-required \
+  --expected-verdict-token READY_FOR_PAPER \
+  --expected-verdict-token REQUIRES_FIXES \
+  --expected-verdict-token REDESIGN_REQUIRED \
+  --expected-verdict-token HUMAN_DECISION_REQUIRED \
   --output-artifact "orbit-research/diagnostics/<diagnostic_id>/RED_TEAM_REVIEW.md" \
   --current-stop "STOP_C" \
   --producer-skill "auto-review-loop" \
@@ -100,7 +105,9 @@ Require the user to save the standalone Codex response to
 `orbit-research/codex-imports/<phase-id>.response.md`, and resume only after
 `/import-codex-review` validates/imports it. Set ORBIT_STATE `pause_reason:
 codex_review_needed`; after import, the state should become `codex_review_imported` and
-point back to the producer resume command. Import is not human approval.
+point back to the producer resume command. Import is not human approval. In ORBIT
+red-team mode, the import tool must reject vague `# VERDICT` prose and verdict candidate
+lists; it accepts only exactly one configured final verdict token.
 
 For paper-bearing STOP C diagnostics, review `claims/claim_ledger.json` as the canonical
 claim source. Do not review only `CLAIM_CONSTRUCTION.md` prose when the ledger exists.
