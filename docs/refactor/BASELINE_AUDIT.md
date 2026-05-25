@@ -50,14 +50,14 @@ This report is intended as a pre-refactor guardrail inventory.
 | --- | --- | --- | --- | --- | --- |
 | 1 | paper-poster | skills/paper-poster/SKILL.md | 1097 | 6320 | 49205 |
 | 2 | idea-to-proposal | skills/idea-to-proposal/SKILL.md | 904 | 5491 | 47008 |
-| 3 | research-pipeline | skills/research-pipeline/SKILL.md | 744 | 4285 | 35464 |
-| 4 | paper-illustration | skills/paper-illustration/SKILL.md | 715 | 3555 | 31071 |
-| 5 | auto-review-loop | skills/auto-review-loop/SKILL.md | 704 | 4500 | 33204 |
+| 3 | research-pipeline | skills/research-pipeline/SKILL.md | 751 | 4277 | 35394 |
+| 4 | auto-review-loop | skills/auto-review-loop/SKILL.md | 728 | 4560 | 33652 |
+| 5 | paper-illustration | skills/paper-illustration/SKILL.md | 715 | 3555 | 31071 |
 | 6 | proposal-revise | skills/proposal-revise/SKILL.md | 630 | 3994 | 31806 |
 | 7 | grant-proposal | skills/grant-proposal/SKILL.md | 627 | 4118 | 30866 |
 | 8 | research-refine | skills/research-refine/SKILL.md | 625 | 4062 | 31418 |
-| 9 | run-experiment | skills/run-experiment/SKILL.md | 593 | 3364 | 26011 |
-| 10 | diagnostic-to-review | skills/diagnostic-to-review/SKILL.md | 583 | 2426 | 22743 |
+| 9 | diagnostic-to-review | skills/diagnostic-to-review/SKILL.md | 619 | 2534 | 23662 |
+| 10 | run-experiment | skills/run-experiment/SKILL.md | 593 | 3364 | 26011 |
 | 11 | paper-slides | skills/paper-slides/SKILL.md | 570 | 2793 | 19253 |
 | 12 | paper-write | skills/paper-write/SKILL.md | 557 | 3748 | 27899 |
 | 13 | proof-checker | skills/proof-checker/SKILL.md | 495 | 3266 | 24273 |
@@ -118,7 +118,7 @@ This report is intended as a pre-refactor guardrail inventory.
 | FINAL_PROPOSAL_SHORT.md | 7 | 4 | no | experiment-bridge, idea-to-proposal, research-doc-hygiene, research-refine |
 | GRANT_PROPOSAL.md | 3 | 1 | no | grant-proposal |
 | GRANT_REVIEW.md | 2 | 1 | no | grant-proposal |
-| HUMAN_DECISION_NOTE.md | 15 | 6 | no | auto-review-loop, diagnostic-to-review, import-codex-review, research-pipeline, result-to-claim, submission-package |
+| HUMAN_DECISION_NOTE.md | 16 | 6 | no | auto-review-loop, diagnostic-to-review, import-codex-review, research-pipeline, result-to-claim, submission-package |
 | HYPOTHESIS.md | 1 | 1 | no | idea-discovery |
 | IDEA_CANDIDATES.md | 1 | 1 | no | paper-plan |
 | IDEA_REPORT.md | 6 | 3 | no | grant-proposal, paper-plan, patent-pipeline |

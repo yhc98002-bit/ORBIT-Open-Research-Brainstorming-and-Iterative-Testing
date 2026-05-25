@@ -313,12 +313,12 @@
       "words": 1625
     },
     {
-      "bytes": 33204,
-      "lines": 704,
+      "bytes": 33652,
+      "lines": 728,
       "path": "skills/auto-review-loop/SKILL.md",
-      "sha256": "277dd939dfde1304f306dc2e1828e3c154a6a5af11319f77d84820a7cd615077",
+      "sha256": "68bab8b552cc5097884ceeb5a080a89139c02674314400134728f8ea8638b2d1",
       "skill": "auto-review-loop",
-      "words": 4500
+      "words": 4560
     },
     {
       "bytes": 17388,
@@ -353,12 +353,12 @@
       "words": 973
     },
     {
-      "bytes": 22743,
-      "lines": 583,
+      "bytes": 23662,
+      "lines": 619,
       "path": "skills/diagnostic-to-review/SKILL.md",
-      "sha256": "aeb4dd531a3955f73eb91b47baae872eab021d16f86970c3702df37f6a25a7c3",
+      "sha256": "b05c530592c1256985d495687992cc8dff303e99353bd16029341219c3a70113",
       "skill": "diagnostic-to-review",
-      "words": 2426
+      "words": 2534
     },
     {
       "bytes": 12920,
@@ -489,12 +489,12 @@
       "words": 5491
     },
     {
-      "bytes": 2888,
-      "lines": 80,
+      "bytes": 3398,
+      "lines": 88,
       "path": "skills/import-codex-review/SKILL.md",
-      "sha256": "218f16d65beb189d1d26441ce02644afff1c072eada325ff507317c092d645f0",
+      "sha256": "f103f7d72481e7eeb41f9a5132176f704cc776e45d6060d62248102237c906e3",
       "skill": "import-codex-review",
-      "words": 359
+      "words": 421
     },
     {
       "bytes": 6734,
@@ -753,12 +753,12 @@
       "words": 3022
     },
     {
-      "bytes": 35464,
-      "lines": 744,
+      "bytes": 35394,
+      "lines": 751,
       "path": "skills/research-pipeline/SKILL.md",
-      "sha256": "de7643b9f57d51ce4f8a0eabe3cb2c36d8e21045bdb4c5aa475fa49f251175a2",
+      "sha256": "12edd4f5e340b26a6d066ccb33c2a26e7d90a1ded19fe042e835b897e43bfb4b",
       "skill": "research-pipeline",
-      "words": 4285
+      "words": 4277
     },
     {
       "bytes": 8191,
@@ -1749,12 +1749,20 @@
       "words": 5491
     },
     {
-      "bytes": 35464,
-      "lines": 744,
+      "bytes": 35394,
+      "lines": 751,
       "path": "skills/research-pipeline/SKILL.md",
-      "sha256": "de7643b9f57d51ce4f8a0eabe3cb2c36d8e21045bdb4c5aa475fa49f251175a2",
+      "sha256": "12edd4f5e340b26a6d066ccb33c2a26e7d90a1ded19fe042e835b897e43bfb4b",
       "skill": "research-pipeline",
-      "words": 4285
+      "words": 4277
+    },
+    {
+      "bytes": 33652,
+      "lines": 728,
+      "path": "skills/auto-review-loop/SKILL.md",
+      "sha256": "68bab8b552cc5097884ceeb5a080a89139c02674314400134728f8ea8638b2d1",
+      "skill": "auto-review-loop",
+      "words": 4560
     },
     {
       "bytes": 31071,
@@ -1763,14 +1771,6 @@
       "sha256": "c310488299beb49697c19039de73a08d9b2c3f7badd87ed1cd77b81b3ce89ae8",
       "skill": "paper-illustration",
       "words": 3555
-    },
-    {
-      "bytes": 33204,
-      "lines": 704,
-      "path": "skills/auto-review-loop/SKILL.md",
-      "sha256": "277dd939dfde1304f306dc2e1828e3c154a6a5af11319f77d84820a7cd615077",
-      "skill": "auto-review-loop",
-      "words": 4500
     },
     {
       "bytes": 31806,
@@ -1797,20 +1797,20 @@
       "words": 4062
     },
     {
+      "bytes": 23662,
+      "lines": 619,
+      "path": "skills/diagnostic-to-review/SKILL.md",
+      "sha256": "b05c530592c1256985d495687992cc8dff303e99353bd16029341219c3a70113",
+      "skill": "diagnostic-to-review",
+      "words": 2534
+    },
+    {
       "bytes": 26011,
       "lines": 593,
       "path": "skills/run-experiment/SKILL.md",
       "sha256": "4abb545fe7b928cab0ddde7b5a930a68ae99de84e41e9fe00a12c816e1131361",
       "skill": "run-experiment",
       "words": 3364
-    },
-    {
-      "bytes": 22743,
-      "lines": 583,
-      "path": "skills/diagnostic-to-review/SKILL.md",
-      "sha256": "aeb4dd531a3955f73eb91b47baae872eab021d16f86970c3702df37f6a25a7c3",
-      "skill": "diagnostic-to-review",
-      "words": 2426
     },
     {
       "bytes": 19253,
@@ -3109,7 +3109,7 @@
         {
           "category": "likely_generated_runtime",
           "exists": false,
-          "mention_count": 15,
+          "mention_count": 16,
           "path": "HUMAN_DECISION_NOTE.md",
           "raw_mentions": [
             "HUMAN_DECISION_NOTE.md"
@@ -7994,7 +7994,7 @@
       {
         "category": "likely_generated_runtime",
         "exists": false,
-        "mention_count": 15,
+        "mention_count": 16,
         "path": "HUMAN_DECISION_NOTE.md",
         "raw_mentions": [
           "HUMAN_DECISION_NOTE.md"
@@ -11871,7 +11871,7 @@
         },
         {
           "canonical_path": "skills/auto-review-loop/SKILL.md",
-          "canonical_sha256": "277dd939dfde1304f306dc2e1828e3c154a6a5af11319f77d84820a7cd615077",
+          "canonical_sha256": "68bab8b552cc5097884ceeb5a080a89139c02674314400134728f8ea8638b2d1",
           "mirror_path": "skills/skills-codex-gemini-review/auto-review-loop/SKILL.md",
           "mirror_sha256": "fc8f3061af608b7d2a9acffc22d694e6d6d64b03adfb04f1f1b014efc7725b48",
           "skill": "auto-review-loop"
@@ -12055,7 +12055,7 @@
         },
         {
           "canonical_path": "skills/auto-review-loop/SKILL.md",
-          "canonical_sha256": "277dd939dfde1304f306dc2e1828e3c154a6a5af11319f77d84820a7cd615077",
+          "canonical_sha256": "68bab8b552cc5097884ceeb5a080a89139c02674314400134728f8ea8638b2d1",
           "mirror_path": "skills/skills-codex-claude-review/auto-review-loop/SKILL.md",
           "mirror_sha256": "8f5075059ec318d680ad780a20b81a77b3ce46b3225499d151989c48680ff6e1",
           "skill": "auto-review-loop"

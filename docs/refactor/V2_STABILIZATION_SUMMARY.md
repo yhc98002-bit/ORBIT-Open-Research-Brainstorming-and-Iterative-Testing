@@ -138,7 +138,7 @@ fast release gate.
 
 ## Final Release-Blocker Audit
 
-Status: **stable for the v2.1 stabilization release gate**.
+Status: **ORBIT v2.1 stable candidate**.
 
 Checks run on 2026-05-25:
 
@@ -156,15 +156,23 @@ Checks run on 2026-05-25:
 
 Release-blocker checklist:
 
-- STOP C approval: draft, pending, degraded, and non-gating claim ledgers are blocked;
-  Markdown single-token verdicts are accepted; candidate-list/template verdicts are
-  rejected; diagnostic or ledger identity mismatch blocks by default.
+- STOP C approval/readiness: per-diagnostic `RED_TEAM_REVIEW.md` is authoritative when
+  `diagnostic_id` is present; invalid claim ledgers block approval; missing diagnostic or
+  ledger identity blocks by default; draft, pending, degraded, and non-gating claim
+  ledgers are blocked; human decision must parse as `PROCEED`; Markdown single-token
+  verdicts are accepted; candidate-list/template verdicts are rejected.
 - `/orbit-status`: blocked paper packages are not reported completed; STOP/HOLD/template
-  human decisions do not route to paper handoff; per-diagnostic red-team reviews are
-  recognized; v2 public paper skill names are used instead of `/paper-writing`.
+  human decisions do not route to paper handoff; stale `ORBIT_STATE.json` cannot override
+  validation; ready paper packages require validator pass; per-diagnostic red-team
+  reviews are recognized; v2 public paper skill names are used instead of
+  `/paper-writing`.
 - Codex handoff: generated prompts preserve producer STOP, skill, phase, diagnostic id,
   target artifact, and resume command; imports update `ORBIT_STATE.json` with the resume
-  command; imported Codex review does not fabricate human approval.
+  command; verdict-required handoffs validate exactly one final token; imported Codex
+  review does not fabricate human approval.
+- Package validation: ready paper packages require a declared PDF that exists, referenced
+  verified figure outputs that exist, verified citation keys, a valid claim ledger, and
+  strict STOP C approval.
 - Diagnostic sessions: terminal sessions are not silently reused; active sessions can be
   resumed by matching `input_hash`; fresh reruns require explicit `create --fresh`.
 - Docs: `/paper-writing` is compatibility only; `claims/claim_ledger.json` is canonical;

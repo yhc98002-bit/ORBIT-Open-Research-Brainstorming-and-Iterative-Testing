@@ -69,10 +69,11 @@ it does not change workflow behavior.
      timeout and optional test dependencies.
 
 9. Final ORBIT v2.1 release-blocker audit.
-   - Status: fixed by `chore(release): finalize v2.1 stabilization audit`.
-   - Required static checks and `make test-fast` passed on 2026-05-24.
-   - STOP C approval, `/orbit-status`, Codex handoff, diagnostic session, and legacy
-     paper-path documentation blockers are recorded as closed in
+   - Status: fixed by `chore(release): audit v2.1 stable candidate`.
+   - Required static checks, `make test-core`, `make test-cli`, and `make test-fast`
+     passed on 2026-05-25.
+   - STOP C approval, `/orbit-status`, Codex handoff, package validation, diagnostic
+     session, and legacy paper-path documentation blockers are recorded as closed in
      `docs/refactor/V2_STABILIZATION_SUMMARY.md`.
 
 ## Current Unresolved Stabilization Blockers
