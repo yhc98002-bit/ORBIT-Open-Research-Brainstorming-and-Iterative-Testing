@@ -241,6 +241,25 @@ class OrbitStatusTest(unittest.TestCase):
             state,
         )
 
+    def test_invalid_claim_ledger_routes_to_claim_repair_not_red_team(self):
+        repo = copy_fixture(self)
+        package_path = repo / "paper" / "paper_package.json"
+        if package_path.exists():
+            package_path.unlink()
+        ledger_path = repo / "claims" / "claim_ledger.json"
+        ledger = load_json(ledger_path)
+        ledger["claims"][0]["claim_role"] = "main_claim"
+        ledger["claims"][0]["status"] = "unsupported"
+        ledger["claims"][0]["paper_use"] = "allowed"
+        write_json(ledger_path, ledger)
+
+        state = get_status(repo)
+
+        self.assertEqual(state["current_stop"], "STOP_C")
+        self.assertEqual(state["status"], "blocked")
+        self.assertNotIn("/auto-review-loop", state.get("safe_next_command") or "")
+        self.assertIn("/result-to-claim", state.get("safe_next_command") or "")
+
     def test_stale_orbit_state_paper_writing_safe_next_revalidates_human_stop(self):
         repo = copy_fixture(self)
         package_path = repo / "paper" / "paper_package.json"

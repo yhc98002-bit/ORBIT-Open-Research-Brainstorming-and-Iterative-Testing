@@ -13,7 +13,12 @@ SKILLS = ROOT / "skills"
 FIXTURE = ROOT / "tests" / "fixtures" / "golden_minimal_project"
 sys.path.insert(0, str(TOOLS))
 
-from check_stop_c_approval import evaluate_stop_c_approval  # noqa: E402
+from check_stop_c_approval import (  # noqa: E402
+    HUMAN_VERDICTS,
+    RED_TEAM_VERDICTS,
+    evaluate_stop_c_approval,
+    parse_final_verdict,
+)
 
 
 def run_tool(*args: str) -> subprocess.CompletedProcess[str]:
@@ -169,6 +174,54 @@ class StopCApprovalGateTest(unittest.TestCase):
         payload = approval(project)
         self.assertEqual(payload["red_team_verdict"], "READY_FOR_PAPER")
         self.assertEqual(payload["human_decision_verdict"], "PROCEED")
+
+    def test_stop_c_helper_rejects_human_decision_template(self):
+        project = copy_fixture(self)
+        human = project / "orbit-research" / "HUMAN_DECISION_NOTE.md"
+        human.write_text(
+            "# HUMAN_DECISION_NOTE\n\n"
+            "Diagnostic ID: diag_fixture\n"
+            "Claim ledger hash: ledger_fixture_hash\n\n"
+            "Allowed final decision tokens:\n"
+            "- PROCEED\n"
+            "- FIX_FIRST\n"
+            "- REDESIGN_DIAGNOSTIC\n"
+            "- REFRAME_CLAIM\n"
+            "- ARCHIVE\n"
+            "- SCALE_UP\n\n"
+            "Final decision: <ONE_TOKEN>\n",
+            encoding="utf-8",
+        )
+
+        payload = approval(project)
+
+        self.assertEqual(payload["status"], "blocked")
+        self.assertNotEqual(payload["human_decision_verdict"], "PROCEED")
+
+    def test_stop_c_helper_rejects_red_team_template(self):
+        project = copy_fixture(self)
+        red_team = project / "orbit-research" / "diagnostics" / "diag_fixture" / "RED_TEAM_REVIEW.md"
+        red_team.write_text(
+            "# RED_TEAM_REVIEW\n\n"
+            "Diagnostic ID: diag_fixture\n"
+            "Claim ledger hash: ledger_fixture_hash\n\n"
+            "Allowed final verdict tokens:\n"
+            "- READY_FOR_PAPER\n"
+            "- REQUIRES_FIXES\n"
+            "- REDESIGN_REQUIRED\n"
+            "- HUMAN_DECISION_REQUIRED\n\n"
+            "Final verdict: <ONE_TOKEN>\n",
+            encoding="utf-8",
+        )
+
+        payload = approval(project)
+
+        self.assertEqual(payload["status"], "blocked")
+        self.assertIsNone(payload["red_team_verdict"])
+
+    def test_verdict_parser_ignores_bullet_list_tokens(self):
+        self.assertIsNone(parse_final_verdict("- PROCEED\n", HUMAN_VERDICTS))
+        self.assertIsNone(parse_final_verdict("- READY_FOR_PAPER\n", RED_TEAM_VERDICTS))
 
     def test_stop_c_helper_rejects_red_team_candidate_list(self):
         project = copy_fixture(self)

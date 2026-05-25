@@ -274,6 +274,59 @@ class CodexReviewHandoffTest(unittest.TestCase):
             (self.tmp / "orbit-research" / "diagnostics" / "diag_123" / "RED_TEAM_REVIEW.md").exists()
         )
 
+    def test_import_rejects_phase_specific_verdict_template_bullets(self):
+        phase_id = "diag_123.phase-4-review"
+        self.generate_red_team_handoff(phase_id)
+        self.write_response_text(
+            phase_id,
+            "# VERDICT\n\n"
+            "The standalone Codex review text is substantive enough for import validation, "
+            "but it leaves the verdict section as an unfinished template.\n\n"
+            "Allowed final verdict tokens:\n"
+            "- READY_FOR_PAPER\n"
+            "- REQUIRES_FIXES\n"
+            "- REDESIGN_REQUIRED\n"
+            "- HUMAN_DECISION_REQUIRED\n\n"
+            "Final verdict: <ONE_TOKEN>\n",
+        )
+
+        code = codex_review_handoff.main(
+            [
+                "import",
+                "orbit-research/codex-imports/%s.response.md" % phase_id,
+                "--repo",
+                str(self.tmp),
+            ]
+        )
+
+        self.assertNotEqual(code, 0)
+        self.assertFalse(
+            (self.tmp / "orbit-research" / "diagnostics" / "diag_123" / "RED_TEAM_REVIEW.md").exists()
+        )
+
+    def test_validate_response_rejects_single_bullet_token_as_final_verdict(self):
+        text = (
+            "# VERDICT\n\n"
+            "This response is long enough and includes a discussion, but the only token is "
+            "presented as a bullet from a template rather than an explicit final verdict.\n\n"
+            "- READY_FOR_PAPER\n"
+        )
+
+        result = codex_review_handoff.validate_response_text(
+            text,
+            ["VERDICT"],
+            verdict_required=True,
+            expected_verdict_tokens=[
+                "READY_FOR_PAPER",
+                "REQUIRES_FIXES",
+                "REDESIGN_REQUIRED",
+                "HUMAN_DECISION_REQUIRED",
+            ],
+        )
+
+        self.assertFalse(result["valid"])
+        self.assertIsNone(result["verdict"])
+
     def test_generic_handoff_without_verdict_required_remains_flexible(self):
         phase_id = "generic.phase"
         self.run_tool(

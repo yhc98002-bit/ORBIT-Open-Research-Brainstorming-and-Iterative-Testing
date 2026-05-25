@@ -1,7 +1,7 @@
-# ORBIT v2.1 Stabilization TODO
+# ORBIT v2.1 / v2.2 Stabilization TODO
 
-Generated for the v2.1 stabilization baseline. This file records current blockers only;
-it does not change workflow behavior.
+Generated for the v2.1 stabilization baseline and v2.2 final stable regression pass. This
+file records current blockers only; it does not change workflow behavior.
 
 ## Current Baseline
 
@@ -78,7 +78,19 @@ it does not change workflow behavior.
 
 ## Current Unresolved Stabilization Blockers
 
-- None for the scoped v2.1 stabilization blockers tracked in this file.
+### v2.2 final stable blockers now covered by regression tests
+
+- Verdict parsers must reject unfinished templates such as allowed-token bullet lists
+  followed by `Final verdict: <ONE_TOKEN>` or `Final decision: <ONE_TOKEN>`.
+- Bullet-list tokens such as `- PROCEED` or `- READY_FOR_PAPER` must never count as final
+  approvals.
+- Invalid semantic claim ledgers must route `/orbit-status` to `/result-to-claim` or
+  claim-ledger repair, not to `/auto-review-loop`.
+- `orbit-core` profile installs must include Codex standalone recovery support, or the
+  installer must always include that recovery utility.
+
+Status: tests added by `test(v2): add final stable blocker regressions`; fixes still
+pending in subsequent v2.2 stabilization prompts.
 
 ## Non-Blocking Known Limitations
 
