@@ -414,14 +414,20 @@ class SkillIntegrityTest(unittest.TestCase):
         self.assertTrue(makefile.exists())
         text = makefile.read_text(encoding="utf-8")
         required = [
-            ".PHONY: test-fast",
+            ".PHONY: test-core test-cli test-static test-fast release-check",
+            "test-core:",
+            "test-cli:",
+            "test-static:",
             "test-fast:",
+            "$(MAKE) test-core",
+            "$(MAKE) test-cli",
+            "$(MAKE) test-static",
             "tests/test_orbit_status.py",
             "tests/test_diagnostic_session.py",
             "tests/test_stop_c_approval_gate.py",
             "tests/test_validate_orbit_pack.py",
             "tests/test_codex_review_handoff.py",
-            "tests/test_skill_integrity.py",
+            "tools/validate_orbit_pack.py --repo tests/fixtures/golden_minimal_project --all",
         ]
         missing = [item for item in required if item not in text]
         self.assertEqual(missing, [])
@@ -433,9 +439,9 @@ class SkillIntegrityTest(unittest.TestCase):
             capture_output=True,
         )
         self.assertEqual(dry_run.returncode, 0, dry_run.stderr + dry_run.stdout)
-        self.assertIn("pytest -q", dry_run.stdout)
-        self.assertIn("tests/test_orbit_status.py", dry_run.stdout)
-        self.assertIn("tests/test_stop_c_approval_gate.py", dry_run.stdout)
+        self.assertIn("make test-core", dry_run.stdout)
+        self.assertIn("make test-cli", dry_run.stdout)
+        self.assertIn("make test-static", dry_run.stdout)
         self.assertNotIn("echo", dry_run.stdout)
 
 

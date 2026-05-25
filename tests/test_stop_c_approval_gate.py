@@ -11,6 +11,9 @@ ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / "tools"
 SKILLS = ROOT / "skills"
 FIXTURE = ROOT / "tests" / "fixtures" / "golden_minimal_project"
+sys.path.insert(0, str(TOOLS))
+
+from check_stop_c_approval import evaluate_stop_c_approval  # noqa: E402
 
 
 def run_tool(*args: str) -> subprocess.CompletedProcess[str]:
@@ -32,6 +35,10 @@ def copy_fixture(test_case: unittest.TestCase) -> Path:
 
 def write_json(path: Path, data: dict) -> None:
     path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def approval(project: Path, **kwargs) -> dict:
+    return evaluate_stop_c_approval(project, "claims/claim_ledger.json", **kwargs)
 
 
 class StopCApprovalGateTest(unittest.TestCase):
@@ -65,7 +72,16 @@ class StopCApprovalGateTest(unittest.TestCase):
         project = copy_fixture(self)
         (project / "orbit-research" / "HUMAN_DECISION_NOTE.md").unlink()
 
-        result = run_tool(
+        result = approval(project)
+
+        self.assertEqual(result["status"], "blocked")
+        self.assertIn("missing orbit-research/HUMAN_DECISION_NOTE.md", "\n".join(result["errors"]))
+
+    def test_cli_stop_c_helper_smoke(self):
+        project = copy_fixture(self)
+        (project / "orbit-research" / "HUMAN_DECISION_NOTE.md").unlink()
+
+        cli = run_tool(
             str(TOOLS / "check_stop_c_approval.py"),
             "--repo",
             str(project),
@@ -73,22 +89,12 @@ class StopCApprovalGateTest(unittest.TestCase):
             "claims/claim_ledger.json",
         )
 
-        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-        self.assertIn("STOP C approval: blocked", result.stdout)
-        self.assertIn("missing orbit-research/HUMAN_DECISION_NOTE.md", result.stdout)
+        self.assertEqual(cli.returncode, 1, cli.stdout + cli.stderr)
+        self.assertIn("STOP C approval: blocked", cli.stdout)
+        self.assertIn("missing orbit-research/HUMAN_DECISION_NOTE.md", cli.stdout)
 
     def test_stop_c_helper_accepts_golden_fixture(self):
-        result = run_tool(
-            str(TOOLS / "check_stop_c_approval.py"),
-            "--repo",
-            str(FIXTURE),
-            "--claim-ledger",
-            "claims/claim_ledger.json",
-            "--json",
-        )
-
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        payload = json.loads(result.stdout)
+        payload = approval(FIXTURE)
         self.assertEqual(payload["status"], "approved")
         self.assertEqual(payload["red_team_verdict"], "READY_FOR_PAPER")
         self.assertEqual(payload["human_decision_verdict"], "PROCEED")
@@ -100,16 +106,10 @@ class StopCApprovalGateTest(unittest.TestCase):
         ledger["status"] = "draft"
         write_json(ledger_path, ledger)
 
-        result = run_tool(
-            str(TOOLS / "check_stop_c_approval.py"),
-            "--repo",
-            str(project),
-            "--claim-ledger",
-            "claims/claim_ledger.json",
-        )
+        result = approval(project)
 
-        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-        self.assertIn("claim ledger must be 'ready'", result.stdout)
+        self.assertEqual(result["status"], "blocked")
+        self.assertIn("claim ledger must be 'ready'", "\n".join(result["errors"]))
 
     def test_stop_c_helper_blocks_pending_codex_review(self):
         project = copy_fixture(self)
@@ -118,17 +118,12 @@ class StopCApprovalGateTest(unittest.TestCase):
         ledger["codex_review"] = "pending"
         write_json(ledger_path, ledger)
 
-        result = run_tool(
-            str(TOOLS / "check_stop_c_approval.py"),
-            "--repo",
-            str(project),
-            "--claim-ledger",
-            "claims/claim_ledger.json",
-        )
+        result = approval(project)
 
-        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-        self.assertIn("pending", result.stdout)
-        self.assertIn("cannot satisfy STOP C approval", result.stdout)
+        self.assertEqual(result["status"], "blocked")
+        errors = "\n".join(result["errors"])
+        self.assertIn("pending", errors)
+        self.assertIn("cannot satisfy STOP C approval", errors)
 
     def test_stop_c_helper_blocks_degraded_codex_review(self):
         project = copy_fixture(self)
@@ -137,17 +132,12 @@ class StopCApprovalGateTest(unittest.TestCase):
         ledger["codex_review"] = "degraded"
         write_json(ledger_path, ledger)
 
-        result = run_tool(
-            str(TOOLS / "check_stop_c_approval.py"),
-            "--repo",
-            str(project),
-            "--claim-ledger",
-            "claims/claim_ledger.json",
-        )
+        result = approval(project)
 
-        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-        self.assertIn("degraded", result.stdout)
-        self.assertIn("cannot satisfy STOP C approval", result.stdout)
+        self.assertEqual(result["status"], "blocked")
+        errors = "\n".join(result["errors"])
+        self.assertIn("degraded", errors)
+        self.assertIn("cannot satisfy STOP C approval", errors)
 
     def test_stop_c_helper_blocks_non_gating_ledger(self):
         project = copy_fixture(self)
@@ -156,16 +146,10 @@ class StopCApprovalGateTest(unittest.TestCase):
         ledger["gating"] = False
         write_json(ledger_path, ledger)
 
-        result = run_tool(
-            str(TOOLS / "check_stop_c_approval.py"),
-            "--repo",
-            str(project),
-            "--claim-ledger",
-            "claims/claim_ledger.json",
-        )
+        result = approval(project)
 
-        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-        self.assertIn("non-gating claim ledger", result.stdout)
+        self.assertEqual(result["status"], "blocked")
+        self.assertIn("non-gating claim ledger", "\n".join(result["errors"]))
 
     def test_stop_c_helper_accepts_markdown_wrapped_verdicts(self):
         project = copy_fixture(self)
@@ -182,17 +166,7 @@ class StopCApprovalGateTest(unittest.TestCase):
             encoding="utf-8",
         )
 
-        result = run_tool(
-            str(TOOLS / "check_stop_c_approval.py"),
-            "--repo",
-            str(project),
-            "--claim-ledger",
-            "claims/claim_ledger.json",
-            "--json",
-        )
-
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        payload = json.loads(result.stdout)
+        payload = approval(project)
         self.assertEqual(payload["red_team_verdict"], "READY_FOR_PAPER")
         self.assertEqual(payload["human_decision_verdict"], "PROCEED")
 
@@ -205,16 +179,10 @@ class StopCApprovalGateTest(unittest.TestCase):
             encoding="utf-8",
         )
 
-        result = run_tool(
-            str(TOOLS / "check_stop_c_approval.py"),
-            "--repo",
-            str(project),
-            "--claim-ledger",
-            "claims/claim_ledger.json",
-        )
+        result = approval(project)
 
-        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-        self.assertIn("RED_TEAM_REVIEW final verdict must be READY_FOR_PAPER", result.stdout)
+        self.assertEqual(result["status"], "blocked")
+        self.assertIn("RED_TEAM_REVIEW final verdict must be READY_FOR_PAPER", "\n".join(result["errors"]))
 
     def test_stop_c_helper_rejects_human_decision_candidate_list(self):
         project = copy_fixture(self)
@@ -225,16 +193,10 @@ class StopCApprovalGateTest(unittest.TestCase):
             encoding="utf-8",
         )
 
-        result = run_tool(
-            str(TOOLS / "check_stop_c_approval.py"),
-            "--repo",
-            str(project),
-            "--claim-ledger",
-            "claims/claim_ledger.json",
-        )
+        result = approval(project)
 
-        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-        self.assertIn("HUMAN_DECISION_NOTE final verdict must be PROCEED", result.stdout)
+        self.assertEqual(result["status"], "blocked")
+        self.assertIn("HUMAN_DECISION_NOTE final verdict must be PROCEED", "\n".join(result["errors"]))
 
     def test_stop_c_helper_blocks_identity_mismatch_by_default(self):
         project = copy_fixture(self)
@@ -245,17 +207,12 @@ class StopCApprovalGateTest(unittest.TestCase):
             encoding="utf-8",
         )
 
-        result = run_tool(
-            str(TOOLS / "check_stop_c_approval.py"),
-            "--repo",
-            str(project),
-            "--claim-ledger",
-            "claims/claim_ledger.json",
-        )
+        result = approval(project)
 
-        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-        self.assertIn("does not reference diagnostic_id diag_fixture", result.stdout)
-        self.assertIn("does not reference ledger_hash ledger_fixture_hash", result.stdout)
+        self.assertEqual(result["status"], "blocked")
+        errors = "\n".join(result["errors"])
+        self.assertIn("does not reference diagnostic_id diag_fixture", errors)
+        self.assertIn("does not reference ledger_hash ledger_fixture_hash", errors)
 
     def test_regression_per_diagnostic_red_team_requires_fixes_must_not_fallback_to_ready_legacy(self):
         project = copy_fixture(self)
@@ -282,17 +239,7 @@ class StopCApprovalGateTest(unittest.TestCase):
             encoding="utf-8",
         )
 
-        result = run_tool(
-            str(TOOLS / "check_stop_c_approval.py"),
-            "--repo",
-            str(project),
-            "--claim-ledger",
-            "claims/claim_ledger.json",
-            "--json",
-        )
-
-        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-        payload = json.loads(result.stdout)
+        payload = approval(project)
         self.assertEqual(payload["status"], "blocked")
         self.assertEqual(
             payload["red_team_review"],
@@ -309,17 +256,12 @@ class StopCApprovalGateTest(unittest.TestCase):
         ledger["claims"][0]["paper_use"] = "allowed"
         write_json(ledger_path, ledger)
 
-        result = run_tool(
-            str(TOOLS / "check_stop_c_approval.py"),
-            "--repo",
-            str(project),
-            "--claim-ledger",
-            "claims/claim_ledger.json",
-        )
+        result = approval(project)
 
-        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-        self.assertIn("unsupported claim", result.stdout)
-        self.assertIn("paper_use", result.stdout)
+        self.assertEqual(result["status"], "blocked")
+        errors = "\n".join(result["errors"])
+        self.assertIn("unsupported claim", errors)
+        self.assertIn("paper_use", errors)
 
     def test_stop_c_helper_blocks_ready_ledger_without_identity(self):
         project = copy_fixture(self)
@@ -329,16 +271,10 @@ class StopCApprovalGateTest(unittest.TestCase):
         ledger.pop("ledger_hash", None)
         write_json(ledger_path, ledger)
 
-        result = run_tool(
-            str(TOOLS / "check_stop_c_approval.py"),
-            "--repo",
-            str(project),
-            "--claim-ledger",
-            "claims/claim_ledger.json",
-        )
+        result = approval(project)
 
-        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-        self.assertIn("diagnostic_id or ledger_hash", result.stdout)
+        self.assertEqual(result["status"], "blocked")
+        self.assertIn("diagnostic_id or ledger_hash", "\n".join(result["errors"]))
 
     def test_stop_c_helper_can_allow_unmatched_legacy_approval(self):
         project = copy_fixture(self)
@@ -348,18 +284,7 @@ class StopCApprovalGateTest(unittest.TestCase):
             encoding="utf-8",
         )
 
-        result = run_tool(
-            str(TOOLS / "check_stop_c_approval.py"),
-            "--repo",
-            str(project),
-            "--claim-ledger",
-            "claims/claim_ledger.json",
-            "--allow-unmatched-legacy-approval",
-            "--json",
-        )
-
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        payload = json.loads(result.stdout)
+        payload = approval(project, allow_unmatched_legacy_approval=True)
         self.assertEqual(payload["status"], "approved")
         self.assertTrue(payload["warnings"])
 

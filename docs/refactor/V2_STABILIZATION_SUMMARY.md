@@ -106,7 +106,7 @@ Fast v2.1 stabilization release gate:
 make release-check
 ```
 
-This expands to:
+This expands to the repository audit/static checks plus the fast stabilization target:
 
 ```bash
 python tools/orbit_repo_audit.py --repo . --out docs/refactor
@@ -117,9 +117,20 @@ python tools/validate_orbit_pack.py --repo tests/fixtures/golden_minimal_project
 make test-fast
 ```
 
-`make test-fast` covers the critical v2.1 stabilization surface: orbit status, STOP C
-approval, diagnostic session identity, pack validation, mirror policy, prompt assets,
-skill catalog, golden fixture workflow, Codex handoff, and static skill integrity.
+`make test-fast` is intentionally split so core semantic checks avoid subprocess-heavy
+tool launches:
+
+```bash
+make test-core    # direct-import unit tests for status, STOP C approval, sessions, packs, handoff
+make test-cli     # minimal CLI smoke tests for the public tools
+make test-static  # mirror, prompt asset, catalog, and static skill integrity checks
+```
+
+The core tests import helper functions directly, for example
+`evaluate_stop_c_approval`, `diagnostic_session` functions, and
+`validate_orbit_pack.validate_selection`. CLI coverage is kept to smoke tests for
+`orbit_status.py`, `validate_orbit_pack.py`, `check_stop_c_approval.py`,
+`codex_review_handoff.py`, and `diagnostic_session.py`.
 
 Full `pytest -q` remains useful for broader local or CI coverage when the environment has
 adequate timeout and optional dependencies for unrelated MCP/server tests. It is not the
@@ -129,7 +140,7 @@ fast release gate.
 
 Status: **stable for the v2.1 stabilization release gate**.
 
-Checks run on 2026-05-24:
+Checks run on 2026-05-25:
 
 | Check | Status |
 |---|---|
@@ -138,7 +149,10 @@ Checks run on 2026-05-24:
 | `python tools/check_skill_mirror.py --repo .` | pass, 0 unexpected drift |
 | `python tools/check_prompt_assets.py --repo .` | pass |
 | `python tools/validate_orbit_pack.py --repo tests/fixtures/golden_minimal_project --all` | pass, 6 ok |
-| `make test-fast` | pass, 88 tests |
+| `make test-core` | pass, 70 passed / 3 CLI tests deselected |
+| `make test-cli` | pass |
+| `make test-static` | pass, 19 passed / 3 installer tests deselected |
+| `make test-fast` | pass, composed from `test-core`, `test-cli`, and `test-static` |
 
 Release-blocker checklist:
 
@@ -169,4 +183,5 @@ No P0 release blockers remain in the scoped v2.1 stabilization checklist.
   catalog-marked.
 - External API, GPU, and live MCP behavior is not exercised by the golden fixture.
 - Full `pytest -q` is broader coverage and should be run in CI or local environments with
-  adequate timeout; `make test-fast` is the release-blocker gate.
+  adequate timeout; `make test-fast` is the release-blocker gate and is optimized to stay
+  fast by avoiding subprocess-heavy core tests.

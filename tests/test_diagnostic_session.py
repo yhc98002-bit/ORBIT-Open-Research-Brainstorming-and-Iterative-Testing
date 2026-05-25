@@ -4,11 +4,22 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOL = ROOT / "tools" / "diagnostic_session.py"
 SKILLS = ROOT / "skills"
+sys.path.insert(0, str(ROOT / "tools"))
+
+from diagnostic_session import (  # noqa: E402
+    DiagnosticSessionError,
+    create_session,
+    resume_session,
+    update_audit,
+    update_run,
+    validate_resume,
+)
 
 
 def run_tool(*args: str) -> subprocess.CompletedProcess[str]:
@@ -27,6 +38,59 @@ def run_json(*args: str) -> dict:
     return json.loads(result.stdout)
 
 
+def args(**kwargs):
+    return SimpleNamespace(**kwargs)
+
+
+def create(repo: Path, input_value: str, fresh: bool = False) -> dict:
+    return create_session(
+        args(
+            repo=str(repo),
+            input=input_value,
+            diagnostic_kind=None,
+            claim_relevance=None,
+            fresh=fresh,
+        )
+    )
+
+
+def resume(repo: Path, input_value: str) -> dict:
+    return resume_session(args(repo=str(repo), input=input_value))
+
+
+def validate_resume_for(repo: Path, input_value: str) -> dict:
+    return validate_resume(args(repo=str(repo), input=input_value))
+
+
+def update_run_for(repo: Path, diagnostic_id: str, run_id: str, result_paths: list[str]) -> dict:
+    return update_run(
+        args(
+            repo=str(repo),
+            diagnostic_id=diagnostic_id,
+            run_id=run_id,
+            result_path=result_paths,
+        )
+    )
+
+
+def update_audit_for(
+    repo: Path,
+    diagnostic_id: str,
+    verdict: str,
+    regime_preserved: str,
+    mechanism_rejected: bool,
+) -> dict:
+    return update_audit(
+        args(
+            repo=str(repo),
+            diagnostic_id=diagnostic_id,
+            verdict=verdict,
+            regime_preserved=regime_preserved,
+            mechanism_rejected=mechanism_rejected,
+        )
+    )
+
+
 def set_context_status(repo: Path, payload: dict, status: str) -> None:
     path = repo / payload["context_path"]
     context = json.loads(path.read_text(encoding="utf-8"))
@@ -38,7 +102,7 @@ class DiagnosticSessionTest(unittest.TestCase):
     def test_create_context(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
-            payload = run_json("create", "--repo", str(repo), "--input", "python train.py --smoke")
+            payload = create(repo, "python train.py --smoke")
 
             self.assertTrue(payload["created"])
             context_path = repo / payload["context_path"]
@@ -53,8 +117,8 @@ class DiagnosticSessionTest(unittest.TestCase):
     def test_same_input_has_same_hash(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
-            first = run_json("create", "--repo", str(repo), "--input", "python train.py --smoke")
-            second = run_json("create", "--repo", str(repo), "--input", "  python   train.py   --smoke ")
+            first = create(repo, "python train.py --smoke")
+            second = create(repo, "  python   train.py   --smoke ")
 
             self.assertEqual(first["input_hash"], second["input_hash"])
             self.assertFalse(second["created"])
@@ -64,20 +128,10 @@ class DiagnosticSessionTest(unittest.TestCase):
     def test_same_input_after_stop_c_ready_is_not_silently_reused(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
-            created = run_json("create", "--repo", str(repo), "--input", "python train.py --main")
+            created = create(repo, "python train.py --main")
             set_context_status(repo, created, "stop_c_ready")
 
-            result = run_tool(
-                "create",
-                "--repo",
-                str(repo),
-                "--input",
-                "python train.py --main",
-                "--json",
-            )
-
-            self.assertNotEqual(result.returncode, 0)
-            payload = json.loads(result.stdout)
+            payload = create(repo, "python train.py --main")
             self.assertFalse(payload["ok"])
             self.assertFalse(payload["created"])
             self.assertEqual(payload["status"], "terminal_session_exists")
@@ -88,17 +142,10 @@ class DiagnosticSessionTest(unittest.TestCase):
     def test_fresh_creates_new_session_after_terminal_match(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
-            first = run_json("create", "--repo", str(repo), "--input", "python train.py --main")
+            first = create(repo, "python train.py --main")
             set_context_status(repo, first, "stop_c_ready")
 
-            fresh = run_json(
-                "create",
-                "--repo",
-                str(repo),
-                "--input",
-                "python train.py --main",
-                "--fresh",
-            )
+            fresh = create(repo, "python train.py --main", fresh=True)
 
             self.assertTrue(fresh["created"])
             self.assertEqual(first["input_hash"], fresh["input_hash"])
@@ -107,68 +154,38 @@ class DiagnosticSessionTest(unittest.TestCase):
     def test_different_input_has_different_hash(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
-            first = run_json("create", "--repo", str(repo), "--input", "python train.py --smoke")
-            second = run_json("create", "--repo", str(repo), "--input", "python train.py --ablation")
+            first = create(repo, "python train.py --smoke")
+            second = create(repo, "python train.py --ablation")
 
             self.assertNotEqual(first["input_hash"], second["input_hash"])
 
     def test_validate_resume_refuses_mismatched_active_input(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
-            run_json("create", "--repo", str(repo), "--input", "python train.py --smoke")
+            create(repo, "python train.py --smoke")
 
-            result = run_tool(
-                "validate-resume",
-                "--repo",
-                str(repo),
-                "--input",
-                "python train.py --different",
-                "--json",
-            )
-
-            self.assertNotEqual(result.returncode, 0)
-            payload = json.loads(result.stdout)
+            payload = validate_resume_for(repo, "python train.py --different")
             self.assertEqual(payload["status"], "blocked_mismatched_active")
             self.assertIn("active_diagnostics", payload)
 
     def test_resume_requires_matching_input_hash(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
-            created = run_json("create", "--repo", str(repo), "--input", "python train.py --main")
-            resumed = run_json("resume", "--repo", str(repo), "--input", "python train.py --main")
+            created = create(repo, "python train.py --main")
+            resumed = resume(repo, "python train.py --main")
 
             self.assertEqual(resumed["status"], "resume_ok")
             self.assertEqual(resumed["diagnostic_id"], created["diagnostic_id"])
 
-            result = run_tool(
-                "resume",
-                "--repo",
-                str(repo),
-                "--input",
-                "python train.py --different",
-                "--json",
-            )
-
-            self.assertNotEqual(result.returncode, 0)
-            payload = json.loads(result.stdout)
+            payload = resume(repo, "python train.py --different")
             self.assertEqual(payload["status"], "blocked_mismatched_active")
 
     def test_update_run_records_run_id_and_result_paths(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
-            created = run_json("create", "--repo", str(repo), "--input", "python train.py --smoke")
+            created = create(repo, "python train.py --smoke")
 
-            updated = run_json(
-                "update-run",
-                "--repo",
-                str(repo),
-                "--diagnostic-id",
-                created["diagnostic_id"],
-                "--run-id",
-                "run_001",
-                "--result-path",
-                "results/diag_main",
-            )
+            updated = update_run_for(repo, created["diagnostic_id"], "run_001", ["results/diag_main"])
 
             context = updated["context"]
             self.assertEqual(context["run_id"], "run_001")
@@ -178,20 +195,14 @@ class DiagnosticSessionTest(unittest.TestCase):
     def test_update_audit_records_structured_g12_fields(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
-            created = run_json("create", "--repo", str(repo), "--input", "python train.py --smoke")
+            created = create(repo, "python train.py --smoke")
 
-            updated = run_json(
-                "update-audit",
-                "--repo",
-                str(repo),
-                "--diagnostic-id",
+            updated = update_audit_for(
+                repo,
                 created["diagnostic_id"],
-                "--verdict",
                 "REDESIGN_EXPERIMENT",
-                "--regime-preserved",
                 "false",
-                "--mechanism-rejected",
-                "false",
+                False,
             )
 
             audit = updated["context"]["audit"]
@@ -203,27 +214,24 @@ class DiagnosticSessionTest(unittest.TestCase):
     def test_update_audit_rejects_mechanism_rejection_when_regime_not_preserved(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
-            created = run_json("create", "--repo", str(repo), "--input", "python train.py --smoke")
+            created = create(repo, "python train.py --smoke")
 
-            result = run_tool(
-                "update-audit",
-                "--repo",
-                str(repo),
-                "--diagnostic-id",
-                created["diagnostic_id"],
-                "--verdict",
-                "REDESIGN_EXPERIMENT",
-                "--regime-preserved",
-                "false",
-                "--mechanism-rejected",
-                "true",
-                "--json",
-            )
+            with self.assertRaises(DiagnosticSessionError) as caught:
+                update_audit_for(
+                    repo,
+                    created["diagnostic_id"],
+                    "REDESIGN_EXPERIMENT",
+                    "false",
+                    True,
+                )
+            self.assertIn("regime_preserved=false", str(caught.exception))
 
-            self.assertNotEqual(result.returncode, 0)
-            payload = json.loads(result.stdout)
-            self.assertEqual(payload["status"], "error")
-            self.assertIn("regime_preserved=false", payload["message"])
+    def test_cli_create_json_smoke(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            payload = run_json("create", "--repo", tmp, "--input", "python train.py --smoke")
+
+            self.assertTrue(payload["created"])
+            self.assertEqual(payload["status"], "created")
 
     def test_diagnostic_to_review_references_session_helper(self):
         text = (SKILLS / "diagnostic-to-review" / "SKILL.md").read_text(encoding="utf-8")

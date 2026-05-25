@@ -36,7 +36,7 @@ def write_json(path: Path, data: dict) -> None:
 
 
 class OrbitStatusTest(unittest.TestCase):
-    def test_empty_project_reports_none_and_json_cli_is_valid(self):
+    def test_empty_project_reports_none(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp)
             state = get_status(repo)
@@ -47,6 +47,9 @@ class OrbitStatusTest(unittest.TestCase):
             self.assertEqual(state["blockers"], [])
             self.assertEqual(state["safe_next_command"], '/idea-to-proposal "<research direction>"')
 
+    def test_cli_empty_project_json_is_valid(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
             result = subprocess.run(
                 [
                     sys.executable,

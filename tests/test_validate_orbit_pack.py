@@ -1,24 +1,51 @@
+import io
 import json
 import shutil
-import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / "tools"
 FIXTURE = ROOT / "tests" / "fixtures" / "golden_minimal_project"
+sys.path.insert(0, str(TOOLS))
+
+from validate_orbit_pack import print_pretty, validate_selection  # noqa: E402
 
 
-def run_validator(project: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        [sys.executable, str(TOOLS / "validate_orbit_pack.py"), "--repo", str(project), *args],
-        cwd=ROOT,
-        text=True,
-        capture_output=True,
-    )
+class ValidationResult:
+    def __init__(self, report: dict):
+        self.report = report
+        self.returncode = 1 if any(result["status"] == "error" for result in report["results"]) else 0
+        buffer = io.StringIO()
+        original_stdout = sys.stdout
+        try:
+            sys.stdout = buffer
+            print_pretty(report)
+        finally:
+            sys.stdout = original_stdout
+        self.stdout = buffer.getvalue()
+        self.stderr = ""
+
+
+def run_validator(project: Path, *args: str) -> ValidationResult:
+    namespace = SimpleNamespace(all=False, pack=None, kind=None, path=None, json=False)
+    iterator = iter(args)
+    for item in iterator:
+        if item == "--all":
+            namespace.all = True
+        elif item == "--pack":
+            namespace.pack = next(iterator)
+        elif item == "--kind":
+            namespace.kind = next(iterator)
+        elif item == "--path":
+            namespace.path = next(iterator)
+        else:
+            raise AssertionError("unsupported validator test arg: %s" % item)
+    return ValidationResult(validate_selection(project.resolve(), namespace))
 
 
 def copy_fixture(test_case: unittest.TestCase) -> Path:
