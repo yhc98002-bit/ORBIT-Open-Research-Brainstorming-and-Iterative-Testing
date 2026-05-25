@@ -20,8 +20,9 @@ Each catalog entry records:
 `public_entry: true` means the skill is intended as a user-facing command. Internal
 skills can still be called directly by advanced users or by other skills.
 
-`import-codex-review` is a public recovery utility outside the baseline profiles. It is
-shown only when a Codex MCP/auth/sandbox failure has exported a standalone review prompt.
+`import-codex-review` is a public recovery utility included in `orbit-core` and
+`research-paper`. It is shown primarily when a Codex MCP/auth/sandbox failure has exported
+a standalone review prompt.
 
 ## Profiles
 
@@ -34,6 +35,7 @@ Public:
 - `experiment-bridge`
 - `diagnostic-to-review`
 - `proposal-revise`
+- `import-codex-review`
 
 Internal:
 
@@ -46,6 +48,10 @@ Internal:
 - `result-to-claim`
 - `auto-review-loop`
 
+`orbit-core` covers STOP A through STOP C and Codex standalone recovery. It does not
+include paper drafting or submission packaging; use `research-paper` or the default full
+install for complete idea-to-paper workflows.
+
 ### paper-pack
 
 Public:
@@ -56,6 +62,38 @@ Public:
 
 Internal:
 
+- `paper-plan`
+- `paper-figure`
+- `paper-write`
+- `paper-compile`
+- `auto-paper-improvement-loop`
+- `paper-claim-audit`
+- `citation-audit`
+
+### research-paper
+
+Public:
+
+- `orbit-status`
+- `idea-to-proposal`
+- `experiment-bridge`
+- `diagnostic-to-review`
+- `paper-draft`
+- `paper-from-claims`
+- `submission-package`
+- `import-codex-review`
+
+Internal:
+
+- `proposal-revise`
+- `research-lit`
+- `idea-discovery`
+- `research-refine`
+- `experiment-plan`
+- `run-experiment`
+- `analyze-results`
+- `result-to-claim`
+- `auto-review-loop`
 - `paper-plan`
 - `paper-figure`
 - `paper-write`
@@ -107,9 +145,15 @@ To install or reconcile only one profile:
 bash tools/install_aris.sh --profile orbit-core
 ```
 
-Profile installs still include shared support references. Re-running the installer
-with a profile reconciles managed symlinks to that profile's set. Running without a
-profile returns to the full default install.
+For a lean idea-to-paper workflow:
+
+```bash
+bash tools/install_aris.sh --profile research-paper
+```
+
+Profile installs still include shared support references. `--profile` is not additive:
+re-running the installer with a profile reconciles managed symlinks to exactly that
+profile's set. Running without a profile returns to the full default install.
 
 ## Legacy Wrappers
 

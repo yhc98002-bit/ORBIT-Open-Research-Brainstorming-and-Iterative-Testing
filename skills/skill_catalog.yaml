@@ -8,6 +8,7 @@ profiles:
       - experiment-bridge
       - diagnostic-to-review
       - proposal-revise
+      - import-codex-review
     internal:
       - research-lit
       - idea-discovery
@@ -23,6 +24,33 @@ profiles:
       - paper-from-claims
       - submission-package
     internal:
+      - paper-plan
+      - paper-figure
+      - paper-write
+      - paper-compile
+      - auto-paper-improvement-loop
+      - paper-claim-audit
+      - citation-audit
+  research-paper:
+    public:
+      - orbit-status
+      - idea-to-proposal
+      - experiment-bridge
+      - diagnostic-to-review
+      - paper-draft
+      - paper-from-claims
+      - submission-package
+      - import-codex-review
+    internal:
+      - proposal-revise
+      - research-lit
+      - idea-discovery
+      - research-refine
+      - experiment-plan
+      - run-experiment
+      - analyze-results
+      - result-to-claim
+      - auto-review-loop
       - paper-plan
       - paper-figure
       - paper-write
@@ -101,7 +129,7 @@ skills:
   - name: analyze-results
     category: orbit
     public_entry: false
-    profiles: [orbit-core]
+    profiles: [orbit-core, research-paper]
     canonical_source: skills/analyze-results/SKILL.md
   - name: arxiv
     category: literature
@@ -111,12 +139,12 @@ skills:
   - name: auto-paper-improvement-loop
     category: paper
     public_entry: false
-    profiles: [paper-pack]
+    profiles: [paper-pack, research-paper]
     canonical_source: skills/auto-paper-improvement-loop/SKILL.md
   - name: auto-review-loop
     category: orbit
     public_entry: false
-    profiles: [orbit-core]
+    profiles: [orbit-core, research-paper]
     canonical_source: skills/auto-review-loop/SKILL.md
   - name: auto-review-loop-llm
     category: orbit
@@ -131,7 +159,7 @@ skills:
   - name: citation-audit
     category: paper
     public_entry: false
-    profiles: [paper-pack]
+    profiles: [paper-pack, research-paper]
     canonical_source: skills/citation-audit/SKILL.md
   - name: claims-drafting
     category: patent
@@ -151,7 +179,7 @@ skills:
   - name: diagnostic-to-review
     category: orbit
     public_entry: true
-    profiles: [orbit-core]
+    profiles: [orbit-core, research-paper]
     canonical_source: skills/diagnostic-to-review/SKILL.md
   - name: dse-loop
     category: infra
@@ -176,12 +204,12 @@ skills:
   - name: experiment-bridge
     category: orbit
     public_entry: true
-    profiles: [orbit-core]
+    profiles: [orbit-core, research-paper]
     canonical_source: skills/experiment-bridge/SKILL.md
   - name: experiment-plan
     category: orbit
     public_entry: false
-    profiles: [orbit-core]
+    profiles: [orbit-core, research-paper]
     canonical_source: skills/experiment-plan/SKILL.md
   - name: experiment-queue
     category: infra
@@ -221,7 +249,7 @@ skills:
   - name: idea-discovery
     category: orbit
     public_entry: false
-    profiles: [orbit-core]
+    profiles: [orbit-core, research-paper]
     canonical_source: skills/idea-discovery/SKILL.md
   - name: idea-discovery-robot
     category: orbit
@@ -231,12 +259,12 @@ skills:
   - name: idea-to-proposal
     category: orbit
     public_entry: true
-    profiles: [orbit-core]
+    profiles: [orbit-core, research-paper]
     canonical_source: skills/idea-to-proposal/SKILL.md
   - name: import-codex-review
     category: orbit
     public_entry: true
-    profiles: []
+    profiles: [orbit-core, research-paper]
     canonical_source: skills/import-codex-review/SKILL.md
   - name: invention-structuring
     category: patent
@@ -271,7 +299,7 @@ skills:
   - name: orbit-status
     category: orbit
     public_entry: true
-    profiles: [orbit-core]
+    profiles: [orbit-core, research-paper]
     canonical_source: skills/orbit-status/SKILL.md
   - name: overleaf-sync
     category: infra
@@ -281,27 +309,27 @@ skills:
   - name: paper-claim-audit
     category: paper
     public_entry: false
-    profiles: [paper-pack]
+    profiles: [paper-pack, research-paper]
     canonical_source: skills/paper-claim-audit/SKILL.md
   - name: paper-compile
     category: paper
     public_entry: false
-    profiles: [paper-pack]
+    profiles: [paper-pack, research-paper]
     canonical_source: skills/paper-compile/SKILL.md
   - name: paper-draft
     category: paper
     public_entry: true
-    profiles: [paper-pack]
+    profiles: [paper-pack, research-paper]
     canonical_source: skills/paper-draft/SKILL.md
   - name: paper-figure
     category: paper
     public_entry: false
-    profiles: [paper-pack]
+    profiles: [paper-pack, research-paper]
     canonical_source: skills/paper-figure/SKILL.md
   - name: paper-from-claims
     category: paper
     public_entry: true
-    profiles: [paper-pack]
+    profiles: [paper-pack, research-paper]
     canonical_source: skills/paper-from-claims/SKILL.md
   - name: paper-illustration
     category: visual
@@ -316,7 +344,7 @@ skills:
   - name: paper-plan
     category: paper
     public_entry: false
-    profiles: [paper-pack]
+    profiles: [paper-pack, research-paper]
     canonical_source: skills/paper-plan/SKILL.md
   - name: paper-poster
     category: presentation
@@ -331,7 +359,7 @@ skills:
   - name: paper-write
     category: paper
     public_entry: false
-    profiles: [paper-pack]
+    profiles: [paper-pack, research-paper]
     canonical_source: skills/paper-write/SKILL.md
   - name: paper-writing
     category: paper
@@ -377,7 +405,7 @@ skills:
   - name: proposal-revise
     category: orbit
     public_entry: true
-    profiles: [orbit-core]
+    profiles: [orbit-core, research-paper]
     canonical_source: skills/proposal-revise/SKILL.md
   - name: qzcli
     category: infra
@@ -397,7 +425,7 @@ skills:
   - name: research-lit
     category: orbit
     public_entry: false
-    profiles: [orbit-core]
+    profiles: [orbit-core, research-paper]
     canonical_source: skills/research-lit/SKILL.md
   - name: research-pipeline
     category: orbit
@@ -408,7 +436,7 @@ skills:
   - name: research-refine
     category: orbit
     public_entry: false
-    profiles: [orbit-core]
+    profiles: [orbit-core, research-paper]
     canonical_source: skills/research-refine/SKILL.md
   - name: research-refine-pipeline
     category: orbit
@@ -429,12 +457,12 @@ skills:
   - name: result-to-claim
     category: orbit
     public_entry: false
-    profiles: [orbit-core]
+    profiles: [orbit-core, research-paper]
     canonical_source: skills/result-to-claim/SKILL.md
   - name: run-experiment
     category: infra
     public_entry: true
-    profiles: [orbit-core, infra-pack]
+    profiles: [orbit-core, research-paper, infra-pack]
     canonical_source: skills/run-experiment/SKILL.md
   - name: semantic-scholar
     category: literature
@@ -454,7 +482,7 @@ skills:
   - name: submission-package
     category: paper
     public_entry: true
-    profiles: [paper-pack]
+    profiles: [paper-pack, research-paper]
     canonical_source: skills/submission-package/SKILL.md
   - name: system-profile
     category: infra

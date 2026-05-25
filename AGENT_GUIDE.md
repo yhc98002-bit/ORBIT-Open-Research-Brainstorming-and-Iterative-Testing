@@ -62,8 +62,9 @@ is `skills/skill_catalog.yaml`; profile rationale is in
 
 | Profile | Public entries | Internal subskills |
 |---|---|---|
-| `orbit-core` | `/orbit-status`, `/idea-to-proposal`, `/experiment-bridge`, `/diagnostic-to-review`, `/proposal-revise` | `/research-lit`, `/idea-discovery`, `/research-refine`, `/experiment-plan`, `/run-experiment`, `/analyze-results`, `/result-to-claim`, `/auto-review-loop` |
+| `orbit-core` | `/orbit-status`, `/idea-to-proposal`, `/experiment-bridge`, `/diagnostic-to-review`, `/proposal-revise`, `/import-codex-review` | `/research-lit`, `/idea-discovery`, `/research-refine`, `/experiment-plan`, `/run-experiment`, `/analyze-results`, `/result-to-claim`, `/auto-review-loop` |
 | `paper-pack` | `/paper-draft`, `/paper-from-claims`, `/submission-package` | `/paper-plan`, `/paper-figure`, `/paper-write`, `/paper-compile`, `/auto-paper-improvement-loop`, `/paper-claim-audit`, `/citation-audit` |
+| `research-paper` | `/orbit-status`, `/idea-to-proposal`, `/experiment-bridge`, `/diagnostic-to-review`, `/paper-draft`, `/paper-from-claims`, `/submission-package`, `/import-codex-review` | Core research and paper-pack support skills |
 | `patent-pack` | `/patent-pipeline` | `/prior-art-search`, `/claims-drafting`, `/specification-writing` |
 | `presentation-pack` | `/paper-slides`, `/paper-poster`, `/grant-proposal` | None in the baseline profile |
 | `infra-pack` | `/run-experiment`, `/vast-gpu`, `/serverless-modal`, `/experiment-queue` | None in the baseline profile |
@@ -71,7 +72,10 @@ is `skills/skill_catalog.yaml`; profile rationale is in
 Legacy wrappers such as `/paper-writing`, `/research-pipeline`, and
 `/research-refine-pipeline` remain callable for compatibility but should not be the first
 recommendation. `/import-codex-review` is a public recovery utility for Codex handoff
-imports, not a normal workflow starting point.
+imports, not a normal workflow starting point. It is included in `orbit-core` and
+`research-paper` so Codex standalone recovery remains available after profile installs.
+`--profile` installs reconcile to that profile; they are not additive. Use
+`--profile research-paper` or the default full install for idea-to-paper workflows.
 
 Canonical v2 flow:
 

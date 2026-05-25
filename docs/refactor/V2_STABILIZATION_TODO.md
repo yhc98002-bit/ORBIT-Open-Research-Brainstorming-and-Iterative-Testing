@@ -86,12 +86,13 @@ file records current blockers only; it does not change workflow behavior.
   approvals.
 - Invalid semantic claim ledgers must route `/orbit-status` to `/result-to-claim` or
   claim-ledger repair, not to `/auto-review-loop`.
-- `orbit-core` profile installs must include Codex standalone recovery support, or the
-  installer must always include that recovery utility.
+- `orbit-core` profile installs must include Codex standalone recovery support, and the
+  full idea-to-paper workflow must have a clear recommended profile.
 
 Status: parser hardening and invalid-claim `/orbit-status` recovery route fixed by
 `fix(approval): reject template verdicts and list-token approvals`; profile install
-support for Codex recovery remains pending in a subsequent v2.2 stabilization prompt.
+support for Codex recovery and the explicit `research-paper` profile are fixed by
+`fix(installer): add complete research-paper profile and Codex recovery utility`.
 
 ## Non-Blocking Known Limitations
 

@@ -28,6 +28,20 @@ class SkillCatalogTest(unittest.TestCase):
         names = profile_names(self.catalog(), "orbit-core")
         self.assertIn("import-codex-review", names)
 
+    def test_research_paper_profile_contains_full_public_workflow(self):
+        names = profile_names(self.catalog(), "research-paper")
+        for name in (
+            "orbit-status",
+            "idea-to-proposal",
+            "experiment-bridge",
+            "diagnostic-to-review",
+            "paper-draft",
+            "paper-from-claims",
+            "submission-package",
+            "import-codex-review",
+        ):
+            self.assertIn(name, names)
+
     def test_full_idea_to_paper_profile_or_default_install_guidance_exists(self):
         catalog = self.catalog()
         docs = "\n".join(
@@ -54,8 +68,10 @@ class SkillCatalogTest(unittest.TestCase):
                 (ROOT / "docs" / "refactor" / "SKILL_PROFILES.md").read_text(encoding="utf-8"),
             ]
         ).lower()
-        self.assertNotIn("additive", docs)
-        self.assertNotIn("叠加", docs)
+        normalized_docs = docs.replace("`", "")
+        self.assertIn("--profile is not additive", normalized_docs)
+        self.assertIn("不是叠加安装", docs)
+        self.assertNotIn("profile installs are additive", normalized_docs)
 
 
 if __name__ == "__main__":

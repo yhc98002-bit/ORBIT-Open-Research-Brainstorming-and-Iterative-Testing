@@ -47,6 +47,15 @@ bash tools/install_aris.sh
 
 如果你只想装轻量版本，可以使用 profile。但新用户建议先用默认完整安装，避免缺少 paper 或 Codex recovery 相关 skill。
 
+可选的完整 idea-to-paper 精简安装：
+
+```bash
+bash tools/install_aris.sh --profile research-paper
+```
+
+`orbit-core` 只覆盖 STOP A 到 STOP C 的核心研究流程和 Codex recovery；它不包含
+paper drafting / submission skills。`--profile` 是 reconcile 到指定 profile，不是叠加安装。
+
 ---
 
 ## Codex 设置
