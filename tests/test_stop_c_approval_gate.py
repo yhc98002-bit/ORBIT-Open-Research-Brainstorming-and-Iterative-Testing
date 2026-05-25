@@ -257,7 +257,6 @@ class StopCApprovalGateTest(unittest.TestCase):
         self.assertIn("does not reference diagnostic_id diag_fixture", result.stdout)
         self.assertIn("does not reference ledger_hash ledger_fixture_hash", result.stdout)
 
-    @unittest.expectedFailure
     def test_regression_per_diagnostic_red_team_requires_fixes_must_not_fallback_to_ready_legacy(self):
         project = copy_fixture(self)
         per_diagnostic_review = (
@@ -301,7 +300,6 @@ class StopCApprovalGateTest(unittest.TestCase):
         )
         self.assertIn("REQUIRES_FIXES", "\n".join(payload["errors"]))
 
-    @unittest.expectedFailure
     def test_regression_unsupported_allowed_main_claim_blocks_stop_c_approval(self):
         project = copy_fixture(self)
         ledger_path = project / "claims" / "claim_ledger.json"
@@ -322,6 +320,25 @@ class StopCApprovalGateTest(unittest.TestCase):
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
         self.assertIn("unsupported claim", result.stdout)
         self.assertIn("paper_use", result.stdout)
+
+    def test_stop_c_helper_blocks_ready_ledger_without_identity(self):
+        project = copy_fixture(self)
+        ledger_path = project / "claims" / "claim_ledger.json"
+        ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+        ledger.pop("diagnostic_id", None)
+        ledger.pop("ledger_hash", None)
+        write_json(ledger_path, ledger)
+
+        result = run_tool(
+            str(TOOLS / "check_stop_c_approval.py"),
+            "--repo",
+            str(project),
+            "--claim-ledger",
+            "claims/claim_ledger.json",
+        )
+
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("diagnostic_id or ledger_hash", result.stdout)
 
     def test_stop_c_helper_can_allow_unmatched_legacy_approval(self):
         project = copy_fixture(self)

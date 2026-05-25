@@ -152,6 +152,13 @@ def claim_ledger_readiness_errors(
     if ledger.get("gating") is False:
         errors.append("%s.gating: non-gating claim ledger cannot satisfy STOP C approval" % location)
 
+    metadata = extract_metadata(ledger)
+    if not metadata["diagnostic_id"] and not metadata["ledger_hash"]:
+        errors.append(
+            "%s: ready claim ledger must include diagnostic_id or ledger_hash for STOP C approval identity checks"
+            % location
+        )
+
     codex_review = ledger.get("codex_review")
     if codex_review in READY_CODEX_REVIEWS:
         return errors
@@ -168,6 +175,128 @@ def claim_ledger_readiness_errors(
             "%s.codex_review: %r cannot satisfy STOP C approval; expected 'passed' or 'imported'"
             % (location, codex_review)
         )
+    return errors
+
+
+def non_empty_string(value: Any) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
+def non_empty_string_list(value: Any) -> bool:
+    return isinstance(value, list) and any(non_empty_string(item) for item in value)
+
+
+def has_clear_limitations(claim: Mapping[str, Any]) -> bool:
+    limitations = claim.get("limitations")
+    if non_empty_string(limitations):
+        return True
+    return non_empty_string_list(limitations)
+
+
+def duplicate_claim_id_errors(claims: Any, location: str) -> List[str]:
+    errors: List[str] = []
+    if not isinstance(claims, list):
+        return errors
+
+    seen: Dict[str, int] = {}
+    for index, claim in enumerate(claims):
+        if not isinstance(claim, Mapping):
+            continue
+        claim_id = claim.get("id")
+        if not non_empty_string(claim_id):
+            continue
+        if str(claim_id) in seen:
+            errors.append(
+                "%s[%d].id: duplicate claim id %r also used at %s[%d]"
+                % (location, index, claim_id, location, seen[str(claim_id)])
+            )
+        else:
+            seen[str(claim_id)] = index
+    return errors
+
+
+def errors_for_claim(errors: List[str], claim_location: str) -> bool:
+    return any(error.startswith(claim_location + ".") for error in errors)
+
+
+def claim_ledger_semantic_errors(
+    ledger: Mapping[str, Any],
+    location: str = "$",
+    allow_legacy_missing_codex_review: bool = False,
+    require_ready: bool = False,
+) -> List[str]:
+    """Return approval-relevant claim ledger semantic errors."""
+    errors: List[str] = []
+    claims = ledger.get("claims")
+    if not isinstance(claims, list):
+        return errors
+
+    if require_ready or ledger.get("status") == "ready":
+        errors.extend(
+            claim_ledger_readiness_errors(
+                ledger,
+                location,
+                allow_legacy_missing_codex_review=allow_legacy_missing_codex_review,
+            )
+        )
+
+    errors.extend(duplicate_claim_id_errors(claims, "%s.claims" % location))
+
+    for index, claim in enumerate(claims):
+        if not isinstance(claim, Mapping):
+            continue
+
+        claim_id = claim.get("id") or index
+        status = claim.get("status")
+        role = claim.get("claim_role")
+        paper_use = claim.get("paper_use")
+        claim_loc = "%s.claims[%d]" % (location, index)
+
+        for key in ("id", "statement", "status"):
+            if not non_empty_string(claim.get(key)):
+                errors.append("%s.%s: claim must have a non-empty %s" % (claim_loc, key, key))
+
+        if paper_use == "allowed" and status not in {"supported", "partial"}:
+            errors.append(
+                "%s.paper_use: claim %r with paper_use='allowed' must be supported or partial, got %r"
+                % (claim_loc, claim_id, status)
+            )
+        if paper_use == "allowed" and status == "partial" and not has_clear_limitations(claim):
+            errors.append(
+                "%s.limitations: partial allowed claim %r must include clear limitations"
+                % (claim_loc, claim_id)
+            )
+
+        if status != "unsupported":
+            continue
+
+        if paper_use == "allowed":
+            errors.append(
+                "%s.paper_use: unsupported claim %r cannot have paper_use='allowed'"
+                % (claim_loc, claim_id)
+            )
+        if role == "main_claim":
+            errors.append(
+                "%s.claim_role: unsupported claim %r cannot be a main_claim"
+                % (claim_loc, claim_id)
+            )
+        if role == "negative_result_claim":
+            errors.append(
+                "%s.claim_role: negative_result_claim %r must be supported or partial, not unsupported"
+                % (claim_loc, claim_id)
+            )
+
+        allowed_unsupported = (
+            role == "original_hypothesis"
+            and paper_use in {"do_not_claim", "limitations_only"}
+        )
+        if not allowed_unsupported and not errors_for_claim(errors, claim_loc):
+            errors.append(
+                "%s.status: unsupported claim %r is allowed in a ready ledger only as "
+                "claim_role='original_hypothesis' with paper_use='do_not_claim' or 'limitations_only'"
+                % (claim_loc, claim_id)
+            )
+
     return errors
 
 
@@ -223,10 +352,17 @@ def evaluate_stop_c_approval(
     allow_unmatched_legacy_approval: bool = False,
 ) -> Dict[str, Any]:
     repo = repo.resolve()
-    ledger_path = repo / claim_ledger
+    requested_ledger_path = Path(claim_ledger)
+    if requested_ledger_path.is_absolute():
+        ledger_path = requested_ledger_path
+    else:
+        ledger_path = repo / requested_ledger_path
+        if not ledger_path.exists() and requested_ledger_path.exists():
+            ledger_path = requested_ledger_path.resolve()
+    claim_ledger_display = relpath(ledger_path, repo)
     report: Dict[str, Any] = {
         "status": "approved",
-        "claim_ledger": claim_ledger,
+        "claim_ledger": claim_ledger_display,
         "diagnostic_id": None,
         "ledger_hash": None,
         "red_team_review": None,
@@ -238,19 +374,19 @@ def evaluate_stop_c_approval(
     }
 
     if not ledger_path.exists():
-        report["errors"].append("missing %s" % claim_ledger)
+        report["errors"].append("missing %s" % claim_ledger_display)
         report["status"] = "blocked"
         return report
 
     try:
         ledger = load_json(ledger_path)
     except (OSError, json.JSONDecodeError) as exc:
-        report["errors"].append("could not parse %s: %s" % (claim_ledger, exc))
+        report["errors"].append("could not parse %s: %s" % (claim_ledger_display, exc))
         report["status"] = "blocked"
         return report
 
     if not isinstance(ledger, Mapping):
-        report["errors"].append("%s must be a JSON object" % claim_ledger)
+        report["errors"].append("%s must be a JSON object" % claim_ledger_display)
         report["status"] = "blocked"
         return report
 
@@ -264,10 +400,11 @@ def evaluate_stop_c_approval(
     report["claim_ledger_codex_review"] = ledger.get("codex_review")
 
     report["errors"].extend(
-        claim_ledger_readiness_errors(
+        claim_ledger_semantic_errors(
             ledger,
             "$",
             allow_legacy_missing_codex_review=allow_legacy_missing_codex_review,
+            require_ready=True,
         )
     )
     if ledger.get("codex_review") is None and allow_legacy_missing_codex_review:
@@ -276,7 +413,18 @@ def evaluate_stop_c_approval(
             "--allow-legacy-missing-codex-review was set"
         )
 
+    per_diagnostic_red_team = None
+    if diagnostic_id:
+        per_diagnostic_red_team = (
+            repo
+            / "orbit-research"
+            / "diagnostics"
+            / diagnostic_id
+            / "RED_TEAM_REVIEW.md"
+        )
     red_team_paths = candidate_red_team_paths(repo, diagnostic_id)
+    if per_diagnostic_red_team is not None and per_diagnostic_red_team.exists():
+        red_team_paths = [per_diagnostic_red_team]
     existing_red_team_paths = [path for path in red_team_paths if path.exists()]
     if not existing_red_team_paths:
         report["errors"].append(
@@ -288,6 +436,9 @@ def evaluate_stop_c_approval(
         for path in existing_red_team_paths:
             text = path.read_text(encoding="utf-8", errors="replace")
             verdict = parse_final_verdict(text, RED_TEAM_VERDICTS)
+            if report["red_team_review"] is None:
+                report["red_team_review"] = relpath(path, repo)
+                report["red_team_verdict"] = verdict
             found_verdicts.append("%s=%s" % (relpath(path, repo), verdict or "UNKNOWN"))
             if verdict == RED_TEAM_READY:
                 identity_errors, identity_warnings = file_metadata_reference_messages(

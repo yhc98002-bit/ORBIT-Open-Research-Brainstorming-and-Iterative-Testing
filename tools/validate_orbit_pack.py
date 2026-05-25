@@ -12,10 +12,10 @@ from typing import Any, Dict, List, Mapping, Optional
 
 try:
     from orbit_pack import PACK_SPECS, get_pack_spec, pack_names, pack_path, schema_path
-    from check_stop_c_approval import claim_ledger_readiness_errors, evaluate_stop_c_approval
+    from check_stop_c_approval import claim_ledger_semantic_errors, evaluate_stop_c_approval
 except ImportError:  # pragma: no cover - used when imported as tools.validate_orbit_pack
     from tools.orbit_pack import PACK_SPECS, get_pack_spec, pack_names, pack_path, schema_path
-    from tools.check_stop_c_approval import claim_ledger_readiness_errors, evaluate_stop_c_approval
+    from tools.check_stop_c_approval import claim_ledger_semantic_errors, evaluate_stop_c_approval
 
 
 TOOL_REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -263,72 +263,7 @@ def formal_diagnostic_input(entry: Mapping[str, Any]) -> Optional[str]:
 
 def claim_ledger_usage_errors(instance: Mapping[str, Any], location: str = "$") -> List[str]:
     """Return semantic errors that would let unsupported claims leak into paper prose."""
-    errors: List[str] = []
-    claims = instance.get("claims")
-    if not isinstance(claims, list):
-        return errors
-
-    if instance.get("status") == "ready":
-        errors.extend(claim_ledger_readiness_errors(instance, location))
-
-    errors.extend(duplicate_id_errors(claims, "id", "%s.claims" % location, "claim id"))
-
-    for index, claim in enumerate(claims):
-        if not isinstance(claim, dict):
-            continue
-
-        claim_id = claim.get("id") or index
-        status = claim.get("status")
-        role = claim.get("claim_role")
-        paper_use = claim.get("paper_use")
-        claim_loc = "%s.claims[%d]" % (location, index)
-
-        for key in ("id", "statement", "status"):
-            if not non_empty_string(claim.get(key)):
-                errors.append("%s.%s: claim must have a non-empty %s" % (claim_loc, key, key))
-
-        if paper_use == "allowed" and status not in {"supported", "partial"}:
-            errors.append(
-                "%s.paper_use: claim %r with paper_use='allowed' must be supported or partial, got %r"
-                % (claim_loc, claim_id, status)
-            )
-        if paper_use == "allowed" and status == "partial" and not has_clear_limitations(claim):
-            errors.append(
-                "%s.limitations: partial allowed claim %r must include clear limitations"
-                % (claim_loc, claim_id)
-            )
-
-        if status != "unsupported":
-            continue
-
-        if paper_use == "allowed":
-            errors.append(
-                "%s.paper_use: unsupported claim %r cannot have paper_use='allowed'"
-                % (claim_loc, claim_id)
-            )
-        if role == "main_claim":
-            errors.append(
-                "%s.claim_role: unsupported claim %r cannot be a main_claim"
-                % (claim_loc, claim_id)
-            )
-        if role == "negative_result_claim":
-            errors.append(
-                "%s.claim_role: negative_result_claim %r must be supported or partial, not unsupported"
-                % (claim_loc, claim_id)
-            )
-
-        allowed_unsupported = (
-            role == "original_hypothesis"
-            and paper_use in {"do_not_claim", "limitations_only"}
-        )
-        if not allowed_unsupported and not errors_for_claim(errors, claim_loc):
-            errors.append(
-                "%s.status: unsupported claim %r is allowed in a ready ledger only as "
-                "claim_role='original_hypothesis' with paper_use='do_not_claim' or 'limitations_only'"
-                % (claim_loc, claim_id)
-            )
-
-    return errors
+    return claim_ledger_semantic_errors(instance, location)
 
 
 def claim_ledger_usage_warnings(instance: Mapping[str, Any], location: str = "$") -> List[str]:

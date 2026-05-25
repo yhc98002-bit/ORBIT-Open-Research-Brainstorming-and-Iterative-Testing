@@ -207,7 +207,6 @@ class OrbitStatusTest(unittest.TestCase):
             self.assertEqual(loaded["current_phase"], "user_review")
             self.assertEqual(loaded["safe_next_command"], '/idea-to-proposal "topic"')
 
-    @unittest.expectedFailure
     def test_regression_stale_orbit_state_submission_safe_next_is_blocked_by_invalid_claim_ledger(self):
         repo = copy_fixture(self)
         package_path = repo / "paper" / "paper_package.json"

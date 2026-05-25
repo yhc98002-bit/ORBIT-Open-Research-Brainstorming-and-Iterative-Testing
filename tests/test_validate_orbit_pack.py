@@ -149,6 +149,18 @@ class ValidateOrbitPackTest(unittest.TestCase):
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
         self.assertIn("non-gating claim ledger", result.stdout)
 
+    def test_ready_claim_ledger_missing_identity_fails(self):
+        project = copy_fixture(self)
+        ledger_path = project / "claims" / "claim_ledger.json"
+        ledger = load_json(ledger_path)
+        ledger.pop("diagnostic_id", None)
+        ledger.pop("ledger_hash", None)
+        write_json(ledger_path, ledger)
+
+        result = run_validator(project, "--pack", "claim_ledger")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("diagnostic_id or ledger_hash", result.stdout)
+
     def test_negative_original_hypothesis_do_not_claim_passes(self):
         project = copy_fixture(self)
         ledger_path = project / "claims" / "claim_ledger.json"

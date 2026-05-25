@@ -39,6 +39,12 @@
     "gating": {
       "type": "boolean"
     },
+    "diagnostic_id": {
+      "type": "string"
+    },
+    "ledger_hash": {
+      "type": "string"
+    },
     "updated_at": {
       "type": "string",
       "format": "date-time"
