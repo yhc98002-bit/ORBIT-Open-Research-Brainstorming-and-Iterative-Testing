@@ -1267,28 +1267,54 @@ def stale_state(repo: Path, error: Exception) -> Dict[str, Any]:
 def normalize_existing_state(repo: Path, state: Dict[str, Any]) -> Dict[str, Any]:
     """Keep explicit ORBIT_STATE, but correct unsafe v1/v2 paper inferences."""
     normalized = dict(state)
-    skill = normalized.get("current_skill")
-    if skill == "paper-writing":
-        if (repo / "paper/paper_package.json").exists():
+    legacy_artifacts = existing_artifacts(repo, INFERENCE_ARTIFACTS)
+    safe_next = normalized.get("safe_next_command")
+    current_skill = normalized.get("current_skill")
+    current_stop = normalized.get("current_stop")
+
+    paper_command = is_paper_handoff_command(safe_next)
+    paper_context = (
+        paper_command
+        or current_stop in {"STOP_D", "COMPLETED"}
+        or current_skill in {"paper-writing", "paper-from-claims", "submission-package", "paper-draft"}
+    )
+
+    if current_skill == "paper-writing":
+        if isinstance(safe_next, str) and "/paper-draft" in safe_next:
+            normalized["current_skill"] = "paper-draft"
+        elif (repo / "paper/paper_package.json").exists() or (
+            isinstance(safe_next, str) and "/submission-package" in safe_next
+        ):
             normalized["current_skill"] = "submission-package"
-        elif (repo / "claims/claim_ledger.json").exists():
+        elif (repo / "claims/claim_ledger.json").exists() or (
+            isinstance(safe_next, str) and "/paper-from-claims" in safe_next
+        ):
             normalized["current_skill"] = "paper-from-claims"
 
-    legacy_artifacts = existing_artifacts(repo, INFERENCE_ARTIFACTS)
     paper_state = state_from_paper_package(repo, legacy_artifacts)
     if paper_state is not None:
-        if paper_state.get("status") == "blocked" or normalized.get("current_stop") == "COMPLETED":
+        if paper_state.get("status") == "blocked" or paper_context:
             return paper_state
 
-    safe_next = normalized.get("safe_next_command")
-    if isinstance(safe_next, str) and (
-        "/paper-from-claims" in safe_next or "/submission-package" in safe_next
-    ):
+    if paper_command:
         claim_state = state_from_claim_ledger(repo, legacy_artifacts)
-        if claim_state is not None and claim_state.get("status") == "blocked":
+        if claim_state is not None:
             return claim_state
 
     return normalized
+
+
+def is_paper_handoff_command(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    return any(
+        command in value
+        for command in (
+            "/paper-from-claims",
+            "/submission-package",
+            "/paper-writing",
+        )
+    )
 
 
 def get_status(repo: Path) -> Dict[str, Any]:

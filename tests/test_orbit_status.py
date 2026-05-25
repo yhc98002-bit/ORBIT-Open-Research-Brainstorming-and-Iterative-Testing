@@ -238,6 +238,58 @@ class OrbitStatusTest(unittest.TestCase):
             state,
         )
 
+    def test_stale_orbit_state_paper_writing_safe_next_revalidates_human_stop(self):
+        repo = copy_fixture(self)
+        package_path = repo / "paper" / "paper_package.json"
+        if package_path.exists():
+            package_path.unlink()
+        human = repo / "orbit-research" / "HUMAN_DECISION_NOTE.md"
+        human.write_text(
+            "# Human Decision Note\n\nDiagnostic ID: diag_fixture\nClaim ledger hash: ledger_fixture_hash\n\n"
+            "Final verdict: STOP\n",
+            encoding="utf-8",
+        )
+        stale_state = make_state(
+            current_stop="STOP_D",
+            current_skill="paper-writing",
+            current_phase="legacy_ready_for_paper",
+            status="paused",
+            pause_reason="stop_review",
+            safe_next_command='/paper-writing "claims/claim_ledger.json"',
+        )
+        write_state(repo, stale_state)
+
+        state = get_status(repo)
+
+        self.assertEqual(state["current_stop"], "STOP_C")
+        self.assertEqual(state["current_skill"], "diagnostic-to-review")
+        self.assertEqual(state["status"], "blocked")
+        self.assertNotIn("/paper-writing", state.get("safe_next_command") or "")
+        self.assertNotIn("/paper-from-claims", state.get("safe_next_command") or "")
+
+    def test_stale_completed_state_with_draft_paper_package_is_not_completed(self):
+        repo = copy_fixture(self)
+        package_path = repo / "paper" / "paper_package.json"
+        package = load_json(package_path)
+        package["status"] = "draft"
+        write_json(package_path, package)
+        stale_state = make_state(
+            current_stop="COMPLETED",
+            current_skill="paper-writing",
+            current_phase="legacy_completed",
+            status="completed",
+            pause_reason=None,
+            safe_next_command=None,
+        )
+        write_state(repo, stale_state)
+
+        state = get_status(repo)
+
+        self.assertEqual(state["current_stop"], "STOP_D")
+        self.assertEqual(state["current_skill"], "submission-package")
+        self.assertEqual(state["status"], "paused")
+        self.assertEqual(state["stop_d"]["paper_package_status"], "draft")
+
     def test_blocked_paper_package_is_not_completed(self):
         repo = copy_fixture(self)
         package_path = repo / "paper" / "paper_package.json"

@@ -48,8 +48,9 @@ class GoldenOrbitWorkflowTest(unittest.TestCase):
         result = run_tool(str(TOOLS / "orbit_status.py"), "--repo", str(FIXTURE), "--pretty")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("Current stop: STOP_D", result.stdout)
-        self.assertIn("Status: paused", result.stdout)
-        self.assertIn('  /submission-package "paper/"', result.stdout)
+        self.assertIn("Status: completed", result.stdout)
+        self.assertIn("Current skill: submission-package", result.stdout)
+        self.assertIn("Safe next command:\n  none", result.stdout)
 
     def test_claim_ledger_validator_rejects_ready_unsupported_claim(self):
         project = copy_fixture(self)
