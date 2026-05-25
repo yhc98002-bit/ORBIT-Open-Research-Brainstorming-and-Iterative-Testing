@@ -626,12 +626,12 @@ def state_from_claim_ledger(repo: Path, legacy_artifacts: List[str]) -> Optional
             legacy_artifacts,
             "STOP_C",
             "result-to-claim",
-            "claim_ledger_not_ready",
+            "claim_ledger_invalid",
             "blocked",
             "gate_failed",
             [
                 verdict_blocker(
-                    "G21",
+                    "claim_ledger_invalid",
                     "claims/claim_ledger.json",
                     error,
                     command,

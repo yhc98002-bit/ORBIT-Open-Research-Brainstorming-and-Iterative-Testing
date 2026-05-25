@@ -257,8 +257,14 @@ class OrbitStatusTest(unittest.TestCase):
 
         self.assertEqual(state["current_stop"], "STOP_C")
         self.assertEqual(state["status"], "blocked")
+        self.assertEqual(state["current_skill"], "result-to-claim")
+        self.assertEqual(state["current_phase"], "claim_ledger_invalid")
         self.assertNotIn("/auto-review-loop", state.get("safe_next_command") or "")
         self.assertIn("/result-to-claim", state.get("safe_next_command") or "")
+        self.assertTrue(
+            any(blocker.get("id") == "claim_ledger_invalid" for blocker in state.get("blockers", [])),
+            state,
+        )
 
     def test_stale_orbit_state_paper_writing_safe_next_revalidates_human_stop(self):
         repo = copy_fixture(self)
@@ -394,9 +400,26 @@ class OrbitStatusTest(unittest.TestCase):
 
         state = get_status(repo)
         self.assertEqual(state["current_stop"], "STOP_C")
+        self.assertEqual(state["current_skill"], "auto-review-loop")
         self.assertEqual(state["status"], "paused")
         self.assertEqual(state["pause_reason"], "missing_prereq")
         self.assertEqual(state["blockers"][0]["artifact"], "orbit-research/diagnostics/diag_fixture/RED_TEAM_REVIEW.md")
+        self.assertIn("/auto-review-loop", state.get("safe_next_command") or "")
+        self.assertNotIn("/paper-from-claims", state.get("safe_next_command") or "")
+
+    def test_valid_claim_ledger_with_red_team_but_missing_human_decision_routes_to_human_note(self):
+        repo = copy_fixture(self)
+        (repo / "paper" / "paper_package.json").unlink()
+        (repo / "orbit-research" / "HUMAN_DECISION_NOTE.md").unlink()
+
+        state = get_status(repo)
+
+        self.assertEqual(state["current_stop"], "STOP_C")
+        self.assertEqual(state["current_skill"], "diagnostic-to-review")
+        self.assertEqual(state["status"], "paused")
+        self.assertEqual(state["pause_reason"], "stop_review")
+        self.assertIn("HUMAN_DECISION_NOTE.md", state.get("safe_next_command") or "")
+        self.assertIn("orbit-research/diagnostics/diag_fixture/RED_TEAM_REVIEW.md", state.get("safe_next_command") or "")
         self.assertNotIn("/paper-from-claims", state.get("safe_next_command") or "")
 
     def test_ready_paper_package_with_valid_approval_is_completed(self):
