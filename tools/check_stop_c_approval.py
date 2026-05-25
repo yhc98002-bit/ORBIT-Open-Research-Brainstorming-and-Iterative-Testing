@@ -369,6 +369,7 @@ def evaluate_stop_c_approval(
         "red_team_verdict": None,
         "human_decision_note": "orbit-research/HUMAN_DECISION_NOTE.md",
         "human_decision_verdict": None,
+        "claim_ledger_semantic_errors": [],
         "errors": [],
         "warnings": [],
     }
@@ -399,14 +400,14 @@ def evaluate_stop_c_approval(
     report["claim_ledger_gating"] = ledger.get("gating")
     report["claim_ledger_codex_review"] = ledger.get("codex_review")
 
-    report["errors"].extend(
-        claim_ledger_semantic_errors(
-            ledger,
-            "$",
-            allow_legacy_missing_codex_review=allow_legacy_missing_codex_review,
-            require_ready=True,
-        )
+    semantic_errors = claim_ledger_semantic_errors(
+        ledger,
+        "$",
+        allow_legacy_missing_codex_review=allow_legacy_missing_codex_review,
+        require_ready=True,
     )
+    report["claim_ledger_semantic_errors"] = semantic_errors
+    report["errors"].extend(semantic_errors)
     if ledger.get("codex_review") is None and allow_legacy_missing_codex_review:
         report["warnings"].append(
             "claim ledger has no codex_review field; accepted only because "

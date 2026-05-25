@@ -486,10 +486,27 @@ def append_paper_package_readiness_errors(repo: Path, report: Dict[str, Any]) ->
         return
 
     errors: List[str] = []
+    errors.extend(validate_paper_package_pdf(repo, paper_package))
     errors.extend(validate_referenced_pack(repo, paper_package, "claim_ledger_ref", "claim_ledger"))
     errors.extend(validate_paper_package_figure_refs(repo, paper_package))
     errors.extend(validate_paper_package_citation_refs(repo, paper_package))
     add_result_errors(report, "paper_package", errors)
+
+
+def validate_paper_package_pdf(repo: Path, paper_package: Mapping[str, Any]) -> List[str]:
+    compile_status = paper_package.get("compile_status")
+    pdf = None
+    if isinstance(compile_status, Mapping):
+        for key in ("pdf", "pdf_path", "output_pdf", "output"):
+            value = compile_status.get(key)
+            if non_empty_string(value):
+                pdf = str(value).strip()
+                break
+    if not pdf:
+        return ["$.compile_status.pdf: ready paper_package requires declared compiled PDF path"]
+    if not (repo / pdf).exists():
+        return ["$.compile_status.pdf: declared compiled PDF does not exist: %s" % pdf]
+    return []
 
 
 def validate_referenced_pack(repo: Path, paper_package: Mapping[str, Any], ref_key: str, pack_name: str) -> List[str]:
@@ -524,11 +541,29 @@ def validate_paper_package_figure_refs(repo: Path, paper_package: Mapping[str, A
     if not isinstance(manifest, dict):
         return ["$.figure_manifest_ref: referenced figure_manifest is not valid JSON: %s" % ref]
 
-    figure_ids = ids_from_items(manifest.get("figures"), "id")
+    figures = {
+        str(figure.get("id")): figure
+        for figure in list_items(manifest.get("figures"))
+        if non_empty_string(figure.get("id"))
+    }
     errors = []
     for figure_id in refs:
-        if figure_id not in figure_ids:
+        figure = figures.get(figure_id)
+        if figure is None:
             errors.append("$.figure_refs: referenced figure id %r is missing from figure_manifest" % figure_id)
+            continue
+        if figure.get("status") != "verified":
+            errors.append("$.figure_refs: referenced figure id %r is not verified" % figure_id)
+            continue
+        output = figure.get("output")
+        if not non_empty_string(output):
+            errors.append("$.figure_refs: verified figure id %r has no output path" % figure_id)
+            continue
+        if not (repo / str(output).strip()).exists():
+            errors.append(
+                "$.figure_refs: verified figure id %r output path does not exist: %s"
+                % (figure_id, output)
+            )
     return errors
 
 

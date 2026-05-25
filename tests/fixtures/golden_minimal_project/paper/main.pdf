@@ -1,0 +1,5 @@
+Golden minimal project placeholder PDF.
+
+This file is not a real compiled paper. It exists so the lightweight ORBIT
+validator can verify that a ready paper_package points at a declared PDF output
+without invoking a LaTeX compiler during tests.

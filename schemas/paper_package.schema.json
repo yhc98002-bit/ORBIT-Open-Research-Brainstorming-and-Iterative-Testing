@@ -68,7 +68,29 @@
         "object",
         "string",
         "null"
-      ]
+      ],
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "pdf": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "figure_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "citation_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "audits": {
       "type": "array"

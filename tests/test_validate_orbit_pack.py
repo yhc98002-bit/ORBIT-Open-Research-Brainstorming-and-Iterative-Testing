@@ -255,6 +255,17 @@ class ValidateOrbitPackTest(unittest.TestCase):
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
         self.assertIn("referenced citation key 'fixture2026' is not verified", result.stdout)
 
+    def test_ready_paper_package_missing_declared_pdf_fails(self):
+        project = copy_fixture(self)
+        package_path = project / "paper" / "paper_package.json"
+        package = load_json(package_path)
+        package["compile_status"]["pdf"] = "paper/missing_main.pdf"
+        write_json(package_path, package)
+
+        result = run_validator(project, "--pack", "paper_package")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("declared compiled PDF does not exist: paper/missing_main.pdf", result.stdout)
+
     def test_ready_paper_package_with_missing_figure_id_fails(self):
         project = copy_fixture(self)
         package_path = project / "paper" / "paper_package.json"
@@ -265,6 +276,17 @@ class ValidateOrbitPackTest(unittest.TestCase):
         result = run_validator(project, "--pack", "paper_package")
         self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
         self.assertIn("referenced figure id 'fig:missing' is missing", result.stdout)
+
+    def test_ready_paper_package_with_missing_verified_figure_output_fails(self):
+        project = copy_fixture(self)
+        manifest_path = project / "figures" / "figure_manifest.json"
+        manifest = load_json(manifest_path)
+        manifest["figures"][0]["output"] = "figures/missing_fixture_metric.pdf"
+        write_json(manifest_path, manifest)
+
+        result = run_validator(project, "--pack", "paper_package")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("verified figure id 'fig:fixture_metric' output path does not exist", result.stdout)
 
 
 if __name__ == "__main__":

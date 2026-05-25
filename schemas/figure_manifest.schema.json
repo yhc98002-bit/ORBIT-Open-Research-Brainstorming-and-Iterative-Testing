@@ -78,7 +78,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "minLength": 1
           },
           "generator": {
             "type": [
@@ -90,7 +91,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "minLength": 1
           },
           "status": {
             "type": "string",
