@@ -6,11 +6,13 @@ allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent
 
 > Override for Codex users who want **Claude Code CLI**, not a second Codex agent, to act as the reviewer/helper. Install this package **after** `skills/skills-codex/*`.
 
-Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE` and run:
+Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE`. For a one-shot independent review, run:
 
 ```bash
 claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
+
+For multi-round reviewer discussion, keep automation non-interactive but preserve continuity with `--session-id` on the first call and `--resume` on follow-up calls; see `../shared-references/claude-cli-review.md`.
 
 # Paper Claim Audit: Zero-Context Evidence Verification
 
@@ -99,12 +101,13 @@ Any .md file that is an executor-written summary, except generated
 
 ### Step 2: Fresh Reviewer Audit (Codex GPT-5.5 — NEW thread, no reply)
 
-**CRITICAL: Use `claude -p` (new thread), NEVER a new `claude -p` invocation.** Every run must be a fresh context.
+**CRITICAL: Use `claude -p` (new thread), NEVER `claude -p --resume`.** Every run must be a fresh context.
 
 ```text
 Write the complete fresh Claude review/help prompt to `$PROMPT_FILE`.
 Preserve the role, files-to-read, objective, and required output schema from this original call shape.
 
+If this review may need later follow-up, create and save a Claude CLI session ID on this first call.
 
 # Claude CLI reviewer per-call config does not accept a sandbox key.
   prompt: |
@@ -202,7 +205,10 @@ Preserve the role, files-to-read, objective, and required output schema from thi
 PROMPT_FILE="${PROMPT_FILE:-.aris/review-prompts/claude-review-round-N.md}"
 RAW_REVIEW_JSON="${RAW_REVIEW_JSON:-.aris/review-outputs/claude-review-round-N.json}"
 mkdir -p "$(dirname "$PROMPT_FILE")" "$(dirname "$RAW_REVIEW_JSON")"
-claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+CLAUDE_SESSION_ID="${CLAUDE_SESSION_ID:-$(python -c 'import uuid; print(uuid.uuid4())')}"
+CLAUDE_SESSION_ID_FILE="${CLAUDE_SESSION_ID_FILE:-.aris/review-outputs/claude-session-id.txt}"
+printf "%s\n" "$CLAUDE_SESSION_ID" > "$CLAUDE_SESSION_ID_FILE"
+claude -p --session-id "$CLAUDE_SESSION_ID" --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
 
 Save the raw Claude CLI JSON before summarizing it. Treat the response text inside the JSON as the reviewer/helper output.
@@ -291,7 +297,7 @@ Same pattern as `/experiment-audit`:
 
 ## Key Rules
 
-- **Fresh thread EVERY run.** Never use a new `claude -p` invocation. Never carry context.
+- **Fresh thread EVERY run.** Never use `claude -p --resume`. Never carry context.
 - **Zero executor interpretation.** Only file paths. No summaries.
 - **Only the claim ledger plus raw results.** No EXPERIMENT_LOG, no AUTO_REVIEW, no human summaries.
 - **Rounding rule.** Only standard rounding to displayed precision. 84.7% → 84.7% or 85% is OK. 84.7% → 85.3% is NOT OK.
@@ -299,7 +305,7 @@ Same pattern as `/experiment-audit`:
 
 ## Review Tracing
 
-After each `claude -p` or a new `claude -p` invocation reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
+After each `claude -p` or `claude -p --resume` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
 
 ## Submission Artifact Emission
 
@@ -324,7 +330,7 @@ The artifact conforms to the schema in `../shared-references/assurance-contract.
     "/abs/path/to/results/run_2026_04_19.json": "sha256:..."
   },
   "trace_path":       ".aris/traces/paper-claim-audit/<date>_run<NN>/",
-  "thread_id":        "<codex mcp thread id>",
+  "claude_session_id":        "<codex mcp Claude session ID>",
   "reviewer_model":   "claude-cli",
   "reviewer_reasoning": "xhigh",
   "generated_at":     "<UTC ISO-8601>",
@@ -368,7 +374,7 @@ external `results/` dirs. The verifier resolves relative entries via
 ### Thread independence
 
 Every invocation uses a fresh `claude -p` thread. Never
-a new `claude -p` invocation. Do not accept prior audit outputs (PROOF_AUDIT, CITATION_AUDIT,
+`claude -p --resume`. Do not accept prior audit outputs (PROOF_AUDIT, CITATION_AUDIT,
 EXPERIMENT_LOG, AUTO_REVIEW summaries) as input to this audit. The one exception is
 `claims/claim_ledger.json`, which is the canonical STOP C claim contract rather than a
 review summary. The fresh thread preserves reviewer independence per

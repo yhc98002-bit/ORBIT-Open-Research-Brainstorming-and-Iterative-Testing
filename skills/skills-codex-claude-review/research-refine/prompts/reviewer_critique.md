@@ -1,7 +1,7 @@
 ---
 id: research-refine.reviewer-critique.v1
 used_by: research-refine phase 2
-purpose: Run the Codex/GPT-5.5 elegance-first method review without weakening difficulty routing.
+purpose: Run the Claude CLI reviewer elegance-first method review without weakening difficulty routing.
 inputs:
   - full initial or revised proposal
   - venue
@@ -14,7 +14,7 @@ outputs:
 
 ### Phase 2: External Method Review (Round 1)
 
-Send the full proposal to GPT-5.5 for an **elegance-first, frontier-aware, method-first** review. The reviewer should spend most of the critique budget on the method itself, not on expanding the experiment menu.
+Send the full proposal to the Claude CLI reviewer for an **elegance-first, frontier-aware, method-first** review. The reviewer should spend most of the critique budget on the method itself, not on expanding the experiment menu.
 
 If the Claude CLI reviewer call fails, do not produce a local substitute review. Export a standalone
 handoff prompt per `../shared-references/claude-cli-review.md` §5.5 using
@@ -36,6 +36,7 @@ After fixing Claude CLI access, rerun the blocked skill with its documented resu
 Write the complete fresh Claude review/help prompt to `$PROMPT_FILE`.
 Preserve the role, files-to-read, objective, and required output schema from this original call shape.
 
+If this review may need later follow-up, create and save a Claude CLI session ID on this first call.
 
 config: {"Claude CLI `--effort max`": REVIEWER_EFFORT}     // honors `— effort:` flag; default "xhigh"
   prompt: |
@@ -114,7 +115,10 @@ config: {"Claude CLI `--effort max`": REVIEWER_EFFORT}     // honors `— effort
 PROMPT_FILE="${PROMPT_FILE:-.aris/review-prompts/claude-review-round-N.md}"
 RAW_REVIEW_JSON="${RAW_REVIEW_JSON:-.aris/review-outputs/claude-review-round-N.json}"
 mkdir -p "$(dirname "$PROMPT_FILE")" "$(dirname "$RAW_REVIEW_JSON")"
-claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+CLAUDE_SESSION_ID="${CLAUDE_SESSION_ID:-$(python -c 'import uuid; print(uuid.uuid4())')}"
+CLAUDE_SESSION_ID_FILE="${CLAUDE_SESSION_ID_FILE:-.aris/review-outputs/claude-session-id.txt}"
+printf "%s\n" "$CLAUDE_SESSION_ID" > "$CLAUDE_SESSION_ID_FILE"
+claude -p --session-id "$CLAUDE_SESSION_ID" --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
 
 Save the raw Claude CLI JSON before summarizing it. Treat the response text inside the JSON as the reviewer/helper output.
@@ -163,10 +167,10 @@ or RETHINK regardless of the overall score, and the reviewer must list the
 specific dimension(s) below 8 in the Verdict line.
 ```
 
-**CRITICAL: Save the `claude_review_json_path`** from this call for all later rounds.
+**CRITICAL: Save the `claude_session_id`** from this call for all later rounds.
 
 **CRITICAL: Save the FULL raw response** verbatim.
 
 Save review to `refine-logs/round-1-review.md` with the raw response in a `<details>` block.
 
-**Checkpoint:** Update `refine-logs/REFINE_STATE.json` with `{"phase": "review", "round": 1, "claude_review_json_path": "<saved>", "last_score": <parsed>, "last_verdict": "<parsed>", ...}`.
+**Checkpoint:** Update `refine-logs/REFINE_STATE.json` with `{"phase": "review", "round": 1, "claude_session_id": "<saved>", "last_score": <parsed>, "last_verdict": "<parsed>", ...}`.

@@ -6,11 +6,13 @@ allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agen
 
 > Override for Codex users who want **Claude Code CLI**, not a second Codex agent, to act as the reviewer/helper. Install this package **after** `skills/skills-codex/*`.
 
-Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE` and run:
+Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE`. For a one-shot independent review, run:
 
 ```bash
 claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
+
+For multi-round reviewer discussion, keep automation non-interactive but preserve continuity with `--session-id` on the first call and `--resume` on follow-up calls; see `../shared-references/claude-cli-review.md`.
 
 # /diagnostic-to-review -- STOP C Formal Diagnostic Session
 
@@ -286,7 +288,7 @@ Required fields:
   "artifact_inventory": [],
   "run_id": null,
   "result_paths": [],
-  "review_thread_id": null,
+  "claude_session_id": null,
   "notes": ""
 }
 ```
@@ -531,9 +533,9 @@ paper-writing command is:
 Do not use legacy `/paper-writing "orbit-research/CLAIM_CONSTRUCTION.md"` as the STOP C
 state safe next command once the ledger exists.
 
-## Codex Required And Standalone Prompt Export
+## Claude CLI Reviewer Required And Standalone Prompt Export
 
-Codex remains required by default. This skill follows
+Claude CLI reviewer remains required by default. This skill follows
 `../shared-references/claude-cli-review.md`.
 
 Additional STOP C recovery rule: when Claude CLI reviewer is unavailable at precondition time or

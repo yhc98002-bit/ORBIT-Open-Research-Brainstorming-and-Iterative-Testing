@@ -6,11 +6,13 @@ allowed-tools: Bash(*), Read, Write, Grep, Glob, WebSearch, WebFetch, Agent
 
 > Override for Codex users who want **Claude Code CLI**, not a second Codex agent, to act as the reviewer/helper. Install this package **after** `skills/skills-codex/*`.
 
-Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE` and run:
+Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE`. For a one-shot independent review, run:
 
 ```bash
 claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
+
+For multi-round reviewer discussion, keep automation non-interactive but preserve continuity with `--session-id` on the first call and `--resume` on follow-up calls; see `../shared-references/claude-cli-review.md`.
 
 # Research Idea Creator
 
@@ -37,7 +39,7 @@ mode, positioning-first novelty, and collaborator review before STOP A.
 - **IDEA_RANKING_CRITERIA** — Literature grounding, novelty posture, feasibility,
   mechanism plausibility, baseline/headroom, expected diagnostic clarity, paper-mode fit,
   and reviewer critique.
-- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`.
+- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls, using `--session-id` / `--resume` for multi-round discussion, following `../shared-references/claude-cli-review.md`.
 - **REVIEWER_BACKEND = `codex`** — Default: Claude CLI reviewer (xhigh). Override with `— reviewer: oracle-pro` for GPT-5.5 Pro via Oracle MCP. See `../shared-references/reviewer-routing.md`.
 - **OUTPUT_DIR = `idea-stage/`** — All idea-stage outputs go here. Create the directory if it doesn't exist.
 
@@ -122,6 +124,7 @@ Use the external LLM via Claude CLI reviewer for divergent thinking:
 Write the complete fresh Claude review/help prompt to `$PROMPT_FILE`.
 Preserve the role, files-to-read, objective, and required output schema from this original call shape.
 
+If this review may need later follow-up, create and save a Claude CLI session ID on this first call.
 
 prompt: |
     You are a senior ML researcher brainstorming research ideas.
@@ -158,12 +161,15 @@ prompt: |
 PROMPT_FILE="${PROMPT_FILE:-.aris/review-prompts/claude-review-round-N.md}"
 RAW_REVIEW_JSON="${RAW_REVIEW_JSON:-.aris/review-outputs/claude-review-round-N.json}"
 mkdir -p "$(dirname "$PROMPT_FILE")" "$(dirname "$RAW_REVIEW_JSON")"
-claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+CLAUDE_SESSION_ID="${CLAUDE_SESSION_ID:-$(python -c 'import uuid; print(uuid.uuid4())')}"
+CLAUDE_SESSION_ID_FILE="${CLAUDE_SESSION_ID_FILE:-.aris/review-outputs/claude-session-id.txt}"
+printf "%s\n" "$CLAUDE_SESSION_ID" > "$CLAUDE_SESSION_ID_FILE"
+claude -p --session-id "$CLAUDE_SESSION_ID" --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
 
 Save the raw Claude CLI JSON before summarizing it. Treat the response text inside the JSON as the reviewer/helper output.
 
-Save the agent id for follow-up.
+Save the Claude session ID for follow-up.
 
 ### Phase 3: First-Pass Filtering
 
@@ -194,7 +200,7 @@ For each surviving idea, run a deeper evaluation:
 
 1. **Novelty check**: Use the `/novelty-check` workflow (multi-source search + GPT-5.5 cross-verification) for each idea
 
-2. **Critical review**: Use GPT-5.5 via a new `claude -p` invocation (same thread):
+2. **Critical review**: Use Claude CLI via `claude -p --resume` (same resumed Claude CLI session):
    ```
    Here are our top ideas after filtering:
    [paste surviving ideas with novelty check results]
@@ -370,4 +376,4 @@ After this skill produces the ranked report:
 
 ## Review Tracing
 
-After each `claude -p` or a new `claude -p` invocation reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
+After each `claude -p` or `claude -p --resume` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).

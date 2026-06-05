@@ -6,11 +6,13 @@ allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agen
 
 > Override for Codex users who want **Claude Code CLI**, not a second Codex agent, to act as the reviewer/helper. Install this package **after** `skills/skills-codex/*`.
 
-Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE` and run:
+Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE`. For a one-shot independent review, run:
 
 ```bash
 claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
+
+For multi-round reviewer discussion, keep automation non-interactive but preserve continuity with `--session-id` on the first call and `--resume` on follow-up calls; see `../shared-references/claude-cli-review.md`.
 
 # Grant Proposal: From Research Ideas to Fundable Application
 
@@ -41,7 +43,7 @@ Grant proposals argue for **future work** (feasibility + potential), not complet
 
 - **GRANT_TYPE = `KAKENHI`** — Default grant type. Supported: `KAKENHI`, `NSF`, `NSFC`, `ERC`, `DFG`, `SNSF`, `ARC`, `NWO`, `GENERIC`. Override via argument (e.g., `/grant-proposal "topic — NSF"`).
 - **GRANT_SUBTYPE = `auto`** — Sub-type within the grant agency. Examples: KAKENHI `Start-up`/`Wakate`/`Kiban-B`; NSFC `Youth`/`Excellent-Youth`/`Distinguished`/`Overseas`/`Key`; NSF `CAREER`/`CRII`/`Standard`. Auto-detected from argument or defaults to the most common sub-type.
-- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`.
+- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls, using `--session-id` / `--resume` for multi-round discussion, following `../shared-references/claude-cli-review.md`.
 - **OUTPUT_FORMAT = `markdown`** — Output format. Supported: `markdown`, `latex`. LaTeX uses grant-specific templates when available.
 - **MAX_REVIEW_ROUNDS = 2** — Maximum external review-revise cycles before finalizing.
 - **OUTPUT_DIR = `grant-proposal/`** — Directory for generated proposal files.
@@ -142,7 +144,7 @@ Grant proposal drafting is a long task that may trigger context compaction. Pers
   "grant_type": "KAKENHI",
   "grant_subtype": "Start-up",
   "language": "Japanese",
-  "codex_thread_id": "019cfcf4-...",
+  "claude_session_id": "019cfcf4-...",
   "gap_statement": "...",
   "aims_count": 3,
   "status": "in_progress",
@@ -326,7 +328,7 @@ Options for the user:
 - Reply **"back"** → return to Phase 1 to adjust the gap/positioning
 - Reply **"stop"** → save current structure to `grant-proposal/DRAFT_NOTES.md`
 
-**State**: Write `GRANT_STATE.json` with `phase: 2`, aims summary, and Codex agent id.
+**State**: Write `GRANT_STATE.json` with `phase: 2`, aims summary, and Codex Claude session ID.
 
 ### Phase 3: Section Drafting
 
@@ -442,9 +444,9 @@ If `/research-review` is invoked (preferred), it handles the Claude CLI review c
 Write the complete follow-up Claude review/help prompt to `$PROMPT_FILE`.
 Preserve the role, files-to-read, objective, and required output schema from this original call shape.
 
-For follow-up rounds, include the previous raw Claude JSON/review artifact, implemented changes, any pushback, and the current files in the prompt. Claude CLI has no persistent `threadId`.
+For follow-up rounds, resume the saved Claude CLI session from the first call. Also include the previous raw Claude JSON/review artifact, implemented changes, any pushback, and the current files in the prompt so the saved transcript and explicit artifacts agree.
 
-agent id: [from Phase 2]
+Claude session ID: [from Phase 2]
 
   prompt: |
     Review this complete [GRANT_TYPE] [GRANT_SUBTYPE] proposal draft.
@@ -471,7 +473,10 @@ agent id: [from Phase 2]
 PROMPT_FILE="${PROMPT_FILE:-.aris/review-prompts/claude-review-round-N.md}"
 RAW_REVIEW_JSON="${RAW_REVIEW_JSON:-.aris/review-outputs/claude-review-round-N.json}"
 mkdir -p "$(dirname "$PROMPT_FILE")" "$(dirname "$RAW_REVIEW_JSON")"
-claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+CLAUDE_SESSION_ID_FILE="${CLAUDE_SESSION_ID_FILE:-.aris/review-outputs/claude-session-id.txt}"
+CLAUDE_SESSION_ID="${CLAUDE_SESSION_ID:-$(cat "$CLAUDE_SESSION_ID_FILE")}"
+test -n "$CLAUDE_SESSION_ID"
+claude -p --resume "$CLAUDE_SESSION_ID" --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
 
 Save the raw Claude CLI JSON before summarizing it. Treat the response text inside the JSON as the reviewer/helper output.
@@ -484,9 +489,9 @@ If MAX_REVIEW_ROUNDS > 1 and revisions were applied:
 Write the complete follow-up Claude review/help prompt to `$PROMPT_FILE`.
 Preserve the role, files-to-read, objective, and required output schema from this original call shape.
 
-For follow-up rounds, include the previous raw Claude JSON/review artifact, implemented changes, any pushback, and the current files in the prompt. Claude CLI has no persistent `threadId`.
+For follow-up rounds, resume the saved Claude CLI session from the first call. Also include the previous raw Claude JSON/review artifact, implemented changes, any pushback, and the current files in the prompt so the saved transcript and explicit artifacts agree.
 
-agent id: [saved from Round 1]
+Claude session ID: [saved from Round 1]
 
   prompt: |
     [Round N review of revised [GRANT_TYPE] [GRANT_SUBTYPE] proposal]
@@ -506,7 +511,10 @@ agent id: [saved from Round 1]
 PROMPT_FILE="${PROMPT_FILE:-.aris/review-prompts/claude-review-round-N.md}"
 RAW_REVIEW_JSON="${RAW_REVIEW_JSON:-.aris/review-outputs/claude-review-round-N.json}"
 mkdir -p "$(dirname "$PROMPT_FILE")" "$(dirname "$RAW_REVIEW_JSON")"
-claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+CLAUDE_SESSION_ID_FILE="${CLAUDE_SESSION_ID_FILE:-.aris/review-outputs/claude-session-id.txt}"
+CLAUDE_SESSION_ID="${CLAUDE_SESSION_ID:-$(cat "$CLAUDE_SESSION_ID_FILE")}"
+test -n "$CLAUDE_SESSION_ID"
+claude -p --resume "$CLAUDE_SESSION_ID" --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
 
 Save the raw Claude CLI JSON before summarizing it. Treat the response text inside the JSON as the reviewer/helper output.
@@ -520,7 +528,7 @@ Parse reviewer feedback into severity levels:
 - **MAJOR** — significant weaknesses. Fix before submission.
 - **MINOR** — suggestions for improvement. Fix if time allows.
 
-Implement CRITICAL and MAJOR fixes. If MAX_REVIEW_ROUNDS > 1, re-submit for another round via a new `claude -p` invocation.
+Implement CRITICAL and MAJOR fixes. If MAX_REVIEW_ROUNDS > 1, re-submit for another round via `claude -p --resume`.
 
 #### 5.2 Generate Output
 

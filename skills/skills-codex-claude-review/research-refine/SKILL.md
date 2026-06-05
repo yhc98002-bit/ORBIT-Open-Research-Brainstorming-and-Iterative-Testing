@@ -1,16 +1,18 @@
 ---
 name: "research-refine"
-description: "Turn a vague research direction into a problem-anchored, elegant, frontier-aware, implementation-oriented method plan via iterative GPT-5.5 xhigh review. Use when the user says \"refine my approach\", \"帮我细化方案\", \"decompose this problem\", \"打磨idea\", \"refine research plan\", \"细化研究方案\", or wants a concrete research method with a publishable normal-paper route instead of a vague or overbuilt idea."
+description: "Turn a vague research direction into a problem-anchored, elegant, frontier-aware, implementation-oriented method plan via iterative Claude CLI max-effort review. Use when the user says \"refine my approach\", \"帮我细化方案\", \"decompose this problem\", \"打磨idea\", \"refine research plan\", \"细化研究方案\", or wants a concrete research method with a publishable normal-paper route instead of a vague or overbuilt idea."
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent
 ---
 
 > Override for Codex users who want **Claude Code CLI**, not a second Codex agent, to act as the reviewer/helper. Install this package **after** `skills/skills-codex/*`.
 
-Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE` and run:
+Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE`. For a one-shot independent review, run:
 
 ```bash
 claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
+
+For multi-round reviewer discussion, keep automation non-interactive but preserve continuity with `--session-id` on the first call and `--resume` on follow-up calls; see `../shared-references/claude-cli-review.md`.
 
 > **ORBIT compatibility note:** This skill may still accept legacy v1.0 artifact aliases
 > (e.g. `TASK_ONTOLOGY.md`, `COMPONENT_LADDER.md`, `TINY_RUN_AUDIT.md`), but new ORBIT
@@ -38,9 +40,9 @@ Four principles dominate this skill:
 User input (PROBLEM + vague APPROACH)
   -> Phase 0 (Claude): Freeze Problem Anchor
   -> Phase 1 (Claude): Scan grounding papers -> identify technical gap -> choose the sharpest route -> write focused proposal
-  -> Phase 2 (Codex/GPT-5.5): Review for fidelity, specificity, contribution quality, and frontier leverage
+  -> Phase 2 (Claude CLI reviewer): Review for fidelity, specificity, contribution quality, and frontier leverage
   -> Phase 3 (Claude): Anchor check + simplicity check -> revise method -> rewrite full proposal
-  -> Phase 4 (Codex, same thread): Re-evaluate revised proposal
+  -> Phase 4 (Claude CLI reviewer, same resumed Claude CLI session): Re-evaluate revised proposal
   -> Repeat Phase 3-4 until OVERALL SCORE >= SCORE_THRESHOLD or MAX_ROUNDS reached
      (SCORE_THRESHOLD and MAX_ROUNDS are derived from REVIEWER_DIFFICULTY:
       medium → 9 / 5, hard / nightmare → 9.5 / 7)
@@ -50,8 +52,8 @@ User input (PROBLEM + vague APPROACH)
 
 ## Constants
 
-- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`.
-- **REVIEWER_EFFORT = `xhigh`** — Codex `Claude CLI `--effort max`` for the reviewer call.
+- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls, using `--session-id` / `--resume` for multi-round discussion, following `../shared-references/claude-cli-review.md`.
+- **REVIEWER_EFFORT = `max`** — Use Claude CLI `--effort max` for the reviewer call.
   Override with `— effort: <level>` (one of `low`, `medium`, `high`, `xhigh`, `max`
   where `max` = `xhigh`). Subject to Claude CLI reviewer environment availability — if the
   requested level is unavailable, the skill must record a Claude CLI availability/configuration issue to the next lower available level
@@ -132,7 +134,7 @@ Long-running refinement sessions may fail mid-way (e.g., API timeout, context co
 {
   "phase": "review",
   "round": 1,
-  "claude_review_json_path": "019cd392-...",
+  "claude_session_id": "019cd392-...",
   "last_score": 6.5,
   "last_verdict": "REVISE",
   "status": "in_progress",
@@ -151,13 +153,13 @@ Long-running refinement sessions may fail mid-way (e.g., API timeout, context co
 |-------|--------|---------|
 | `phase` | `"anchor"` / `"proposal"` / `"review"` / `"refine"` / `"done"` | Last **completed** phase |
 | `round` | 0–MAX_ROUNDS | Current round number |
-| `claude_review_json_path` | string or null | Reviewer thread ID for a new `claude -p` invocation continuity |
+| `claude_session_id` | string or null | Reviewer Claude session ID for `claude -p --resume` continuity |
 | `last_score` | number or null | Most recent overall score from reviewer |
 | `last_verdict` | string or null | Most recent verdict (READY / REVISE / RETHINK) |
 | `status` | `"in_progress"` / `"awaiting_human_continue"` / `"awaiting_user_action"` / `"completed"` | Loop status — four-state enum per `../shared-references/continuation-contract.md` |
 | `venue` | string (e.g. `"ICLR"`) or `""` | Target venue parsed from `— venue:` flag. Empty string = normal ML venue target without breakthrough-only assumptions. |
 | `difficulty` | `"medium"` / `"hard"` / `"nightmare"` | Reviewer difficulty parsed from `— difficulty:` flag. Drives `max_rounds_effective` + `score_threshold_effective` + reviewer prompt routing. Default `"medium"`. |
-| `effort` | `"low"` / `"medium"` / `"high"` / `"xhigh"` / `"max"` | Codex `Claude CLI `--effort max`` parsed from `— effort:` flag (`max` = `xhigh`). Default `"xhigh"`. The actual effort honored is recorded in `STATE.notes` if Claude CLI reviewer fell back. |
+| `effort` | `"low"` / `"medium"` / `"high"` / `"xhigh"` / `"max"` | Claude CLI `--effort max` parsed from `— effort:` flag (`max` = `xhigh`). Default `"xhigh"`. The actual effort honored is recorded in `STATE.notes` if Claude CLI reviewer fell back. |
 | `max_rounds_effective` | integer | The MAX_ROUNDS in effect for this run after `difficulty` derivation: `medium → 5`, `hard / nightmare → 7`. |
 | `score_threshold_effective` | number | The SCORE_THRESHOLD in effect for this run after `difficulty` derivation: `medium → 9.0`, `hard / nightmare → 9.5`. |
 | `timestamp` | ISO 8601 | When state was last written |
@@ -213,7 +215,7 @@ Before starting any phase, check whether a previous run left a checkpoint:
 2. **On resume**, read the state file and recover context:
    - Read all existing `refine-logs/round-*.md` files to restore prior work
    - Read `refine-logs/score-history.md` if it exists
-   - Recover `claude_review_json_path` for reviewer thread continuity
+   - Recover `claude_session_id` for reviewer thread continuity
    - Log to the user: `"Checkpoint found. Resuming after phase: {phase}, round: {round}."`
    - **Jump to the next phase** based on the saved `phase` value:
 
@@ -247,11 +249,11 @@ Save the result to `refine-logs/round-0-initial-proposal.md` and update
 ### Phase 2: External Method Review (Round 1)
 
 Load [reviewer_critique.md](prompts/reviewer_critique.md) and send the full proposal to
-Codex/GPT-5.5 with the parsed `VENUE`, `PAPER_MODE`, `REVIEWER_DIFFICULTY`,
+Claude CLI reviewer with the parsed `VENUE`, `PAPER_MODE`, `REVIEWER_DIFFICULTY`,
 `REVIEW_POSTURE`, and `REVIEWER_EFFORT` substitutions. Preserve the difficulty
 escalation blocks and Codex standalone handoff behavior from that asset exactly.
 
-Save the raw response to `refine-logs/round-1-review.md`, save the `claude_review_json_path`, parse score
+Save the raw response to `refine-logs/round-1-review.md`, save the `claude_session_id`, parse score
 and verdict, and update `refine-logs/REFINE_STATE.json` with phase `review`.
 
 ### Phase 3: Parse Feedback and Revise the Method
@@ -298,10 +300,10 @@ and the parsed review state.
 
 ### Phase 4: Re-evaluation (Round 2+)
 
-Send the revised proposal back to GPT-5.5 in the **same thread**. The
+Send the revised proposal back to the Claude CLI reviewer in the **same resumed Claude CLI session**. The
 REVIEWER_DIFFICULTY routing established in Phase 2 persists across all rounds —
 do NOT downgrade difficulty mid-loop, and do NOT re-issue the difficulty
-escalation paragraphs (the reviewer thread retains them from Phase 2). The
+escalation paragraphs (the resumed Claude CLI session retains them from Phase 2). The
 verdict rule below uses the same SCORE_THRESHOLD derived from
 REVIEWER_DIFFICULTY.
 
@@ -309,9 +311,9 @@ REVIEWER_DIFFICULTY.
 Write the complete follow-up Claude review/help prompt to `$PROMPT_FILE`.
 Preserve the role, files-to-read, objective, and required output schema from this original call shape.
 
-For follow-up rounds, include the previous raw Claude JSON/review artifact, implemented changes, any pushback, and the current files in the prompt. Claude CLI has no persistent `threadId`.
+For follow-up rounds, resume the saved Claude CLI session from the first call. Also include the previous raw Claude JSON/review artifact, implemented changes, any pushback, and the current files in the prompt so the saved transcript and explicit artifacts agree.
 
-agent id: [saved from Phase 2]
+Claude session ID: [saved from Phase 2]
 
   prompt: |
     [Round N re-evaluation]
@@ -345,14 +347,17 @@ agent id: [saved from Phase 2]
 PROMPT_FILE="${PROMPT_FILE:-.aris/review-prompts/claude-review-round-N.md}"
 RAW_REVIEW_JSON="${RAW_REVIEW_JSON:-.aris/review-outputs/claude-review-round-N.json}"
 mkdir -p "$(dirname "$PROMPT_FILE")" "$(dirname "$RAW_REVIEW_JSON")"
-claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+CLAUDE_SESSION_ID_FILE="${CLAUDE_SESSION_ID_FILE:-.aris/review-outputs/claude-session-id.txt}"
+CLAUDE_SESSION_ID="${CLAUDE_SESSION_ID:-$(cat "$CLAUDE_SESSION_ID_FILE")}"
+test -n "$CLAUDE_SESSION_ID"
+claude -p --resume "$CLAUDE_SESSION_ID" --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
 
 Save the raw Claude CLI JSON before summarizing it. Treat the response text inside the JSON as the reviewer/helper output.
 
 Save review to `refine-logs/round-N-review.md`.
 
-**Checkpoint:** Update `refine-logs/REFINE_STATE.json` with `{"phase": "review", "round": N, "claude_review_json_path": "<saved>", "last_score": <parsed>, "last_verdict": "<parsed>", ...}`.
+**Checkpoint:** Update `refine-logs/REFINE_STATE.json` with `{"phase": "review", "round": N, "claude_session_id": "<saved>", "last_score": <parsed>, "last_verdict": "<parsed>", ...}`.
 
 Then return to Phase 3 until:
 
@@ -544,7 +549,7 @@ If the final verdict is not READY, still write the best current index, short pro
 <details>
 <summary>Round 1 Review</summary>
 
-[Full verbatim response from GPT-5.5]
+[Full verbatim response from Claude CLI reviewer]
 
 </details>
 
@@ -613,11 +618,9 @@ Suggested next step: /experiment-bridge "refine-logs/FINAL_PROPOSAL.md"
 - **Minimal experiments.** Inside this skill, experiments only need to prove the core claims.
 - **Review the mechanism, not the parts count.** A long module list is not novelty.
 - **Pushback is encouraged.** If reviewer feedback causes drift or unnecessary complexity, argue back with evidence.
-- **ALWAYS use `config: {"Claude CLI `--effort max`": "xhigh"}`** for all Claude CLI review calls.
-- **Save `claude_review_json_path` from Phase 2** and use a new `claude -p` invocation for later rounds.
-- **Codex remains required.** If reviewer transport fails, export/import a standalone Codex
-After fixing Claude CLI access, rerun the blocked skill with its documented resume flag.
-  imported standalone Codex response exists.
+- **Always use `--model opus --effort max` for all Claude CLI review calls.**
+- **Save `claude_session_id` from Phase 2** and use `claude -p --resume` for later rounds.
+- **Claude CLI reviewer remains required.** If reviewer transport fails, write the standalone prompt/raw JSON files, fix Claude CLI access, and rerun the blocked skill with its documented resume flag.
 - **Do not fabricate results.** Only describe expected evidence and planned experiments.
 - **Be specific about compute and data assumptions.** Vague "we'll train a model" is not enough.
 - **Document in the right layer.** Save raw reviews, anchor checks, simplicity checks, and major method changes in round files or `REFINEMENT_REPORT.md`; do not carry them into `FINAL_PROPOSAL`.

@@ -4,12 +4,12 @@
 
 Save full prompt/response pairs for every cross-model reviewer call, enabling:
 - **Reviewer-independence audit**: verify the executor only passed file paths, not summaries
-- **Reproducibility**: agent id preservation allows conversation continuation
+- **Reproducibility**: Claude session ID preservation allows conversation continuation
 - **Meta-optimize input**: richer data for harness improvement analysis
 
 ## When to Trace
 
-After **every** `claude -p` or a new `claude -p` invocation call that serves a reviewer/critique function. This includes review scoring, experiment auditing, claim verification, idea critique, and patch gating.
+After **every** `claude -p` or `claude -p --resume` call that serves a reviewer/critique function. This includes review scoring, experiment auditing, claim verification, idea critique, and patch gating.
 
 Do NOT trace: purely informational LLM calls (e.g., `codex exec` for code generation that is not a review).
 
@@ -54,7 +54,7 @@ fi
   --skill "<skill-name>" \
   --purpose "<purpose>" \
   --model "<model>" \
-  --thread-id "<agent id from response>" \
+  --thread-id "<Claude session ID from response>" \
   --prompt "<full prompt as sent>" \
   --response "<full response content>"
 ```
@@ -101,7 +101,7 @@ The reviewer's full response, verbatim. No truncation, no summarization.
   "call_number": 1,
   "purpose": "round-1-review",
   "timestamp": "2026-04-15T14:33:00+08:00",
-  "thread_id": "019d8fe0-b25d-...",
+  "claude_session_id": "019d8fe0-b25d-...",
   "model": "claude-cli",
   "duration_ms": 142000,
   "status": "ok"
@@ -120,7 +120,7 @@ Tracing respects three modes, set via inline parameter `--- trace: off | meta | 
 After writing a trace, append a compact summary event to `.aris/meta/events.jsonl`:
 
 ```json
-{"event":"review_trace","skill":"auto-review-loop","purpose":"round-1-review","thread_id":"...","trace_path":".aris/traces/auto-review-loop/2026-04-15_run01/","status":"ok"}
+{"event":"review_trace","skill":"auto-review-loop","purpose":"round-1-review","claude_session_id":"...","trace_path":".aris/traces/auto-review-loop/2026-04-15_run01/","status":"ok"}
 ```
 
 This allows `/meta-optimize` to discover traces without reading the full trace files.

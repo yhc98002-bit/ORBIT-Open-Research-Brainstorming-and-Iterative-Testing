@@ -6,11 +6,13 @@ allowed-tools: Bash(*), WebSearch, WebFetch, Grep, Read, Glob
 
 > Override for Codex users who want **Claude Code CLI**, not a second Codex agent, to act as the reviewer/helper. Install this package **after** `skills/skills-codex/*`.
 
-Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE` and run:
+Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE`. For a one-shot independent review, run:
 
 ```bash
 claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
+
+For multi-round reviewer discussion, keep automation non-interactive but preserve continuity with `--session-id` on the first call and `--resume` on follow-up calls; see `../shared-references/claude-cli-review.md`.
 
 # Novelty Check Skill
 
@@ -18,7 +20,7 @@ Classify novelty risk and positioning routes for: **$ARGUMENTS**
 
 ## Constants
 
-- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`.
+- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls, using `--session-id` / `--resume` for multi-round discussion, following `../shared-references/claude-cli-review.md`.
 - **NOVELTY_POLICY = `positioning-first`** — Load `../shared-references/research-posture.md`
   before judging novelty. Similar work is not automatically fatal.
 - **CONCURRENT_WORK_WINDOW = `3 months`** — Recent work goes to
@@ -128,4 +130,4 @@ STRONG_BLOCKER.]
 
 ## Review Tracing
 
-After each `claude -p` or a new `claude -p` invocation reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
+After each `claude -p` or `claude -p --resume` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).

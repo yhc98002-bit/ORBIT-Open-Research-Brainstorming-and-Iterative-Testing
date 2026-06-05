@@ -26,4 +26,4 @@ Write:
 
 If later reviewer feedback would change the problem being solved, mark that as **drift** and push back or adapt carefully.
 
-**Checkpoint:** Write `refine-logs/REFINE_STATE.json` with `{"phase": "anchor", "round": 0, "claude_review_json_path": null, "last_score": null, "last_verdict": null, "status": "in_progress", "timestamp": "<now>"}`.
+**Checkpoint:** Write `refine-logs/REFINE_STATE.json` with `{"phase": "anchor", "round": 0, "claude_session_id": null, "last_score": null, "last_verdict": null, "status": "in_progress", "timestamp": "<now>"}`.

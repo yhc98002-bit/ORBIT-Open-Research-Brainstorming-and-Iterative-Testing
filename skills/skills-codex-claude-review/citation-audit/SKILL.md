@@ -6,11 +6,13 @@ allowed-tools: Bash(*), Read, Grep, Glob, Edit, Write, Agent, WebSearch, WebFetc
 
 > Override for Codex users who want **Claude Code CLI**, not a second Codex agent, to act as the reviewer/helper. Install this package **after** `skills/skills-codex/*`.
 
-Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE` and run:
+Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE`. For a one-shot independent review, run:
 
 ```bash
 claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
+
+For multi-round reviewer discussion, keep automation non-interactive but preserve continuity with `--session-id` on the first call and `--resume` on follow-up calls; see `../shared-references/claude-cli-review.md`.
 
 # Citation Audit
 
@@ -45,8 +47,8 @@ The dangerous citation problems are **not** wildly fake citations — those are 
 
 ## Constants
 
-- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`.
-- **CONTEXT_POLICY = `fresh`** — Each audit run uses a new reviewer thread (REVIEWER_BIAS_GUARD). Never a new `claude -p` invocation.
+- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls, using `--session-id` / `--resume` for multi-round discussion, following `../shared-references/claude-cli-review.md`.
+- **CONTEXT_POLICY = `fresh`** — Each audit run uses a new reviewer thread (REVIEWER_BIAS_GUARD). Never `claude -p --resume`.
 - **WEB_SEARCH = required** — The reviewer must perform real web/DBLP/arXiv lookups, not pattern-match from memory.
 - **OUTPUT = `CITATION_AUDIT.md`** — Human-readable per-entry verdict report.
 - **STATE = `CITATION_AUDIT.json`** — Machine-readable verdict ledger consumable by downstream tools.
@@ -110,12 +112,13 @@ Save the extracted contexts to `paper/.aris/citation-audit/contexts.txt` so the 
 
 ### Step 3: Send each entry to fresh cross-model reviewer
 
-For each bib entry, invoke `claude -p` (NOT a new `claude -p` invocation — fresh thread per entry, or batch with explicit per-entry isolation):
+For each bib entry, invoke `claude -p` (NOT `claude -p --resume` — fresh thread per entry, or batch with explicit per-entry isolation):
 
 ```text
 Write the complete fresh Claude review/help prompt to `$PROMPT_FILE`.
 Preserve the role, files-to-read, objective, and required output schema from this original call shape.
 
+If this review may need later follow-up, create and save a Claude CLI session ID on this first call.
 
 # Claude CLI reviewer per-call config does not accept a sandbox key.
   prompt: |
@@ -150,7 +153,10 @@ Preserve the role, files-to-read, objective, and required output schema from thi
 PROMPT_FILE="${PROMPT_FILE:-.aris/review-prompts/claude-review-round-N.md}"
 RAW_REVIEW_JSON="${RAW_REVIEW_JSON:-.aris/review-outputs/claude-review-round-N.json}"
 mkdir -p "$(dirname "$PROMPT_FILE")" "$(dirname "$RAW_REVIEW_JSON")"
-claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+CLAUDE_SESSION_ID="${CLAUDE_SESSION_ID:-$(python -c 'import uuid; print(uuid.uuid4())')}"
+CLAUDE_SESSION_ID_FILE="${CLAUDE_SESSION_ID_FILE:-.aris/review-outputs/claude-session-id.txt}"
+printf "%s\n" "$CLAUDE_SESSION_ID" > "$CLAUDE_SESSION_ID_FILE"
+claude -p --session-id "$CLAUDE_SESSION_ID" --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
 
 Save the raw Claude CLI JSON before summarizing it. Treat the response text inside the JSON as the reviewer/helper output.
@@ -199,7 +205,7 @@ Concretely, `details` carries the per-entry ledger:
 
 See "Submission Artifact Emission" for the full artifact (top-level
 fields `audit_skill`, `verdict`, `reason_code`, `summary`,
-`audited_input_hashes`, `trace_path`, `claude_review_json_path`, `reviewer_model`,
+`audited_input_hashes`, `trace_path`, `claude_session_id`, `reviewer_model`,
 `reviewer_reasoning`, `generated_at`, `details`).
 
 ### Step 5: Generate human-readable report
@@ -325,7 +331,7 @@ The artifact conforms to the schema in `../shared-references/assurance-contract.
     "sections/3.related.tex":     "sha256:..."
   },
   "trace_path":       ".aris/traces/citation-audit/<date>_run<NN>/",
-  "thread_id":        "<codex mcp thread id>",
+  "claude_session_id":        "<codex mcp Claude session ID>",
   "reviewer_model":   "claude-cli",
   "reviewer_reasoning": "xhigh",
   "generated_at":     "<UTC ISO-8601>",
@@ -368,7 +374,7 @@ any file outside the paper dir.
 ### Thread independence
 
 Every invocation uses a fresh `claude -p` thread. Never
-a new `claude -p` invocation. Do not accept prior audit outputs (PROOF_AUDIT,
+`claude -p --resume`. Do not accept prior audit outputs (PROOF_AUDIT,
 PAPER_CLAIM_AUDIT, EXPERIMENT_LOG) as input — the fresh thread preserves
 reviewer independence per `../shared-references/reviewer-independence.md`.
 

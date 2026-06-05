@@ -6,11 +6,13 @@ allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent
 
 > Override for Codex users who want **Claude Code CLI**, not a second Codex agent, to act as the reviewer/helper. Install this package **after** `skills/skills-codex/*`.
 
-Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE` and run:
+Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE`. For a one-shot independent review, run:
 
 ```bash
 claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
+
+For multi-round reviewer discussion, keep automation non-interactive but preserve continuity with `--session-id` on the first call and `--resume` on follow-up calls; see `../shared-references/claude-cli-review.md`.
 
 # Paper Slides: From Paper to Conference Talk
 
@@ -31,7 +33,7 @@ Unlike posters (single page, visual-first), slides tell a **temporal story**: ea
 - **SPEAKER_NOTES = true** — Generate `\note{}` blocks in beamer and corresponding PPTX notes. Set `false` for clean slides without notes.
 - **PAPER_DIR = `paper/`** — Directory containing the compiled paper.
 - **OUTPUT_DIR = `slides/`** — Output directory for all slide files.
-- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`.
+- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls, using `--session-id` / `--resume` for multi-round discussion, following `../shared-references/claude-cli-review.md`.
 - **AUTO_PROCEED = false** — At each checkpoint, **always wait for explicit user confirmation**.
 - **COMPILER = `latexmk`** — LaTeX build tool.
 - **ENGINE = `pdflatex`** — LaTeX engine. Use `xelatex` for CJK text.
@@ -69,7 +71,7 @@ Persist state to `slides/SLIDES_STATE.json` after each phase:
   "venue": "NeurIPS",
   "talk_type": "spotlight",
   "slide_count": 10,
-  "codex_thread_id": "019cfcf4-...",
+  "claude_session_id": "019cfcf4-...",
   "status": "in_progress",
   "timestamp": "2026-03-18T15:00:00"
 }
@@ -329,6 +331,7 @@ Send the slide outline + selected LaTeX frames to Claude CLI max-effort:
 Write the complete fresh Claude review/help prompt to `$PROMPT_FILE`.
 Preserve the role, files-to-read, objective, and required output schema from this original call shape.
 
+If this review may need later follow-up, create and save a Claude CLI session ID on this first call.
 
 prompt: |
     Review this [TALK_TYPE] presentation ([TALK_MINUTES] min) for [VENUE].
@@ -359,7 +362,10 @@ prompt: |
 PROMPT_FILE="${PROMPT_FILE:-.aris/review-prompts/claude-review-round-N.md}"
 RAW_REVIEW_JSON="${RAW_REVIEW_JSON:-.aris/review-outputs/claude-review-round-N.json}"
 mkdir -p "$(dirname "$PROMPT_FILE")" "$(dirname "$RAW_REVIEW_JSON")"
-claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+CLAUDE_SESSION_ID="${CLAUDE_SESSION_ID:-$(python -c 'import uuid; print(uuid.uuid4())')}"
+CLAUDE_SESSION_ID_FILE="${CLAUDE_SESSION_ID_FILE:-.aris/review-outputs/claude-session-id.txt}"
+printf "%s\n" "$CLAUDE_SESSION_ID" > "$CLAUDE_SESSION_ID_FILE"
+claude -p --session-id "$CLAUDE_SESSION_ID" --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
 
 Save the raw Claude CLI JSON before summarizing it. Treat the response text inside the JSON as the reviewer/helper output.

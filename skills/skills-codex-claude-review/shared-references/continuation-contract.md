@@ -44,13 +44,13 @@ Schema:
     "orbit-research/ASSUMPTION_LEDGER.md",
     "refine-logs/FINAL_PROPOSAL.md"
   ],
-  "notes": "Optional free-text — e.g. context compaction summary, reviewer thread id"
+  "notes": "Optional free-text — e.g. context compaction summary, reviewer Claude session ID"
 }
 ```
 
 **Required fields:** `skill`, `phase`, `status`, `timestamp`, `artifact_inventory`.
 **Recommended:** `next_action`, `next_skill_hint`.
-**Optional:** `round`, `notes`, plus any skill-specific fields (e.g. `claude_review_json_path`,
+**Optional:** `round`, `notes`, plus any skill-specific fields (e.g. `claude_session_id`,
 `pending_experiments`).
 
 Skills MAY add their own fields. Contract consumers MUST tolerate unknown fields.

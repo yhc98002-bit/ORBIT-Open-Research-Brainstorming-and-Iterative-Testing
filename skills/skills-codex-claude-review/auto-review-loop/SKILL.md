@@ -6,11 +6,13 @@ allowed-tools: Bash(*), Read, Grep, Glob, Write, Edit, Agent, Skill
 
 > Override for Codex users who want **Claude Code CLI**, not a second Codex agent, to act as the reviewer/helper. Install this package **after** `skills/skills-codex/*`.
 
-Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE` and run:
+Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE`. For a one-shot independent review, run:
 
 ```bash
 claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
+
+For multi-round reviewer discussion, keep automation non-interactive but preserve continuity with `--session-id` on the first call and `--resume` on follow-up calls; see `../shared-references/claude-cli-review.md`.
 
 # Auto Review Loop: Autonomous Research Improvement
 
@@ -25,7 +27,7 @@ Autonomously iterate: review → implement fixes → re-review, until the extern
   "ready for submission". This applies only when `ORBIT_RED_TEAM_ONLY = false`; it is
   never a STOP C paper-readiness rule.
 - REVIEW_DOC: `review-stage/AUTO_REVIEW.md` (cumulative log) *(fall back to `./AUTO_REVIEW.md` for legacy projects)*
-- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`.
+- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls, using `--session-id` / `--resume` for multi-round discussion, following `../shared-references/claude-cli-review.md`.
 - **REVIEWER_BACKEND = `codex`** — Default: Claude CLI reviewer (`claude-cli`, xhigh). Override with `— reviewer: oracle-pro` only if explicitly requested. See `../shared-references/reviewer-routing.md`.
 - **OUTPUT_DIR = `review-stage/`** — All review-stage outputs go here. Create the directory if it doesn't exist.
 - **PAPER_MODE = `normal`** — Parse `— paper-mode:` when present. Normal mode is judged
@@ -108,7 +110,7 @@ python3 direct Claude CLI prompt/raw-JSON files generate \
   --write-orbit-state
 ```
 
-Require the user to save the standalone Codex response to
+Require the user to save the standalone Claude CLI response to
 `.aris/review-outputs/<phase-id>.response.md`, and resume only after
 After fixing Claude CLI access, rerun the blocked skill with its documented resume flag.
 claude_review_needed`; after import, the state should become `codex_review_imported` and
@@ -170,7 +172,7 @@ Long-running loops may hit the context window limit, triggering automatic compac
 ```json
 {
   "round": 2,
-  "claude_review_json_path": "019cd392-...",
+  "claude_session_id": "019cd392-...",
   "status": "in_progress",
   "difficulty": "medium",
   "last_score": 5.0,
@@ -218,7 +220,7 @@ Recommended optional fields: `next_action`, `next_skill_hint`, `artifact_invento
    - If it exists AND `status` is `"completed"`: **fresh start** (previous loop finished normally)
    - If it exists AND `status` is `"in_progress"` AND `timestamp` is older than 24 hours: **fresh start** (stale state from a killed/abandoned run — delete the file and start over)
    - If it exists AND `status` is `"in_progress"` AND `timestamp` is within 24 hours: **resume**
-     - Read the state file to recover `round`, `claude_review_json_path`, `last_score`, `pending_experiments`
+     - Read the state file to recover `round`, `claude_session_id`, `last_score`, `pending_experiments`
      - Read `review-stage/AUTO_REVIEW.md` to restore full context of prior rounds *(fall back to `./AUTO_REVIEW.md`)*
      - If `pending_experiments` is non-empty, check if they have completed (e.g., check screen sessions)
      - Resume from the next round (round = saved round + 1)
@@ -267,6 +269,7 @@ Send comprehensive context to the external reviewer:
 Write the complete fresh Claude review/help prompt to `$PROMPT_FILE`.
 Preserve the role, files-to-read, objective, and required output schema from this original call shape.
 
+If this review may need later follow-up, create and save a Claude CLI session ID on this first call.
 
 prompt: |
     [Round N/MAX_ROUNDS of autonomous review loop]
@@ -288,12 +291,15 @@ prompt: |
 PROMPT_FILE="${PROMPT_FILE:-.aris/review-prompts/claude-review-round-N.md}"
 RAW_REVIEW_JSON="${RAW_REVIEW_JSON:-.aris/review-outputs/claude-review-round-N.json}"
 mkdir -p "$(dirname "$PROMPT_FILE")" "$(dirname "$RAW_REVIEW_JSON")"
-claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+CLAUDE_SESSION_ID="${CLAUDE_SESSION_ID:-$(python -c 'import uuid; print(uuid.uuid4())')}"
+CLAUDE_SESSION_ID_FILE="${CLAUDE_SESSION_ID_FILE:-.aris/review-outputs/claude-session-id.txt}"
+printf "%s\n" "$CLAUDE_SESSION_ID" > "$CLAUDE_SESSION_ID_FILE"
+claude -p --session-id "$CLAUDE_SESSION_ID" --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
 
 Save the raw Claude CLI JSON before summarizing it. Treat the response text inside the JSON as the reviewer/helper output.
 
-If this is round 2+, use a new `claude -p` invocation with the saved agent id to maintain conversation context.
+If this is round 2+, use `claude -p --resume` with the saved Claude session ID to maintain conversation context.
 
 ##### Hard — MCP Review + Reviewer Memory
 
@@ -303,6 +309,7 @@ Same as medium, but **prepend Reviewer Memory** to the prompt:
 Write the complete fresh Claude review/help prompt to `$PROMPT_FILE`.
 Preserve the role, files-to-read, objective, and required output schema from this original call shape.
 
+If this review may need later follow-up, create and save a Claude CLI session ID on this first call.
 
 prompt: |
     [Round N/MAX_ROUNDS of autonomous review loop]
@@ -332,7 +339,10 @@ prompt: |
 PROMPT_FILE="${PROMPT_FILE:-.aris/review-prompts/claude-review-round-N.md}"
 RAW_REVIEW_JSON="${RAW_REVIEW_JSON:-.aris/review-outputs/claude-review-round-N.json}"
 mkdir -p "$(dirname "$PROMPT_FILE")" "$(dirname "$RAW_REVIEW_JSON")"
-claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+CLAUDE_SESSION_ID="${CLAUDE_SESSION_ID:-$(python -c 'import uuid; print(uuid.uuid4())')}"
+CLAUDE_SESSION_ID_FILE="${CLAUDE_SESSION_ID_FILE:-.aris/review-outputs/claude-session-id.txt}"
+printf "%s\n" "$CLAUDE_SESSION_ID" > "$CLAUDE_SESSION_ID_FILE"
+claude -p --session-id "$CLAUDE_SESSION_ID" --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
 
 Save the raw Claude CLI JSON before summarizing it. Treat the response text inside the JSON as the reviewer/helper output.
@@ -461,9 +471,9 @@ Send Claude's rebuttal back to GPT for a ruling:
 Write the complete follow-up Claude review/help prompt to `$PROMPT_FILE`.
 Preserve the role, files-to-read, objective, and required output schema from this original call shape.
 
-For follow-up rounds, include the previous raw Claude JSON/review artifact, implemented changes, any pushback, and the current files in the prompt. Claude CLI has no persistent `threadId`.
+For follow-up rounds, resume the saved Claude CLI session from the first call. Also include the previous raw Claude JSON/review artifact, implemented changes, any pushback, and the current files in the prompt so the saved transcript and explicit artifacts agree.
 
-agent id: [saved]
+Claude session ID: [saved]
 
   prompt: |
     The author rebuts your review:
@@ -482,7 +492,10 @@ agent id: [saved]
 PROMPT_FILE="${PROMPT_FILE:-.aris/review-prompts/claude-review-round-N.md}"
 RAW_REVIEW_JSON="${RAW_REVIEW_JSON:-.aris/review-outputs/claude-review-round-N.json}"
 mkdir -p "$(dirname "$PROMPT_FILE")" "$(dirname "$RAW_REVIEW_JSON")"
-claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+CLAUDE_SESSION_ID_FILE="${CLAUDE_SESSION_ID_FILE:-.aris/review-outputs/claude-session-id.txt}"
+CLAUDE_SESSION_ID="${CLAUDE_SESSION_ID:-$(cat "$CLAUDE_SESSION_ID_FILE")}"
+test -n "$CLAUDE_SESSION_ID"
+claude -p --resume "$CLAUDE_SESSION_ID" --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
 
 Save the raw Claude CLI JSON before summarizing it. Treat the response text inside the JSON as the reviewer/helper output.
@@ -637,7 +650,7 @@ This is the authoritative record. Do NOT truncate or paraphrase.]
 - Difficulty: [medium/hard/nightmare]
 ```
 
-**Write `review-stage/REVIEW_STATE.json`** with current round, agent id, score, verdict, and any pending experiments.
+**Write `review-stage/REVIEW_STATE.json`** with current round, Claude session ID, score, verdict, and any pending experiments.
 
 **Append to `findings.md`** (when `COMPACT = true`): one-line entry per key finding this round:
 
@@ -687,8 +700,8 @@ When `ORBIT_RED_TEAM_ONLY = true`, use ORBIT red-team termination instead:
 - **Large file handling**: If the Write tool fails due to file size, immediately retry using Bash (`cat << 'EOF' > file`) to write in chunks. Do NOT ask the user for permission — just do it silently.
 
 - ALWAYS use `config: {"Claude CLI `--effort max`": "xhigh"}` for maximum reasoning depth
-- In generic improvement mode, save agent id from first call and use
-  a new `claude -p` invocation for subsequent rounds. In ORBIT red-team mode, prefer a
+- In generic improvement mode, save Claude session ID from first call and use
+  `claude -p --resume` for subsequent rounds. In ORBIT red-team mode, prefer a
   fresh independent review context unless the user explicitly asks for improvement mode.
 - **Anti-hallucination citations**: When adding references during fixes, NEVER fabricate BibTeX. Use the same DBLP → CrossRef → `[VERIFY]` chain as `/paper-write`: (1) `curl -s "https://dblp.org/search/publ/api?q=TITLE&format=json"` → get key → `curl -s "https://dblp.org/rec/{key}.bib"`, (2) if not found, `curl -sLH "Accept: application/x-bibtex" "https://doi.org/{doi}"`, (3) if both fail, mark with `% [VERIFY]`. Do NOT generate BibTeX from memory.
 - Be honest — include negative results and failed experiments
@@ -716,9 +729,9 @@ improvement but not for a fresh STOP C red-team verdict.
 Write the complete follow-up Claude review/help prompt to `$PROMPT_FILE`.
 Preserve the role, files-to-read, objective, and required output schema from this original call shape.
 
-For follow-up rounds, include the previous raw Claude JSON/review artifact, implemented changes, any pushback, and the current files in the prompt. Claude CLI has no persistent `threadId`.
+For follow-up rounds, resume the saved Claude CLI session from the first call. Also include the previous raw Claude JSON/review artifact, implemented changes, any pushback, and the current files in the prompt so the saved transcript and explicit artifacts agree.
 
-agent id: [saved from round 1]
+Claude session ID: [saved from round 1]
 
   prompt: |
     [Round N update]
@@ -739,14 +752,17 @@ agent id: [saved from round 1]
 PROMPT_FILE="${PROMPT_FILE:-.aris/review-prompts/claude-review-round-N.md}"
 RAW_REVIEW_JSON="${RAW_REVIEW_JSON:-.aris/review-outputs/claude-review-round-N.json}"
 mkdir -p "$(dirname "$PROMPT_FILE")" "$(dirname "$RAW_REVIEW_JSON")"
-claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+CLAUDE_SESSION_ID_FILE="${CLAUDE_SESSION_ID_FILE:-.aris/review-outputs/claude-session-id.txt}"
+CLAUDE_SESSION_ID="${CLAUDE_SESSION_ID:-$(cat "$CLAUDE_SESSION_ID_FILE")}"
+test -n "$CLAUDE_SESSION_ID"
+claude -p --resume "$CLAUDE_SESSION_ID" --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
 
 Save the raw Claude CLI JSON before summarizing it. Treat the response text inside the JSON as the reviewer/helper output.
 
 ## Review Tracing
 
-After each `claude -p` or a new `claude -p` invocation reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
+After each `claude -p` or `claude -p --resume` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
 
 ## Stage-Chain Integration (ORBIT v1.3 Stage 23 — Reviewer Red-team Loop)
 

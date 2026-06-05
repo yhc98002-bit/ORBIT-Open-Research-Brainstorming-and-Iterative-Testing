@@ -45,12 +45,13 @@ send_input:
 
         self.assertNotIn("spawn_agent:", transformed)
         self.assertNotIn("send_input:", transformed)
-        self.assertIn(
-            "claude -p --dangerously-skip-permissions --output-format json --model opus --effort max",
-            transformed,
-        )
+        self.assertIn("--dangerously-skip-permissions --output-format json --model opus --effort max", transformed)
+        self.assertIn('claude -p --session-id "$CLAUDE_SESSION_ID"', transformed)
+        self.assertIn('claude -p --resume "$CLAUDE_SESSION_ID"', transformed)
+        self.assertIn("CLAUDE_SESSION_ID_FILE", transformed)
         self.assertIn("previous raw Claude JSON/review artifact", transformed)
         self.assertIn("tee \"$RAW_REVIEW_JSON\"", transformed)
+        self.assertNotIn("Claude CLI has no persistent", transformed)
 
     def test_skill_frontmatter_removes_subagent_tools_and_adds_bash(self):
         source = """---

@@ -6,11 +6,13 @@ allowed-tools: Bash(*), Read, Grep, Glob, Write, Edit, Agent
 
 > Override for Codex users who want **Claude Code CLI**, not a second Codex agent, to act as the reviewer/helper. Install this package **after** `skills/skills-codex/*`.
 
-Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE` and run:
+Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE`. For a one-shot independent review, run:
 
 ```bash
 claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
+
+For multi-round reviewer discussion, keep automation non-interactive but preserve continuity with `--session-id` on the first call and `--resume` on follow-up calls; see `../shared-references/claude-cli-review.md`.
 
 # Proof Checker: Rigorous Mathematical Verification & Fixing
 
@@ -21,7 +23,7 @@ Systematically verify a mathematical proof via cross-model adversarial review, f
 ## Constants
 
 - MAX_REVIEW_ROUNDS = 3
-- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`.
+- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls, using `--session-id` / `--resume` for multi-round discussion, following `../shared-references/claude-cli-review.md`.
 - **REVIEWER_BACKEND = `codex`** — Default: Claude CLI reviewer (xhigh). Override with `— reviewer: oracle-pro` for GPT-5.5 Pro via Oracle MCP. See `../shared-references/reviewer-routing.md`.
 - AUDIT_DOC: `PROOF_AUDIT.md` at the paper directory root, alongside `main.tex` (cumulative log; when invoked via `/paper-writing`, this is `paper/PROOF_AUDIT.md`)
 - REPORT_TEX: `proof_audit_report.tex` (formal before/after PDF)
@@ -190,6 +192,7 @@ Submit the **complete proof content** with the following **mandatory reviewer ch
 Write the complete fresh Claude review/help prompt to `$PROMPT_FILE`.
 Preserve the role, files-to-read, objective, and required output schema from this original call shape.
 
+If this review may need later follow-up, create and save a Claude CLI session ID on this first call.
 
 prompt: |
     You are performing a rigorous mathematical proof review. For EVERY theorem,
@@ -234,12 +237,15 @@ prompt: |
 PROMPT_FILE="${PROMPT_FILE:-.aris/review-prompts/claude-review-round-N.md}"
 RAW_REVIEW_JSON="${RAW_REVIEW_JSON:-.aris/review-outputs/claude-review-round-N.json}"
 mkdir -p "$(dirname "$PROMPT_FILE")" "$(dirname "$RAW_REVIEW_JSON")"
-claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+CLAUDE_SESSION_ID="${CLAUDE_SESSION_ID:-$(python -c 'import uuid; print(uuid.uuid4())')}"
+CLAUDE_SESSION_ID_FILE="${CLAUDE_SESSION_ID_FILE:-.aris/review-outputs/claude-session-id.txt}"
+printf "%s\n" "$CLAUDE_SESSION_ID" > "$CLAUDE_SESSION_ID_FILE"
+claude -p --session-id "$CLAUDE_SESSION_ID" --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
 
 Save the raw Claude CLI JSON before summarizing it. Treat the response text inside the JSON as the reviewer/helper output.
 
-**Save the agent id.** Parse into structured issue list. Write to `PROOF_AUDIT.md`.
+**Save the Claude session ID.** Parse into structured issue list. Write to `PROOF_AUDIT.md`.
 
 ### Phase 1.5: Counterexample Red Team
 
@@ -310,7 +316,7 @@ pdflatex -interaction=nonstopmode <file>.tex 2>&1 | grep -E "Error|Warning|undef
 
 ### Phase 3: Re-Review (Codex Claude CLI max-effort)
 
-Use a new `claude -p` invocation with saved agent id. Include fix summaries. Request the same mandatory checklist.
+Use `claude -p --resume` with saved Claude session ID. Include fix summaries. Request the same mandatory checklist.
 
 Check acceptance gate. If not met, repeat Phases 2-3 (up to MAX_REVIEW_ROUNDS).
 
@@ -332,6 +338,7 @@ For any fix that resolved a FATAL or CRITICAL issue, submit the **fixed section 
 Write the complete fresh Claude review/help prompt to `$PROMPT_FILE`.
 Preserve the role, files-to-read, objective, and required output schema from this original call shape.
 
+If this review may need later follow-up, create and save a Claude CLI session ID on this first call.
 
 prompt: |
     Blind review of the following proof section. You have NOT seen any prior
@@ -344,7 +351,10 @@ prompt: |
 PROMPT_FILE="${PROMPT_FILE:-.aris/review-prompts/claude-review-round-N.md}"
 RAW_REVIEW_JSON="${RAW_REVIEW_JSON:-.aris/review-outputs/claude-review-round-N.json}"
 mkdir -p "$(dirname "$PROMPT_FILE")" "$(dirname "$RAW_REVIEW_JSON")"
-claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+CLAUDE_SESSION_ID="${CLAUDE_SESSION_ID:-$(python -c 'import uuid; print(uuid.uuid4())')}"
+CLAUDE_SESSION_ID_FILE="${CLAUDE_SESSION_ID_FILE:-.aris/review-outputs/claude-session-id.txt}"
+printf "%s\n" "$CLAUDE_SESSION_ID" > "$CLAUDE_SESSION_ID_FILE"
+claude -p --session-id "$CLAUDE_SESSION_ID" --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
 
 Save the raw Claude CLI JSON before summarizing it. Treat the response text inside the JSON as the reviewer/helper output.
@@ -387,7 +397,7 @@ Write `PROOF_CHECK_STATE.json`:
 {
   "status": "completed",
   "rounds": 2,
-  "claude_review_json_path": "...",
+  "claude_session_id": "...",
   "fatal_fixed": 0,
   "critical_fixed": 3,
   "major_fixed": 2,
@@ -415,7 +425,7 @@ Write `PROOF_CHECK_STATE.json`:
 - **Claude analyzes, Claude CLI reviews**: Claude reads proof, formulates questions, implements fixes. Codex provides adversarial review.
 - **Codex reasoning always xhigh**: Never downgrade.
 - **Send full content**: Don't summarize — send actual math for line-by-line checking.
-- **Preserve agent id**: Use a new `claude -p` invocation for follow-up rounds.
+- **Preserve Claude session ID**: Use `claude -p --resume` for follow-up rounds.
 
 ### Fix quality
 - **Minimal fixes**: Fix exactly what's broken, nothing more.
@@ -462,7 +472,7 @@ The artifact conforms to the schema in `../shared-references/assurance-contract.
     "sections/4.theory.tex":    "sha256:..."
   },
   "trace_path":       ".aris/traces/proof-checker/<date>_run<NN>/",
-  "thread_id":        "<codex mcp thread id>",
+  "claude_session_id":        "<codex mcp Claude session ID>",
   "reviewer_model":   "claude-cli",
   "reviewer_reasoning": "xhigh",
   "generated_at":     "<UTC ISO-8601>",
@@ -506,7 +516,7 @@ must carry an explicit justification in `summary` + `details.issues`.
 ### Thread independence
 
 Every invocation uses a fresh `claude -p` thread. Never
-a new `claude -p` invocation across proof-checker runs. Do not accept prior audit outputs
+`claude -p --resume` across proof-checker runs. Do not accept prior audit outputs
 (PAPER_CLAIM_AUDIT, CITATION_AUDIT, EXPERIMENT_LOG) as input — the fresh
 thread preserves reviewer independence per
 `../shared-references/reviewer-independence.md`.

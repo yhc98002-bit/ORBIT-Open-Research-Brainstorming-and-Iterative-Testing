@@ -24,16 +24,21 @@ OVERRIDE_NOTE = (
     "agent, to act as the reviewer/helper. Install this package **after** "
     "`skills/skills-codex/*`.\n\n"
     "Whenever the upstream skill asks for an external reviewer/helper, write the "
-    "complete focused prompt to `$PROMPT_FILE` and run:\n\n"
+    "complete focused prompt to `$PROMPT_FILE`. For a one-shot independent "
+    "review, run:\n\n"
     "```bash\n"
     "claude -p --dangerously-skip-permissions --output-format json --model opus "
     "--effort max < \"$PROMPT_FILE\" | tee \"$RAW_REVIEW_JSON\"\n"
-    "```"
+    "```\n\n"
+    "For multi-round reviewer discussion, keep automation non-interactive but "
+    "preserve continuity with `--session-id` on the first call and `--resume` "
+    "on follow-up calls; see `../shared-references/claude-cli-review.md`."
 )
 
 REVIEWER_LINE = (
     "- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct "
-    "`claude -p` CLI calls following `../shared-references/claude-cli-review.md`."
+    "`claude -p` CLI calls, using `--session-id` / `--resume` for multi-round "
+    "discussion, following `../shared-references/claude-cli-review.md`."
 )
 
 PREREQ_BLOCK = """## Prerequisites
@@ -44,7 +49,7 @@ PREREQ_BLOCK = """## Prerequisites
   ```bash
   claude --version
   ```
-- Reviews and helper critiques use direct `claude -p` calls; see `../shared-references/claude-cli-review.md`.
+- Reviews and helper critiques use direct `claude -p` calls. Use fresh calls for independent review and `--session-id` / `--resume` for multi-round discussion; see `../shared-references/claude-cli-review.md`.
 """.strip()
 
 
@@ -98,6 +103,8 @@ def normalize_description(text: str) -> str:
         "via a secondary Codex agent": "via Claude Code CLI",
         "via GPT-5.5": "via Claude Code CLI",
         "via GPT-5.4 xhigh review": "via Claude Code CLI review",
+        "via iterative GPT-5.5 xhigh review": "via iterative Claude CLI max-effort review",
+        "GPT-5.5 xhigh review": "Claude CLI max-effort review",
         "from GPT": "from Claude Code CLI",
         "using a secondary Codex agent": "using Claude Code CLI",
         "using Claude Code via claude-review MCP": "using Claude Code CLI",
@@ -116,7 +123,7 @@ def strip_call_backend_fields(block: str, *, followup: bool) -> str:
             continue
         if stripped.startswith(("model:", "reasoning_effort:", "sandbox:", "approval-policy:")):
             continue
-        if followup and stripped.startswith(("target:", "id:", "threadId:", "thread_id:")):
+        if followup and stripped.startswith(("target:", "id:", "threadId:", "thread_id:", "agent id:", "agent_id:")):
             continue
         if stripped.startswith("message:"):
             out.append(line.replace("message:", "prompt:", 1))
@@ -129,11 +136,27 @@ def claude_cli_rewrite(original_call: str, *, followup: bool) -> str:
     cleaned = strip_call_backend_fields(original_call, followup=followup)
     kind = "follow-up" if followup else "fresh"
     continuity = (
-        "\nFor follow-up rounds, include the previous raw Claude JSON/review artifact, "
-        "implemented changes, any pushback, and the current files in the prompt. "
-        "Claude CLI has no persistent `threadId`."
+        "\nFor follow-up rounds, resume the saved Claude CLI session from the first call. "
+        "Also include the previous raw Claude JSON/review artifact, implemented changes, "
+        "any pushback, and the current files in the prompt so the saved transcript and "
+        "explicit artifacts agree."
         if followup
-        else ""
+        else "\nIf this review may need later follow-up, create and save a Claude CLI session ID on this first call."
+    )
+    command = (
+        [
+            'CLAUDE_SESSION_ID_FILE="${CLAUDE_SESSION_ID_FILE:-.aris/review-outputs/claude-session-id.txt}"',
+            'CLAUDE_SESSION_ID="${CLAUDE_SESSION_ID:-$(cat "$CLAUDE_SESSION_ID_FILE")}"',
+            'test -n "$CLAUDE_SESSION_ID"',
+            'claude -p --resume "$CLAUDE_SESSION_ID" --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"',
+        ]
+        if followup
+        else [
+            'CLAUDE_SESSION_ID="${CLAUDE_SESSION_ID:-$(python -c \'import uuid; print(uuid.uuid4())\')}"',
+            'CLAUDE_SESSION_ID_FILE="${CLAUDE_SESSION_ID_FILE:-.aris/review-outputs/claude-session-id.txt}"',
+            'printf "%s\\n" "$CLAUDE_SESSION_ID" > "$CLAUDE_SESSION_ID_FILE"',
+            'claude -p --session-id "$CLAUDE_SESSION_ID" --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"',
+        ]
     )
     return "\n".join(
         [
@@ -149,7 +172,7 @@ def claude_cli_rewrite(original_call: str, *, followup: bool) -> str:
             'PROMPT_FILE="${PROMPT_FILE:-.aris/review-prompts/claude-review-round-N.md}"',
             'RAW_REVIEW_JSON="${RAW_REVIEW_JSON:-.aris/review-outputs/claude-review-round-N.json}"',
             'mkdir -p "$(dirname "$PROMPT_FILE")" "$(dirname "$RAW_REVIEW_JSON")"',
-            'claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"',
+            *command,
             "```",
             "",
             "Save the raw Claude CLI JSON before summarizing it. Treat the response text inside the JSON as the reviewer/helper output.",
@@ -175,6 +198,13 @@ def transform_body(text: str) -> str:
         "Codex-native sub-agent": "Claude CLI reviewer",
         "Codex-native reviewer": "Claude CLI reviewer",
         "Codex-native": "Claude CLI",
+        "Codex/GPT-5.5": "Claude CLI reviewer",
+        "Phase 4 (Codex,": "Phase 4 (Claude CLI reviewer,",
+        "Send the revised proposal back to GPT-5.5": "Send the revised proposal back to the Claude CLI reviewer",
+        "Send the full proposal to GPT-5.5": "Send the full proposal to the Claude CLI reviewer",
+        "GPT-5.5 via": "Claude CLI via",
+        "GPT-5.5 in the": "Claude CLI reviewer in the",
+        "[Full verbatim response from GPT-5.5]": "[Full verbatim response from Claude CLI reviewer]",
         "Codex Precondition + Loud-Stop Contract": "Claude CLI Review Transport + Loud-Stop Contract",
         "Codex availability": "Claude CLI availability",
         "Codex unavailability": "Claude CLI reviewer unavailability",
@@ -195,18 +225,35 @@ def transform_body(text: str) -> str:
         "`spawn_agent`/`send_input`": "direct Claude CLI review calls",
         "`spawn_agent` / `send_input`": "direct Claude CLI review calls",
         "`spawn_agent`": "`claude -p`",
-        "`send_input`": "a new `claude -p` invocation",
+        "`send_input`": "`claude -p --resume`",
         "spawn_agent invocation": "Claude CLI invocation",
         "send_input invocation": "Claude CLI follow-up invocation",
+        "same reviewer thread": "same resumed Claude CLI session",
+        "same thread": "same resumed Claude CLI session",
+        "reviewer thread retains": "resumed Claude CLI session retains",
+        "Use a new `claude -p` invocation": "Use `claude -p --resume`",
+        "a new `claude -p` invocation (same resumed Claude CLI session)": "`claude -p --resume` in the same resumed Claude CLI session",
+        "new `claude -p` invocation (same resumed Claude CLI session)": "`claude -p --resume` in the same resumed Claude CLI session",
+        "new `claude -p` invocation continuity": "`claude -p --resume` continuity",
         "Confirm direct Claude CLI review calls are available in this session.": "Run `claude --version` to confirm Claude CLI is available.",
-        "Codex-native: no shell helper is run. Confirm direct Claude CLI review calls are available in this session.": "Claude CLI: run `claude --version`, then use direct `claude -p` calls.",
+        "Codex-native: no shell helper is run. Confirm direct Claude CLI review calls are available in this session.": "Claude CLI: run `claude --version`, then use direct `claude -p` calls; for multi-round discussion use `--session-id` / `--resume`.",
         "Verify `.ready && .codex.available && .auth.loggedIn`.": "Verify `claude --version` exits successfully.",
-        "`agent_id`": "`claude_review_json_path`",
-        "`agent id`": "`claude_review_json_path`",
-        '"agent_id"': '"claude_review_json_path"',
-        '"agent id"': '"claude_review_json_path"',
-        "`threadId`": "`claude_review_json_path`",
-        "`thread_id`": "`claude_review_json_path`",
+        "`agent_id`": "`claude_session_id`",
+        "`agent id`": "`claude_session_id`",
+        '"agent_id"': '"claude_session_id"',
+        '"agent id"': '"claude_session_id"',
+        "`threadId`": "`claude_session_id`",
+        "`thread_id`": "`claude_session_id`",
+        "codex_thread_id": "claude_session_id",
+        "review_thread_id": "claude_session_id",
+        "thread_id": "claude_session_id",
+        "threadId": "claude_session_id",
+        "agent_id": "claude_session_id",
+        "agent id": "Claude session ID",
+        "Agent ID": "Claude session ID",
+        "thread id": "Claude session ID",
+        "thread ID": "Claude session ID",
+        "thread state": "session state",
         "codex-precondition.md": "claude-cli-review.md",
         "`codex_precondition`": "`claude_cli_precondition`",
         '"codex_precondition"': '"claude_cli_precondition"',
@@ -235,9 +282,40 @@ def transform_body(text: str) -> str:
         "Codex flags": "Claude CLI reviewer flags",
         "Codex objected": "Claude CLI reviewer objected",
         "Codex in": "Claude CLI reviewer in",
+        "Codex Required": "Claude CLI Reviewer Required",
+        "Codex required": "Claude CLI reviewer required",
+        "Codex remains required by default.": "Claude CLI reviewer remains required by default.",
+        "Codex remains required.": "Claude CLI reviewer remains required.",
+        "standalone Codex": "standalone Claude CLI",
     }
     for old, new in replacements.items():
         text = text.replace(old, new)
+
+    text = text.replace(
+        '**ALWAYS use `config: {"Claude CLI `--effort max`": "xhigh"}`** for all Claude CLI review calls.',
+        "**Always use `--model opus --effort max` for all Claude CLI review calls.**",
+    )
+    text = text.replace(
+        "**REVIEWER_EFFORT = `xhigh`** — Codex `Claude CLI `--effort max`` for the reviewer call.",
+        "**REVIEWER_EFFORT = `max`** — Use Claude CLI `--effort max` for the reviewer call.",
+    )
+    text = text.replace(
+        "Codex `Claude CLI `--effort max`` parsed from `— effort:` flag",
+        "Claude CLI `--effort max` parsed from `— effort:` flag",
+    )
+    text = re.sub(
+        r"- \*\*Claude CLI reviewer remains required\.\*\* If reviewer transport fails, export/import a standalone Claude CLI\n"
+        r"After fixing Claude CLI access, rerun the blocked skill with its documented resume flag\.\n"
+        r"\s+imported standalone Claude CLI response exists\.",
+        "- **Claude CLI reviewer remains required.** If reviewer transport fails, write the standalone prompt/raw JSON files, fix Claude CLI access, and rerun the blocked skill with its documented resume flag.",
+        text,
+    )
+    text = re.sub(
+        r"- \*\*Claude CLI reviewer remains required\.\*\* If reviewer transport fails, export/import a standalone Claude CLI\n"
+        r"After fixing Claude CLI access, rerun the blocked skill with its documented resume flag\.",
+        "- **Claude CLI reviewer remains required.** If reviewer transport fails, write the standalone prompt/raw JSON files, fix Claude CLI access, and rerun the blocked skill with its documented resume flag.",
+        text,
+    )
 
     text = re.sub(
         r"^-\s+\*{0,2}REVIEWER_MODEL.*$",
@@ -266,6 +344,19 @@ def transform_body(text: str) -> str:
     text = text.replace(
         "```\nClaude CLI `--effort max`\n```",
         claude_cli_rewrite("[Full review/help briefing + specific questions]", followup=False),
+    )
+    text = re.sub(
+        r"- \*\*Claude CLI reviewer remains required\.\*\* If reviewer transport fails, export/import a standalone Claude CLI\n"
+        r"After fixing Claude CLI access, rerun the blocked skill with its documented resume flag\.\n"
+        r"\s+imported standalone Claude CLI response exists\.",
+        "- **Claude CLI reviewer remains required.** If reviewer transport fails, write the standalone prompt/raw JSON files, fix Claude CLI access, and rerun the blocked skill with its documented resume flag.",
+        text,
+    )
+    text = re.sub(
+        r"- \*\*Claude CLI reviewer remains required\.\*\* If reviewer transport fails, export/import a standalone Claude CLI\n"
+        r"After fixing Claude CLI access, rerun the blocked skill with its documented resume flag\.",
+        "- **Claude CLI reviewer remains required.** If reviewer transport fails, write the standalone prompt/raw JSON files, fix Claude CLI access, and rerun the blocked skill with its documented resume flag.",
+        text,
     )
     return text
 
@@ -348,15 +439,30 @@ def copy_and_transform_shared_references() -> None:
         "emitting downstream proposal, plan, diagnostic, claim, or paper artifacts.\n\n"
         "## Reviewer Call Protocol\n\n"
         "For every fresh review/helper call, write the complete focused prompt to "
-        "`$PROMPT_FILE`, then run:\n\n"
+        "`$PROMPT_FILE`. For one-shot independent review, run:\n\n"
         "```bash\n"
         "claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < \"$PROMPT_FILE\" | tee \"$RAW_REVIEW_JSON\"\n"
         "```\n\n"
+        "For a first call that may need follow-up discussion, create and save a session ID:\n\n"
+        "```bash\n"
+        "CLAUDE_SESSION_ID=\"${CLAUDE_SESSION_ID:-$(python -c 'import uuid; print(uuid.uuid4())')}\"\n"
+        "CLAUDE_SESSION_ID_FILE=\"${CLAUDE_SESSION_ID_FILE:-.aris/review-outputs/claude-session-id.txt}\"\n"
+        "printf \"%s\\n\" \"$CLAUDE_SESSION_ID\" > \"$CLAUDE_SESSION_ID_FILE\"\n"
+        "claude -p --session-id \"$CLAUDE_SESSION_ID\" --dangerously-skip-permissions --output-format json --model opus --effort max < \"$PROMPT_FILE\" | tee \"$RAW_REVIEW_JSON\"\n"
+        "```\n\n"
+        "For follow-up rounds, resume that same Claude CLI session:\n\n"
+        "```bash\n"
+        "CLAUDE_SESSION_ID_FILE=\"${CLAUDE_SESSION_ID_FILE:-.aris/review-outputs/claude-session-id.txt}\"\n"
+        "CLAUDE_SESSION_ID=\"${CLAUDE_SESSION_ID:-$(cat \"$CLAUDE_SESSION_ID_FILE\")}\"\n"
+        "test -n \"$CLAUDE_SESSION_ID\"\n"
+        "claude -p --resume \"$CLAUDE_SESSION_ID\" --dangerously-skip-permissions --output-format json --model opus --effort max < \"$PROMPT_FILE\" | tee \"$RAW_REVIEW_JSON\"\n"
+        "```\n\n"
         "Save the raw JSON before summarizing it. Treat the response text inside the "
         "JSON as the reviewer/helper output.\n\n"
-        "For follow-up rounds, start a new `claude -p` invocation and include the "
-        "previous raw Claude JSON/review, implemented changes, any pushback, and the "
-        "current artifact in the prompt. Claude CLI has no persistent `threadId`.\n\n"
+        "For follow-up rounds, include the previous raw Claude JSON/review, "
+        "implemented changes, any pushback, and the current artifact in the prompt "
+        "even though the session is resumed. The session provides conversational "
+        "continuity; the artifacts provide auditability and recovery.\n\n"
         "## Mid-Run Failure\n\n"
         "If a required Claude CLI call fails, preserve upstream artifacts already "
         "written, write STATE with `status: \"awaiting_user_action\"` and a "

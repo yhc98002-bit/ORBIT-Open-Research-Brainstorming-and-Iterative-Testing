@@ -43,11 +43,24 @@ cp -a skills/skills-codex-claude-review/* ~/.codex/skills/
 claude --version
 ```
 
-The override skills invoke Claude review/help using this fixed command shape:
+The override skills invoke Claude review/help using this protocol.
+
+For one-shot independent review:
 
 ```bash
 claude -p --dangerously-skip-permissions --output-format json --model opus --effort max "your focused review or help prompt"
 ```
+
+For automated multi-round review/discussion, keep `-p` but preserve session
+continuity:
+
+```bash
+claude -p --session-id "$CLAUDE_SESSION_ID" --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE"
+claude -p --resume "$CLAUDE_SESSION_ID" --dangerously-skip-permissions --output-format json --model opus --effort max < "$NEXT_PROMPT_FILE"
+```
+
+Use fully interactive `claude --model opus --effort max` only for human-in-the-loop
+discussion, not for autonomous skill phases.
 
 ## Why this exists
 
@@ -59,10 +72,11 @@ This package adds a different split:
 
 - executor: Codex
 - reviewer/helper: Claude Code CLI
-- transport: direct `claude -p` CLI call
+- transport: direct `claude -p` CLI calls, with `--session-id` / `--resume`
+  when the upstream skill expects multi-round reviewer continuity
 
 For long paper and review prompts, write the full prompt to a temporary prompt
-file and pass it to the same CLI command. See
+file and pass it to the CLI command. See
 `shared-references/claude-cli-review.md`.
 
 This avoids depending on a local Codex MCP bridge for Claude review.

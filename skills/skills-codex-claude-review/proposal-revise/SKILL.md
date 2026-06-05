@@ -6,11 +6,13 @@ allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agen
 
 > Override for Codex users who want **Claude Code CLI**, not a second Codex agent, to act as the reviewer/helper. Install this package **after** `skills/skills-codex/*`.
 
-Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE` and run:
+Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE`. For a one-shot independent review, run:
 
 ```bash
 claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
+
+For multi-round reviewer discussion, keep automation non-interactive but preserve continuity with `--session-id` on the first call and `--resume` on follow-up calls; see `../shared-references/claude-cli-review.md`.
 
 # /proposal-revise — STOP A revision loop
 
@@ -49,7 +51,7 @@ auto-accept revisions (Phase 4 always ends `awaiting_human_continue` unless
 - **MAX_ROUNDS = 2** — cap on revise → re-eval iterations within a single invocation. Override with `— max-rounds: <N>`.
 - **CLAUDE_REVIEW_MODEL = `claude-cli`**, **CLAUDE_REVIEW_EFFORT = `xhigh`**.
 - **CLAUDE_INNOVATION_MODE** — `COLLABORATIVE` for Stage 8/9/10/18.5 re-runs; `ADVERSARIAL` everywhere else (per `innovation-loops.md` §7).
-- **REVIEWER_INDEPENDENCE = on** — Phase 3 Codex re-evaluation uses **fresh** `claude -p` thread (NOT a new `claude -p` invocation) per `auto-paper-improvement-loop` reviewer-independence protocol — avoids confirmation bias on whether the fix actually works.
+- **REVIEWER_INDEPENDENCE = on** — Phase 3 Codex re-evaluation uses **fresh** `claude -p` thread (NOT `claude -p --resume`) per `auto-paper-improvement-loop` reviewer-independence protocol — avoids confirmation bias on whether the fix actually works.
 - **AUTO_PROCEED = true** — chain phases without prompting unless user passes `— human checkpoint: true`.
 
 ## Load First
@@ -131,7 +133,7 @@ Schema:
     "refine-logs/EXPERIMENT_PLAN.md",      // if target includes plan
     "orbit-research/<updated subset>.md"   // only the artifacts whose owning stage was re-run
   ],
-  "codex_thread_id": "<for Phase 3 re-eval continuity within a single round>",
+  "claude_session_id": "<for Phase 3 re-eval continuity within a single round>",
   "notes": "Optional"
 }
 ```
@@ -437,7 +439,7 @@ artifact only and record the narrowing in `REVISION_REPORT.md`.
 **Codex Phase 3 re-evaluation** (per `auto-paper-improvement-loop` reviewer-independence):
 
 For each addressed critique, evaluate whether the revision actually fixed the issue. Use
-a **fresh** `claude -p` thread (NOT a new `claude -p` invocation) — fresh context defeats the
+a **fresh** `claude -p` thread (NOT `claude -p --resume`) — fresh context defeats the
 "of course my fix works" confirmation bias:
 
 ```text

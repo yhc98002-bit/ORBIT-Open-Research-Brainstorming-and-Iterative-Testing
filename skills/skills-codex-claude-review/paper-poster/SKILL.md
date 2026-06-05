@@ -6,11 +6,13 @@ allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent
 
 > Override for Codex users who want **Claude Code CLI**, not a second Codex agent, to act as the reviewer/helper. Install this package **after** `skills/skills-codex/*`.
 
-Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE` and run:
+Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE`. For a one-shot independent review, run:
 
 ```bash
 claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
+
+For multi-round reviewer discussion, keep automation non-interactive but preserve continuity with `--session-id` on the first call and `--resume` on follow-up calls; see `../shared-references/claude-cli-review.md`.
 
 # Paper Poster: From Paper to Conference Poster
 
@@ -30,7 +32,7 @@ Unlike papers (dense prose, 8-15 pages), posters are **visual-first**: one page,
 - **COLUMNS = 4** — Number of content columns. Typical: 4 for landscape A0 (IMRAD), **3 for portrait A0** (research consensus), 2 for portrait A1. Portrait A0 should NEVER use 4 columns — text becomes too narrow and unreadable.
 - **PAPER_DIR = `paper/`** — Directory containing the compiled paper (main.tex + figures/).
 - **OUTPUT_DIR = `poster/`** — Output directory for all poster files.
-- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`.
+- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls, using `--session-id` / `--resume` for multi-round discussion, following `../shared-references/claude-cli-review.md`.
 - **AUTO_PROCEED = false** — At each checkpoint, **always wait for explicit user confirmation**. Set `true` only if user explicitly requests fully autonomous mode.
 - **COMPILER = `latexmk`** — LaTeX build tool.
 - **ENGINE = `pdflatex`** — LaTeX engine. Use `xelatex` for CJK text.
@@ -67,7 +69,7 @@ Poster generation can be long. Persist state to `poster/POSTER_STATE.json` after
   "orientation": "landscape",
   "columns": 4,
   "figures_selected": ["architecture.pdf", "results.pdf"],
-  "codex_thread_id": "019cfcf4-...",
+  "claude_session_id": "019cfcf4-...",
   "status": "in_progress",
   "timestamp": "2026-03-18T15:00:00"
 }
@@ -774,6 +776,7 @@ Send the poster content plan + key LaTeX sections to Claude CLI max-effort for r
 Write the complete fresh Claude review/help prompt to `$PROMPT_FILE`.
 Preserve the role, files-to-read, objective, and required output schema from this original call shape.
 
+If this review may need later follow-up, create and save a Claude CLI session ID on this first call.
 
 prompt: |
     Review this academic conference poster for [VENUE].
@@ -804,7 +807,10 @@ prompt: |
 PROMPT_FILE="${PROMPT_FILE:-.aris/review-prompts/claude-review-round-N.md}"
 RAW_REVIEW_JSON="${RAW_REVIEW_JSON:-.aris/review-outputs/claude-review-round-N.json}"
 mkdir -p "$(dirname "$PROMPT_FILE")" "$(dirname "$RAW_REVIEW_JSON")"
-claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+CLAUDE_SESSION_ID="${CLAUDE_SESSION_ID:-$(python -c 'import uuid; print(uuid.uuid4())')}"
+CLAUDE_SESSION_ID_FILE="${CLAUDE_SESSION_ID_FILE:-.aris/review-outputs/claude-session-id.txt}"
+printf "%s\n" "$CLAUDE_SESSION_ID" > "$CLAUDE_SESSION_ID_FILE"
+claude -p --session-id "$CLAUDE_SESSION_ID" --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
 
 Save the raw Claude CLI JSON before summarizing it. Treat the response text inside the JSON as the reviewer/helper output.

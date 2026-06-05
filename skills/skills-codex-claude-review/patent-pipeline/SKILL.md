@@ -6,11 +6,13 @@ allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agen
 
 > Override for Codex users who want **Claude Code CLI**, not a second Codex agent, to act as the reviewer/helper. Install this package **after** `skills/skills-codex/*`.
 
-Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE` and run:
+Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE`. For a one-shot independent review, run:
 
 ```bash
 claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
+
+For multi-round reviewer discussion, keep automation non-interactive but preserve continuity with `--session-id` on the first call and `--resume` on follow-up calls; see `../shared-references/claude-cli-review.md`.
 
 # Patent Pipeline: From Invention to Filing
 
@@ -45,7 +47,7 @@ Patents are about **protecting inventions** (legal scope), not publishing result
 
 - **JURISDICTION = `CN`** — Target patent jurisdiction. Options: `CN` (CNIPA), `US` (USPTO), `EP` (EPO), `ALL` (generate all three). Override via argument (e.g., `/patent-pipeline "invention — US"`).
 - **PATENT_TYPE = `invention`** — `invention` (发明专利, 20 year protection) or `utility_model` (实用新型, CN only, 10 year protection, apparatus claims only). Override via argument.
-- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`.
+- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls, using `--session-id` / `--resume` for multi-round discussion, following `../shared-references/claude-cli-review.md`.
 - **MAX_REVIEW_ROUNDS = 2** — Maximum review-revision cycles.
 - **AUTO_PROCEED = false** — At each checkpoint, **always wait for explicit user confirmation**. Patent applications require inventor judgment at every stage. Set `true` only if user explicitly requests autonomous mode.
 - **LANGUAGE = `auto`** — Output language. Auto-detected from jurisdiction: CN->Chinese, US->English, EP->English. Override explicitly if needed.
@@ -89,7 +91,7 @@ Patent drafting is a long task that may trigger context compaction. Persist stat
   "jurisdiction": "CN",
   "patent_type": "invention",
   "language": "Chinese",
-  "codex_thread_id": "019cfcf4-...",
+  "claude_session_id": "019cfcf4-...",
   "invention_title": "...",
   "claims_count": 15,
   "status": "in_progress",

@@ -6,11 +6,13 @@ allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent
 
 > Override for Codex users who want **Claude Code CLI**, not a second Codex agent, to act as the reviewer/helper. Install this package **after** `skills/skills-codex/*`.
 
-Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE` and run:
+Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE`. For a one-shot independent review, run:
 
 ```bash
 claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
+
+For multi-round reviewer discussion, keep automation non-interactive but preserve continuity with `--session-id` on the first call and `--resume` on follow-up calls; see `../shared-references/claude-cli-review.md`.
 
 # Auto Paper Improvement Loop: Review → Fix → Recompile
 
@@ -25,8 +27,8 @@ Unlike `/auto-review-loop` (which iterates on **research** — running experimen
 ## Constants
 
 - **MAX_ROUNDS = 2** — Two rounds of review→fix→recompile. Empirically, Round 1 catches structural issues (4→6/10), Round 2 catches remaining presentation issues (6→7/10). Diminishing returns beyond 2 rounds for writing-only improvements.
-- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`.
-- **REVIEWER_BIAS_GUARD = true** — When `true`, every review round uses a fresh `claude -p` thread with no prior review context. Never use a new `claude -p` invocation for review rounds. Set to `false` only for deliberate debugging of the legacy behavior. **Empirical evidence (April 2026):** running the same paper with a new `claude -p` invocation + "since last round we did X" prompts inflated scores from real 3/10 → fake 8/10 across 5 rounds; switching to fresh threads recovered the true 3/10 assessment.
+- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls, using `--session-id` / `--resume` for multi-round discussion, following `../shared-references/claude-cli-review.md`.
+- **REVIEWER_BIAS_GUARD = true** — When `true`, every review round uses a fresh `claude -p` thread with no prior review context. Never use `claude -p --resume` for review rounds. Set to `false` only for deliberate debugging of the legacy behavior. **Empirical evidence (April 2026):** running the same paper with `claude -p --resume` + "since last round we did X" prompts inflated scores from real 3/10 → fake 8/10 across 5 rounds; switching to fresh threads recovered the true 3/10 assessment.
 - **REVIEW_LOG = `PAPER_IMPROVEMENT_LOG.md`** — Cumulative log of all rounds, stored in paper directory.
 - **HUMAN_CHECKPOINT = false** — When `true`, pause after each round's review and present score + weaknesses to the user. The user can approve fixes, provide custom modification instructions, skip specific fixes, or stop early. When `false` (default), runs fully autonomously.
 
@@ -44,7 +46,7 @@ If the context window fills up mid-loop, Claude Code auto-compacts. To recover, 
 ```json
 {
   "current_round": 1,
-  "claude_review_json_path": "019ce736-...",
+  "claude_session_id": "019ce736-...",
   "last_score": 6,
   "status": "in_progress",
   "timestamp": "2026-03-13T21:00:00"
@@ -62,12 +64,12 @@ Four-state status enum (`in_progress` / `awaiting_human_continue` / `awaiting_us
 The reviewer must be context-naive on every round. Prior-round summaries, fix lists, and executor explanations are not evidence; they are a source of confirmation bias. If the reviewer is told what changed, scores tend to drift upward even when the manuscript itself has not materially improved.
 
 Rules:
-- Every round starts with `claude -p`, not a new `claude -p` invocation.
-- Never pass a prior agent id into the next review prompt.
+- Every round starts with `claude -p`, not `claude -p --resume`.
+- Never pass a prior Claude session ID into the next review prompt.
 - Never include "since last round", "we fixed", "after applying", or any fix summary in the reviewer prompt.
 - The only acceptable evidence of improvement is the current `.tex` source and compiled PDF.
 - If a fix cannot be observed in the files, the reviewer should not be told it happened.
-- If recovery metadata is needed, store the returned agent id for crash recovery only; do not use it to preserve review context.
+- If recovery metadata is needed, store the returned Claude session ID for crash recovery only; do not use it to preserve review context.
 
 Set `REVIEWER_BIAS_GUARD = false` only if you explicitly want the legacy, context-carrying behavior for debugging.
 
@@ -99,6 +101,7 @@ Send the full paper text AND compiled PDF to Claude CLI max-effort:
 Write the complete fresh Claude review/help prompt to `$PROMPT_FILE`.
 Preserve the role, files-to-read, objective, and required output schema from this original call shape.
 
+If this review may need later follow-up, create and save a Claude CLI session ID on this first call.
 
 prompt: |
     You are reviewing a [VENUE] paper. Please provide a detailed, structured review.
@@ -134,12 +137,15 @@ prompt: |
 PROMPT_FILE="${PROMPT_FILE:-.aris/review-prompts/claude-review-round-N.md}"
 RAW_REVIEW_JSON="${RAW_REVIEW_JSON:-.aris/review-outputs/claude-review-round-N.json}"
 mkdir -p "$(dirname "$PROMPT_FILE")" "$(dirname "$RAW_REVIEW_JSON")"
-claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+CLAUDE_SESSION_ID="${CLAUDE_SESSION_ID:-$(python -c 'import uuid; print(uuid.uuid4())')}"
+CLAUDE_SESSION_ID_FILE="${CLAUDE_SESSION_ID_FILE:-.aris/review-outputs/claude-session-id.txt}"
+printf "%s\n" "$CLAUDE_SESSION_ID" > "$CLAUDE_SESSION_ID_FILE"
+claude -p --session-id "$CLAUDE_SESSION_ID" --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
 
 Save the raw Claude CLI JSON before summarizing it. Treat the response text inside the JSON as the reviewer/helper output.
 
-Save the agent id for Round 2.
+Save the Claude session ID for Round 2.
 
 ### Step 2b: Human Checkpoint (if enabled)
 
@@ -230,12 +236,13 @@ PY
 
 ### Step 5: Round 2 Review
 
-If `REVIEWER_BIAS_GUARD = true` (default), use a **fresh** `claude -p` thread for Round 2. Do not reuse the Round 1 agent id for prompting. Save the returned agent id only for recovery bookkeeping.
+If `REVIEWER_BIAS_GUARD = true` (default), use a **fresh** `claude -p` thread for Round 2. Do not reuse the Round 1 Claude session ID for prompting. Save the returned Claude session ID only for recovery bookkeeping.
 
 ```text
 Write the complete fresh Claude review/help prompt to `$PROMPT_FILE`.
 Preserve the role, files-to-read, objective, and required output schema from this original call shape.
 
+If this review may need later follow-up, create and save a Claude CLI session ID on this first call.
 
 prompt: |
     You are reviewing a [VENUE] paper. This is a fresh, zero-context review.
@@ -273,18 +280,21 @@ prompt: |
 PROMPT_FILE="${PROMPT_FILE:-.aris/review-prompts/claude-review-round-N.md}"
 RAW_REVIEW_JSON="${RAW_REVIEW_JSON:-.aris/review-outputs/claude-review-round-N.json}"
 mkdir -p "$(dirname "$PROMPT_FILE")" "$(dirname "$RAW_REVIEW_JSON")"
-claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+CLAUDE_SESSION_ID="${CLAUDE_SESSION_ID:-$(python -c 'import uuid; print(uuid.uuid4())')}"
+CLAUDE_SESSION_ID_FILE="${CLAUDE_SESSION_ID_FILE:-.aris/review-outputs/claude-session-id.txt}"
+printf "%s\n" "$CLAUDE_SESSION_ID" > "$CLAUDE_SESSION_ID_FILE"
+claude -p --session-id "$CLAUDE_SESSION_ID" --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
 ```
 
 Save the raw Claude CLI JSON before summarizing it. Treat the response text inside the JSON as the reviewer/helper output.
 
-If `REVIEWER_BIAS_GUARD = false` (legacy debugging only), use a new `claude -p` invocation with the saved agent id; this is **not** the recommended path.
+If `REVIEWER_BIAS_GUARD = false` (legacy debugging only), use `claude -p --resume` with the saved Claude session ID; this is **not** the recommended path.
 
 ### Step 5.5: Kill Argument Exercise (theory papers only)
 
 Run this only if the paper is theory-heavy (≥5 `\begin{theorem}|\begin{lemma}|\begin{proposition}|\begin{corollary}` environments in the source) and only on the final scheduled round (`current_round == MAX_ROUNDS`).
 
-This is a late-stage adversarial check. It must always use **fresh** `claude -p` threads, never a new `claude -p` invocation, and it must not reuse any prior review context.
+This is a late-stage adversarial check. It must always use **fresh** `claude -p` threads, never `claude -p --resume`, and it must not reuse any prior review context.
 
 **Thread 1: Attack**
 - Use a fresh thread with only the current paper files.
@@ -471,7 +481,7 @@ paper/
 
 - **Preserve all PDF versions** — user needs to compare progression
 - **Save FULL raw review text** — do not summarize or truncate GPT-5.5 responses
-- **Reviewer independence (Round 2+)**: when `REVIEWER_BIAS_GUARD = true` (default), use a **fresh** `claude -p` thread for every review round; never use a new `claude -p` invocation and never include "since last round" / fix summaries in the prompt. See the Reviewer Independence Protocol section above.
+- **Reviewer independence (Round 2+)**: when `REVIEWER_BIAS_GUARD = true` (default), use a **fresh** `claude -p` thread for every review round; never use `claude -p --resume` and never include "since last round" / fix summaries in the prompt. See the Reviewer Independence Protocol section above.
 - **Always recompile after fixes** — verify 0 errors before proceeding
 - **Do not fabricate experimental results** — synthetic validation must describe methodology, not invent numbers
 - **Respect the paper's claims** — soften overclaims rather than adding unsupported new claims
@@ -492,4 +502,4 @@ Based on end-to-end testing on a 9-page ICLR 2026 theory paper:
 
 ## Review Tracing
 
-After each `claude -p` or a new `claude -p` invocation reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
+After each `claude -p` or `claude -p --resume` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
