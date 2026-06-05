@@ -5,7 +5,7 @@
 > preserve the scientific checks, the verdict tokens, and (for innovation stages) the
 > Codex collaborative-mode delegation. See the v1.0 → v1.3 alias appendix at the end.
 >
-> Reviewer routing default: Codex MCP, `model = gpt-5.5`, `reasoning_effort = xhigh`,
+> Reviewer routing default: Codex-native sub-agent, `model = gpt-5.5`, `reasoning_effort = xhigh`,
 > sandbox `danger-full-access` (see `reviewer-routing.md`).
 
 ## 0. Mode & Risk Routing

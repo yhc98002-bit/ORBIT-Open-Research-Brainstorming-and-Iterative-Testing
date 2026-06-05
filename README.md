@@ -41,6 +41,8 @@ ORBIT 的设计理念是：
 
 ## 推荐安装方式
 
+### Claude Code 项目
+
 最简单方式：
 
 ```bash
@@ -60,17 +62,59 @@ bash tools/install_aris.sh --profile research-paper
 `orbit-core` 只覆盖 STOP A 到 STOP C 的核心研究流程和 Codex recovery；它不包含
 paper drafting / submission skills。`--profile` 是 reconcile 到指定 profile，不是叠加安装。
 
+### Codex 项目
+
+Codex 不使用 `tools/install_aris.sh`。新建 Codex 项目时，把 Codex mirror 平铺复制到
+项目的 `.agents/skills/`：
+
+```bash
+ORBIT=/HOME/paratera_xy/pxy1289/HDD_POOL/HaocunYe/ORBIT
+PROJECT=/path/to/your/codex-project
+
+cd "$ORBIT"
+python3 tools/sync_codex_mirror.py
+python3 tools/sync_codex_mirror.py --check
+
+mkdir -p "$PROJECT/.agents/skills"
+cp -a "$ORBIT/skills/skills-codex/." "$PROJECT/.agents/skills/"
+```
+
+如果目标项目已经有旧 skills，先备份再覆盖：
+
+```bash
+STAMP=$(date -u +%Y%m%dT%H%M%SZ)
+[ -d "$PROJECT/.agents/skills" ] && mv "$PROJECT/.agents/skills" "$PROJECT/.agents/skills.backup-$STAMP"
+
+mkdir -p "$PROJECT/.agents/skills"
+cp -a "$ORBIT/skills/skills-codex/." "$PROJECT/.agents/skills/"
+```
+
+安装后检查：
+
+```bash
+find "$PROJECT/.agents/skills" -maxdepth 2 -name SKILL.md | wc -l
+rg "mcp__codex__codex|CLAUDE_PLUGIN_ROOT|codex-companion" "$PROJECT/.agents/skills" -g '*.md'
+```
+
+期望 skill 数量为 `77`，并且 `rg` 没有输出。不要复制顶层 `skills/*` 到
+Codex 项目；顶层 `skills/` 是 Claude/通用源，Codex 项目应复制
+`skills/skills-codex/*`。
+
 ---
 
 ## Codex 设置
 
-ORBIT 默认把 Codex 当成独立 reviewer。你需要先设置 Codex CLI / MCP：
+Claude Code 项目里，ORBIT 默认把 Codex 当成独立 reviewer。你需要先设置 Codex CLI / MCP：
 
 ```bash
 npm install -g @openai/codex
 codex setup
 claude mcp add codex -s user -- codex mcp-server
 ```
+
+Codex 项目里不需要 `claude mcp add ...`。Codex-native skills 使用当前 Codex
+会话里的 `spawn_agent` / `send_input` 作为 reviewer transport；如果这些工具不可用，
+相关 skill 会 loud stop，而不是尝试运行 Claude plugin helper。
 
 如果 Codex MCP 临时不可用，ORBIT 不会默认降级成 Claude 单模型 review。它会生成一个 standalone Codex prompt，你可以复制到 Codex 终端运行，然后用：
 

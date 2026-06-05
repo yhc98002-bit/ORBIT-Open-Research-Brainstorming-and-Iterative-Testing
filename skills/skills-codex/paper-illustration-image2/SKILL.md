@@ -2,7 +2,7 @@
 name: paper-illustration-image2
 description: "Generate publication-quality academic illustrations through a local Codex app-server bridge that uses Codex native image generation. This is a separate experimental alternative to `paper-illustration`, intended for Claude Code users who want a GPT-image-style renderer without modifying the original skill."
 argument-hint: [description-or-method-file]
-allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, WebSearch, mcp__codex-image2__generate, mcp__codex-image2__generate_start, mcp__codex-image2__generate_status, mcp__codex__codex, mcp__codex__codex-reply
+allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, WebSearch, mcp__codex-image2__generate, mcp__codex-image2__generate_start, mcp__codex-image2__generate_status, spawn_agent, send_input
 ---
 
 # Paper Illustration Image2
@@ -68,7 +68,7 @@ and a **local Codex app-server MCP bridge** as the raster renderer.
 ## Constants
 
 - **RENDERER = `codex-image2`** — Native image generation bridge exposed through local Codex app-server
-- **OPTIONAL_TEXT_CRITIC = `mcp__codex__codex`** — Optional text-only second opinion for layout/style checks
+- **OPTIONAL_TEXT_CRITIC = `spawn_agent`** — Optional text-only second opinion for layout/style checks
 - **MAX_ITERATIONS = 5** — Maximum refinement rounds
 - **TARGET_SCORE = 9** — Minimum acceptable score (1-10)
 - **OUTPUT_DIR = `figures/ai_generated/`** — Output directory
@@ -222,7 +222,7 @@ layout plan:
 - relative module prominence
 - arrow routing and likely collision points
 
-If `mcp__codex__codex` is available, you may ask it for a short second-opinion
+If `spawn_agent` is available, you may ask it for a short second-opinion
 layout critique here, but Claude should still complete this step even without
 Codex.
 
@@ -244,7 +244,7 @@ before rendering:
 - the figure will read clearly in grayscale / print
 - no glow, rainbow gradient, or slide-deck decoration slips in
 
-If `mcp__codex__codex` is available, you may ask it for a short text-only
+If `spawn_agent` is available, you may ask it for a short text-only
 style audit, but do not block on it.
 
 ## Step 4: Generate Through the Bridge

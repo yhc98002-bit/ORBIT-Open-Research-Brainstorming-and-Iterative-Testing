@@ -2,7 +2,7 @@
 name: patent-novelty-check
 description: "Assess patent novelty and non-obviousness against prior art. Use when user says \"专利查新\", \"patent novelty\", \"可专利性评估\", \"patentability check\", or wants to evaluate if an invention is patentable."
 argument-hint: [invention-description-or-brief-path]
-allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, WebSearch, WebFetch, mcp__codex__codex
+allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, WebSearch, WebFetch, spawn_agent
 ---
 
 # Patent Novelty and Non-Obviousness Check
@@ -13,7 +13,7 @@ Adapted from `/novelty-check` for patent legal standards. Research novelty is NO
 
 ## Constants
 
-- `REVIEWER_MODEL = gpt-5.5` — Model used via Codex MCP for cross-model examiner verification
+- `REVIEWER_MODEL = gpt-5.5` — Model used via Codex-native sub-agent for cross-model examiner verification
 - `NOVELTY_STANDARD = patent` — Always use legal patentability standard, not research contribution standard
 
 ## Inputs
@@ -76,12 +76,11 @@ Format as a matrix:
 
 ### Step 4: Cross-Model Examiner Verification
 
-Call `REVIEWER_MODEL` via `mcp__codex__codex` with xhigh reasoning:
+Call `REVIEWER_MODEL` via `spawn_agent` with xhigh reasoning:
 
 ```
-mcp__codex__codex:
-  config: {"model_reasoning_effort": "xhigh"}
-  prompt: |
+spawn_agent:
+  message: |
     You are a senior patent examiner at the [USPTO/CNIPA/EPO].
     Examine the following invention for patentability.
 
@@ -149,4 +148,4 @@ Write `patent/NOVELTY_ASSESSMENT.md`:
 - Obviousness requires BOTH: (1) a combination of references AND (2) a motivation to combine them.
 - Never assume the invention is patentable just because no identical patent exists.
 - The assessment is advisory only -- actual prosecution may reveal different prior art.
-- If `mcp__codex__codex` is not available, skip cross-model examiner review and note it in the output.
+- If `spawn_agent` is not available, skip cross-model examiner review and note it in the output.

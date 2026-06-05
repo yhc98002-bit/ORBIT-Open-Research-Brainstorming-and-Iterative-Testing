@@ -2,7 +2,7 @@
 name: meta-optimize
 description: "Analyze ARIS usage logs and propose optimizations to SKILL.md files, reviewer prompts, and workflow defaults. Outer-loop harness optimization inspired by Meta-Harness (Lee et al., 2026). Use when user says \"优化技能\", \"meta optimize\", \"improve skills\", \"分析使用记录\", or wants to optimize ARIS's own harness components based on accumulated experience."
 argument-hint: [target-skill-or-all]
-allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, mcp__codex__codex, mcp__codex__codex-reply
+allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, spawn_agent, send_input
 ---
 
 # Meta-Optimize: Outer-Loop Harness Optimization for ARIS
@@ -126,10 +126,8 @@ For each optimization target, generate a concrete diff:
 Send each patch to GPT-5.5 xhigh for adversarial review:
 
 ```
-mcp__codex__codex:
-  model: gpt-5.5
-  config: {"model_reasoning_effort": "xhigh"}
-  prompt: |
+spawn_agent:
+  message: |
     You are reviewing a proposed optimization to an ARIS SKILL.md file.
     
     ## Original Skill (relevant section)
@@ -213,7 +211,7 @@ The log at `.aris/meta/events.jsonl` contains JSONL records with these shapes:
 ```jsonl
 {"ts":"...","session":"...","event":"skill_invoke","skill":"auto-review-loop","args":"difficulty: hard"}
 {"ts":"...","session":"...","event":"PostToolUse","tool":"Bash","input_summary":"pdflatex main.tex"}
-{"ts":"...","session":"...","event":"codex_call","tool":"mcp__codex__codex","input_summary":"review..."}
+{"ts":"...","session":"...","event":"codex_call","tool":"spawn_agent","input_summary":"review..."}
 {"ts":"...","session":"...","event":"tool_failure","tool":"Bash","input_summary":"python train.py"}
 {"ts":"...","session":"...","event":"slash_command","command":"/auto-review-loop","args":""}
 {"ts":"...","session":"...","event":"user_prompt","prompt_preview":"change difficulty to hard"}
@@ -250,4 +248,4 @@ Inspired by [Meta-Harness](https://arxiv.org/abs/2603.28052) (Lee et al., 2026) 
 
 ## Review Tracing
 
-After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
+After each `spawn_agent` or `send_input` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).

@@ -4,12 +4,12 @@
 
 Save full prompt/response pairs for every cross-model reviewer call, enabling:
 - **Reviewer-independence audit**: verify the executor only passed file paths, not summaries
-- **Reproducibility**: threadId preservation allows conversation continuation
+- **Reproducibility**: agent id preservation allows conversation continuation
 - **Meta-optimize input**: richer data for harness improvement analysis
 
 ## When to Trace
 
-After **every** `mcp__codex__codex` or `mcp__codex__codex-reply` call that serves a reviewer/critique function. This includes review scoring, experiment auditing, claim verification, idea critique, and patch gating.
+After **every** `spawn_agent` or `send_input` call that serves a reviewer/critique function. This includes review scoring, experiment auditing, claim verification, idea critique, and patch gating.
 
 Do NOT trace: purely informational LLM calls (e.g., `codex exec` for code generation that is not a review).
 
@@ -54,7 +54,7 @@ fi
   --skill "<skill-name>" \
   --purpose "<purpose>" \
   --model "<model>" \
-  --thread-id "<threadId from response>" \
+  --thread-id "<agent id from response>" \
   --prompt "<full prompt as sent>" \
   --response "<full response content>"
 ```
@@ -84,7 +84,7 @@ following the schema below.
   "call_number": 1,
   "purpose": "round-1-review",
   "timestamp": "2026-04-15T14:31:00+08:00",
-  "tool": "mcp__codex__codex",
+  "tool": "spawn_agent",
   "model": "gpt-5.5",
   "config": {"model_reasoning_effort": "xhigh"},
   "files_referenced": ["paper/sections/3_method.tex", "results/table1.csv"],

@@ -2,7 +2,7 @@
 name: idea-to-proposal
 description: "ORBIT v1.4 proposal wrapper that turns a research-area keyword, long context .md, or draft idea .md into an approved-proposal candidate. Runs non-experimental Discovery, Grounding, Innovation, and final proposal refinement, then stops before experiment planning. Canonical STOP A output is proposal/proposal_pack.json; Markdown proposal files are generated or legacy compatibility views. Does NOT write canonical EXPERIMENT_PLAN.md / EXPERIMENT_PLAN_EXEC.md, implement formal experiment code, run experiments, use GPU, or produce paper-level diagnostic evidence. Use when user says \"领域到proposal\", \"出proposal\", \"想法到方案\", \"idea-to-proposal\", \"proposal pipeline\", or \"从领域跑到方案\"."
 argument-hint: [research-area-keyword OR path/to/context.md OR path/to/draft-idea.md]
-allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, mcp__codex__codex, mcp__codex__codex-reply
+allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, spawn_agent, send_input
 ---
 
 # /idea-to-proposal — v1.4 Discovery → Grounding → Innovation → Proposal
@@ -270,7 +270,7 @@ inconsistent state" warning.
 | `— sources: <list>` | Comma-separated source list for Phase 0.5. Subset of: `arxiv`, `web`, `semantic-scholar`, `deepxiv`, `exa`, `alphaxiv`, `local`, `all`. Default `arxiv`. Forwarded verbatim to `/research-lit — sources: <list>`. Has no effect if `— arxiv download: false`. |
 | `— arxiv max download: <N>` | Cap on PDFs downloaded by Phase 0.5. Default `LITERATURE_PRE_FETCH_MAX_DEFAULT = 10`. Forwarded to `/research-lit — max download: <N>`. |
 | `— venue: <name>` | Target venue (e.g. `iclr`, `icml`, `neurips`, `cvpr`, `naacl`). Recorded in `PIPELINE_INTAKE.md` and forwarded as `— venue: <name>` to `/research-refine` so reviewer prompts can name the venue specifically rather than using a generic venue phrase. Default: unset. |
-| `— effort: <level>` | Codex effort level: `low`, `medium`, `high`, `xhigh`, or `max` (alias for `xhigh`). Sets the per-call `model_reasoning_effort` for Codex MCP invocations across this skill (overrides `CODEX_REVIEW_EFFORT = xhigh` constant for this run). The actual effort honored is subject to Codex MCP environment availability — if the requested level is unavailable, Codex falls back to the next lower available level and the fallback (e.g. `gpt-5.2 high`) is logged in `STATE.notes`. |
+| `— effort: <level>` | Codex effort level: `low`, `medium`, `high`, `xhigh`, or `max` (alias for `xhigh`). Sets the per-call `model_reasoning_effort` for Codex-native sub-agent invocations across this skill (overrides `CODEX_REVIEW_EFFORT = xhigh` constant for this run). The actual effort honored is subject to Codex-native sub-agent environment availability — if the requested level is unavailable, Codex falls back to the next lower available level and the fallback (e.g. `gpt-5.2 high`) is logged in `STATE.notes`. |
 | `— difficulty: <level>` | Calibrates downstream `/research-refine` strictness (Phase 1c idea-mode + Phase 4 final refinement) plus READY threshold and MAX_ROUNDS. Three levels: `medium` = standard collaborator review + ≥9.0 / 5 rounds; `hard` = stricter collaborator review + ≥9.5 / 7 rounds; `nightmare` before STOP A = strong collaborator review unless `— review-posture: adversarial` is explicit. Forwarded verbatim as `— difficulty: <level>` to `/research-refine`. |
 | `— input-mode: keyword\|context\|idea` | Override Phase 0 input classification. Use `context` for long notes/background `.md` files that should still run `/idea-discovery`; use `idea` only for an already committed method/direction draft that should skip discovery and go straight to `/research-refine`. |
 | `— context: true` | Alias for `— input-mode: context`. Explicitly treat a `.md` file as contextual material, not as a final idea. |
@@ -286,26 +286,24 @@ before reading `$ARGUMENTS`, before `mkdir` — run the Codex availability probe
 from [`../shared-references/codex-precondition.md`](../shared-references/codex-precondition.md) §3:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" setup --json
+# Codex-native: no shell helper is run. Confirm spawn_agent/send_input are available in this session.
 ```
 
-Parse the JSON. If `.ready && .codex.available && .auth.loggedIn` are not all
-true (or the helper script itself is missing / errors), apply the LOUD STOP
+If the Codex-native reviewer transport is unavailable, apply the LOUD STOP
 protocol (§4 of that contract):
 
 - Write `orbit-research/IDEA_TO_PROPOSAL_STATE.json` with
   `phase: "phase-0-precondition"`, `status: "awaiting_user_action"`,
-  `next_action: "fix-codex-then-reinvoke"`, and the full
-  `codex_unavailable_reason` block from §4.
+  `next_action: "fix-codex-native-reviewer-then-reinvoke"`, and the full
+  `reviewer_unavailable_reason` block from §4.
 - Print the verbatim user-facing message from §4 (Codex required, remediation
   steps, override flag).
 - Exit. Do not `mkdir`, do not write `PIPELINE_INTAKE.md`, do not invoke
   `/idea-discovery` or `/research-refine`, do not run Phase 0.5 literature
   pre-fetch.
 
-If the user passed `— codex-required: false`, the precondition still runs
-(for STATE logging) but a failure becomes a single warning + a degraded-mode
-header on every Phase 3/Phase 4 artifact (§6 of the contract).
+If the user passed `— codex-required: false`, reviewer transport failure becomes
+a single warning + a degraded-mode header on every Phase 3/Phase 4 artifact.
 
 Log a successful precondition as a `codex_precondition` block in the Phase 0
 STATE (see Phase 0 STATE schema below).
@@ -401,8 +399,8 @@ passed, STATE looks like this instead (and the skill exits without writing
   "skill": "idea-to-proposal",
   "phase": "phase-0-precondition",
   "status": "awaiting_user_action",
-  "next_action": "fix-codex-then-reinvoke",
-  "codex_unavailable_reason": {
+  "next_action": "fix-codex-native-reviewer-then-reinvoke",
+  "reviewer_unavailable_reason": {
     "ready": false,
     "codex_available": false,
     "auth_logged_in": false,
@@ -832,23 +830,23 @@ in [`../shared-references/codex-precondition.md`](../shared-references/codex-pre
    written, run:
 
    ```bash
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" setup --json
+   # Codex-native: no shell helper is run. Confirm spawn_agent/send_input are available in this session.
    ```
 
    Verify `.ready && .codex.available && .auth.loggedIn`. Log the result in
    STATE under `codex_precondition`. If the check fails, apply §4 of the
    contract:
    - Write STATE with `status: "awaiting_user_action"`,
-     `next_action: "fix-codex-then-reinvoke"`, and the full
-     `codex_unavailable_reason` block.
+     `next_action: "fix-codex-native-reviewer-then-reinvoke"`, and the full
+     `reviewer_unavailable_reason` block.
    - Surface the verbatim user-facing message from §4 (`/codex:setup`,
-     `claude mcp add -s user codex -- codex mcp-server`, and the
+     `use Codex CLI with multi-agent tools enabled`, and the
      `— codex-required: false` override).
    - **Stop the skill.** Do not run Phase 0.5 literature pre-fetch, do not
      invoke `/idea-discovery`, do not write `PIPELINE_INTAKE.md`.
 
 2. **Mid-run Codex call failures (§5 of that contract).** If a
-   `mcp__codex__codex` invocation fails during Phase 3 or Phase 4
+   `spawn_agent` invocation fails during Phase 3 or Phase 4
    (network, auth-expired, sandbox rejection, etc.), the skill writes
    STATE `status: "awaiting_user_action"` with `codex_call_failure`,
    prints the same loud message naming the failing phase, and stops.

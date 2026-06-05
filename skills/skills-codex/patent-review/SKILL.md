@@ -2,10 +2,10 @@
 name: patent-review
 description: "Get an external patent examiner review of a patent application. Use when user says \"专利审查\", \"patent review\", \"审查意见\", \"examiner review\", or wants critical feedback on patent claims and specification."
 argument-hint: [patent-directory-or-scope]
-allowed-tools: Bash(*), Read, Grep, Glob, Write, Edit, Agent, mcp__codex__codex, mcp__codex__codex-reply
+allowed-tools: Bash(*), Read, Grep, Glob, Write, Edit, Agent, spawn_agent, send_input
 ---
 
-# Patent Examiner Review via Codex MCP (xhigh reasoning)
+# Patent Examiner Review via Codex-native sub-agent (xhigh reasoning)
 
 Get a multi-round patent examiner review of the patent application based on: **$ARGUMENTS**
 
@@ -13,15 +13,15 @@ Adapted from `/research-review`. The reviewer persona is a patent examiner, not 
 
 ## Constants
 
-- `REVIEWER_MODEL = gpt-5.5` — Model used via Codex MCP
+- `REVIEWER_MODEL = gpt-5.5` — Model used via Codex-native sub-agent
 - `REVIEW_ROUNDS = 2` — Number of review rounds
 - `EXAMINER_PERSONA = "patent-examiner"` — GPT-5.5 persona
 
 ## Prerequisites
 
-- Codex MCP Server configured:
+- Codex-native sub-agent Server configured:
   ```bash
-  claude mcp add codex -s user -- codex mcp-server
+  use Codex CLI with multi-agent tools enabled
   ```
 
 ## Inputs
@@ -44,12 +44,11 @@ Before calling the external reviewer, compile a comprehensive briefing:
 
 ### Step 2: Round 1 — Full Examiner Review
 
-Send to `REVIEWER_MODEL` via `mcp__codex__codex` with xhigh reasoning:
+Send to `REVIEWER_MODEL` via `spawn_agent` with xhigh reasoning:
 
 ```
-mcp__codex__codex:
-  config: {"model_reasoning_effort": "xhigh"}
-  prompt: |
+spawn_agent:
+  message: |
     You are a senior patent examiner at the [USPTO/CNIPA/EPO].
     Examine this patent application and issue a detailed office action.
 
@@ -128,12 +127,12 @@ For each fix:
 
 ### Step 4: Round 2 — Follow-Up Review
 
-Use `mcp__codex__codex` with the threadId from Round 1:
+Use `spawn_agent` with the agent id from Round 1:
 
 ```
-mcp__codex__codex:
-  threadId: [from Round 1]
-  prompt: |
+spawn_agent:
+  agent id: [from Round 1]
+  message: |
     Here is the revised patent application after addressing your office action.
 
     CHANGES MADE:

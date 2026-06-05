@@ -330,7 +330,7 @@ Codex switches back to adversarial at Stages 11, 14, 15, 17, 21, and 23.
 
 ### §7.0 Precondition: Codex must be available before any innovation stage runs
 
-Every stage in §§2–6 invokes `mcp__codex__codex`. Codex is **load-bearing** for
+Every stage in §§2–6 invokes `spawn_agent`. Codex is **load-bearing** for
 innovation: the whole point of the collaborative pass is to prevent single-AI
 local optima, so a Claude-only run is not a valid degraded output — it is a
 silent regression to the failure mode this section exists to fix.
@@ -339,15 +339,15 @@ Therefore, before entering any innovation loop, the orchestrator MUST apply
 the **Codex Precondition Contract** in
 [`shared-references/codex-precondition.md`](codex-precondition.md):
 
-1. Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" setup --json`
+1. Run `# Codex-native: no shell helper is run. Confirm spawn_agent/send_input are available in this session.`
    and verify `.ready && .codex.available && .auth.loggedIn`.
 2. If the check fails, **LOUD STOP** per §4 of that contract:
-   - Write STATE `status: "awaiting_user_action"` with `codex_unavailable_reason`.
+   - Write STATE `status: "awaiting_user_action"` with `reviewer_unavailable_reason`.
    - Surface the user-facing remediation message verbatim.
    - **Do not** produce single-model `## Codex collaborative additions:
      NOT_AVAILABLE` artifacts. That was the prior silent-skip behavior and is
      deprecated.
-3. If a Codex MCP call **fails mid-loop** (network/auth/sandbox), apply §5
+3. If a Codex-native sub-agent call **fails mid-loop** (network/auth/sandbox), apply §5
    of that contract (same loud-stop semantics; STATE preserves the failed
    phase so re-invocation resumes from it).
 
@@ -371,8 +371,8 @@ ELSE:
 
 ### §7.1 Collaborative-mode prompt template (Codex side)
 
-Pass to `mcp__codex__codex` with model `gpt-5.5` and reasoning `xhigh`.
-Do not pass `sandbox` or `approval-policy`; the Codex MCP server is registered
+Pass to `spawn_agent` with model `gpt-5.5` and reasoning `xhigh`.
+Do not pass `sandbox` or `approval-policy`; the Codex-native sub-agent server is registered
 with unsandboxed defaults (`danger-full-access`, `never`) in `~/.claude.json`
 and `~/.codex/config.toml`.
 

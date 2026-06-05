@@ -2,7 +2,7 @@
 name: experiment-bridge
 description: "ORBIT v1.4 STOP B wrapper. Turns an approved proposal pack or legacy proposal into experiment/experiment_pack.json, implements the planned code, runs semantic plan-code audit, and may run limited implementation/headroom probes with distinct PROBE artifacts. Accepts proposal/proposal_pack.json, FINAL_PROPOSAL.md, FINAL_PROPOSAL_SHORT.md, METHOD_SPEC.md, or existing legacy EXPERIMENT_PLAN.md. Does not create paper claims or run auto-review-loop; formal diagnostics and claim/review routing belong to /diagnostic-to-review."
 argument-hint: [approved-proposal-or-experiment-plan-path]
-allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, Skill, mcp__codex__codex, mcp__codex__codex-reply
+allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, Skill, spawn_agent, send_input
 ---
 
 # /experiment-bridge — v1.4 Proposal → Plan → Code → Audit → Probe

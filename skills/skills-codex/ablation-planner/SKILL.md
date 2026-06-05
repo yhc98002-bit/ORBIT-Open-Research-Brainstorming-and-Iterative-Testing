@@ -2,7 +2,7 @@
 name: ablation-planner
 description: Use when main results pass result-to-claim (claim_supported=yes or partial) and ablation studies are needed for paper submission. Codex designs ablations from a reviewer's perspective, CC reviews feasibility and implements.
 argument-hint: [method-description-or-claim]
-allowed-tools: Bash(*), Read, Grep, Glob, Write, Edit, mcp__codex__codex, mcp__codex__codex-reply
+allowed-tools: Bash(*), Read, Grep, Glob, Write, Edit, spawn_agent, send_input
 ---
 
 # Ablation Planner
@@ -30,9 +30,8 @@ CC reads available project files to build the full picture:
 ### Step 2: Codex Designs Ablations
 
 ```
-mcp__codex__codex:
-  config: {"model_reasoning_effort": "xhigh"}
-  prompt: |
+spawn_agent:
+  message: |
     You are a rigorous ML reviewer planning ablation studies.
     Given this method and results, design ablations that:
 

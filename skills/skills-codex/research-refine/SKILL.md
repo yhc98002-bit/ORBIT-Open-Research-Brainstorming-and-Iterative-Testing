@@ -1,7 +1,7 @@
 ---
 name: research-refine
 description: 'Turn a vague research direction into a problem-anchored, elegant, frontier-aware, implementation-oriented method plan via iterative GPT-5.5 xhigh review. Use when the user says "refine my approach", "帮我细化方案", "decompose this problem", "打磨idea", "refine research plan", "细化研究方案", or wants a concrete research method with a publishable normal-paper route instead of a vague or overbuilt idea.'
-allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, mcp__codex__codex, mcp__codex__codex-reply
+allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, spawn_agent, send_input
 ---
 
 > **ORBIT compatibility note:** This skill may still accept legacy v1.0 artifact aliases
@@ -42,10 +42,10 @@ User input (PROBLEM + vague APPROACH)
 
 ## Constants
 
-- **REVIEWER_MODEL = `gpt-5.5`** — Reviewer model used via Codex MCP.
+- **REVIEWER_MODEL = `gpt-5.5`** — Reviewer model used via Codex-native sub-agent.
 - **REVIEWER_EFFORT = `xhigh`** — Codex `model_reasoning_effort` for the reviewer call.
   Override with `— effort: <level>` (one of `low`, `medium`, `high`, `xhigh`, `max`
-  where `max` = `xhigh`). Subject to Codex MCP environment availability — if the
+  where `max` = `xhigh`). Subject to Codex-native sub-agent environment availability — if the
   requested level is unavailable, Codex falls back to the next lower available level
   and the fallback is logged in `STATE.notes`.
 - **VENUE = `""`** — Target venue name (e.g. `ICLR`, `NeurIPS`, `ICML`, `CVPR`, `ACL`,
@@ -124,7 +124,7 @@ Long-running refinement sessions may fail mid-way (e.g., API timeout, context co
 {
   "phase": "review",
   "round": 1,
-  "threadId": "019cd392-...",
+  "agent id": "019cd392-...",
   "last_score": 6.5,
   "last_verdict": "REVISE",
   "status": "in_progress",
@@ -143,13 +143,13 @@ Long-running refinement sessions may fail mid-way (e.g., API timeout, context co
 |-------|--------|---------|
 | `phase` | `"anchor"` / `"proposal"` / `"review"` / `"refine"` / `"done"` | Last **completed** phase |
 | `round` | 0–MAX_ROUNDS | Current round number |
-| `threadId` | string or null | Reviewer thread ID for `codex-reply` continuity |
+| `agent id` | string or null | Reviewer thread ID for `send_input` continuity |
 | `last_score` | number or null | Most recent overall score from reviewer |
 | `last_verdict` | string or null | Most recent verdict (READY / REVISE / RETHINK) |
 | `status` | `"in_progress"` / `"awaiting_human_continue"` / `"awaiting_user_action"` / `"completed"` | Loop status — four-state enum per `../shared-references/continuation-contract.md` |
 | `venue` | string (e.g. `"ICLR"`) or `""` | Target venue parsed from `— venue:` flag. Empty string = normal ML venue target without breakthrough-only assumptions. |
 | `difficulty` | `"medium"` / `"hard"` / `"nightmare"` | Reviewer difficulty parsed from `— difficulty:` flag. Drives `max_rounds_effective` + `score_threshold_effective` + reviewer prompt routing. Default `"medium"`. |
-| `effort` | `"low"` / `"medium"` / `"high"` / `"xhigh"` / `"max"` | Codex `model_reasoning_effort` parsed from `— effort:` flag (`max` = `xhigh`). Default `"xhigh"`. The actual effort honored is recorded in `STATE.notes` if Codex MCP fell back. |
+| `effort` | `"low"` / `"medium"` / `"high"` / `"xhigh"` / `"max"` | Codex `model_reasoning_effort` parsed from `— effort:` flag (`max` = `xhigh`). Default `"xhigh"`. The actual effort honored is recorded in `STATE.notes` if Codex-native sub-agent fell back. |
 | `max_rounds_effective` | integer | The MAX_ROUNDS in effect for this run after `difficulty` derivation: `medium → 5`, `hard / nightmare → 7`. |
 | `score_threshold_effective` | number | The SCORE_THRESHOLD in effect for this run after `difficulty` derivation: `medium → 9.0`, `hard / nightmare → 9.5`. |
 | `timestamp` | ISO 8601 | When state was last written |
@@ -205,7 +205,7 @@ Before starting any phase, check whether a previous run left a checkpoint:
 2. **On resume**, read the state file and recover context:
    - Read all existing `refine-logs/round-*.md` files to restore prior work
    - Read `refine-logs/score-history.md` if it exists
-   - Recover `threadId` for reviewer thread continuity
+   - Recover `agent id` for reviewer thread continuity
    - Log to the user: `"Checkpoint found. Resuming after phase: {phase}, round: {round}."`
    - **Jump to the next phase** based on the saved `phase` value:
 
@@ -243,7 +243,7 @@ Codex/GPT-5.5 with the parsed `VENUE`, `PAPER_MODE`, `REVIEWER_DIFFICULTY`,
 `REVIEW_POSTURE`, and `REVIEWER_EFFORT` substitutions. Preserve the difficulty
 escalation blocks and Codex standalone handoff behavior from that asset exactly.
 
-Save the raw response to `refine-logs/round-1-review.md`, save the `threadId`, parse score
+Save the raw response to `refine-logs/round-1-review.md`, save the `agent id`, parse score
 and verdict, and update `refine-logs/REFINE_STATE.json` with phase `review`.
 
 ### Phase 3: Parse Feedback and Revise the Method
@@ -298,11 +298,10 @@ verdict rule below uses the same SCORE_THRESHOLD derived from
 REVIEWER_DIFFICULTY.
 
 ```
-mcp__codex__codex-reply:
-  threadId: [saved from Phase 2]
-  model: REVIEWER_MODEL
-  config: {"model_reasoning_effort": REVIEWER_EFFORT}
-  prompt: |
+send_input:
+  agent id: [saved from Phase 2]
+
+  message: |
     [Round N re-evaluation]
 
     I revised the proposal based on your feedback.
@@ -332,7 +331,7 @@ mcp__codex__codex-reply:
 
 Save review to `refine-logs/round-N-review.md`.
 
-**Checkpoint:** Update `refine-logs/REFINE_STATE.json` with `{"phase": "review", "round": N, "threadId": "<saved>", "last_score": <parsed>, "last_verdict": "<parsed>", ...}`.
+**Checkpoint:** Update `refine-logs/REFINE_STATE.json` with `{"phase": "review", "round": N, "agent id": "<saved>", "last_score": <parsed>, "last_verdict": "<parsed>", ...}`.
 
 Then return to Phase 3 until:
 
@@ -594,8 +593,8 @@ Suggested next step: /experiment-bridge "refine-logs/FINAL_PROPOSAL.md"
 - **Review the mechanism, not the parts count.** A long module list is not novelty.
 - **Pushback is encouraged.** If reviewer feedback causes drift or unnecessary complexity, argue back with evidence.
 - **ALWAYS use `config: {"model_reasoning_effort": "xhigh"}`** for all Codex review calls.
-- **Save `threadId` from Phase 2** and use `mcp__codex__codex-reply` for later rounds.
-- **Codex remains required.** If MCP/auth/sandbox fails, export/import a standalone Codex
+- **Save `agent id` from Phase 2** and use `send_input` for later rounds.
+- **Codex remains required.** If reviewer transport fails, export/import a standalone Codex
   review via `/import-codex-review`; do not mark the review satisfied until an MCP or
   imported standalone Codex response exists.
 - **Do not fabricate results.** Only describe expected evidence and planned experiments.

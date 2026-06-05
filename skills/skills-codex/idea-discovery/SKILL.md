@@ -2,7 +2,7 @@
 name: idea-discovery
 description: "Workflow 1: Full idea discovery pipeline. Orchestrates research-lit → idea-creator → novelty-check → research-review to go from a broad research direction to ranked, non-experimental idea candidates. Use when user says \"找idea全流程\", \"idea discovery pipeline\", \"从零开始找方向\", or wants the complete idea exploration workflow."
 argument-hint: [research-direction]
-allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, mcp__codex__codex, mcp__codex__codex-reply
+allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, spawn_agent, send_input
 ---
 
 # Workflow 1: Idea Discovery Pipeline
@@ -38,7 +38,7 @@ Each phase builds on the previous one's output. The final deliverables are a ran
   mechanism plausibility, baseline/headroom reasoning, expected diagnostic clarity,
   paper-mode fit, and reviewer critique.
 - **AUTO_PROCEED = true** — If user doesn't respond at a checkpoint, automatically proceed with the best option after presenting results. Set to `false` to always wait for explicit user confirmation.
-- **REVIEWER_MODEL = `gpt-5.5`** — Model used via Codex MCP. ORBIT default is `gpt-5.5` with xhigh reasoning. Passed to sub-skills.
+- **REVIEWER_MODEL = `gpt-5.5`** — Model used via Codex-native sub-agent. ORBIT default is `gpt-5.5` with xhigh reasoning. Passed to sub-skills.
 - **OUTPUT_DIR = `idea-stage/`** — All idea-stage outputs go here. Create the directory if it doesn't exist.
 - **ARXIV_DOWNLOAD = false** — When `true`, `/research-lit` downloads the top relevant arXiv PDFs during Phase 1. When `false` (default), only fetches metadata. Passed through to `/research-lit`.
 - **COMPACT = false** — When `true`, generate compact summary files for short-context models and session recovery. Writes `idea-stage/IDEA_CANDIDATES.md` (top 3-5 ideas only) at the end of this workflow. Downstream skills read this instead of the full `idea-stage/IDEA_REPORT.md`.

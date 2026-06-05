@@ -2,7 +2,7 @@
 name: invention-structuring
 description: "Structure a raw invention idea into a formal invention disclosure. Use when user says \"构建发明\", \"structure invention\", \"发明构建\", \"invention disclosure\", or wants to formalize a rough idea into a patent-ready structure."
 argument-hint: [invention-description-or-brief-path]
-allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, mcp__codex__codex
+allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, spawn_agent
 ---
 
 # Invention Structuring
@@ -110,12 +110,11 @@ Dependent Claim 5 → alternative implementation of feature A
 
 ### Step 6: Cross-Model Validation
 
-Call `REVIEWER_MODEL` via `mcp__codex__codex` with xhigh reasoning:
+Call `REVIEWER_MODEL` via `spawn_agent` with xhigh reasoning:
 
 ```
-mcp__codex__codex:
-  config: {"model_reasoning_effort": "xhigh"}
-  prompt: |
+spawn_agent:
+  message: |
     You are a patent attorney reviewing an invention disclosure.
     Evaluate the structuring choices:
 
@@ -184,4 +183,4 @@ Write `patent/INVENTION_DISCLOSURE.md`:
 - The core inventive concept must be the minimum set of features for patentability.
 - Supporting features should be independently valuable -- each should provide a meaningful technical benefit even if other supporting features are removed.
 - Never invent embodiments that do not correspond to the actual invention or user-provided materials.
-- If `mcp__codex__codex` is not available, skip cross-model validation and note it in the output.
+- If `spawn_agent` is not available, skip cross-model validation and note it in the output.

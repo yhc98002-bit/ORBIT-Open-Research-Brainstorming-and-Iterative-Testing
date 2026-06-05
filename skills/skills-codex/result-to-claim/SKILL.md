@@ -1,8 +1,8 @@
 ---
 name: result-to-claim
-description: Use when experiments complete to judge what claims the results support, what they don't, and what evidence is still missing. Codex MCP evaluates results against intended claims, writes claims/claim_ledger.json as the canonical claim/evidence binding, and routes to next action. Use after formal diagnostics finish and before paper writing or ablations.
+description: Use when experiments complete to judge what claims the results support, what they don't, and what evidence is still missing. Codex-native sub-agent evaluates results against intended claims, writes claims/claim_ledger.json as the canonical claim/evidence binding, and routes to next action. Use after formal diagnostics finish and before paper writing or ablations.
 argument-hint: [experiment-description-or-wandb-run]
-allowed-tools: Bash(*), Read, Grep, Glob, Write, Edit, mcp__codex__codex, mcp__codex__codex-reply
+allowed-tools: Bash(*), Read, Grep, Glob, Write, Edit, spawn_agent, send_input
 ---
 
 # Result-to-Claim Gate
@@ -124,7 +124,7 @@ Codex is required for the claim judgment. Follow
 `../shared-references/codex-precondition.md`; do not accept a local
 single-model substitute as satisfying this gate.
 
-If Codex MCP/auth/sandbox is unavailable before or during this judgment, export a
+If Codex-native sub-agent/auth/sandbox is unavailable before or during this judgment, export a
 standalone handoff prompt and pause:
 
 ```bash
@@ -155,7 +155,7 @@ and points `ORBIT_STATE.json` at:
 /import-codex-review orbit-research/codex-imports/result-to-claim.claim-evaluation.response.md
 ```
 
-Do not mark `claims/claim_ledger.json` as `ready` until a Codex MCP response exists or
+Do not mark `claims/claim_ledger.json` as `ready` until a Codex-native sub-agent response exists or
 the standalone response has been imported with `/import-codex-review`.
 Paper-bearing ledgers that satisfy downstream gates must keep `gating: true` and use
 `codex_review: "passed"` or `"imported"`. If Codex is pending, degraded, or explicitly
@@ -165,12 +165,9 @@ not required, the ledger must remain non-gating (`status: "draft"` or `blocked`,
 Send the collected results to Codex for objective evaluation:
 
 ```
-mcp__codex__codex:
-  model: gpt-5.5
-  config: {"model_reasoning_effort": "xhigh"}
-  # Sandbox is set globally in ~/.codex/config.toml as sandbox_mode = "danger-full-access".
-  # Codex MCP per-call config does not accept a sandbox key — see ../shared-references/reviewer-routing.md.
-  prompt: |
+spawn_agent:
+  # Codex-native sub-agent per-call config does not accept a sandbox key — see ../shared-references/reviewer-routing.md.
+  message: |
     RESULT-TO-CLAIM EVALUATION
 
     I need you to judge whether experimental results support the intended claim.
@@ -405,7 +402,7 @@ if research-wiki/ exists:
 - Do not inflate claims beyond what the data supports. If Codex says "partial", do not round up to "yes".
 - A single positive result on one dataset does not support a general claim. Be honest about scope.
 - If `confidence` is low, treat the judgment as inconclusive and add experiments rather than committing to a claim.
-- If Codex MCP is unavailable or a Codex call fails, use
+- If Codex-native sub-agent is unavailable or a Codex call fails, use
   `tools/codex_review_handoff.py` and `/import-codex-review`; update
   `orbit-research/ORBIT_STATE.json` with producer context, `pause_reason:
   "codex_review_needed"`, and the import command. Keep the literal state marker
@@ -422,4 +419,4 @@ if research-wiki/ exists:
 
 ## Review Tracing
 
-After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
+After each `spawn_agent` or `send_input` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).

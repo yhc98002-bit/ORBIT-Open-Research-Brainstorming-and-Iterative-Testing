@@ -172,10 +172,8 @@ If issues found, edit the JSON spec (never the generated SVG) and re-render.
 For paper architecture figures, invoke cross-model review:
 
 ```
-mcp__codex__codex:
-  model: gpt-5.5
-  config: {"model_reasoning_effort": "xhigh"}
-  prompt: |
+spawn_agent:
+  message: |
     Review this SVG figure for a technical paper (architecture / workflow diagram).
 
     Spec file: /path/to/spec.json
@@ -261,4 +259,4 @@ Three-stage horizontal cascade with inputs feeding in from top, outputs exiting 
 
 ## Review Tracing
 
-After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
+After each `spawn_agent` or `send_input` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).

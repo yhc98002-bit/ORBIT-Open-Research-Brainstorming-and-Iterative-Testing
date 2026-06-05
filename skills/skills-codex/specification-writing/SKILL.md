@@ -2,7 +2,7 @@
 name: specification-writing
 description: "Write the full patent specification from claims and invention disclosure. Use when user says \"撰写说明书\", \"write specification\", \"写说明书\", \"patent description\", or wants to draft the complete patent specification."
 argument-hint: [claims-path]
-allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, Skill, WebSearch, WebFetch, mcp__codex__codex, mcp__codex__codex-reply
+allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, Skill, WebSearch, WebFetch, spawn_agent, send_input
 ---
 
 # Specification Writing: Section-by-Section Patent Description
@@ -152,12 +152,11 @@ If any element lacks support, add the necessary description before proceeding.
 
 ### Step 10: Cross-Model Review
 
-Call `REVIEWER_MODEL` via `mcp__codex__codex` with xhigh reasoning:
+Call `REVIEWER_MODEL` via `spawn_agent` with xhigh reasoning:
 
 ```
-mcp__codex__codex:
-  config: {"model_reasoning_effort": "xhigh"}
-  prompt: |
+spawn_agent:
+  message: |
     You are a patent examiner reviewing a specification for completeness.
     CLAIMS: [all claims]
     SPECIFICATION: [all specification sections]
@@ -207,4 +206,4 @@ Summary file: `patent/specification/SPECIFICATION_INDEX.md` with:
 - Background section describes specific deficiencies, not general "need for improvement."
 - Multiple embodiments strengthen the specification but are not always required.
 - Large file handling: if a Write operation fails, retry with Bash `cat <<'EOF'` heredoc.
-- If `mcp__codex__codex` is not available, skip cross-model review and note it in the output.
+- If `spawn_agent` is not available, skip cross-model review and note it in the output.

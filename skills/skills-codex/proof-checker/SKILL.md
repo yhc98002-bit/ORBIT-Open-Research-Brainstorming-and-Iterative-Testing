@@ -2,7 +2,7 @@
 name: proof-checker
 description: Rigorous mathematical proof verification and fixing workflow. Reads a LaTeX proof, identifies gaps via cross-model review (Codex GPT-5.5 xhigh), fixes each gap with full derivations, re-reviews, and generates an audit report. Use when user says "检查证明", "verify proof", "proof check", "审证明", "check this proof", or wants rigorous mathematical verification of a theory paper.
 argument-hint: [path-to-tex-file or proof-description]
-allowed-tools: Bash(*), Read, Grep, Glob, Write, Edit, Agent, mcp__codex__codex, mcp__codex__codex-reply
+allowed-tools: Bash(*), Read, Grep, Glob, Write, Edit, Agent, spawn_agent, send_input
 ---
 
 # Proof Checker: Rigorous Mathematical Verification & Fixing
@@ -14,8 +14,8 @@ Systematically verify a mathematical proof via cross-model adversarial review, f
 ## Constants
 
 - MAX_REVIEW_ROUNDS = 3
-- REVIEWER_MODEL = `gpt-5.5` via Codex MCP, reasoning effort always `xhigh`
-- **REVIEWER_BACKEND = `codex`** — Default: Codex MCP (xhigh). Override with `— reviewer: oracle-pro` for GPT-5.5 Pro via Oracle MCP. See `../shared-references/reviewer-routing.md`.
+- REVIEWER_MODEL = `gpt-5.5` via Codex-native sub-agent, reasoning effort always `xhigh`
+- **REVIEWER_BACKEND = `codex`** — Default: Codex-native sub-agent (xhigh). Override with `— reviewer: oracle-pro` for GPT-5.5 Pro via Oracle MCP. See `../shared-references/reviewer-routing.md`.
 - AUDIT_DOC: `PROOF_AUDIT.md` at the paper directory root, alongside `main.tex` (cumulative log; when invoked via `/paper-writing`, this is `paper/PROOF_AUDIT.md`)
 - REPORT_TEX: `proof_audit_report.tex` (formal before/after PDF)
 - STATE_FILE: `PROOF_CHECK_STATE.json` (for recovery)
@@ -180,9 +180,8 @@ Flag any statement where limit order is ambiguous or uniformity is unclear.
 Submit the **complete proof content** with the following **mandatory reviewer checklist** in the prompt:
 
 ```
-mcp__codex__codex:
-  config: {"model_reasoning_effort": "xhigh"}
-  prompt: |
+spawn_agent:
+  message: |
     You are performing a rigorous mathematical proof review. For EVERY theorem,
     lemma, and proposition, check ALL of the following:
 
@@ -221,7 +220,7 @@ mcp__codex__codex:
     [FULL PROOF CONTENT HERE]
 ```
 
-**Save the threadId.** Parse into structured issue list. Write to `PROOF_AUDIT.md`.
+**Save the agent id.** Parse into structured issue list. Write to `PROOF_AUDIT.md`.
 
 ### Phase 1.5: Counterexample Red Team
 
@@ -292,7 +291,7 @@ pdflatex -interaction=nonstopmode <file>.tex 2>&1 | grep -E "Error|Warning|undef
 
 ### Phase 3: Re-Review (Codex GPT-5.5 xhigh)
 
-Use `codex-reply` with saved threadId. Include fix summaries. Request the same mandatory checklist.
+Use `send_input` with saved agent id. Include fix summaries. Request the same mandatory checklist.
 
 Check acceptance gate. If not met, repeat Phases 2-3 (up to MAX_REVIEW_ROUNDS).
 
@@ -311,9 +310,8 @@ After all fixes, verify the proof as a whole:
 For any fix that resolved a FATAL or CRITICAL issue, submit the **fixed section alone** (without showing the previous critique) to a **fresh Codex thread**:
 
 ```
-mcp__codex__codex:
-  config: {"model_reasoning_effort": "xhigh"}
-  prompt: |
+spawn_agent:
+  message: |
     Blind review of the following proof section. You have NOT seen any prior
     review or discussion. Check every step for correctness, hidden assumptions,
     illegal interchanges, and counterexamples.
@@ -358,7 +356,7 @@ Write `PROOF_CHECK_STATE.json`:
 {
   "status": "completed",
   "rounds": 2,
-  "threadId": "...",
+  "agent id": "...",
   "fatal_fixed": 0,
   "critical_fixed": 3,
   "major_fixed": 2,
@@ -386,7 +384,7 @@ Write `PROOF_CHECK_STATE.json`:
 - **Claude analyzes, Codex reviews**: Claude reads proof, formulates questions, implements fixes. Codex provides adversarial review.
 - **Codex reasoning always xhigh**: Never downgrade.
 - **Send full content**: Don't summarize — send actual math for line-by-line checking.
-- **Preserve threadId**: Use `codex-reply` for follow-up rounds.
+- **Preserve agent id**: Use `send_input` for follow-up rounds.
 
 ### Fix quality
 - **Minimal fixes**: Fix exactly what's broken, nothing more.
@@ -476,8 +474,8 @@ must carry an explicit justification in `summary` + `details.issues`.
 
 ### Thread independence
 
-Every invocation uses a fresh `mcp__codex__codex` thread. Never
-`codex-reply` across proof-checker runs. Do not accept prior audit outputs
+Every invocation uses a fresh `spawn_agent` thread. Never
+`send_input` across proof-checker runs. Do not accept prior audit outputs
 (PAPER_CLAIM_AUDIT, CITATION_AUDIT, EXPERIMENT_LOG) as input — the fresh
 thread preserves reviewer independence per
 `../shared-references/reviewer-independence.md`.

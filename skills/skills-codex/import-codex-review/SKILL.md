@@ -1,6 +1,6 @@
 ---
 name: import-codex-review
-description: "Import a manually run standalone Codex review response after Codex MCP/auth/sandbox failure. Use when ORBIT wrote orbit-research/codex-prompts/<phase-id>.md and the user saved the standalone Codex output to orbit-research/codex-imports/<phase-id>.response.md."
+description: "Import a manually run standalone Codex review response after Codex-native sub-agent/auth/sandbox failure. Use when ORBIT wrote orbit-research/codex-prompts/<phase-id>.md and the user saved the standalone Codex output to orbit-research/codex-imports/<phase-id>.response.md."
 argument-hint: [orbit-research/codex-imports/<phase-id>.response.md]
 allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob
 ---

@@ -1,8 +1,8 @@
 ---
 name: auto-review-loop
-description: Autonomous multi-round research review loop. Repeatedly reviews via Codex MCP, implements fixes, and re-reviews until positive assessment or max rounds reached. Use when user says "auto review loop", "review until it passes", or wants autonomous iterative improvement.
+description: Autonomous multi-round research review loop. Repeatedly reviews via Codex-native sub-agent, implements fixes, and re-reviews until positive assessment or max rounds reached. Use when user says "auto review loop", "review until it passes", or wants autonomous iterative improvement.
 argument-hint: [topic-or-scope]
-allowed-tools: Bash(*), Read, Grep, Glob, Write, Edit, Agent, Skill, mcp__codex__codex, mcp__codex__codex-reply
+allowed-tools: Bash(*), Read, Grep, Glob, Write, Edit, Agent, Skill, spawn_agent, send_input
 ---
 
 # Auto Review Loop: Autonomous Research Improvement
@@ -18,8 +18,8 @@ Autonomously iterate: review → implement fixes → re-review, until the extern
   "ready for submission". This applies only when `ORBIT_RED_TEAM_ONLY = false`; it is
   never a STOP C paper-readiness rule.
 - REVIEW_DOC: `review-stage/AUTO_REVIEW.md` (cumulative log) *(fall back to `./AUTO_REVIEW.md` for legacy projects)*
-- REVIEWER_MODEL = `gpt-5.5` — Model used via Codex MCP for ORBIT review gates.
-- **REVIEWER_BACKEND = `codex`** — Default: Codex MCP (`gpt-5.5`, xhigh). Override with `— reviewer: oracle-pro` only if explicitly requested. See `../shared-references/reviewer-routing.md`.
+- REVIEWER_MODEL = `gpt-5.5` — Model used via Codex-native sub-agent for ORBIT review gates.
+- **REVIEWER_BACKEND = `codex`** — Default: Codex-native sub-agent (`gpt-5.5`, xhigh). Override with `— reviewer: oracle-pro` only if explicitly requested. See `../shared-references/reviewer-routing.md`.
 - **OUTPUT_DIR = `review-stage/`** — All review-stage outputs go here. Create the directory if it doesn't exist.
 - **PAPER_MODE = `normal`** — Parse `— paper-mode:` when present. Normal mode is judged
   against a normal publishable-paper bar, not a breakthrough-only bar.
@@ -73,7 +73,7 @@ evidence-bound claims, reproducibility, and no overclaiming without requiring a 
 new algorithmic breakthrough.
 
 Codex review remains required for the review rounds unless the user explicitly selects a
-non-Codex reviewer backend. If Codex MCP/auth/sandbox fails, do not synthesize a local
+non-Codex reviewer backend. If Codex-native sub-agent/auth/sandbox fails, do not synthesize a local
 review. Export a standalone prompt with `tools/codex_review_handoff.py generate`, passing
 producer context:
 
@@ -163,7 +163,7 @@ Long-running loops may hit the context window limit, triggering automatic compac
 ```json
 {
   "round": 2,
-  "threadId": "019cd392-...",
+  "agent id": "019cd392-...",
   "status": "in_progress",
   "difficulty": "medium",
   "last_score": 5.0,
@@ -211,7 +211,7 @@ Recommended optional fields: `next_action`, `next_skill_hint`, `artifact_invento
    - If it exists AND `status` is `"completed"`: **fresh start** (previous loop finished normally)
    - If it exists AND `status` is `"in_progress"` AND `timestamp` is older than 24 hours: **fresh start** (stale state from a killed/abandoned run — delete the file and start over)
    - If it exists AND `status` is `"in_progress"` AND `timestamp` is within 24 hours: **resume**
-     - Read the state file to recover `round`, `threadId`, `last_score`, `pending_experiments`
+     - Read the state file to recover `round`, `agent id`, `last_score`, `pending_experiments`
      - Read `review-stage/AUTO_REVIEW.md` to restore full context of prior rounds *(fall back to `./AUTO_REVIEW.md`)*
      - If `pending_experiments` is non-empty, check if they have completed (e.g., check screen sessions)
      - Resume from the next round (round = saved round + 1)
@@ -257,9 +257,8 @@ secondary color, but it cannot control STOP C readiness.
 Send comprehensive context to the external reviewer:
 
 ```
-mcp__codex__codex:
-  config: {"model_reasoning_effort": "xhigh"}
-  prompt: |
+spawn_agent:
+  message: |
     [Round N/MAX_ROUNDS of autonomous review loop]
 
     [Full research context: claims, methods, results, known weaknesses]
@@ -275,16 +274,15 @@ mcp__codex__codex:
     Be rigorous, adversarial, and evidence-focused. If the work is ready, say so clearly.
 ```
 
-If this is round 2+, use `mcp__codex__codex-reply` with the saved threadId to maintain conversation context.
+If this is round 2+, use `send_input` with the saved agent id to maintain conversation context.
 
 ##### Hard — MCP Review + Reviewer Memory
 
 Same as medium, but **prepend Reviewer Memory** to the prompt:
 
 ```
-mcp__codex__codex:
-  config: {"model_reasoning_effort": "xhigh"}
-  prompt: |
+spawn_agent:
+  message: |
     [Round N/MAX_ROUNDS of autonomous review loop]
 
     ## Your Reviewer Memory (persistent across rounds)
@@ -429,10 +427,10 @@ Send Claude's rebuttal back to GPT for a ruling:
 
 *Hard mode (MCP):*
 ```
-mcp__codex__codex-reply:
-  threadId: [saved]
-  config: {"model_reasoning_effort": "xhigh"}
-  prompt: |
+send_input:
+  agent id: [saved]
+
+  message: |
     The author rebuts your review:
 
     [paste Claude's rebuttal]
@@ -595,7 +593,7 @@ This is the authoritative record. Do NOT truncate or paraphrase.]
 - Difficulty: [medium/hard/nightmare]
 ```
 
-**Write `review-stage/REVIEW_STATE.json`** with current round, threadId, score, verdict, and any pending experiments.
+**Write `review-stage/REVIEW_STATE.json`** with current round, agent id, score, verdict, and any pending experiments.
 
 **Append to `findings.md`** (when `COMPACT = true`): one-line entry per key finding this round:
 
@@ -645,8 +643,8 @@ When `ORBIT_RED_TEAM_ONLY = true`, use ORBIT red-team termination instead:
 - **Large file handling**: If the Write tool fails due to file size, immediately retry using Bash (`cat << 'EOF' > file`) to write in chunks. Do NOT ask the user for permission — just do it silently.
 
 - ALWAYS use `config: {"model_reasoning_effort": "xhigh"}` for maximum reasoning depth
-- In generic improvement mode, save threadId from first call and use
-  `mcp__codex__codex-reply` for subsequent rounds. In ORBIT red-team mode, prefer a
+- In generic improvement mode, save agent id from first call and use
+  `send_input` for subsequent rounds. In ORBIT red-team mode, prefer a
   fresh independent review context unless the user explicitly asks for improvement mode.
 - **Anti-hallucination citations**: When adding references during fixes, NEVER fabricate BibTeX. Use the same DBLP → CrossRef → `[VERIFY]` chain as `/paper-write`: (1) `curl -s "https://dblp.org/search/publ/api?q=TITLE&format=json"` → get key → `curl -s "https://dblp.org/rec/{key}.bib"`, (2) if not found, `curl -sLH "Accept: application/x-bibtex" "https://doi.org/{doi}"`, (3) if both fail, mark with `% [VERIFY]`. Do NOT generate BibTeX from memory.
 - Be honest — include negative results and failed experiments
@@ -671,10 +669,10 @@ language and score-based re-assessment, which are appropriate for generic iterat
 improvement but not for a fresh STOP C red-team verdict.
 
 ```
-mcp__codex__codex-reply:
-  threadId: [saved from round 1]
-  config: {"model_reasoning_effort": "xhigh"}
-  prompt: |
+send_input:
+  agent id: [saved from round 1]
+
+  message: |
     [Round N update]
 
     Since your last review, we have:
@@ -691,7 +689,7 @@ mcp__codex__codex-reply:
 
 ## Review Tracing
 
-After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
+After each `spawn_agent` or `send_input` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
 
 ## Stage-Chain Integration (ORBIT v1.3 Stage 23 — Reviewer Red-team Loop)
 

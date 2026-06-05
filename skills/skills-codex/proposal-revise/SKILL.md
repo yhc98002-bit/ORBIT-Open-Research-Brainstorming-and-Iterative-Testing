@@ -2,7 +2,7 @@
 name: proposal-revise
 description: "ORBIT v1.3 feedback-driven targeted revision loop. Accepts a target artifact (refine-logs/FINAL_PROPOSAL.md, refine-logs/EXPERIMENT_PLAN.md, or both) plus user-authored critique points or RESEARCH_DECISION_LOG.md routing, classifies each critique by which v1.3 stage owns the underlying decision, re-runs only the affected stages, then re-integrates via /research-refine Phase 3-4 for proposal targets or /experiment-plan for plan targets. Supports patch-oriented modes (assumption-only, mechanism-only, benchmark/control-only, diagnostic-branch-only, plan-only, proposal-only, both); after failed diagnostics, both is never the default unless the decision log explicitly requires it. Stops at awaiting_human_continue with a diff report. Use when user says \"改proposal\", \"修改方案\", \"不满意\", \"revise proposal\", \"critique-driven update\", \"针对性修改\", or wants STOP A revision without a full pipeline rerun."
 argument-hint: [target-artifact-path-or-both]
-allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, mcp__codex__codex, mcp__codex__codex-reply
+allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, spawn_agent, send_input
 ---
 
 # /proposal-revise — STOP A revision loop
@@ -42,7 +42,7 @@ auto-accept revisions (Phase 4 always ends `awaiting_human_continue` unless
 - **MAX_ROUNDS = 2** — cap on revise → re-eval iterations within a single invocation. Override with `— max-rounds: <N>`.
 - **CODEX_REVIEW_MODEL = `gpt-5.5`**, **CODEX_REVIEW_EFFORT = `xhigh`**.
 - **CODEX_INNOVATION_MODE** — `COLLABORATIVE` for Stage 8/9/10/18.5 re-runs; `ADVERSARIAL` everywhere else (per `innovation-loops.md` §7).
-- **REVIEWER_INDEPENDENCE = on** — Phase 3 Codex re-evaluation uses **fresh** `mcp__codex__codex` thread (NOT `codex-reply`) per `auto-paper-improvement-loop` reviewer-independence protocol — avoids confirmation bias on whether the fix actually works.
+- **REVIEWER_INDEPENDENCE = on** — Phase 3 Codex re-evaluation uses **fresh** `spawn_agent` thread (NOT `send_input`) per `auto-paper-improvement-loop` reviewer-independence protocol — avoids confirmation bias on whether the fix actually works.
 - **AUTO_PROCEED = true** — chain phases without prompting unless user passes `— human checkpoint: true`.
 
 ## Load First
@@ -430,7 +430,7 @@ artifact only and record the narrowing in `REVISION_REPORT.md`.
 **Codex Phase 3 re-evaluation** (per `auto-paper-improvement-loop` reviewer-independence):
 
 For each addressed critique, evaluate whether the revision actually fixed the issue. Use
-a **fresh** `mcp__codex__codex` thread (NOT `codex-reply`) — fresh context defeats the
+a **fresh** `spawn_agent` thread (NOT `send_input`) — fresh context defeats the
 "of course my fix works" confirmation bias:
 
 ```text
@@ -576,12 +576,12 @@ If load-bearing for the revision (e.g. /research-refine for proposal target):
   Escalate — do not silently produce a half-revised artifact.
 ```
 
-Codex MCP unavailability follows the **Codex Precondition + Loud-Stop
+Codex-native sub-agent unavailability follows the **Codex Precondition + Loud-Stop
 Contract** in [`../shared-references/codex-precondition.md`](../shared-references/codex-precondition.md):
 
 - **Phase 0 precondition.** Check Codex availability at skill entry (§3 of
   the contract); LOUD STOP at `phase-0-precondition` if unavailable.
-- **Mid-run failure.** Any failing `mcp__codex__codex` call during Phase 1
+- **Mid-run failure.** Any failing `spawn_agent` call during Phase 1
   innovation re-runs, Phase 1 adversarial re-runs, or Phase 3 re-evaluation
   triggers §5 of the contract: STATE `status: "awaiting_user_action"`,
   loud user-facing message, no single-model substitute artifact.

@@ -1,313 +1,68 @@
-# Codex Precondition + Loud-Stop Contract
+# Codex-Native Reviewer Precondition + Loud-Stop Contract
 
-> Single source of truth for **how every ORBIT skill that invokes
-> `mcp__codex__codex` checks Codex availability**, and **what it must do when
-> Codex is unavailable or fails mid-run**.
->
-> The default behavior is **LOUD STOP** — never silently fall back to
-> single-model output. The whole point of the Codex collaborator/adversarial
-> pattern is to prevent single-AI local optima; silently dropping Codex defeats
-> the design. If the user explicitly wants single-model mode they must pass
-> `— codex-required: false`.
+> Single source of truth for Codex-native ORBIT skills that require an
+> independent reviewer. In Codex CLI, the reviewer transport is a secondary
+> Codex sub-agent through `spawn_agent`; follow-up reviewer turns use
+> `send_input`.
 
-## §1 Why this contract exists
+## Entry-Time Precondition
 
-Before this contract, the canonical fallback policy across skills was
-"mark the artifact `NOT_AVAILABLE (codex_mcp_unreachable)` and continue."
-That meant a skill could complete its full pipeline with **zero** Codex
-contribution and the user would only discover it by reading STATE notes
-after the fact. This contract replaces that policy with an entry-time
-precondition check and an explicit mid-run failure protocol so the user
-always knows when Codex did or did not participate.
+Do not run a shell helper and do not reference Claude Code plugin-root
+variables. Codex-native skills do not use a plugin-root probe.
 
-## §2 When to apply
+At skill entry, confirm from the current session that the Codex-native
+multi-agent tools are available:
 
-Every skill whose `allowed-tools` frontmatter contains `mcp__codex__codex`
-or `mcp__codex__codex-reply` MUST apply this contract:
+- `spawn_agent` for fresh independent reviewer calls;
+- `send_input` for reviewer follow-up turns when the skill explicitly requires
+  same-thread continuity.
 
-1. **At skill entry** (before Phase 0 writes any artifact): run the
-   precondition check in §3.
-2. **At every Codex call site** during the run: wrap the MCP call in the
-   mid-run failure protocol in §5.
-
-## §3 Entry-time precondition check
-
-Run this bash one-liner as the first action in Phase 0, **before** the
-skill writes any artifact and **before** any sub-skill delegation:
-
-```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" setup --json
-```
-
-Parse the JSON. Codex is considered **ready** iff all of the following are
-true:
-
-| Field | Required value |
-|---|---|
-| `.ready` | `true` |
-| `.codex.available` | `true` |
-| `.auth.available` | `true` |
-| `.auth.loggedIn` | `true` |
-
-If any field is missing or false, apply §4 (loud stop).
-
-A successful precondition check should be logged once in STATE:
+If those tools are not available and the skill marks reviewer participation as
+load-bearing, write STATE with:
 
 ```jsonc
 {
-  "codex_precondition": {
-    "checked_at": "<ISO 8601>",
-    "ready": true,
-    "codex_cli_version": "<from .codex.detail>",
-    "auth_method": "<from .auth.authMethod>",
-    "session_runtime_mode": "<from .sessionRuntime.mode>"
+  "phase": "phase-0-precondition",
+  "status": "awaiting_user_action",
+  "next_action": "fix-codex-native-reviewer-then-reinvoke",
+  "reviewer_unavailable_reason": {
+    "ready": false,
+    "transport": "codex-native-subagent",
+    "detail": "<spawn_agent/send_input unavailable or failed>"
   }
 }
 ```
 
-## §4 Loud-stop protocol (precondition failure)
+Then stop before writing proposal, plan, diagnostic, claim, or paper artifacts.
 
-When the precondition fails, the skill MUST:
+## Reviewer Call Protocol
 
-1. **Not write any artifact for the current run.** No partial proposal, no
-   half-grounding, no STATE.status = `in_progress`. The user must see a
-   clean stop, not a half-finished bundle they have to clean up.
-2. **Write STATE with `status: "awaiting_user_action"`** and an explicit
-   `codex_unavailable_reason` block:
-
-   ```jsonc
-   {
-     "skill": "<skill-name>",
-     "phase": "phase-0-precondition",
-     "status": "awaiting_user_action",
-     "next_action": "fix-codex-then-reinvoke",
-     "codex_unavailable_reason": {
-       "ready": false,
-       "codex_available": <bool>,
-       "auth_logged_in": <bool>,
-       "detail": "<raw .detail string from the failing field>",
-       "raw_setup_json": "<entire JSON for debugging>"
-     },
-     "timestamp": "<ISO 8601>"
-   }
-   ```
-
-3. **Print a user-facing message** (not just STATE; the user must see it):
-
-   ```text
-   ⛔ Codex is required for this skill but is not available.
-
-   Reason: <one-line summary derived from the failing field>
-
-   Fix steps:
-     1. Run `/codex:setup` to install/login Codex CLI.
-     2. If Codex CLI is installed but the MCP server isn't registered:
-        `claude mcp add -s user codex -- codex mcp-server`
-     3. After fixing, re-invoke this skill. STATE is preserved at
-        awaiting_user_action so the rerun starts cleanly.
-
-   Why no single-model fallback: ORBIT skills deliberately use Codex as
-   collaborator/adversary to prevent single-AI local optima. Silently
-   dropping Codex would defeat the design. Pass
-   `— codex-required: false` if you explicitly want a degraded run.
-   ```
-
-4. **Exit the skill.** Do not invoke any sub-skill, do not run Phase 0.5
-   literature pre-fetch (those are wasted work if the run will never
-   complete), do not mkdir output directories.
-
-## §5 Mid-run failure protocol
-
-If `mcp__codex__codex` is callable at precondition time but a specific
-invocation fails mid-run (network error, auth expired, sandbox rejection,
-tool-call timeout, etc.):
-
-1. **Capture the error** (the tool-call error message and any partial
-   output).
-2. **Update STATE** with the current phase, `status: "awaiting_user_action"`,
-   and a `codex_call_failure` block:
-
-   ```jsonc
-   {
-     "phase": "<current phase id>",
-     "status": "awaiting_user_action",
-     "next_action": "fix-codex-then-resume",
-     "codex_call_failure": {
-       "where": "<phase-3a-mechanism-ideation | phase-4-final-refinement | ...>",
-       "mode": "COLLABORATIVE | ADVERSARIAL",
-       "error": "<error string>",
-       "attempt_count": <int>
-     },
-     "timestamp": "<ISO 8601>"
-   }
-   ```
-
-3. **Preserve artifacts produced before this point.** Unlike the
-   precondition failure (which never writes), a mid-run failure may have
-   written upstream artifacts. Leave them on disk; do not roll back.
-4. **Print the same loud message as §4**, adapted to mid-run: name the
-   phase that failed, name the artifact that was NOT written, and tell the
-   user that re-invoking the skill will resume from the failed phase.
-5. **Do not retry silently.** A single automatic retry is fine *if and only
-   if* the error is clearly transient (e.g. HTTP 429); always log the
-   retry and its outcome. Do not auto-retry on auth, sandbox, or model
-   errors.
-6. **Do not produce a single-model substitute artifact for this phase.**
-   The point of Codex participation is non-negotiable for the gates that
-   require it; substituting a Claude-only artifact and marking it
-   `degraded` is exactly the silent-skip behavior this contract replaces.
-
-## §5.5 Standalone Codex handoff
-
-If Codex MCP/auth/sandbox fails but the user can run Codex manually, export a
-standalone prompt instead of accepting a single-model fallback. This still
-requires Codex review; it only changes the transport.
-
-The producing skill SHOULD use:
-
-```bash
-python3 tools/codex_review_handoff.py generate \
-  --repo . \
-  --phase-id "<phase-id>" \
-  --role "<required Codex role>" \
-  --file "<artifact to read>" \
-  --objective "<review objective>" \
-  --output-format "<required schema/verdict format>" \
-  --required-section "VERDICT" \
-  --output-artifact "<expected review artifact>" \
-  --current-stop "<STOP_A|STOP_B|STOP_C|STOP_D>" \
-  --producer-skill "<skill that requested Codex>" \
-  --producer-phase "<phase that requested Codex>" \
-  --diagnostic-id "<diagnostic_id if applicable>" \
-  --resume-command "<command to resume the producer workflow after import>" \
-  --write-orbit-state
-```
-
-This writes:
+For a fresh independent review, call:
 
 ```text
-orbit-research/codex-prompts/<phase-id>.md
-orbit-research/codex-prompts/<phase-id>.json
+spawn_agent:
+  message: |
+    [Full review prompt and required output schema]
 ```
 
-The metadata MUST preserve the original producer context when known:
-
-```json
-{
-  "producer_skill": "<skill>",
-  "producer_phase": "<phase>",
-  "current_stop": "<STOP>",
-  "diagnostic_id": "<diagnostic_id or null>",
-  "resume_command": "<producer resume command>"
-}
-```
-
-While waiting for import, `ORBIT_STATE.json` must keep the original STOP, skill, and
-phase with `pause_reason: codex_review_needed`. After a successful import, it should
-change to `pause_reason: codex_review_imported` and point to the producer resume command.
-Import satisfies the Codex transport gap only; it is not human approval.
-
-The standalone prompt must include:
-
-- role;
-- files to read;
-- review objective;
-- required output schema/format;
-- exact import path:
-  `orbit-research/codex-imports/<phase-id>.response.md`.
-
-Set `ORBIT_STATE.json` to `status: "blocked"` or `status: "paused"` with
-`pause_reason: "codex_review_needed"` and:
-
-```jsonc
-{
-  "safe_next_command": "/import-codex-review orbit-research/codex-imports/<phase-id>.response.md"
-}
-```
-
-The user runs standalone Codex manually, saves the complete response to the
-import path, then invokes:
+For a continuation in the same reviewer conversation, call:
 
 ```text
-/import-codex-review orbit-research/codex-imports/<phase-id>.response.md
+send_input:
+  target: <agent id returned by spawn_agent>
+  message: |
+    [Follow-up prompt]
 ```
 
-Import is conservative. If required sections/tokens are missing, or the
-response says it could not access the files, the import reports a blocker
-and the review remains unsatisfied. Do not mark a Codex-required gate as
-passed until either the MCP response exists or the standalone Codex response
-has been imported.
+Save the returned agent id when continuity is required. If a skill requires
+fresh-context independence, start a new `spawn_agent` call instead of using
+`send_input`.
 
-## §6 Override: `— codex-required: false`
+## Mid-Run Failure
 
-The only way to deliberately run a Codex-using skill without Codex is to
-pass `— codex-required: false` in `$ARGUMENTS`. When this flag is present:
-
-- The precondition check still runs, but a failure logs a single warning
-  and continues.
-- Every artifact that would have included Codex output gets a clearly
-  visible degraded-mode header **at the top of the file** (not at the
-  bottom in STATE notes):
-
-  ```markdown
-  > ⚠️ CODEX_REQUIRED=false — this artifact was produced in single-model
-  > mode. Treat all collaborator suggestions, adversarial findings, and
-  > tournament adjudications as unaudited. Re-run with Codex available
-  > before relying on this artifact for downstream commitment gates.
-  ```
-
-- STATE records `codex_required: false` and `codex_skipped_in_phases: [...]`
-  so downstream skills can decide whether the upstream artifact is
-  trustworthy enough to consume.
-
-This flag is for the rare case where the user wants the pipeline to run
-*at all* despite Codex being broken — e.g. while a fix is in flight. It
-is NOT the default and it is NOT the fallback path for Codex-call errors.
-
-## §7 What this contract deliberately does NOT do
-
-- Does NOT define the Codex prompt templates. Those live in
-  `innovation-loops.md §7.1/§7.2` (collaborative/adversarial bodies) and
-  `semantic-code-audit.md` (audit bodies). This contract is only about
-  availability + failure semantics.
-- Does NOT switch invocation paths. The canonical invocation is still
-  `mcp__codex__codex` (the MCP tool). If the underlying transport ever
-  changes (e.g. to the `codex:` plugin runtime), update §3's setup probe
-  and the invocation tool name in one place; do not duplicate the change
-  across every skill.
-- Does NOT relax mode-switching. Stages 8/9/10/18.5 are COLLABORATIVE,
-  Stages 11/14/15/17/21/23 are ADVERSARIAL, per
-  `innovation-loops.md §7`. The precondition check is mode-independent.
-
-## §8 Implementation checklist for skill authors
-
-When adding `mcp__codex__codex` to a new skill:
-
-- [ ] Frontmatter `allowed-tools:` lists `mcp__codex__codex` (and
-      `mcp__codex__codex-reply` if multi-turn).
-- [ ] Skill body has a "## Codex Precondition" section near the top
-      pointing at this file (`shared-references/codex-precondition.md`).
-- [ ] Phase 0 instructions include the §3 setup check as the first step.
-- [ ] Every `mcp__codex__codex` call site references the §5 mid-run
-      protocol.
-- [ ] STATE schema includes `codex_precondition` (§3) and
-      `codex_call_failure` (§5) fields.
-- [ ] User-facing override flag `— codex-required: false` is honored
-      and propagated to any sub-skill that also uses Codex.
-
-## §9 Diagnostic command for the user
-
-If a user is unsure whether Codex is ready, they can run the same check
-this contract uses, without invoking any skill:
-
-```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" setup --json
-```
-
-Or the equivalent slash command:
-
-```text
-/codex:setup
-```
-
-Both report the same `ready: true|false` verdict.
+If a required reviewer call fails, preserve upstream artifacts already written,
+write STATE with `status: "awaiting_user_action"` and a
+`reviewer_call_failure` block, and stop. Do not produce a single-model
+substitute artifact for a reviewer-required gate unless the user explicitly
+passes `-- reviewer-required: false` or the skill documents an equivalent
+degraded-mode override.

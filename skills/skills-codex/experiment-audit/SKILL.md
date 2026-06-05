@@ -2,7 +2,7 @@
 name: experiment-audit
 description: "Audit experiment integrity before claiming results. Uses cross-model review (GPT-5.5 xhigh) to check for fake ground truth, score normalization fraud, phantom results, and insufficient scope. Use when user says \"审计实验\", \"check experiment integrity\", \"audit results\", \"实验诚实度\", or after experiments complete before writing claims."
 argument-hint: [experiment-dir-or-results-path]
-allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, mcp__codex__codex, mcp__codex__codex-reply
+allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, spawn_agent, send_input
 ---
 
 # Experiment Audit: Cross-Model Integrity Verification
@@ -27,7 +27,7 @@ This follows `../shared-references/reviewer-independence.md` and `../shared-refe
 
 ## Constants
 
-- **REVIEWER_BACKEND = `codex`** — Default: Codex MCP (`gpt-5.5`, xhigh). Override with `— reviewer: oracle-pro` only if explicitly requested. See `../shared-references/reviewer-routing.md`.
+- **REVIEWER_BACKEND = `codex`** — Default: Codex-native sub-agent (`gpt-5.5`, xhigh). Override with `— reviewer: oracle-pro` only if explicitly requested. See `../shared-references/reviewer-routing.md`.
 - **AUDIT_POLICY_BY_MODE**:
   - Exploration / diagnostics: `WARN` and `FAIL` are advisory but must be visible in
     RESULT_INTERPRETATION / RESEARCH_DECISION_LOG when relevant.
@@ -53,18 +53,15 @@ Scan project directory for:
 
 **DO NOT summarize, interpret, or explain any file content.** Only collect paths.
 
-### Step 2: Send to Reviewer (Codex GPT-5.5 via Codex MCP)
+### Step 2: Send to Reviewer (Codex GPT-5.5 via Codex-native sub-agent)
 
 Pass ONLY file paths and the audit checklist to the reviewer. The reviewer reads everything directly.
 
 ```
-mcp__codex__codex:
-  model: gpt-5.5
-  config: {"model_reasoning_effort": "xhigh"}
-  # Sandbox is set globally in ~/.codex/config.toml as sandbox_mode = "danger-full-access".
-  # Codex MCP per-call config does not accept a sandbox key.
+spawn_agent:
+  # Codex-native sub-agent per-call config does not accept a sandbox key.
   cwd: [project directory]
-  prompt: |
+  message: |
     You are an experiment integrity auditor. Read ALL files listed below
     and check for the following fraud patterns.
 
@@ -276,4 +273,4 @@ Motivated by community-reported integrity issues (#57, #131) where executor agen
 
 ## Review Tracing
 
-After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
+After each `spawn_agent` or `send_input` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).

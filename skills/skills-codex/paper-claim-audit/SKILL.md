@@ -2,7 +2,7 @@
 name: paper-claim-audit
 description: "Zero-context verification that every number, comparison, and scope claim in the paper matches claims/claim_ledger.json and raw result files. Uses a fresh cross-model reviewer with NO prior context to prevent confirmation bias. Use when user says \"审查论文数据\", \"check paper claims\", \"verify numbers\", \"论文数字核对\", or before submission to ensure paper-to-evidence fidelity."
 argument-hint: [paper-directory]
-allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, mcp__codex__codex
+allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, spawn_agent
 ---
 
 # Paper Claim Audit: Zero-Context Evidence Verification
@@ -92,15 +92,12 @@ Any .md file that is an executor-written summary, except generated
 
 ### Step 2: Fresh Reviewer Audit (Codex GPT-5.5 — NEW thread, no reply)
 
-**CRITICAL: Use `mcp__codex__codex` (new thread), NEVER `mcp__codex__codex-reply`.** Every run must be a fresh context.
+**CRITICAL: Use `spawn_agent` (new thread), NEVER `send_input`.** Every run must be a fresh context.
 
 ```
-mcp__codex__codex:
-  model: gpt-5.5
-  config: {"model_reasoning_effort": "xhigh"}
-  # Sandbox is set globally in ~/.codex/config.toml as sandbox_mode = "danger-full-access".
-  # Codex MCP per-call config does not accept a sandbox key.
-  prompt: |
+spawn_agent:
+  # Codex-native sub-agent per-call config does not accept a sandbox key.
+  message: |
     You are a paper-to-claim-ledger-to-evidence auditor. You have ZERO prior
     context about this research. You will receive only paper source files,
     claims/claim_ledger.json, and raw result files. Your job is to verify that
@@ -275,7 +272,7 @@ Same pattern as `/experiment-audit`:
 
 ## Key Rules
 
-- **Fresh thread EVERY run.** Never use `codex-reply`. Never carry context.
+- **Fresh thread EVERY run.** Never use `send_input`. Never carry context.
 - **Zero executor interpretation.** Only file paths. No summaries.
 - **Only the claim ledger plus raw results.** No EXPERIMENT_LOG, no AUTO_REVIEW, no human summaries.
 - **Rounding rule.** Only standard rounding to displayed precision. 84.7% → 84.7% or 85% is OK. 84.7% → 85.3% is NOT OK.
@@ -283,7 +280,7 @@ Same pattern as `/experiment-audit`:
 
 ## Review Tracing
 
-After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
+After each `spawn_agent` or `send_input` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
 
 ## Submission Artifact Emission
 
@@ -351,8 +348,8 @@ external `results/` dirs. The verifier resolves relative entries via
 
 ### Thread independence
 
-Every invocation uses a fresh `mcp__codex__codex` thread. Never
-`codex-reply`. Do not accept prior audit outputs (PROOF_AUDIT, CITATION_AUDIT,
+Every invocation uses a fresh `spawn_agent` thread. Never
+`send_input`. Do not accept prior audit outputs (PROOF_AUDIT, CITATION_AUDIT,
 EXPERIMENT_LOG, AUTO_REVIEW summaries) as input to this audit. The one exception is
 `claims/claim_ledger.json`, which is the canonical STOP C claim contract rather than a
 review summary. The fresh thread preserves reviewer independence per

@@ -2,7 +2,7 @@
 name: research-pipeline
 description: "ORBIT v1.3 research-methodology routing harness built on ARIS skills. Routes by mode (EXPLORATION/INNOVATION/COMMITMENT) and risk (1-5) through 26 stages organised into four spines (Discovery/Grounding/Innovation/Validation). Innovation loops for divergent mechanism invention; artifact-triggered audits; cheapest valid diagnostic; verdict-line gates only at high-risk transitions. Reuses mature ARIS execution skills (/auto-review-loop, /paper-draft, /paper-from-claims, /submission-package, /experiment-bridge, etc.) instead of reimplementing them. Use when user says 全流程/full pipeline/end-to-end research/从问题到论文/ORBIT/自动科研流水线/ORBIT v1.3."
 argument-hint: [research-area-or-problem-or-artifact-path]
-allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, mcp__codex__codex, mcp__codex__codex-reply
+allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, spawn_agent, send_input
 ---
 
 # ORBIT Research Pipeline — v1.3 Routing Orchestrator
@@ -48,7 +48,7 @@ prompt bodies live in per-skill `prompts/*.md` assets.
 - **CODEX_REVIEW_MODEL = `gpt-5.5`** — Default Codex reviewer for ORBIT.
 - **CODEX_REVIEW_EFFORT = `xhigh`** — Mandatory for all ORBIT review gates.
 - **CODEX_SANDBOX_MODE = `danger-full-access`** — Set globally in `~/.codex/config.toml`,
-  not per call. Codex MCP `config` only accepts `model_reasoning_effort`; do not try to
+  not per call. Codex-native sub-agent `config` only accepts `model_reasoning_effort`; do not try to
   pass `sandbox` per call.
 - **REVIEWER_INDEPENDENCE = on** — Pass file paths and objective, not executor summaries.
 - **CODEX_INNOVATION_MODE** — `COLLABORATIVE` at Stages 8, 9, 10, 18.5 (use template in

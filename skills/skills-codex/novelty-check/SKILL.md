@@ -2,7 +2,7 @@
 name: novelty-check
 description: Verify research idea novelty against recent literature. Use when user says "查新", "novelty check", "有没有人做过", "check novelty", or wants to verify a research idea is novel before implementing.
 argument-hint: [method-or-idea-description]
-allowed-tools: WebSearch, WebFetch, Grep, Read, Glob, mcp__codex__codex
+allowed-tools: WebSearch, WebFetch, Grep, Read, Glob, spawn_agent
 ---
 
 # Novelty Check Skill
@@ -11,7 +11,7 @@ Classify novelty risk and positioning routes for: **$ARGUMENTS**
 
 ## Constants
 
-- REVIEWER_MODEL = `gpt-5.5` — Model used via Codex MCP. Must be an OpenAI model (e.g., `gpt-5.5`, `o3`, `gpt-4o`)
+- REVIEWER_MODEL = `gpt-5.5` — Model used via Codex-native sub-agent. Must be an OpenAI model (e.g., `gpt-5.5`, `o3`, `gpt-4o`)
 - **NOVELTY_POLICY = `positioning-first`** — Load `../shared-references/research-posture.md`
   before judging novelty. Similar work is not automatically fatal.
 - **CONCURRENT_WORK_WINDOW = `3 months`** — Recent work goes to
@@ -47,7 +47,7 @@ For EACH core claim, search using ALL available sources:
 3. **Read abstracts**: For each potentially overlapping paper, WebFetch its abstract and related work section
 
 ### Phase C: Cross-Model Positioning Review
-Call REVIEWER_MODEL via Codex MCP (`mcp__codex__codex`) with xhigh reasoning:
+Call REVIEWER_MODEL via Codex-native sub-agent (`spawn_agent`) with xhigh reasoning:
 ```
 config: {"model_reasoning_effort": "xhigh"}
 ```
@@ -121,4 +121,4 @@ STRONG_BLOCKER.]
 
 ## Review Tracing
 
-After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
+After each `spawn_agent` or `send_input` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).

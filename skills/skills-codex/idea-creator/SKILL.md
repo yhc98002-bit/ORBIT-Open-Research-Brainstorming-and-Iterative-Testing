@@ -2,7 +2,7 @@
 name: idea-creator
 description: Generate and rank research ideas given a broad direction. Use when user says "找idea", "brainstorm ideas", "generate research ideas", "what can we work on", or wants to explore a research area for publishable directions.
 argument-hint: [research-direction]
-allowed-tools: Bash(*), Read, Write, Grep, Glob, WebSearch, WebFetch, Agent, mcp__codex__codex, mcp__codex__codex-reply
+allowed-tools: Bash(*), Read, Write, Grep, Glob, WebSearch, WebFetch, Agent, spawn_agent, send_input
 ---
 
 # Research Idea Creator
@@ -30,8 +30,8 @@ mode, positioning-first novelty, and collaborator review before STOP A.
 - **IDEA_RANKING_CRITERIA** — Literature grounding, novelty posture, feasibility,
   mechanism plausibility, baseline/headroom, expected diagnostic clarity, paper-mode fit,
   and reviewer critique.
-- **REVIEWER_MODEL = `gpt-5.5`** — Model used via Codex MCP for brainstorming and review. Must be an OpenAI model (e.g., `gpt-5.5`, `o3`, `gpt-4o`).
-- **REVIEWER_BACKEND = `codex`** — Default: Codex MCP (xhigh). Override with `— reviewer: oracle-pro` for GPT-5.5 Pro via Oracle MCP. See `../shared-references/reviewer-routing.md`.
+- **REVIEWER_MODEL = `gpt-5.5`** — Model used via Codex-native sub-agent for brainstorming and review. Must be an OpenAI model (e.g., `gpt-5.5`, `o3`, `gpt-4o`).
+- **REVIEWER_BACKEND = `codex`** — Default: Codex-native sub-agent (xhigh). Override with `— reviewer: oracle-pro` for GPT-5.5 Pro via Oracle MCP. See `../shared-references/reviewer-routing.md`.
 - **OUTPUT_DIR = `idea-stage/`** — All idea-stage outputs go here. Create the directory if it doesn't exist.
 
 > 💡 This skill does not run experiments. Formal experiment planning starts in
@@ -109,13 +109,11 @@ Map the research area to understand what exists and where the gaps are.
 
 ### Phase 2: Idea Generation (brainstorm with external LLM)
 
-Use the external LLM via Codex MCP for divergent thinking:
+Use the external LLM via Codex-native sub-agent for divergent thinking:
 
 ```
-mcp__codex__codex:
-  model: REVIEWER_MODEL
-  config: {"model_reasoning_effort": "xhigh"}
-  prompt: |
+spawn_agent:
+  message: |
     You are a senior ML researcher brainstorming research ideas.
 
     Research direction: [user's direction]
@@ -146,7 +144,7 @@ mcp__codex__codex:
     idea is one where the answer matters regardless of which way it goes.
 ```
 
-Save the threadId for follow-up.
+Save the agent id for follow-up.
 
 ### Phase 3: First-Pass Filtering
 
@@ -177,7 +175,7 @@ For each surviving idea, run a deeper evaluation:
 
 1. **Novelty check**: Use the `/novelty-check` workflow (multi-source search + GPT-5.5 cross-verification) for each idea
 
-2. **Critical review**: Use GPT-5.5 via `mcp__codex__codex-reply` (same thread):
+2. **Critical review**: Use GPT-5.5 via `send_input` (same thread):
    ```
    Here are our top ideas after filtering:
    [paste surviving ideas with novelty check results]
@@ -353,4 +351,4 @@ After this skill produces the ranked report:
 
 ## Review Tracing
 
-After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
+After each `spawn_agent` or `send_input` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).

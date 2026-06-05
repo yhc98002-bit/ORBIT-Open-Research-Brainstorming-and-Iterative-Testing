@@ -2,7 +2,7 @@
 name: diagnostic-to-review
 description: "ORBIT v1.5 STOP C diagnostic session orchestrator. Runs one formal diagnostic session from a diagnostic command, manifest, grid spec, or experiment/experiment_pack.json; analyzes exact run outputs; writes/consumes claims/claim_ledger.json for paper-bearing results; conditionally red-teams; then stops at STOP C human decision. Uses per-diagnostic artifacts under orbit-research/diagnostics/<diagnostic_id>/ and writes legacy latest copies only for compatibility. Does not consume experiment-bridge probe artifacts as formal diagnostics, does not invoke paper-writing, does not fabricate HUMAN_DECISION_NOTE, and keeps Codex review required."
 argument-hint: [diagnostic-command OR manifest-path OR grid-spec OR experiment/experiment_pack.json]
-allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, mcp__codex__codex, mcp__codex__codex-reply
+allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, Agent, Skill, spawn_agent, send_input
 ---
 
 # /diagnostic-to-review -- STOP C Formal Diagnostic Session
@@ -243,7 +243,7 @@ If any prereq or Codex precondition fails, write
 }
 ```
 
-For Codex MCP unavailability or mid-run Codex failure, also export a standalone review
+For Codex-native sub-agent unavailability or mid-run Codex failure, also export a standalone review
 prompt before stopping:
 
 ```text
@@ -529,7 +529,7 @@ state safe next command once the ledger exists.
 Codex remains required by default. This skill follows
 `../shared-references/codex-precondition.md`.
 
-Additional STOP C recovery rule: when Codex MCP is unavailable at precondition time or
+Additional STOP C recovery rule: when Codex-native sub-agent is unavailable at precondition time or
 fails during Phase 1 audit / Phase 4 red-team review, write a standalone prompt:
 
 ```text

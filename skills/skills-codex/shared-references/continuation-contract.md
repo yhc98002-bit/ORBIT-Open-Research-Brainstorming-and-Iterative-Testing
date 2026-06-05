@@ -50,7 +50,7 @@ Schema:
 
 **Required fields:** `skill`, `phase`, `status`, `timestamp`, `artifact_inventory`.
 **Recommended:** `next_action`, `next_skill_hint`.
-**Optional:** `round`, `notes`, plus any skill-specific fields (e.g. `threadId`,
+**Optional:** `round`, `notes`, plus any skill-specific fields (e.g. `agent id`,
 `pending_experiments`).
 
 Skills MAY add their own fields. Contract consumers MUST tolerate unknown fields.

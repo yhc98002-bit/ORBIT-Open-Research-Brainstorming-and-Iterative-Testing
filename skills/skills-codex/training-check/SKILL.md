@@ -2,7 +2,7 @@
 name: training-check
 description: Periodically check WandB metrics during training to catch problems early (NaN, loss divergence, idle GPUs). Avoids wasting GPU hours on broken runs. Use when training is running and you want automated health checks.
 argument-hint: [wandb-run-path]
-allowed-tools: Bash(*), Read, Grep, Glob, Write, Edit, mcp__codex__codex, mcp__codex__codex-reply
+allowed-tools: Bash(*), Read, Grep, Glob, Write, Edit, spawn_agent, send_input
 ---
 
 # Training Check
@@ -15,7 +15,7 @@ Periodically read WandB metrics during training to catch problems early. Do not 
 
 - WANDB_ENTITY and WANDB_PROJECT: read from CLAUDE.md or passed as argument (format: `entity/project/run_id`)
 - CHECK_INTERVAL: starts at 10 minutes, then gradually increases if consistently healthy: 10 min → 20 min → 30 min → 60 min (cap)
-- REVIEWER_MODEL = `gpt-5.5` — used via Codex MCP for ambiguous cases only
+- REVIEWER_MODEL = `gpt-5.5` — used via Codex-native sub-agent for ambiguous cases only
 
 ## When to Use
 
@@ -64,9 +64,8 @@ Check these signals:
 Only escalate to Codex when the signal is ambiguous. For clearly good or clearly bad signals, act directly.
 
 ```
-mcp__codex__codex:
-  config: {"model_reasoning_effort": "high"}
-  prompt: |
+spawn_agent:
+  message: |
     TRAINING HEALTH CHECK — need your judgment on ambiguous metrics.
 
     Run: <entity>/<project>/<run_id>

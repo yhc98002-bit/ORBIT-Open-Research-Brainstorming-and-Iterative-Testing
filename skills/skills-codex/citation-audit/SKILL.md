@@ -2,7 +2,7 @@
 name: citation-audit
 description: "Zero-context verification that every bibliographic entry in the paper is real, correctly attributed, and used in a context the cited paper actually supports. Uses a fresh cross-model reviewer with web/DBLP/arXiv lookup to catch hallucinated authors, wrong years, fabricated venues, version mismatches, and wrong-context citations (cite present but the cited paper does not establish the claim). Use when user says \"审查引用\", \"check citations\", \"citation audit\", \"verify references\", \"引用核对\", or before submission to ensure bibliography integrity."
 argument-hint: [paper-directory-or-bib-file]
-allowed-tools: Bash(*), Read, Grep, Glob, Edit, Write, Agent, mcp__codex__codex, WebSearch, WebFetch
+allowed-tools: Bash(*), Read, Grep, Glob, Edit, Write, Agent, spawn_agent, WebSearch, WebFetch
 ---
 
 # Citation Audit
@@ -38,8 +38,8 @@ The dangerous citation problems are **not** wildly fake citations — those are 
 
 ## Constants
 
-- **REVIEWER_MODEL = `gpt-5.5`** — Used via Codex MCP. Default for cross-model review with web access.
-- **CONTEXT_POLICY = `fresh`** — Each audit run uses a new reviewer thread (REVIEWER_BIAS_GUARD). Never `codex-reply`.
+- **REVIEWER_MODEL = `gpt-5.5`** — Used via Codex-native sub-agent. Default for cross-model review with web access.
+- **CONTEXT_POLICY = `fresh`** — Each audit run uses a new reviewer thread (REVIEWER_BIAS_GUARD). Never `send_input`.
 - **WEB_SEARCH = required** — The reviewer must perform real web/DBLP/arXiv lookups, not pattern-match from memory.
 - **OUTPUT = `CITATION_AUDIT.md`** — Human-readable per-entry verdict report.
 - **STATE = `CITATION_AUDIT.json`** — Machine-readable verdict ledger consumable by downstream tools.
@@ -103,15 +103,12 @@ Save the extracted contexts to `paper/.aris/citation-audit/contexts.txt` so the 
 
 ### Step 3: Send each entry to fresh cross-model reviewer
 
-For each bib entry, invoke `mcp__codex__codex` (NOT `codex-reply` — fresh thread per entry, or batch with explicit per-entry isolation):
+For each bib entry, invoke `spawn_agent` (NOT `send_input` — fresh thread per entry, or batch with explicit per-entry isolation):
 
 ```
-mcp__codex__codex:
-  model: gpt-5.5
-  config: {"model_reasoning_effort": "xhigh"}
-  # Sandbox is set globally in ~/.codex/config.toml as sandbox_mode = "danger-full-access".
-  # Codex MCP per-call config does not accept a sandbox key.
-  prompt: |
+spawn_agent:
+  # Codex-native sub-agent per-call config does not accept a sandbox key.
+  message: |
     You are auditing a bibliographic entry. Use web/DBLP/arXiv search.
 
     ## Bib entry
@@ -277,7 +274,7 @@ Together: code → result → numerical claim → cited claim. Each layer has cr
 
 ## Review Tracing
 
-After each `mcp__codex__codex` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/citation-audit/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
+After each `spawn_agent` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/citation-audit/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
 
 ## Output Contract
 
@@ -351,8 +348,8 @@ any file outside the paper dir.
 
 ### Thread independence
 
-Every invocation uses a fresh `mcp__codex__codex` thread. Never
-`codex-reply`. Do not accept prior audit outputs (PROOF_AUDIT,
+Every invocation uses a fresh `spawn_agent` thread. Never
+`send_input`. Do not accept prior audit outputs (PROOF_AUDIT,
 PAPER_CLAIM_AUDIT, EXPERIMENT_LOG) as input — the fresh thread preserves
 reviewer independence per `../shared-references/reviewer-independence.md`.
 

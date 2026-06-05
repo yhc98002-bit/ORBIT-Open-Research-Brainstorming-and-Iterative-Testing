@@ -263,23 +263,56 @@ find skills -mindepth 1 -maxdepth 1 -type d ! -name 'skills-codex*' \
   -exec cp -r {} .claude/skills/ \;
 ```
 
-Codex skill mirror 需要手动平铺安装：
+Codex skill mirror 需要手动平铺安装到项目本地 `.agents/skills/`。不要用
+`tools/install_aris.sh` 安装 Codex skills；那个脚本管理的是 Claude Code 的
+`.claude/skills/`。也不要把顶层 `skills/*` 直接复制到 Codex 项目；Codex 项目应复制
+`skills/skills-codex/*`。
 
 ```bash
-mkdir -p .agents/skills
-cp -a skills/skills-codex/* .agents/skills/
+ORBIT=/HOME/paratera_xy/pxy1289/HDD_POOL/HaocunYe/ORBIT
+PROJECT=/path/to/your/codex-project
+
+cd "$ORBIT"
+python3 tools/sync_codex_mirror.py
+python3 tools/sync_codex_mirror.py --check
+
+mkdir -p "$PROJECT/.agents/skills"
+cp -a "$ORBIT/skills/skills-codex/." "$PROJECT/.agents/skills/"
 # 可选 reviewer overlay，需在 base mirror 后安装：
-# cp -a skills/skills-codex-gemini-review/* .agents/skills/
-# cp -a skills/skills-codex-claude-review/* .agents/skills/
+# cp -a "$ORBIT/skills/skills-codex-gemini-review/." "$PROJECT/.agents/skills/"
+# cp -a "$ORBIT/skills/skills-codex-claude-review/." "$PROJECT/.agents/skills/"
 ```
 
-Codex reviewer 需要 Codex CLI / MCP：
+如果目标项目已经有旧 skills，先备份再覆盖：
+
+```bash
+STAMP=$(date -u +%Y%m%dT%H%M%SZ)
+[ -d "$PROJECT/.agents/skills" ] && mv "$PROJECT/.agents/skills" "$PROJECT/.agents/skills.backup-$STAMP"
+
+mkdir -p "$PROJECT/.agents/skills"
+cp -a "$ORBIT/skills/skills-codex/." "$PROJECT/.agents/skills/"
+```
+
+安装后验证：
+
+```bash
+find "$PROJECT/.agents/skills" -maxdepth 2 -name SKILL.md | wc -l
+rg "mcp__codex__codex|CLAUDE_PLUGIN_ROOT|codex-companion" "$PROJECT/.agents/skills" -g '*.md'
+```
+
+期望 skill 数量为 `77`，并且 `rg` 没有输出。
+
+Claude Code 项目中的 Codex reviewer 需要 Codex CLI / MCP：
 
 ```bash
 npm install -g @openai/codex
 codex setup
 claude mcp add codex -s user -- codex mcp-server
 ```
+
+Codex 项目不需要 `claude mcp add ...`。Codex-native skills 使用当前 Codex
+会话里的 `spawn_agent` / `send_input` 作为 reviewer transport；如果这些工具不可用，
+相关 skill 会 loud stop，而不是尝试运行 Claude plugin helper。
 
 ORBIT 默认 Codex reviewer 配置：
 

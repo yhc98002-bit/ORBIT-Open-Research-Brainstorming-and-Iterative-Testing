@@ -18,7 +18,7 @@ Before any probe or formal diagnostic, run the semantic audit from
 intended algorithm, baselines, controls, ablations, datasets, splits, metrics, regimes,
 seeds, config defaults, and result files.
 
-Codex review remains required for this audit. If the Codex MCP/auth/sandbox path fails,
+Codex review remains required for this audit. If the Codex-native sub-agent/auth/sandbox path fails,
 do not write a local substitute `PLAN_CODE_AUDIT.md`. Export a standalone prompt per
 `../shared-references/codex-precondition.md` §5.5:
 

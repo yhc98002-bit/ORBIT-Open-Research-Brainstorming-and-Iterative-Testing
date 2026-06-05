@@ -45,7 +45,7 @@ outcomes and next actions:
 | `REDESIGN_REQUIRED` | Pause; route narrowly to diagnostic redesign, mechanism patch, or experiment-pack patch. |
 | `HUMAN_DECISION_REQUIRED` | Pause for explicit human decision. |
 
-If Codex MCP fails in Phase 4, write:
+If Codex-native sub-agent fails in Phase 4, write:
 
 ```text
 orbit-research/codex-prompts/<diagnostic_id>.phase-4-review.md

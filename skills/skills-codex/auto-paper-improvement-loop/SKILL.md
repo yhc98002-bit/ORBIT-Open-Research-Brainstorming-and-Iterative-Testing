@@ -2,7 +2,7 @@
 name: auto-paper-improvement-loop
 description: "Autonomously improve a generated paper via GPT-5.5 xhigh review → implement fixes → recompile, for 2 rounds. Use when user says \"改论文\", \"improve paper\", \"论文润色循环\", \"auto improve\", or wants to iteratively polish a generated paper."
 argument-hint: [paper-directory]
-allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, mcp__codex__codex, mcp__codex__codex-reply
+allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent, spawn_agent, send_input
 ---
 
 # Auto Paper Improvement Loop: Review → Fix → Recompile
@@ -18,8 +18,8 @@ Unlike `/auto-review-loop` (which iterates on **research** — running experimen
 ## Constants
 
 - **MAX_ROUNDS = 2** — Two rounds of review→fix→recompile. Empirically, Round 1 catches structural issues (4→6/10), Round 2 catches remaining presentation issues (6→7/10). Diminishing returns beyond 2 rounds for writing-only improvements.
-- **REVIEWER_MODEL = `gpt-5.5`** — Model used via Codex MCP for paper review.
-- **REVIEWER_BIAS_GUARD = true** — When `true`, every review round uses a fresh `mcp__codex__codex` thread with no prior review context. Never use `mcp__codex__codex-reply` for review rounds. Set to `false` only for deliberate debugging of the legacy behavior. **Empirical evidence (April 2026):** running the same paper with `codex-reply` + "since last round we did X" prompts inflated scores from real 3/10 → fake 8/10 across 5 rounds; switching to fresh threads recovered the true 3/10 assessment.
+- **REVIEWER_MODEL = `gpt-5.5`** — Model used via Codex-native sub-agent for paper review.
+- **REVIEWER_BIAS_GUARD = true** — When `true`, every review round uses a fresh `spawn_agent` thread with no prior review context. Never use `send_input` for review rounds. Set to `false` only for deliberate debugging of the legacy behavior. **Empirical evidence (April 2026):** running the same paper with `send_input` + "since last round we did X" prompts inflated scores from real 3/10 → fake 8/10 across 5 rounds; switching to fresh threads recovered the true 3/10 assessment.
 - **REVIEW_LOG = `PAPER_IMPROVEMENT_LOG.md`** — Cumulative log of all rounds, stored in paper directory.
 - **HUMAN_CHECKPOINT = false** — When `true`, pause after each round's review and present score + weaknesses to the user. The user can approve fixes, provide custom modification instructions, skip specific fixes, or stop early. When `false` (default), runs fully autonomously.
 
@@ -37,7 +37,7 @@ If the context window fills up mid-loop, Claude Code auto-compacts. To recover, 
 ```json
 {
   "current_round": 1,
-  "threadId": "019ce736-...",
+  "agent id": "019ce736-...",
   "last_score": 6,
   "status": "in_progress",
   "timestamp": "2026-03-13T21:00:00"
@@ -55,12 +55,12 @@ Four-state status enum (`in_progress` / `awaiting_human_continue` / `awaiting_us
 The reviewer must be context-naive on every round. Prior-round summaries, fix lists, and executor explanations are not evidence; they are a source of confirmation bias. If the reviewer is told what changed, scores tend to drift upward even when the manuscript itself has not materially improved.
 
 Rules:
-- Every round starts with `mcp__codex__codex`, not `mcp__codex__codex-reply`.
-- Never pass a prior threadId into the next review prompt.
+- Every round starts with `spawn_agent`, not `send_input`.
+- Never pass a prior agent id into the next review prompt.
 - Never include "since last round", "we fixed", "after applying", or any fix summary in the reviewer prompt.
 - The only acceptable evidence of improvement is the current `.tex` source and compiled PDF.
 - If a fix cannot be observed in the files, the reviewer should not be told it happened.
-- If recovery metadata is needed, store the returned threadId for crash recovery only; do not use it to preserve review context.
+- If recovery metadata is needed, store the returned agent id for crash recovery only; do not use it to preserve review context.
 
 Set `REVIEWER_BIAS_GUARD = false` only if you explicitly want the legacy, context-carrying behavior for debugging.
 
@@ -89,10 +89,8 @@ done > /tmp/paper_full_text.txt
 Send the full paper text AND compiled PDF to GPT-5.5 xhigh:
 
 ```
-mcp__codex__codex:
-  model: gpt-5.5
-  config: {"model_reasoning_effort": "xhigh"}
-  prompt: |
+spawn_agent:
+  message: |
     You are reviewing a [VENUE] paper. Please provide a detailed, structured review.
 
     ## Paper Files:
@@ -122,7 +120,7 @@ mcp__codex__codex:
     self-containedness, notation consistency, AND visual presentation quality.
 ```
 
-Save the threadId for Round 2.
+Save the agent id for Round 2.
 
 ### Step 2b: Human Checkpoint (if enabled)
 
@@ -213,13 +211,11 @@ PY
 
 ### Step 5: Round 2 Review
 
-If `REVIEWER_BIAS_GUARD = true` (default), use a **fresh** `mcp__codex__codex` thread for Round 2. Do not reuse the Round 1 threadId for prompting. Save the returned threadId only for recovery bookkeeping.
+If `REVIEWER_BIAS_GUARD = true` (default), use a **fresh** `spawn_agent` thread for Round 2. Do not reuse the Round 1 agent id for prompting. Save the returned agent id only for recovery bookkeeping.
 
 ```
-mcp__codex__codex:
-  model: gpt-5.5
-  config: {"model_reasoning_effort": "xhigh"}
-  prompt: |
+spawn_agent:
+  message: |
     You are reviewing a [VENUE] paper. This is a fresh, zero-context review.
     Ignore any prior review rounds, prior fix lists, or executor explanations.
     Judge the paper only from the current LaTeX source and compiled PDF.
@@ -251,13 +247,13 @@ mcp__codex__codex:
     self-containedness, notation consistency, and visual presentation quality.
 ```
 
-If `REVIEWER_BIAS_GUARD = false` (legacy debugging only), use `mcp__codex__codex-reply` with the saved threadId; this is **not** the recommended path.
+If `REVIEWER_BIAS_GUARD = false` (legacy debugging only), use `send_input` with the saved agent id; this is **not** the recommended path.
 
 ### Step 5.5: Kill Argument Exercise (theory papers only)
 
 Run this only if the paper is theory-heavy (≥5 `\begin{theorem}|\begin{lemma}|\begin{proposition}|\begin{corollary}` environments in the source) and only on the final scheduled round (`current_round == MAX_ROUNDS`).
 
-This is a late-stage adversarial check. It must always use **fresh** `mcp__codex__codex` threads, never `codex-reply`, and it must not reuse any prior review context.
+This is a late-stage adversarial check. It must always use **fresh** `spawn_agent` threads, never `send_input`, and it must not reuse any prior review context.
 
 **Thread 1: Attack**
 - Use a fresh thread with only the current paper files.
@@ -444,7 +440,7 @@ paper/
 
 - **Preserve all PDF versions** — user needs to compare progression
 - **Save FULL raw review text** — do not summarize or truncate GPT-5.5 responses
-- **Reviewer independence (Round 2+)**: when `REVIEWER_BIAS_GUARD = true` (default), use a **fresh** `mcp__codex__codex` thread for every review round; never use `mcp__codex__codex-reply` and never include "since last round" / fix summaries in the prompt. See the Reviewer Independence Protocol section above.
+- **Reviewer independence (Round 2+)**: when `REVIEWER_BIAS_GUARD = true` (default), use a **fresh** `spawn_agent` thread for every review round; never use `send_input` and never include "since last round" / fix summaries in the prompt. See the Reviewer Independence Protocol section above.
 - **Always recompile after fixes** — verify 0 errors before proceeding
 - **Do not fabricate experimental results** — synthetic validation must describe methodology, not invent numbers
 - **Respect the paper's claims** — soften overclaims rather than adding unsupported new claims
@@ -465,4 +461,4 @@ Based on end-to-end testing on a 9-page ICLR 2026 theory paper:
 
 ## Review Tracing
 
-After each `mcp__codex__codex` or `mcp__codex__codex-reply` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).
+After each `spawn_agent` or `send_input` reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).

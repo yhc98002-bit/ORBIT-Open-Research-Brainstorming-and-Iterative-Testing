@@ -11,8 +11,7 @@ Research topic: $ARGUMENTS
 
 ## Constants
 
-
-- **REVIEWER_BACKEND = `codex`** — Default: Codex MCP (`gpt-5.5`, xhigh). Override with `— reviewer: oracle-pro` if explicitly requested. See `../shared-references/reviewer-routing.md`.
+- **REVIEWER_BACKEND = `codex`** — Default: Codex-native sub-agent (`gpt-5.5`, xhigh). Override with `— reviewer: oracle-pro` if explicitly requested. See `../shared-references/reviewer-routing.md`.
 - **PAPER_LIBRARY** — Local directory containing user's paper collection (PDFs). Check these paths in order:
   1. `papers/` in the current project directory
   2. `literature/` in the current project directory

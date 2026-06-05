@@ -16,7 +16,7 @@ outputs:
 
 Send the full proposal to GPT-5.5 for an **elegance-first, frontier-aware, method-first** review. The reviewer should spend most of the critique budget on the method itself, not on expanding the experiment menu.
 
-If the Codex MCP call fails, do not produce a local substitute review. Export a standalone
+If the Codex-native sub-agent call fails, do not produce a local substitute review. Export a standalone
 handoff prompt per `../shared-references/codex-precondition.md` §5.5 using
 `tools/codex_review_handoff.py`, write it under
 `orbit-research/codex-prompts/<phase-id>.md`, and require the user to save the standalone
@@ -33,10 +33,9 @@ with `/import-codex-review`.
   adversarial mode, add per-dimension vetoes.
 
 ```
-mcp__codex__codex:
-  model: REVIEWER_MODEL
+spawn_agent:
   config: {"model_reasoning_effort": REVIEWER_EFFORT}     // honors `— effort:` flag; default "xhigh"
-  prompt: |
+  message: |
     You are a constructive senior ML research collaborator and paper director for {VENUE_PHRASE}.
     This is an early-stage, method-first research proposal.
     Default paper mode is {PAPER_MODE}. In normal mode, judge against a clean,
@@ -152,10 +151,10 @@ or RETHINK regardless of the overall score, and the reviewer must list the
 specific dimension(s) below 8 in the Verdict line.
 ```
 
-**CRITICAL: Save the `threadId`** from this call for all later rounds.
+**CRITICAL: Save the `agent id`** from this call for all later rounds.
 
 **CRITICAL: Save the FULL raw response** verbatim.
 
 Save review to `refine-logs/round-1-review.md` with the raw response in a `<details>` block.
 
-**Checkpoint:** Update `refine-logs/REFINE_STATE.json` with `{"phase": "review", "round": 1, "threadId": "<saved>", "last_score": <parsed>, "last_verdict": "<parsed>", ...}`.
+**Checkpoint:** Update `refine-logs/REFINE_STATE.json` with `{"phase": "review", "round": 1, "agent id": "<saved>", "last_score": <parsed>, "last_verdict": "<parsed>", ...}`.
