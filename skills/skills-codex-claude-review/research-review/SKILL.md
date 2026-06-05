@@ -1,17 +1,25 @@
 ---
 name: "research-review"
-description: "Get a deep critical review of research from Claude via direct Claude Code CLI. Use when user says \"review my research\", \"help me review\", \"get external review\", or wants critical feedback on research ideas, papers, or experimental results."
+description: "Get a deep critical review of research from Claude Code CLI via Claude Code CLI. Use when user says \"review my research\", \"help me review\", \"get external review\", or wants critical feedback on research ideas, papers, or experimental results."
+allowed-tools: Bash(*), Read, Grep, Glob, Write, Edit, Agent
 ---
 
-> Override for Codex users who want **Claude Code**, not a second Codex agent, to act as the reviewer. Install this package **after** `skills/skills-codex/*`.
+> Override for Codex users who want **Claude Code CLI**, not a second Codex agent, to act as the reviewer/helper. Install this package **after** `skills/skills-codex/*`.
 
-# Research Review via Claude Code CLI (high-rigor review)
+Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE` and run:
+
+```bash
+claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+```
+
+# Research Review via Claude CLI reviewer (xhigh reasoning)
 
 Get a multi-round critical review of research work from an external LLM with maximum reasoning depth.
 
 ## Constants
 
-- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
+- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`.
+- **REVIEWER_BACKEND = `codex`** — Default: Claude CLI reviewer (xhigh). Override with `— reviewer: oracle-pro` for GPT-5.5 Pro via Oracle MCP. See `../shared-references/reviewer-routing.md`.
 - **PAPER_MODE = `normal`** — Default review target is a normal publishable AI paper,
   not breakthrough-only.
 - **REVIEW_POSTURE = `collaborator` before STOP A/B; `adversarial` after STOP C** —
@@ -23,9 +31,16 @@ Get a multi-round critical review of research work from an external LLM with max
 
 - Install the base Codex-native skills first: copy `skills/skills-codex/*` into `~/.codex/skills/`.
 - Then install this overlay package: copy `skills/skills-codex-claude-review/*` into `~/.codex/skills/` and allow it to overwrite the same skill names.
-- Ensure the `claude` CLI is available. Reviews use direct `claude -p` calls;
-  see `../shared-references/claude-cli-review.md`.
+- Ensure the `claude` CLI is available:
+  ```bash
+  claude --version
+  ```
+- Reviews and helper critiques use direct `claude -p` calls; see `../shared-references/claude-cli-review.md`.
 
+  ```bash
+  make the `claude` CLI available and authenticated
+  ```
+- This gives Codex access to `claude -p` and a new `claude -p` invocation tools
 
 ## Workflow
 
@@ -46,36 +61,45 @@ Before calling the external reviewer, compile a comprehensive briefing:
 3. Identify: core claims, methodology, key results, known weaknesses
 
 ### Step 2: Initial Review (Round 1)
-Send a detailed prompt with high-rigor review using the Claude CLI transport in
-`../shared-references/claude-cli-review.md`:
+Send a detailed prompt with xhigh reasoning:
 
 ```text
-[Full research context + specific questions]
-Use REVIEW_POSTURE from the current ORBIT stop boundary.
+Write the complete fresh Claude review/help prompt to `$PROMPT_FILE`.
+Preserve the role, files-to-read, objective, and required output schema from this original call shape.
 
-If before STOP A or STOP B:
-You are a constructive research collaborator. Preserve promising ideas. Classify
-risks, propose positioning routes, and help turn the idea into a normal publishable
-paper. Do not simulate acceptance-stage red-team review unless explicitly asked. Do not recommend
-abandonment unless a true STRONG_BLOCKER is present.
 
-If after STOP C:
-You are a senior adversarial reviewer. Stress-test claims, evidence, baselines,
-controls, reproducibility, and overclaiming.
+prompt: |
+    [Full research context + specific questions]
+    Use REVIEW_POSTURE from the current ORBIT stop boundary.
 
-Identify:
-1. Logical gaps or unjustified claims
-2. Minimal evidence needed for the selected paper mode
-3. Narrative weaknesses and positioning fixes
-4. Whether the work can survive as normal / benchmark / reproduction-plus / system / audit
+    If before STOP A or STOP B:
+    You are a constructive research collaborator. Preserve promising ideas. Classify
+    risks, propose positioning routes, and help turn the idea into a normal publishable
+    paper. Do not simulate acceptance-stage red-team review unless explicitly asked. Do not recommend
+    abandonment unless a true STRONG_BLOCKER is present.
+
+    If after STOP C:
+    You are a senior adversarial reviewer. Stress-test claims, evidence, baselines,
+    controls, reproducibility, and overclaiming.
+
+    Identify:
+    1. Logical gaps or unjustified claims
+    2. Minimal evidence needed for the selected paper mode
+    3. Narrative weaknesses and positioning fixes
+    4. Whether the work can survive as normal / benchmark / reproduction-plus / system / audit
 ```
 
-Save the raw Claude CLI JSON output and treat the response text as the reviewer output.
+```bash
+PROMPT_FILE="${PROMPT_FILE:-.aris/review-prompts/claude-review-round-N.md}"
+RAW_REVIEW_JSON="${RAW_REVIEW_JSON:-.aris/review-outputs/claude-review-round-N.json}"
+mkdir -p "$(dirname "$PROMPT_FILE")" "$(dirname "$RAW_REVIEW_JSON")"
+claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+```
+
+Save the raw Claude CLI JSON before summarizing it. Treat the response text inside the JSON as the reviewer/helper output.
 
 ### Step 3: Iterative Dialogue (Rounds 2-N)
-For follow-up rounds, start a new Claude CLI invocation and include the prior raw
-review, your response, and the updated artifact explicitly. There is no MCP
-`threadId`; continuity comes from the prompt contents.
+Use a new `claude -p` invocation with the returned `claude_review_json_path` to continue the conversation:
 
 For each round:
 1. **Respond** to criticisms with evidence/counterarguments
@@ -107,7 +131,7 @@ Update project memory/notes with key review conclusions.
 
 ## Key Rules
 
-- Always ask the Claude reviewer for strict, high-rigor feedback.
+- ALWAYS use `config: {"Claude CLI `--effort max`": "xhigh"}` for reviews
 - Send comprehensive context in Round 1 — the external model cannot read your files
 - Be honest about weaknesses — hiding them leads to worse feedback
 - Before STOP A/B, preserve promising ideas and include a survival route for every major
@@ -115,7 +139,7 @@ Update project memory/notes with key review conclusions.
 - After STOP C, adversarial review is appropriate for paper-level claims.
 - Push back on criticisms you disagree with, but accept valid ones
 - Focus on ACTIONABLE feedback — "what experiment would fix this?"
-- Document the saved raw Claude CLI JSON output for potential future resumption
+- Document the agent id for potential future resumption
 - The review document should be self-contained (readable without the conversation)
 
 ## Prompt Templates
@@ -140,3 +164,7 @@ ML reviewer and stress-test claims, baselines, controls, reproducibility, and ov
 
 ### For mock review:
 "Please write a mock NeurIPS review with: Summary, Strengths, Weaknesses, Questions for Authors, Score, Confidence, and What Would Move Toward Accept."
+
+## Review Tracing
+
+After each `claude -p` or a new `claude -p` invocation reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).

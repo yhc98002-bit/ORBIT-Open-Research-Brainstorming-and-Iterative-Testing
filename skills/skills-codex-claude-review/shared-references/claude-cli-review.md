@@ -7,10 +7,10 @@ Do not call `mcp__claude-review__review_start`,
 `mcp__claude-review__review_status`. Do not require
 `codex mcp add claude-review`.
 
-Follow the project `AGENTS.md` command shape:
+Follow this exact command shape:
 
 ```bash
-claude -p --dangerously-skip-permissions --output-format json --model "${CLAUDE_REVIEW_MODEL:-opus}" --effort max "<focused review prompt>"
+claude -p --dangerously-skip-permissions --output-format json --model opus --effort max "<focused review or help prompt>"
 ```
 
 For long prompts, write the complete prompt to a temporary review prompt file
@@ -18,14 +18,14 @@ under `.aris/review-prompts/` or `review-stage/prompts/`, then pass the file
 contents to the same command:
 
 ```bash
-claude -p --dangerously-skip-permissions --output-format json --model "${CLAUDE_REVIEW_MODEL:-opus}" --effort max "$(cat "$PROMPT_FILE")"
+claude -p --dangerously-skip-permissions --output-format json --model opus --effort max "$(cat "$PROMPT_FILE")"
 ```
 
 If the shell argument length would be unsafe, pipe the prompt through stdin
 while keeping the same flags:
 
 ```bash
-claude -p --dangerously-skip-permissions --output-format json --model "${CLAUDE_REVIEW_MODEL:-opus}" --effort max < "$PROMPT_FILE"
+claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE"
 ```
 
 Save the raw JSON output before summarizing it. Use paths such as

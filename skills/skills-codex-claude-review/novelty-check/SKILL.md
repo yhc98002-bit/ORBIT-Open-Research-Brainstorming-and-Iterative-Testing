@@ -1,9 +1,16 @@
 ---
 name: "novelty-check"
 description: "Verify research idea novelty against recent literature. Use when user says \"查新\", \"novelty check\", \"有没有人做过\", \"check novelty\", or wants to verify a research idea is novel before implementing."
+allowed-tools: Bash(*), WebSearch, WebFetch, Grep, Read, Glob
 ---
 
-> Override for Codex users who want **Claude Code**, not a second Codex agent, to act as the reviewer. Install this package **after** `skills/skills-codex/*`.
+> Override for Codex users who want **Claude Code CLI**, not a second Codex agent, to act as the reviewer/helper. Install this package **after** `skills/skills-codex/*`.
+
+Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE` and run:
+
+```bash
+claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+```
 
 # Novelty Check Skill
 
@@ -11,7 +18,7 @@ Classify novelty risk and positioning routes for: **$ARGUMENTS**
 
 ## Constants
 
-- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
+- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`.
 - **NOVELTY_POLICY = `positioning-first`** — Load `../shared-references/research-posture.md`
   before judging novelty. Similar work is not automatically fatal.
 - **CONCURRENT_WORK_WINDOW = `3 months`** — Recent work goes to
@@ -47,12 +54,10 @@ For EACH core claim, search using ALL available sources:
 3. **Read abstracts**: For each potentially overlapping paper, WebFetch its abstract and related work section
 
 ### Phase C: Cross-Model Positioning Review
-Call REVIEWER_MODEL via the Claude CLI transport in `../shared-references/claude-cli-review.md` with high-rigor review:
-```text
-[Full novelty briefing + prior work list + specific novelty questions]
+Call REVIEWER_MODEL via Claude CLI reviewer (`claude -p`) with xhigh reasoning:
 ```
-
-Save the raw Claude CLI JSON output and treat the response text as the reviewer output.
+config: {"Claude CLI `--effort max`": "xhigh"}
+```
 Prompt should include:
 - The proposed method description
 - All papers found in Phase B
@@ -120,3 +125,7 @@ STRONG_BLOCKER.]
   concurrent by default and add it to the watchlist
 - After STOP A, ordinary new related work should not destabilize a frozen proposal. Use
   the watchlist unless the work is a `STRONG_BLOCKER`.
+
+## Review Tracing
+
+After each `claude -p` or a new `claude -p` invocation reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).

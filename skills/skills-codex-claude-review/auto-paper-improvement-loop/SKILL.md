@@ -1,9 +1,16 @@
 ---
 name: "auto-paper-improvement-loop"
-description: "Autonomously improve a generated paper via Claude review through Claude Code CLI → implement fixes → recompile, for 2 rounds. Use when user says \"改论文\", \"improve paper\", \"论文润色循环\", \"auto improve\", or wants to iteratively polish a generated paper."
+description: "Autonomously improve a generated paper via Claude Code CLI xhigh review → implement fixes → recompile, for 2 rounds. Use when user says \"改论文\", \"improve paper\", \"论文润色循环\", \"auto improve\", or wants to iteratively polish a generated paper."
+allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent
 ---
 
-> Override for Codex users who want **Claude Code**, not a second Codex agent, to act as the reviewer. Install this package **after** `skills/skills-codex/*`.
+> Override for Codex users who want **Claude Code CLI**, not a second Codex agent, to act as the reviewer/helper. Install this package **after** `skills/skills-codex/*`.
+
+Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE` and run:
+
+```bash
+claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+```
 
 # Auto Paper Improvement Loop: Review → Fix → Recompile
 
@@ -18,7 +25,8 @@ Unlike `/auto-review-loop` (which iterates on **research** — running experimen
 ## Constants
 
 - **MAX_ROUNDS = 2** — Two rounds of review→fix→recompile. Empirically, Round 1 catches structural issues (4→6/10), Round 2 catches remaining presentation issues (6→7/10). Diminishing returns beyond 2 rounds for writing-only improvements.
-- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
+- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`.
+- **REVIEWER_BIAS_GUARD = true** — When `true`, every review round uses a fresh `claude -p` thread with no prior review context. Never use a new `claude -p` invocation for review rounds. Set to `false` only for deliberate debugging of the legacy behavior. **Empirical evidence (April 2026):** running the same paper with a new `claude -p` invocation + "since last round we did X" prompts inflated scores from real 3/10 → fake 8/10 across 5 rounds; switching to fresh threads recovered the true 3/10 assessment.
 - **REVIEW_LOG = `PAPER_IMPROVEMENT_LOG.md`** — Cumulative log of all rounds, stored in paper directory.
 - **HUMAN_CHECKPOINT = false** — When `true`, pause after each round's review and present score + weaknesses to the user. The user can approve fixes, provide custom modification instructions, skip specific fixes, or stop early. When `false` (default), runs fully autonomously.
 
@@ -31,21 +39,37 @@ Unlike `/auto-review-loop` (which iterates on **research** — running experimen
 
 ## State Persistence (Compact Recovery)
 
-If the context window fills up mid-loop, Codex auto-compacts. To recover, this skill writes `PAPER_IMPROVEMENT_STATE.json` after each round:
+If the context window fills up mid-loop, Claude Code auto-compacts. To recover, this skill writes `PAPER_IMPROVEMENT_STATE.json` after each round:
 
 ```json
 {
   "current_round": 1,
-  "thread_id": "019ce736-...",
+  "claude_review_json_path": "019ce736-...",
   "last_score": 6,
   "status": "in_progress",
   "timestamp": "2026-03-13T21:00:00"
 }
 ```
 
-**On startup**: if `PAPER_IMPROVEMENT_STATE.json` exists with `"status": "in_progress"` AND `timestamp` is within 24 hours, read it + `PAPER_IMPROVEMENT_LOG.md` to recover context, then resume from the next round. Otherwise (file absent, `"status": "completed"`, or older than 24 hours), start fresh.
+**On startup**: if `PAPER_IMPROVEMENT_STATE.json` exists with `"status": "in_progress"` AND `timestamp` is within 24 hours, read it + `PAPER_IMPROVEMENT_LOG.md` to recover context, then resume from the next round. If `"status": "awaiting_human_continue"`, treat re-invocation as human approval to continue per `../shared-references/continuation-contract.md` cross-skill resume rules. Otherwise (file absent, `"status": "completed"`, or older than 24 hours), start fresh.
 
-**After each round**: overwrite the state file. **On completion**: set `"status": "completed"`.
+**After each round**: overwrite the state file. **On completion**: set `"status": "completed"`. **On user-paused checkpoint** (e.g. user wants to inspect mid-loop quality before authorising more rounds): set `"status": "awaiting_human_continue"` with `next_action: "resume-round-N+1"`.
+
+Four-state status enum (`in_progress` / `awaiting_human_continue` / `awaiting_user_action` / `completed`) is canonical per `../shared-references/continuation-contract.md` v1.3. This loop normally uses only `in_progress`, `awaiting_human_continue`, and `completed`. Old STATE files with only `in_progress` / `completed` still parse — `awaiting_human_continue` is additive. Recommended optional fields: `next_action`, `next_skill_hint`, `artifact_inventory`.
+
+## Reviewer Independence Protocol
+
+The reviewer must be context-naive on every round. Prior-round summaries, fix lists, and executor explanations are not evidence; they are a source of confirmation bias. If the reviewer is told what changed, scores tend to drift upward even when the manuscript itself has not materially improved.
+
+Rules:
+- Every round starts with `claude -p`, not a new `claude -p` invocation.
+- Never pass a prior agent id into the next review prompt.
+- Never include "since last round", "we fixed", "after applying", or any fix summary in the reviewer prompt.
+- The only acceptable evidence of improvement is the current `.tex` source and compiled PDF.
+- If a fix cannot be observed in the files, the reviewer should not be told it happened.
+- If recovery metadata is needed, store the returned agent id for crash recovery only; do not use it to preserve review context.
+
+Set `REVIEWER_BIAS_GUARD = false` only if you explicitly want the legacy, context-carrying behavior for debugging.
 
 ## Workflow
 
@@ -69,31 +93,53 @@ done > /tmp/paper_full_text.txt
 
 ### Step 2: Round 1 Review
 
-Send the full paper text to Claude review using the Claude CLI transport in
-`../shared-references/claude-cli-review.md`:
+Send the full paper text AND compiled PDF to Claude CLI max-effort:
 
 ```text
-You are reviewing a [VENUE] paper. Please provide a detailed, structured review.
+Write the complete fresh Claude review/help prompt to `$PROMPT_FILE`.
+Preserve the role, files-to-read, objective, and required output schema from this original call shape.
 
-## Full Paper Text:
-[paste concatenated sections]
 
-## Review Instructions
-Please act as a senior ML reviewer ([VENUE] level). Provide:
-1. **Overall Score** (1-10, where 6 = weak accept, 7 = accept)
-2. **Summary** (2-3 sentences)
-3. **Strengths** (bullet list, ranked)
-4. **Weaknesses** (bullet list, ranked: CRITICAL > MAJOR > MINOR)
-5. **For each CRITICAL/MAJOR weakness**: A specific, actionable fix
-6. **Missing References** (if any)
-7. **Verdict**: Ready for submission? Yes / Almost / No
+prompt: |
+    You are reviewing a [VENUE] paper. Please provide a detailed, structured review.
 
-Focus on: theoretical rigor, claims vs evidence alignment, writing clarity,
-self-containedness, notation consistency.
+    ## Paper Files:
+    - LaTeX source: [list all section .tex files]
+    - Compiled PDF: paper/main.pdf
+    - Figures: [list figure files]
+
+    Read BOTH the LaTeX source (for content/logic) AND the compiled PDF (for visual presentation).
+
+    ## Review Instructions
+    Please act as a senior ML reviewer ([VENUE] level). Provide:
+    1. **Overall Score** (1-10, where 6 = weak accept, 7 = accept)
+    2. **Summary** (2-3 sentences)
+    3. **Strengths** (bullet list, ranked)
+    4. **Weaknesses** (bullet list, ranked: CRITICAL > MAJOR > MINOR)
+    5. **For each CRITICAL/MAJOR weakness**: A specific, actionable fix
+    6. **Missing References** (if any)
+    7. **Visual Review** (from the PDF):
+       - Figure quality: readable? labels legible? colors distinguishable in grayscale?
+       - Figure-caption alignment: does each caption match its figure?
+       - Layout: orphaned headers, awkward page breaks, figures far from references?
+       - Table formatting: aligned columns, consistent decimals, bold for best results?
+       - Visual consistency: same color scheme across all figures?
+    8. **Verdict**: Ready for submission? Yes / Almost / No
+
+    Focus on: theoretical rigor, claims vs evidence alignment, writing clarity,
+    self-containedness, notation consistency, AND visual presentation quality.
 ```
 
-Save the raw Claude CLI JSON output and treat the response text as the reviewer
-output. Save it for Round 2 context.
+```bash
+PROMPT_FILE="${PROMPT_FILE:-.aris/review-prompts/claude-review-round-N.md}"
+RAW_REVIEW_JSON="${RAW_REVIEW_JSON:-.aris/review-outputs/claude-review-round-N.json}"
+mkdir -p "$(dirname "$PROMPT_FILE")" "$(dirname "$RAW_REVIEW_JSON")"
+claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+```
+
+Save the raw Claude CLI JSON before summarizing it. Treat the response text inside the JSON as the reviewer/helper output.
+
+Save the agent id for Round 2.
 
 ### Step 2b: Human Checkpoint (if enabled)
 
@@ -135,6 +181,10 @@ Parse the review and implement fixes by severity:
 | Notation confusion | Rename conflicting symbols globally, add Notation paragraph |
 | Missing references | Add to `references.bib`, cite in appropriate locations |
 | Theory-practice gap | Explicitly frame theory as idealized; add synthetic validation subsection |
+| Proof gap (theory papers) | Run `/proof-checker` if PROOF_AUDIT.md doesn't exist yet; fix FATAL/CRITICAL issues |
+| Writing clutter / passive voice | Apply sciwrite 5-pass audit: clutter extraction → active voice → sentence architecture → keyword consistency → numerical integrity. See `paper-write` Step 5 |
+| Number mismatch (paper vs results) | Run `/paper-claim-audit` if PAPER_CLAIM_AUDIT.md doesn't exist; fix any `number_mismatch` or `aggregation_mismatch` claims |
+| Keyword inconsistency | The "Banana Rule": if Methods says "obese group", Results must not say "heavier group". Extract key terms, verify consistency across all sections |
 
 ### Step 4: Recompile Round 1
 
@@ -145,27 +195,116 @@ cp main.pdf main_round1.pdf
 
 Verify: 0 undefined references, 0 undefined citations.
 
-### Step 5: Round 2 Review
+### Step 4.5: Restatement Regression Test
 
-Use a fresh Claude CLI invocation. Include the Round 1 raw review explicitly;
-there is no MCP `threadId`.
+After every recompilation, rerun a theorem-statement consistency check so fix rounds cannot reintroduce appendix drift. **Run this after Step 4 and again after Step 7 before the final format check.**
 
-```text
-[Round 2 update]
+**Scope**
+- Compare only theorem/lemma/proposition/corollary statements, not proof bodies.
+- Classify files by `main.tex` input order: files before `\appendix` are main body; files after `\appendix` are appendix.
 
-Previous raw review:
-[paste or summarize the saved Round 1 Claude review]
+**Normalized comparison logic**
+- Strip comments, `\label{...}`, `\ref{...}`, `\eqref{...}`, `\cite...{...}`, and whitespace-only differences.
+- Collapse formatting-only macros such as `\emph{}`, `\textbf{}`, `\textit{}`, `\mathrm{}`, `\mathbf{}`, `\mathcal{}`, and `\operatorname{}` to their contents.
+- Preserve quantifiers, case splits, assumptions, and the literal names of defined objects.
+- Compare by theorem label when available; otherwise compare by theorem type and order.
+- Flag any change in hypotheses, case splits, quantifier order, or terminology (`stationary` vs `terminal`) as regression drift.
 
-Since the previous review, we have implemented:
-1. [Fix 1]: [description]
-2. [Fix 2]: [description]
-...
-
-Please re-score and re-assess. Same format:
-Score, Summary, Strengths, Weaknesses, Actionable fixes, Verdict.
+```bash
+python3 - <<'PY'
+import re
+def normalize(s):
+    s = re.sub(r'%.*', '', s)
+    s = re.sub(r'\\label\{[^}]*\}', '', s)
+    s = re.sub(r'\\(?:ref|eqref|cref|Cref|cite[a-zA-Z]*)\{[^}]*\}', '', s)
+    s = re.sub(r'\\(?:emph|textbf|textit|mathrm|mathbf|mathsf|mathcal|operatorname)\{([^{}]*)\}', r'\1', s)
+    s = re.sub(r'\\begin\{[^}]+\}|\\end\{[^}]+\}', '', s)
+    s = re.sub(r'\s+', ' ', s)
+    return s.strip().lower()
+# Compare normalized theorem blocks from the current main-body files
+# against their appendix restatements. Any mismatch blocks completion.
+PY
 ```
 
-Save the raw Claude CLI JSON output for Round 2.
+**Empirical motivation:** in our April 2026 NeurIPS run, `thm:dsm-oracle` had a 3-case split (w=0/1/>1) in main but no case split in appendix; `nu_T` was named "stationary" in main and "terminal" in appendix. These drifted multiple times across fix rounds because no automated check caught regression.
+
+### Step 5: Round 2 Review
+
+If `REVIEWER_BIAS_GUARD = true` (default), use a **fresh** `claude -p` thread for Round 2. Do not reuse the Round 1 agent id for prompting. Save the returned agent id only for recovery bookkeeping.
+
+```text
+Write the complete fresh Claude review/help prompt to `$PROMPT_FILE`.
+Preserve the role, files-to-read, objective, and required output schema from this original call shape.
+
+
+prompt: |
+    You are reviewing a [VENUE] paper. This is a fresh, zero-context review.
+    Ignore any prior review rounds, prior fix lists, or executor explanations.
+    Judge the paper only from the current LaTeX source and compiled PDF.
+
+    ## Paper Files:
+    - LaTeX source: [list all section .tex files]
+    - Compiled PDF: paper/main.pdf
+    - Figures: [list figure files]
+
+    Read BOTH the LaTeX source (for content/logic) AND the compiled PDF (for visual presentation).
+
+    ## Review Instructions
+    Please act as a senior ML reviewer ([VENUE] level). Provide:
+    1. **Overall Score** (1-10, where 6 = weak accept, 7 = accept)
+    2. **Summary** (2-3 sentences)
+    3. **Strengths** (bullet list, ranked)
+    4. **Weaknesses** (bullet list, ranked: CRITICAL > MAJOR > MINOR)
+    5. **For each CRITICAL/MAJOR weakness**: A specific, actionable fix
+    6. **Missing References** (if any)
+    7. **Visual Review** (from the PDF):
+       - Figure quality: readable? labels legible? colors distinguishable in grayscale?
+       - Figure-caption alignment: does each caption match its figure?
+       - Layout: orphaned headers, awkward page breaks, figures far from references?
+       - Table formatting: aligned columns, consistent decimals, bold for best results?
+       - Visual consistency: same color scheme across all figures?
+    8. **Verdict**: Ready for submission? Yes / Almost / No
+
+    Focus on: theoretical rigor, claims vs evidence alignment, writing clarity,
+    self-containedness, notation consistency, and visual presentation quality.
+```
+
+```bash
+PROMPT_FILE="${PROMPT_FILE:-.aris/review-prompts/claude-review-round-N.md}"
+RAW_REVIEW_JSON="${RAW_REVIEW_JSON:-.aris/review-outputs/claude-review-round-N.json}"
+mkdir -p "$(dirname "$PROMPT_FILE")" "$(dirname "$RAW_REVIEW_JSON")"
+claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+```
+
+Save the raw Claude CLI JSON before summarizing it. Treat the response text inside the JSON as the reviewer/helper output.
+
+If `REVIEWER_BIAS_GUARD = false` (legacy debugging only), use a new `claude -p` invocation with the saved agent id; this is **not** the recommended path.
+
+### Step 5.5: Kill Argument Exercise (theory papers only)
+
+Run this only if the paper is theory-heavy (≥5 `\begin{theorem}|\begin{lemma}|\begin{proposition}|\begin{corollary}` environments in the source) and only on the final scheduled round (`current_round == MAX_ROUNDS`).
+
+This is a late-stage adversarial check. It must always use **fresh** `claude -p` threads, never a new `claude -p` invocation, and it must not reuse any prior review context.
+
+**Thread 1: Attack**
+- Use a fresh thread with only the current paper files.
+- Prompt: "Construct the single best argument to reject this paper in 200 words. Focus on theorem validity, assumption mismatch, missing proof obligations, limit-order ambiguity, and claim/evidence gaps. Do not reference prior rounds or fixes."
+
+**Thread 2: Defense**
+- Use a second fresh thread with the current paper files plus the attack memo.
+- Prompt: "Now address the attack memo. For each rejection point, classify it as already fixed, partially fixed, or still unresolved, and cite the current files. Do not reuse prior review context."
+
+**Merge rule**
+- Dedupe attack points against the Round 2 weakness list by semantic overlap.
+- Append any novel unresolved attack point to the Step 6 fix list before implementation.
+- If the defense cannot refute a point, keep it at the original severity or raise it by one level if it exposes a main-theorem or core-assumption failure.
+- If the defense shows the issue is already fixed in the current files, only downgrade after verifying the file evidence.
+- Record both memos in `PAPER_IMPROVEMENT_LOG.md`.
+- If `HUMAN_CHECKPOINT = true`, include the merged findings in the checkpoint summary before asking the user to proceed.
+
+This phase feeds directly into Step 6. The attack/defense findings must be merged before the final recompile.
+
+**Empirical motivation:** in our April 2026 NeurIPS run, after 5 rounds of standard improvement (score 7-8/10), the kill-argument exercise surfaced framing weaknesses that no prior review caught (e.g., "width-w is mostly conditional", "CRF irrelevant to real D-LLMs"). Author rebuttal forced explicit scope qualifications in abstract and discussion.
 
 ### Step 5b: Human Checkpoint (if enabled)
 
@@ -188,37 +327,68 @@ cp main.pdf main_round2.pdf
 
 ### Step 8: Format Check
 
-After the final recompilation, run a format compliance check:
+After the final recompilation, run a **location-aware** format compliance check.
+
+```bash
+# If the log lacks file/line data, rerun the final compile once with -file-line-error.
+cd paper && latexmk -pdf -file-line-error -interaction=nonstopmode -halt-on-error main.tex
+```
 
 ```bash
 # 1. Page count vs venue limit
 PAGES=$(pdfinfo paper/main.pdf | grep Pages | awk '{print $2}')
 echo "Pages: $PAGES (limit: 9 main body for ICLR/NeurIPS)"
 
-# 2. Overfull hbox warnings (content exceeding margins)
-OVERFULL=$(grep -c "Overfull" paper/main.log 2>/dev/null || echo 0)
-echo "Overfull hbox warnings: $OVERFULL"
-grep "Overfull" paper/main.log 2>/dev/null | head -10
+# 2. Duplicate labels: HARD BLOCK
+DUP_LABELS=$(grep -Rho "\\\\label{[^}]*}" paper/main.tex paper/sections 2>/dev/null | sort | uniq -d || true)
+if [ -n "$DUP_LABELS" ]; then
+    echo "Duplicate labels found (BLOCKING):"
+    echo "$DUP_LABELS"
+fi
 
-# 3. Underfull hbox warnings (loose spacing)
-UNDERFULL=$(grep -c "Underfull" paper/main.log 2>/dev/null || echo 0)
-echo "Underfull hbox warnings: $UNDERFULL"
+# 3. Overfull warnings with location classification
+OVERFULLS=$(grep -n "Overfull \\\\hbox" paper/main.log 2>/dev/null || true)
 
-# 4. Bad boxes summary
-grep -c "badness" paper/main.log 2>/dev/null || echo "0 badness warnings"
+# Main body = source files before \appendix in main.tex.
+# Appendix = source files after \appendix, or files whose path contains "appendix".
+# Bibliography = paper.bbl, references.bib, or bibliography-generated output.
+MAIN_BODY_OVERFULL=$(echo "$OVERFULLS" | grep -v -E 'appendix|paper\.bbl|references\.bib' || true)
+APPENDIX_OVERFULL=$(echo "$OVERFULLS" | grep -E 'appendix' || true)
+BIB_OVERFULL=$(echo "$OVERFULLS" | grep -E 'paper\.bbl|references\.bib' || true)
+
+echo "Main-body overfulls (any size BLOCKS):"
+echo "$MAIN_BODY_OVERFULL"
+echo "Appendix overfulls (>10pt blocks):"
+echo "$APPENDIX_OVERFULL"
+echo "Bibliography overfulls (>20pt blocks):"
+echo "$BIB_OVERFULL"
 ```
 
-**Auto-fix patterns:**
+**Stop criteria:**
+- Any duplicate label blocks completion.
+- Any overfull in the main body blocks completion, regardless of size.
+- Appendix overfulls block completion only if they exceed 10pt or are visibly clipping.
+- Bibliography overfulls block completion only if they exceed 20pt or are visibly clipping.
+- Underfull hboxes remain warnings unless they create obvious layout damage.
+
+**Auto-fix patterns (location-aware):**
 
 | Issue | Fix |
 |-------|-----|
-| Overfull hbox in equation | Wrap in `\resizebox` or split with `\split`/`aligned` |
-| Overfull hbox in table | Reduce font (`\small`/`\footnotesize`) or use `\resizebox{\linewidth}{!}{...}` |
-| Overfull hbox in text | Rephrase sentence or add `\allowbreak` / `\-` hints |
+| Main-body overfull in equation | Split with `aligned` / `split` / `multline`, or shorten notation |
+| Main-body overfull in table | Reduce font, resize table, or break table across rows |
+| Main-body overfull in text | Rephrase; do not hide it with global `\sloppy` |
+| Appendix overfull ≤ 10pt | Warn only unless visibly clipping |
+| Appendix overfull > 10pt | Apply the same fix if the spill is visible |
+| Bibliography overfull ≤ 20pt | Warn only unless caused by malformed entry or clipping |
+| Bibliography overfull > 20pt | Fix malformed entry, URL, or DOI formatting |
 | Over page limit | Move content to appendix, compress tables, reduce figure sizes |
-| Underfull hbox (loose) | Rephrase for better line filling or add `\looseness=-1` |
 
-If any overfull hbox > 10pt is found, fix it and recompile before documenting.
+**Location-aware interpretation:**
+- Classify by the source file reported in the `-file-line-error` log.
+- If a warning cannot be classified, treat it as main body and fix it.
+
+**Empirical motivation:** in our April 2026 NeurIPS run, 28+ overfull hbox warnings (largest 160pt in the appendix bridge proof) survived 5 improvement rounds because the previous blanket "overfull > 10pt blocks" rule was too lax and treated all locations equally.
 
 ### Step 9: Document Results
 
@@ -238,7 +408,7 @@ Create `PAPER_IMPROVEMENT_LOG.md` in the paper directory:
 ## Round 1 Review & Fixes
 
 <details>
-<summary>Claude review Review (Round 1)</summary>
+<summary>Claude CLI max-effort Review (Round 1)</summary>
 
 [Full raw review text, verbatim]
 
@@ -252,7 +422,7 @@ Create `PAPER_IMPROVEMENT_LOG.md` in the paper directory:
 ## Round 2 Review & Fixes
 
 <details>
-<summary>Claude review Review (Round 2)</summary>
+<summary>Claude CLI max-effort Review (Round 2)</summary>
 
 [Full raw review text, verbatim]
 
@@ -279,7 +449,7 @@ Report to user:
 
 ### Feishu Notification (if configured)
 
-After each round's review AND at final completion, check `~/.codex/feishu.json`:
+After each round's review AND at final completion, check `~/.claude/feishu.json`:
 - **After each round**: Send `review_scored` — "Round N: X/10 — [key changes]"
 - **After final round**: Send `pipeline_done` — score progression table + final page count
 - If config absent or mode `"off"`: skip entirely (no-op)
@@ -295,21 +465,13 @@ paper/
 └── PAPER_IMPROVEMENT_LOG.md    # Full review log with scores
 ```
 
-## Output Protocols
-
-> Follow these shared protocols for all output files:
-> - **[Output Versioning Protocol](../../shared-references/output-versioning.md)** — write timestamped file first, then copy to fixed name
-> - **[Output Manifest Protocol](../../shared-references/output-manifest.md)** — log every output to MANIFEST.md
-> - **[Output Language Protocol](../../shared-references/output-language.md)** — respect the project's language setting
-
 ## Key Rules
 
 - **Large file handling**: If the Write tool fails due to file size, immediately retry using Bash (`cat << 'EOF' > file`) to write in chunks. Do NOT ask the user for permission — just do it silently.
 
 - **Preserve all PDF versions** — user needs to compare progression
-- **Save FULL raw review text** — do not summarize or truncate Claude reviewer responses
-- Use a fresh Claude CLI invocation for Round 2 and include the Round 1 raw
-  review plus implemented fixes explicitly to maintain context
+- **Save FULL raw review text** — do not summarize or truncate GPT-5.5 responses
+- **Reviewer independence (Round 2+)**: when `REVIEWER_BIAS_GUARD = true` (default), use a **fresh** `claude -p` thread for every review round; never use a new `claude -p` invocation and never include "since last round" / fix summaries in the prompt. See the Reviewer Independence Protocol section above.
 - **Always recompile after fixes** — verify 0 errors before proceeding
 - **Do not fabricate experimental results** — synthetic validation must describe methodology, not invent numbers
 - **Respect the paper's claims** — soften overclaims rather than adding unsupported new claims
@@ -327,3 +489,7 @@ Based on end-to-end testing on a 9-page ICLR 2026 theory paper:
 | Round 3 | 5→8.5/10 (format) | Removed hero fig, appendix, compressed conclusion, fixed overfull hbox |
 
 **+4.5 points across 3 rounds** (2 content + 1 format) is typical for a well-structured but rough first draft. Final: 8 pages main body, 0 overfull hbox, ICLR-compliant.
+
+## Review Tracing
+
+After each `claude -p` or a new `claude -p` invocation reviewer call, save the trace following `../shared-references/review-tracing.md`. Resolve `save_trace.sh` via that shared resolver, or write files directly to `.aris/traces/<skill>/<date>_run<NN>/`. Respect the `--- trace:` parameter (default: `full`).

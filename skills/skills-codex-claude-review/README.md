@@ -4,26 +4,23 @@ This package is a **thin override layer** for users who want:
 
 - **Codex** as the main executor
 - **Claude Code** as the reviewer
-- direct Claude Code CLI review calls instead of a second Codex reviewer
+- direct Claude Code CLI review/help calls instead of a second Codex reviewer
 
 It is designed to sit on top of the upstream Codex-native package at `skills/skills-codex/`.
 
 ## What this package contains
 
-- Only the review-heavy skill overrides that need a different reviewer backend
-- No duplicate templates or resource directories
+- Overrides for every `skills/skills-codex/` skill whose Markdown contains
+  `spawn_agent` or `send_input`
+- Transformed prompt files for those overridden skills when they contain
+  reviewer/helper transport instructions
 - No replacement for the base `skills/skills-codex/` installation
 
-Current overrides:
+Regenerate the override set with:
 
-- `research-review`
-- `novelty-check`
-- `research-refine`
-- `auto-review-loop`
-- `paper-plan`
-- `paper-figure`
-- `paper-write`
-- `auto-paper-improvement-loop`
+```bash
+python tools/generate_codex_claude_review_overrides.py
+```
 
 ## Install
 
@@ -46,21 +43,22 @@ cp -a skills/skills-codex-claude-review/* ~/.codex/skills/
 claude --version
 ```
 
-The override skills invoke Claude review using the project `AGENTS.md` command
-shape:
+The override skills invoke Claude review/help using this fixed command shape:
 
 ```bash
-claude -p --dangerously-skip-permissions --output-format json --model opus --effort max "your focused review prompt"
+claude -p --dangerously-skip-permissions --output-format json --model opus --effort max "your focused review or help prompt"
 ```
 
 ## Why this exists
 
-The upstream `skills/skills-codex/` path already supports Codex-native execution with a second Codex reviewer via `spawn_agent`.
+The upstream `skills/skills-codex/` path already supports Codex-native
+execution with a second Codex reviewer/helper via `spawn_agent` and
+`send_input`.
 
 This package adds a different split:
 
 - executor: Codex
-- reviewer: Claude Code CLI
+- reviewer/helper: Claude Code CLI
 - transport: direct `claude -p` CLI call
 
 For long paper and review prompts, write the full prompt to a temporary prompt

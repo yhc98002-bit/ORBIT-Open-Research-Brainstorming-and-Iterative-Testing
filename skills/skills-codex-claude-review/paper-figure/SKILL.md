@@ -1,9 +1,16 @@
 ---
 name: "paper-figure"
 description: "Generate publication-quality figures and tables from experiment results. Use when user says \"画图\", \"作图\", \"generate figures\", \"paper figures\", or needs plots for a paper."
+allowed-tools: Bash(*), Read, Write, Edit, Grep, Glob, Agent
 ---
 
-> Override for Codex users who want **Claude Code**, not a second Codex agent, to act as the reviewer. Install this package **after** `skills/skills-codex/*`.
+> Override for Codex users who want **Claude Code CLI**, not a second Codex agent, to act as the reviewer/helper. Install this package **after** `skills/skills-codex/*`.
+
+Whenever the upstream skill asks for an external reviewer/helper, write the complete focused prompt to `$PROMPT_FILE` and run:
+
+```bash
+claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+```
 
 # Paper Figure: Publication-Quality Plots from Experiment Data
 
@@ -30,7 +37,7 @@ Generate all figures and tables for a paper based on: **$ARGUMENTS**
 - **COLOR_PALETTE = `tab10`** — Default matplotlib color cycle. Options: `tab10`, `Set2`, `colorblind` (deuteranopia-safe)
 - **FONT_SIZE = 10** — Base font size (matches typical conference body text)
 - **FIG_DIR = `figures/`** — Output directory for generated figures
-- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
+- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`.
 
 ## Inputs
 
@@ -39,6 +46,31 @@ Generate all figures and tables for a paper based on: **$ARGUMENTS**
 3. **Existing figures** — any manually created figures to preserve
 
 If no PAPER_PLAN.md exists, scan for data files and ask the user which figures to generate.
+
+## Figure Manifest Contract
+
+`figures/figure_manifest.json` is the source of truth for paper figures. After creating,
+updating, preserving, or verifying any figure/table, append or update the corresponding
+entry by `id`:
+
+```jsonc
+{
+  "id": "fig:training_curves",
+  "type": "line_plot|bar_chart|table|multi_panel|manual|...",
+  "supports_claims": ["C1"],
+  "data_source": "results/run_001/metrics.json",
+  "generator": "paper-figure",
+  "output": "figures/fig_training_curves.pdf",
+  "latex_label": "fig:training_curves",
+  "status": "draft|verified|needs_redesign"
+}
+```
+
+Use `supports_claims` from `claims/claim_ledger.json` or the paper plan when available;
+otherwise use an empty list and mark the entry `draft`. Set `verified` only after output
+exists and passes the quality checklist/review. Set `needs_redesign` for figures that
+fail visual review or no longer match the claim/data source. `figures/latex_includes.tex`
+is a generated view, not the manifest source of truth.
 
 ## Workflow
 
@@ -199,23 +231,34 @@ Save all snippets to `figures/latex_includes.tex` for easy copy-paste into the p
 
 ### Step 7: Figure Quality Review with REVIEWER_MODEL
 
-Send figure descriptions and captions to Claude review using the Claude CLI
-transport in `../shared-references/claude-cli-review.md`:
+Send figure descriptions and captions to GPT-5.5 for review:
 
 ```text
-Review these figure/table plans for a [VENUE] submission.
+Write the complete fresh Claude review/help prompt to `$PROMPT_FILE`.
+Preserve the role, files-to-read, objective, and required output schema from this original call shape.
 
-For each figure:
-1. Is the caption informative and self-contained?
-2. Does the figure type match the data being shown?
-3. Is the comparison fair and clear?
-4. Any missing baselines or ablations?
-5. Would a different visualization be more effective?
 
-[list all figures with captions and descriptions]
+prompt: |
+    Review these figure/table plans for a [VENUE] submission.
+
+    For each figure:
+    1. Is the caption informative and self-contained?
+    2. Does the figure type match the data being shown?
+    3. Is the comparison fair and clear?
+    4. Any missing baselines or ablations?
+    5. Would a different visualization be more effective?
+
+    [list all figures with captions and descriptions]
 ```
 
-Save the raw Claude CLI JSON output and treat the response text as the reviewer output.
+```bash
+PROMPT_FILE="${PROMPT_FILE:-.aris/review-prompts/claude-review-round-N.md}"
+RAW_REVIEW_JSON="${RAW_REVIEW_JSON:-.aris/review-outputs/claude-review-round-N.json}"
+mkdir -p "$(dirname "$PROMPT_FILE")" "$(dirname "$RAW_REVIEW_JSON")"
+claude -p --dangerously-skip-permissions --output-format json --model opus --effort max < "$PROMPT_FILE" | tee "$RAW_REVIEW_JSON"
+```
+
+Save the raw Claude CLI JSON before summarizing it. Treat the response text inside the JSON as the reviewer/helper output.
 
 ### Step 8: Quality Checklist
 
@@ -247,13 +290,6 @@ figures/
 ├── latex_includes.tex           # LaTeX snippets for all figures
 └── TABLE_*.tex                  # standalone table LaTeX files
 ```
-
-## Output Protocols
-
-> Follow these shared protocols for all output files:
-> - **[Output Versioning Protocol](../../shared-references/output-versioning.md)** — write timestamped file first, then copy to fixed name
-> - **[Output Manifest Protocol](../../shared-references/output-manifest.md)** — log every output to MANIFEST.md
-> - **[Output Language Protocol](../../shared-references/output-language.md)** — respect the project's language setting
 
 ## Key Rules
 
