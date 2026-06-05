@@ -11,7 +11,7 @@ Generate a structured, section-by-section paper outline from: **$ARGUMENTS**
 
 ## Constants
 
-- **REVIEWER_MODEL = `claude-review`** — Claude reviewer invoked through the local `claude-review` MCP bridge. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
+- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
 - **TARGET_VENUE = `ICLR`** — Default venue. User can override (e.g., `/paper-plan "topic" — venue: NeurIPS`). Supported: `ICLR`, `NeurIPS`, `ICML`.
 - **MAX_PAGES** — Main body page limit, measured from first page to end of Conclusion section (excluding references, appendix, and acknowledgements). ICLR=9, NeurIPS=9, ICML=8.
 
@@ -180,26 +180,25 @@ For each section, list required citations:
 
 ### Step 6: Cross-Review with REVIEWER_MODEL
 
-Send the complete outline to Claude review for feedback:
+Send the complete outline to Claude review for feedback using the Claude CLI
+transport in `../shared-references/claude-cli-review.md`:
 
+```text
+Review this paper outline for a [VENUE] submission.
+[full outline including Claims-Evidence Matrix]
+
+Score 1-10 on:
+1. Logical flow — does the story build naturally?
+2. Claim-evidence alignment — every claim backed?
+3. Missing experiments or analysis
+4. Positioning relative to prior work
+5. Page budget feasibility (MAX_PAGES = main body to Conclusion end, excluding refs/appendix)
+
+For each weakness, suggest the MINIMUM fix.
+Be specific and actionable — "add X" not "consider more experiments".
 ```
-mcp__claude-review__review_start:
-  prompt: |
-    Review this paper outline for a [VENUE] submission.
-    [full outline including Claims-Evidence Matrix]
 
-    Score 1-10 on:
-    1. Logical flow — does the story build naturally?
-    2. Claim-evidence alignment — every claim backed?
-    3. Missing experiments or analysis
-    4. Positioning relative to prior work
-    5. Page budget feasibility (MAX_PAGES = main body to Conclusion end, excluding refs/appendix)
-
-    For each weakness, suggest the MINIMUM fix.
-    Be specific and actionable — "add X" not "consider more experiments".
-```
-
-After this start call, immediately save the returned `jobId` and poll `mcp__claude-review__review_status` with a bounded `waitSeconds` until `done=true`. Treat the completed status payload's `response` as the reviewer output, and save the completed `threadId` for any follow-up round.
+Save the raw Claude CLI JSON output and treat the response text as the reviewer output.
 
 Apply feedback before finalizing.
 

@@ -1,17 +1,17 @@
 ---
 name: "research-review"
-description: "Get a deep critical review of research from Claude via claude-review MCP. Use when user says \"review my research\", \"help me review\", \"get external review\", or wants critical feedback on research ideas, papers, or experimental results."
+description: "Get a deep critical review of research from Claude via direct Claude Code CLI. Use when user says \"review my research\", \"help me review\", \"get external review\", or wants critical feedback on research ideas, papers, or experimental results."
 ---
 
 > Override for Codex users who want **Claude Code**, not a second Codex agent, to act as the reviewer. Install this package **after** `skills/skills-codex/*`.
 
-# Research Review via `claude-review` MCP (high-rigor review)
+# Research Review via Claude Code CLI (high-rigor review)
 
 Get a multi-round critical review of research work from an external LLM with maximum reasoning depth.
 
 ## Constants
 
-- **REVIEWER_MODEL = `claude-review`** — Claude reviewer invoked through the local `claude-review` MCP bridge. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
+- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
 - **PAPER_MODE = `normal`** — Default review target is a normal publishable AI paper,
   not breakthrough-only.
 - **REVIEW_POSTURE = `collaborator` before STOP A/B; `adversarial` after STOP C** —
@@ -23,11 +23,8 @@ Get a multi-round critical review of research work from an external LLM with max
 
 - Install the base Codex-native skills first: copy `skills/skills-codex/*` into `~/.codex/skills/`.
 - Then install this overlay package: copy `skills/skills-codex-claude-review/*` into `~/.codex/skills/` and allow it to overwrite the same skill names.
-- Register the local reviewer bridge:
-  ```bash
-  codex mcp add claude-review -- python3 ~/.codex/mcp-servers/claude-review/server.py
-  ```
-- This gives Codex access to `mcp__claude-review__review_start`, `mcp__claude-review__review_reply_start`, and `mcp__claude-review__review_status`.
+- Ensure the `claude` CLI is available. Reviews use direct `claude -p` calls;
+  see `../shared-references/claude-cli-review.md`.
 
 
 ## Workflow
@@ -49,35 +46,36 @@ Before calling the external reviewer, compile a comprehensive briefing:
 3. Identify: core claims, methodology, key results, known weaknesses
 
 ### Step 2: Initial Review (Round 1)
-Send a detailed prompt with high-rigor review:
+Send a detailed prompt with high-rigor review using the Claude CLI transport in
+`../shared-references/claude-cli-review.md`:
 
+```text
+[Full research context + specific questions]
+Use REVIEW_POSTURE from the current ORBIT stop boundary.
+
+If before STOP A or STOP B:
+You are a constructive research collaborator. Preserve promising ideas. Classify
+risks, propose positioning routes, and help turn the idea into a normal publishable
+paper. Do not simulate acceptance-stage red-team review unless explicitly asked. Do not recommend
+abandonment unless a true STRONG_BLOCKER is present.
+
+If after STOP C:
+You are a senior adversarial reviewer. Stress-test claims, evidence, baselines,
+controls, reproducibility, and overclaiming.
+
+Identify:
+1. Logical gaps or unjustified claims
+2. Minimal evidence needed for the selected paper mode
+3. Narrative weaknesses and positioning fixes
+4. Whether the work can survive as normal / benchmark / reproduction-plus / system / audit
 ```
-mcp__claude-review__review_start:
-  prompt: |
-    [Full research context + specific questions]
-    Use REVIEW_POSTURE from the current ORBIT stop boundary.
 
-    If before STOP A or STOP B:
-    You are a constructive research collaborator. Preserve promising ideas. Classify
-    risks, propose positioning routes, and help turn the idea into a normal publishable
-    paper. Do not simulate acceptance-stage red-team review unless explicitly asked. Do not recommend
-    abandonment unless a true STRONG_BLOCKER is present.
-
-    If after STOP C:
-    You are a senior adversarial reviewer. Stress-test claims, evidence, baselines,
-    controls, reproducibility, and overclaiming.
-
-    Identify:
-    1. Logical gaps or unjustified claims
-    2. Minimal evidence needed for the selected paper mode
-    3. Narrative weaknesses and positioning fixes
-    4. Whether the work can survive as normal / benchmark / reproduction-plus / system / audit
-```
-
-After this start call, immediately save the returned `jobId` and poll `mcp__claude-review__review_status` with a bounded `waitSeconds` until `done=true`. Treat the completed status payload's `response` as the reviewer output, and save the completed `threadId` for any follow-up round.
+Save the raw Claude CLI JSON output and treat the response text as the reviewer output.
 
 ### Step 3: Iterative Dialogue (Rounds 2-N)
-Use `mcp__claude-review__review_reply_start` with the saved completed `threadId`, then poll `mcp__claude-review__review_status` with the returned `jobId` until `done=true` to continue the conversation:
+For follow-up rounds, start a new Claude CLI invocation and include the prior raw
+review, your response, and the updated artifact explicitly. There is no MCP
+`threadId`; continuity comes from the prompt contents.
 
 For each round:
 1. **Respond** to criticisms with evidence/counterarguments
@@ -117,7 +115,7 @@ Update project memory/notes with key review conclusions.
 - After STOP C, adversarial review is appropriate for paper-level claims.
 - Push back on criticisms you disagree with, but accept valid ones
 - Focus on ACTIONABLE feedback — "what experiment would fix this?"
-- Document the completed `threadId` for potential future resumption
+- Document the saved raw Claude CLI JSON output for potential future resumption
 - The review document should be self-contained (readable without the conversation)
 
 ## Prompt Templates

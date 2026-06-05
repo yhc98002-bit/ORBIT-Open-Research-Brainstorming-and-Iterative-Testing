@@ -11,7 +11,7 @@ Classify novelty risk and positioning routes for: **$ARGUMENTS**
 
 ## Constants
 
-- **REVIEWER_MODEL = `claude-review`** — Claude reviewer invoked through the local `claude-review` MCP bridge. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
+- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
 - **NOVELTY_POLICY = `positioning-first`** — Load `../shared-references/research-posture.md`
   before judging novelty. Similar work is not automatically fatal.
 - **CONCURRENT_WORK_WINDOW = `3 months`** — Recent work goes to
@@ -47,14 +47,12 @@ For EACH core claim, search using ALL available sources:
 3. **Read abstracts**: For each potentially overlapping paper, WebFetch its abstract and related work section
 
 ### Phase C: Cross-Model Positioning Review
-Call REVIEWER_MODEL via `mcp__claude-review__review_start` with high-rigor review:
-```
-mcp__claude-review__review_start:
-  prompt: |
-    [Full novelty briefing + prior work list + specific novelty questions]
+Call REVIEWER_MODEL via the Claude CLI transport in `../shared-references/claude-cli-review.md` with high-rigor review:
+```text
+[Full novelty briefing + prior work list + specific novelty questions]
 ```
 
-After this start call, immediately save the returned `jobId` and poll `mcp__claude-review__review_status` with a bounded `waitSeconds` until `done=true`. Treat the completed status payload's `response` as the reviewer output, and save the completed `threadId` for any follow-up round.
+Save the raw Claude CLI JSON output and treat the response text as the reviewer output.
 Prompt should include:
 - The proposed method description
 - All papers found in Phase B

@@ -11,7 +11,7 @@ Draft a LaTeX paper based on: **$ARGUMENTS**
 
 ## Constants
 
-- **REVIEWER_MODEL = `claude-review`** — Claude reviewer invoked through the local `claude-review` MCP bridge. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
+- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
 - **TARGET_VENUE = `ICLR`** — Default venue. Supported: `ICLR`, `NeurIPS`, `ICML`. Determines style file and formatting.
 - **ANONYMOUS = true** — If true, use anonymous author block. Set `false` for camera-ready.
 - **MAX_PAGES = 9** — Main body page limit. Counts from first page to end of Conclusion section. References and appendix are NOT counted.
@@ -248,28 +248,27 @@ After drafting all sections, scan for common AI writing patterns and fix them:
 
 ### Step 6: Cross-Review with REVIEWER_MODEL
 
-Send the complete draft to Claude review:
+Send the complete draft to Claude review using the Claude CLI transport in
+`../shared-references/claude-cli-review.md`:
 
+```text
+Review this [VENUE] paper draft (main body, excluding appendix).
+
+Focus on:
+1. Does each claim from the intro have supporting evidence?
+2. Is the writing clear, concise, and free of AI-isms?
+3. Any logical gaps or unclear explanations?
+4. Does it fit within [MAX_PAGES] pages (to end of Conclusion)?
+5. Is related work sufficiently comprehensive (>=1 page)?
+6. For theory papers: are proof sketches adequate?
+7. Are figures/tables clearly described and properly referenced?
+
+For each issue, specify: severity (CRITICAL/MAJOR/MINOR), location, and fix.
+
+[paste full draft text]
 ```
-mcp__claude-review__review_start:
-  prompt: |
-    Review this [VENUE] paper draft (main body, excluding appendix).
 
-    Focus on:
-    1. Does each claim from the intro have supporting evidence?
-    2. Is the writing clear, concise, and free of AI-isms?
-    3. Any logical gaps or unclear explanations?
-    4. Does it fit within [MAX_PAGES] pages (to end of Conclusion)?
-    5. Is related work sufficiently comprehensive (≥1 page)?
-    6. For theory papers: are proof sketches adequate?
-    7. Are figures/tables clearly described and properly referenced?
-
-    For each issue, specify: severity (CRITICAL/MAJOR/MINOR), location, and fix.
-
-    [paste full draft text]
-```
-
-After this start call, immediately save the returned `jobId` and poll `mcp__claude-review__review_status` with a bounded `waitSeconds` until `done=true`. Treat the completed status payload's `response` as the reviewer output, and save the completed `threadId` for any follow-up round.
+Save the raw Claude CLI JSON output and treat the response text as the reviewer output.
 
 Apply CRITICAL and MAJOR fixes. Document MINOR issues for the user.
 

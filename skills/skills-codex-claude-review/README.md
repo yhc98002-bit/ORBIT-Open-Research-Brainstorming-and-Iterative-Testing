@@ -4,7 +4,7 @@ This package is a **thin override layer** for users who want:
 
 - **Codex** as the main executor
 - **Claude Code** as the reviewer
-- the local `claude-review` MCP bridge instead of a second Codex reviewer
+- direct Claude Code CLI review calls instead of a second Codex reviewer
 
 It is designed to sit on top of the upstream Codex-native package at `skills/skills-codex/`.
 
@@ -40,20 +40,17 @@ cp -a skills/skills-codex/* ~/.codex/skills/
 cp -a skills/skills-codex-claude-review/* ~/.codex/skills/
 ```
 
-3. Register the local reviewer bridge:
+3. Ensure the Claude Code CLI is available:
 
 ```bash
-mkdir -p ~/.codex/mcp-servers/claude-review
-cp mcp-servers/claude-review/server.py ~/.codex/mcp-servers/claude-review/server.py
-codex mcp add claude-review -- python3 ~/.codex/mcp-servers/claude-review/server.py
+claude --version
 ```
 
-If your Claude setup depends on a shell helper such as `claude-aws`, use the wrapper instead:
+The override skills invoke Claude review using the project `AGENTS.md` command
+shape:
 
 ```bash
-cp mcp-servers/claude-review/run_with_claude_aws.sh ~/.codex/mcp-servers/claude-review/run_with_claude_aws.sh
-chmod +x ~/.codex/mcp-servers/claude-review/run_with_claude_aws.sh
-codex mcp add claude-review -- ~/.codex/mcp-servers/claude-review/run_with_claude_aws.sh
+claude -p --dangerously-skip-permissions --output-format json --model opus --effort max "your focused review prompt"
 ```
 
 ## Why this exists
@@ -64,12 +61,10 @@ This package adds a different split:
 
 - executor: Codex
 - reviewer: Claude Code CLI
-- transport: `claude-review` MCP
+- transport: direct `claude -p` CLI call
 
-For long paper and review prompts, the reviewer path uses:
+For long paper and review prompts, write the full prompt to a temporary prompt
+file and pass it to the same CLI command. See
+`shared-references/claude-cli-review.md`.
 
-- `review_start`
-- `review_reply_start`
-- `review_status`
-
-This avoids the observed Codex-hosted timeout issue when Claude is invoked synchronously through a local bridge.
+This avoids depending on a local Codex MCP bridge for Claude review.

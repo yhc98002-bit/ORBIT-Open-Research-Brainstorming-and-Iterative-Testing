@@ -30,7 +30,7 @@ Generate all figures and tables for a paper based on: **$ARGUMENTS**
 - **COLOR_PALETTE = `tab10`** — Default matplotlib color cycle. Options: `tab10`, `Set2`, `colorblind` (deuteranopia-safe)
 - **FONT_SIZE = 10** — Base font size (matches typical conference body text)
 - **FIG_DIR = `figures/`** — Output directory for generated figures
-- **REVIEWER_MODEL = `claude-review`** — Claude reviewer invoked through the local `claude-review` MCP bridge. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
+- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
 
 ## Inputs
 
@@ -199,24 +199,23 @@ Save all snippets to `figures/latex_includes.tex` for easy copy-paste into the p
 
 ### Step 7: Figure Quality Review with REVIEWER_MODEL
 
-Send figure descriptions and captions to GPT-5.5 for review:
+Send figure descriptions and captions to Claude review using the Claude CLI
+transport in `../shared-references/claude-cli-review.md`:
 
+```text
+Review these figure/table plans for a [VENUE] submission.
+
+For each figure:
+1. Is the caption informative and self-contained?
+2. Does the figure type match the data being shown?
+3. Is the comparison fair and clear?
+4. Any missing baselines or ablations?
+5. Would a different visualization be more effective?
+
+[list all figures with captions and descriptions]
 ```
-mcp__claude-review__review_start:
-  prompt: |
-    Review these figure/table plans for a [VENUE] submission.
 
-    For each figure:
-    1. Is the caption informative and self-contained?
-    2. Does the figure type match the data being shown?
-    3. Is the comparison fair and clear?
-    4. Any missing baselines or ablations?
-    5. Would a different visualization be more effective?
-
-    [list all figures with captions and descriptions]
-```
-
-After this start call, immediately save the returned `jobId` and poll `mcp__claude-review__review_status` with a bounded `waitSeconds` until `done=true`. Treat the completed status payload's `response` as the reviewer output, and save the completed `threadId` for any follow-up round.
+Save the raw Claude CLI JSON output and treat the response text as the reviewer output.
 
 ### Step 8: Quality Checklist
 

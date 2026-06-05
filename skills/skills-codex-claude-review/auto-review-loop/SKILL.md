@@ -1,6 +1,6 @@
 ---
 name: "auto-review-loop"
-description: "Autonomous multi-round research review loop. Repeatedly reviews using Claude Code via claude-review MCP, implements fixes, and re-reviews until positive assessment or max rounds reached. Use when user says \"auto review loop\", \"review until it passes\", or wants autonomous iterative improvement."
+description: "Autonomous multi-round research review loop. Repeatedly reviews using Claude Code CLI, implements fixes, and re-reviews until positive assessment or max rounds reached. Use when user says \"auto review loop\", \"review until it passes\", or wants autonomous iterative improvement."
 ---
 
 > Override for Codex users who want **Claude Code**, not a second Codex agent, to act as the reviewer. Install this package **after** `skills/skills-codex/*`.
@@ -17,7 +17,7 @@ Autonomously iterate: review → implement fixes → re-review, until the extern
 - POSITIVE_THRESHOLD: score >= 6/10, or verdict contains "accept", "sufficient", "ready for submission"
 - REVIEW_DOC: `review-stage/AUTO_REVIEW.md` (cumulative log) *(fall back to `./AUTO_REVIEW.md` for legacy projects)*
 - **OUTPUT_DIR = `review-stage/`** — Directory for review output files.
-- **REVIEWER_MODEL = `claude-review`** — Claude reviewer invoked through the local `claude-review` MCP bridge. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
+- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
 - **PAPER_MODE = `normal`** — Parse `— paper-mode:` when present. Normal mode is judged
   against a normal publishable-paper bar, not a breakthrough-only bar.
 - **HUMAN_CHECKPOINT = false** — When `true`, pause after each round's review (Phase B) and present the score + weaknesses to the user. Wait for user input before proceeding to Phase C. The user can: approve the suggested fixes, provide custom modification instructions, skip specific fixes, or stop the loop early. When `false` (default), the loop runs fully autonomously.
@@ -68,29 +68,29 @@ Long-running loops may hit the context window limit, triggering automatic compac
 
 #### Phase A: Review
 
-Send comprehensive context to the external reviewer:
+Send comprehensive context to the external reviewer using the Claude CLI
+transport in `../shared-references/claude-cli-review.md`:
 
+```text
+[Round N/MAX_ROUNDS of autonomous review loop]
+
+[Full research context: claims, methods, results, known weaknesses]
+[Changes since last round, if any]
+
+Please act as a senior ML reviewer (NeurIPS/ICML level).
+
+1. Score this work 1-10 for the selected paper_mode (default normal publishable AI paper, not breakthrough-only)
+2. List remaining critical weaknesses (ranked by severity)
+3. For each weakness, specify the MINIMUM fix (experiment, analysis, or reframing)
+4. State clearly: is this READY for submission? Yes/No/Almost
+
+Be rigorous, adversarial, and evidence-focused. If the work is ready, say so clearly.
 ```
-mcp__claude-review__review_start:
-  prompt: |
-    [Round N/MAX_ROUNDS of autonomous review loop]
 
-    [Full research context: claims, methods, results, known weaknesses]
-    [Changes since last round, if any]
-
-    Please act as a senior ML reviewer (NeurIPS/ICML level).
-
-    1. Score this work 1-10 for the selected paper_mode (default normal publishable AI paper, not breakthrough-only)
-    2. List remaining critical weaknesses (ranked by severity)
-    3. For each weakness, specify the MINIMUM fix (experiment, analysis, or reframing)
-    4. State clearly: is this READY for submission? Yes/No/Almost
-
-    Be rigorous, adversarial, and evidence-focused. If the work is ready, say so clearly.
-```
-
-After this start call, immediately save the returned `jobId` and poll `mcp__claude-review__review_status` with a bounded `waitSeconds` until `done=true`. Treat the completed status payload's `response` as the reviewer output, and save the completed `threadId` for any follow-up round.
-
-If this is round 2+, use `mcp__claude-review__review_reply_start` with the saved completed `threadId`, then poll `mcp__claude-review__review_status` with the returned `jobId` until `done=true` to maintain continuity.
+Save the raw Claude CLI JSON output and treat the response text as the reviewer
+output. If this is round 2+, include the previous raw review, implemented
+changes, updated metrics, and current artifact explicitly in the prompt. There
+is no MCP `threadId`; continuity comes from the prompt contents.
 
 #### Phase B: Parse Assessment
 
@@ -225,7 +225,9 @@ When loop ends (positive assessment or max rounds):
 - **Large file handling**: If the Write tool fails due to file size, immediately retry using Bash (`cat << 'EOF' > file`) to write in chunks. Do NOT ask the user for permission — just do it silently.
 
 - Always ask the Claude reviewer for strict, high-rigor feedback.
-- Save the completed `threadId` from the first `mcp__claude-review__review_status` result, then use `mcp__claude-review__review_reply_start` plus `mcp__claude-review__review_status` for subsequent rounds
+- Save the raw Claude CLI JSON output from each round; for subsequent rounds,
+  include the prior raw review and update summary explicitly in a fresh
+  `claude -p` invocation
 - Be honest — include negative results and failed experiments
 - Do NOT hide weaknesses to game a positive score
 - Implement fixes BEFORE re-reviewing (don't just promise to fix)
@@ -235,22 +237,24 @@ When loop ends (positive assessment or max rounds):
 
 ## Prompt Template for Round 2+
 
+Use the Claude CLI transport in `../shared-references/claude-cli-review.md`:
+
+```text
+[Round N update]
+
+Previous raw review:
+[paste or summarize the saved raw Claude review from round N-1]
+
+Since the previous review, we have:
+1. [Action 1]: [result]
+2. [Action 2]: [result]
+3. [Action 3]: [result]
+
+Updated results table:
+[paste metrics]
+
+Please re-score and re-assess. Are the remaining concerns addressed?
+Same format: Score, Verdict, Remaining Weaknesses, Minimum Fixes.
 ```
-mcp__claude-review__review_reply_start:
-  threadId: [saved from round 1]
-  prompt: |
-    [Round N update]
 
-    Since your last review, we have:
-    1. [Action 1]: [result]
-    2. [Action 2]: [result]
-    3. [Action 3]: [result]
-
-    Updated results table:
-    [paste metrics]
-
-    Please re-score and re-assess. Are the remaining concerns addressed?
-    Same format: Score, Verdict, Remaining Weaknesses, Minimum Fixes.
-```
-
-After this start call, immediately save the returned `jobId` and poll `mcp__claude-review__review_status` with a bounded `waitSeconds` until `done=true`. Treat the completed status payload's `response` as the reviewer output, and save the completed `threadId` for any follow-up round.
+Save the raw Claude CLI JSON output for the new round.

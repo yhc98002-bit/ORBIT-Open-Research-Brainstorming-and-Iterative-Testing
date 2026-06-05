@@ -1,6 +1,6 @@
 ---
 name: "research-refine"
-description: "Turn a vague research direction into a problem-anchored, elegant, frontier-aware, implementation-oriented method plan via iterative GPT-5.5 review. Use when the user says \"refine my approach\", \"帮我细化方案\", \"decompose this problem\", \"打磨idea\", \"refine research plan\", \"细化研究方案\", or wants a concrete research method with a publishable normal-paper route instead of a vague or overbuilt idea."
+description: "Turn a vague research direction into a problem-anchored, elegant, frontier-aware, implementation-oriented method plan via iterative Claude CLI review. Use when the user says \"refine my approach\", \"帮我细化方案\", \"decompose this problem\", \"打磨idea\", \"refine research plan\", \"细化研究方案\", or wants a concrete research method with a publishable normal-paper route instead of a vague or overbuilt idea."
 ---
 
 > Override for Codex users who want **Claude Code**, not a second Codex agent, to act as the reviewer. Install this package **after** `skills/skills-codex/*`.
@@ -29,9 +29,9 @@ Four principles dominate this skill:
 User input (PROBLEM + vague APPROACH)
   -> Phase 0 (Claude): Freeze Problem Anchor
   -> Phase 1 (Claude): Scan grounding papers -> identify technical gap -> choose the sharpest route -> write focused proposal
-  -> Phase 2 (Codex/GPT-5.5): Review for fidelity, specificity, contribution quality, and frontier leverage
+  -> Phase 2 (Claude CLI): Review for fidelity, specificity, contribution quality, and frontier leverage
   -> Phase 3 (Claude): Anchor check + simplicity check -> revise method -> rewrite full proposal
-  -> Phase 4 (Codex, same agent): Re-evaluate revised proposal
+  -> Phase 4 (Claude CLI): Re-evaluate revised proposal with prior review context included explicitly
   -> Repeat Phase 3-4 until OVERALL SCORE >= 9 or MAX_ROUNDS reached
   -> Phase 5: Save full history to refine-logs/
   -> STOP A handoff: /experiment-bridge "refine-logs/FINAL_PROPOSAL.md"
@@ -39,7 +39,7 @@ User input (PROBLEM + vague APPROACH)
 
 ## Constants
 
-- **REVIEWER_MODEL = `claude-review`** — Claude reviewer invoked through the local `claude-review` MCP bridge. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
+- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
 - **MAX_ROUNDS = 5** — Maximum review-revise rounds.
 - **SCORE_THRESHOLD = 9** — Minimum overall score to stop.
 - **OUTPUT_DIR = `refine-logs/`** — Directory for round files and final report.
@@ -258,12 +258,10 @@ Use this structure:
 
 ### Phase 2: External Method Review (Round 1)
 
-Send the full proposal to GPT-5.5 for an **elegance-first, frontier-aware, method-first** review. The reviewer should spend most of the critique budget on the method itself, not on expanding the experiment menu.
+Send the full proposal to Claude CLI for an **elegance-first, frontier-aware, method-first** review using `../shared-references/claude-cli-review.md`. The reviewer should spend most of the critique budget on the method itself, not on expanding the experiment menu.
 
-```
-mcp__claude-review__review_start:
-  prompt: |
-    You are a constructive senior ML research collaborator and paper director for a normal ML venue target (NeurIPS/ICML/ICLR-style expectations without breakthrough-only assumptions).
+```text
+You are a constructive senior ML research collaborator and paper director for a normal ML venue target (NeurIPS/ICML/ICLR-style expectations without breakthrough-only assumptions).
     This is an early-stage, method-first research proposal.
 
     Your job is NOT to reward extra modules, contribution sprawl, or a giant benchmark checklist.
@@ -320,12 +318,10 @@ mcp__claude-review__review_start:
     Verdict rule:
     - READY: overall score >= 9, no meaningful drift, one focused dominant contribution, and no obvious complexity bloat remains
     - REVISE: the direction is promising but not yet at READY bar
-    - RETHINK: the core mechanism or framing is still fundamentally off
+- RETHINK: the core mechanism or framing is still fundamentally off
 ```
 
-After this start call, immediately save the returned `jobId` and poll `mcp__claude-review__review_status` with a bounded `waitSeconds` until `done=true`. Treat the completed status payload's `response` as the reviewer output, and save the completed `threadId` for any follow-up round.
-
-**CRITICAL: Save the returned `jobId`**, poll `mcp__claude-review__review_status` until `done=true`, then save the completed `threadId` from the status result for all later rounds.
+Save the raw Claude CLI JSON output and treat the response text as the reviewer output.
 
 **CRITICAL: Save the FULL raw response** verbatim.
 
@@ -433,40 +429,41 @@ Save to `refine-logs/round-N-refinement.md`:
 
 ### Phase 4: Re-evaluation (Round 2+)
 
-Send the revised proposal back to GPT-5.5 in the **same agent**:
+Send the revised proposal back to Claude CLI in a fresh invocation. Include the
+previous raw review explicitly; there is no MCP `threadId`.
 
+```text
+[Round N re-evaluation]
+
+Previous raw review:
+[paste or summarize the saved Phase 2 Claude review]
+
+I revised the proposal based on your feedback.
+First, check whether the original Problem Anchor is still preserved.
+Second, judge whether the method is now more concrete, more focused, and more current.
+
+Key changes:
+1. [Method change 1]
+2. [Method change 2]
+3. [Simplification / modernization / pushback if any]
+
+=== REVISED PROPOSAL ===
+[Paste the FULL revised proposal]
+=== END REVISED PROPOSAL ===
+
+Please:
+- Re-score the same 7 dimensions and overall
+- State whether the Problem Anchor is preserved or drifted
+- State whether the dominant contribution is now sharper or still too broad
+- State whether the method is simpler or still overbuilt
+- State whether the frontier leverage is now appropriate or still old-school / forced
+- Focus new critiques on missing mechanism, weak training signal, weak integration point, pseudo-novelty, or unnecessary complexity
+- Use the same verdict rule: READY only if overall score >= 9 and no blocking issue remains
+
+Same output format: 7 scores, overall score, verdict, drift warning, simplification opportunities, modernization opportunities, remaining action items.
 ```
-mcp__claude-review__review_reply_start:
-  threadId: [saved from Phase 2]
-  prompt: |
-    [Round N re-evaluation]
 
-    I revised the proposal based on your feedback.
-    First, check whether the original Problem Anchor is still preserved.
-    Second, judge whether the method is now more concrete, more focused, and more current.
-
-    Key changes:
-    1. [Method change 1]
-    2. [Method change 2]
-    3. [Simplification / modernization / pushback if any]
-
-    === REVISED PROPOSAL ===
-    [Paste the FULL revised proposal]
-    === END REVISED PROPOSAL ===
-
-    Please:
-    - Re-score the same 7 dimensions and overall
-    - State whether the Problem Anchor is preserved or drifted
-    - State whether the dominant contribution is now sharper or still too broad
-    - State whether the method is simpler or still overbuilt
-    - State whether the frontier leverage is now appropriate or still old-school / forced
-    - Focus new critiques on missing mechanism, weak training signal, weak integration point, pseudo-novelty, or unnecessary complexity
-    - Use the same verdict rule: READY only if overall score >= 9 and no blocking issue remains
-
-    Same output format: 7 scores, overall score, verdict, drift warning, simplification opportunities, modernization opportunities, remaining action items.
-```
-
-After this start call, immediately save the returned `jobId` and poll `mcp__claude-review__review_status` with a bounded `waitSeconds` until `done=true`. Treat the completed status payload's `response` as the reviewer output, and save the completed `threadId` for any follow-up round.
+Save the raw Claude CLI JSON output for this round.
 
 Save review to `refine-logs/round-N-review.md`.
 
@@ -637,7 +634,7 @@ If the final verdict is not READY, still write the best current index, short pro
 <details>
 <summary>Round 1 Review</summary>
 
-[Full verbatim response from GPT-5.5]
+[Full verbatim response from Claude CLI]
 
 </details>
 
@@ -704,7 +701,8 @@ Suggested next step: /experiment-bridge "refine-logs/FINAL_PROPOSAL.md"
 - **Review the mechanism, not the parts count.** A long module list is not novelty.
 - **Pushback is encouraged.** If reviewer feedback causes drift or unnecessary complexity, argue back with evidence.
 - **Always ask the Claude reviewer for strict, high-rigor feedback** in every review round.
-- **Save the completed `threadId` from Phase 2** and use `mcp__claude-review__review_reply_start` plus `mcp__claude-review__review_status` for later rounds.
+- Save the raw Claude CLI JSON from Phase 2 and include it explicitly in later
+  round prompts.
 - **Do not fabricate results.** Only describe expected evidence and planned experiments.
 - **Be specific about compute and data assumptions.** Vague "we'll train a model" is not enough.
 - **Document everything.** Save every raw review, every anchor check, every simplicity check, and every major method change.

@@ -1,6 +1,6 @@
 ---
 name: "auto-paper-improvement-loop"
-description: "Autonomously improve a generated paper via Claude review through claude-review MCP → implement fixes → recompile, for 2 rounds. Use when user says \"改论文\", \"improve paper\", \"论文润色循环\", \"auto improve\", or wants to iteratively polish a generated paper."
+description: "Autonomously improve a generated paper via Claude review through Claude Code CLI → implement fixes → recompile, for 2 rounds. Use when user says \"改论文\", \"improve paper\", \"论文润色循环\", \"auto improve\", or wants to iteratively polish a generated paper."
 ---
 
 > Override for Codex users who want **Claude Code**, not a second Codex agent, to act as the reviewer. Install this package **after** `skills/skills-codex/*`.
@@ -18,7 +18,7 @@ Unlike `/auto-review-loop` (which iterates on **research** — running experimen
 ## Constants
 
 - **MAX_ROUNDS = 2** — Two rounds of review→fix→recompile. Empirically, Round 1 catches structural issues (4→6/10), Round 2 catches remaining presentation issues (6→7/10). Diminishing returns beyond 2 rounds for writing-only improvements.
-- **REVIEWER_MODEL = `claude-review`** — Claude reviewer invoked through the local `claude-review` MCP bridge. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
+- **REVIEWER_MODEL = `claude-cli`** — Claude reviewer invoked through direct `claude -p` CLI calls following `../shared-references/claude-cli-review.md`. Set `CLAUDE_REVIEW_MODEL` if you need a specific Claude model override.
 - **REVIEW_LOG = `PAPER_IMPROVEMENT_LOG.md`** — Cumulative log of all rounds, stored in paper directory.
 - **HUMAN_CHECKPOINT = false** — When `true`, pause after each round's review and present score + weaknesses to the user. The user can approve fixes, provide custom modification instructions, skip specific fixes, or stop early. When `false` (default), runs fully autonomously.
 
@@ -69,33 +69,31 @@ done > /tmp/paper_full_text.txt
 
 ### Step 2: Round 1 Review
 
-Send the full paper text to Claude review:
+Send the full paper text to Claude review using the Claude CLI transport in
+`../shared-references/claude-cli-review.md`:
 
+```text
+You are reviewing a [VENUE] paper. Please provide a detailed, structured review.
+
+## Full Paper Text:
+[paste concatenated sections]
+
+## Review Instructions
+Please act as a senior ML reviewer ([VENUE] level). Provide:
+1. **Overall Score** (1-10, where 6 = weak accept, 7 = accept)
+2. **Summary** (2-3 sentences)
+3. **Strengths** (bullet list, ranked)
+4. **Weaknesses** (bullet list, ranked: CRITICAL > MAJOR > MINOR)
+5. **For each CRITICAL/MAJOR weakness**: A specific, actionable fix
+6. **Missing References** (if any)
+7. **Verdict**: Ready for submission? Yes / Almost / No
+
+Focus on: theoretical rigor, claims vs evidence alignment, writing clarity,
+self-containedness, notation consistency.
 ```
-mcp__claude-review__review_start:
-  prompt: |
-    You are reviewing a [VENUE] paper. Please provide a detailed, structured review.
 
-    ## Full Paper Text:
-    [paste concatenated sections]
-
-    ## Review Instructions
-    Please act as a senior ML reviewer ([VENUE] level). Provide:
-    1. **Overall Score** (1-10, where 6 = weak accept, 7 = accept)
-    2. **Summary** (2-3 sentences)
-    3. **Strengths** (bullet list, ranked)
-    4. **Weaknesses** (bullet list, ranked: CRITICAL > MAJOR > MINOR)
-    5. **For each CRITICAL/MAJOR weakness**: A specific, actionable fix
-    6. **Missing References** (if any)
-    7. **Verdict**: Ready for submission? Yes / Almost / No
-
-    Focus on: theoretical rigor, claims vs evidence alignment, writing clarity,
-    self-containedness, notation consistency.
-```
-
-After this start call, immediately save the returned `jobId` and poll `mcp__claude-review__review_status` with a bounded `waitSeconds` until `done=true`. Treat the completed status payload's `response` as the reviewer output, and save the completed `threadId` for any follow-up round.
-
-Save the returned `jobId`, poll `mcp__claude-review__review_status` until `done=true`, then save the completed `threadId` for Round 2.
+Save the raw Claude CLI JSON output and treat the response text as the reviewer
+output. Save it for Round 2 context.
 
 ### Step 2b: Human Checkpoint (if enabled)
 
@@ -149,24 +147,25 @@ Verify: 0 undefined references, 0 undefined citations.
 
 ### Step 5: Round 2 Review
 
-Use `mcp__claude-review__review_reply_start` with the saved completed `threadId`:
+Use a fresh Claude CLI invocation. Include the Round 1 raw review explicitly;
+there is no MCP `threadId`.
 
+```text
+[Round 2 update]
+
+Previous raw review:
+[paste or summarize the saved Round 1 Claude review]
+
+Since the previous review, we have implemented:
+1. [Fix 1]: [description]
+2. [Fix 2]: [description]
+...
+
+Please re-score and re-assess. Same format:
+Score, Summary, Strengths, Weaknesses, Actionable fixes, Verdict.
 ```
-mcp__claude-review__review_reply_start:
-  threadId: [saved from Round 1]
-  prompt: |
-    [Round 2 update]
 
-    Since your last review, we have implemented:
-    1. [Fix 1]: [description]
-    2. [Fix 2]: [description]
-    ...
-
-    Please re-score and re-assess. Same format:
-    Score, Summary, Strengths, Weaknesses, Actionable fixes, Verdict.
-```
-
-After this start call, immediately save the returned `jobId` and poll `mcp__claude-review__review_status` with a bounded `waitSeconds` until `done=true`. Treat the completed status payload's `response` as the reviewer output, and save the completed `threadId` for any follow-up round.
+Save the raw Claude CLI JSON output for Round 2.
 
 ### Step 5b: Human Checkpoint (if enabled)
 
@@ -309,7 +308,8 @@ paper/
 
 - **Preserve all PDF versions** — user needs to compare progression
 - **Save FULL raw review text** — do not summarize or truncate Claude reviewer responses
-- **Use `mcp__claude-review__review_reply_start` plus `mcp__claude-review__review_status`** for Round 2 to maintain conversation context
+- Use a fresh Claude CLI invocation for Round 2 and include the Round 1 raw
+  review plus implemented fixes explicitly to maintain context
 - **Always recompile after fixes** — verify 0 errors before proceeding
 - **Do not fabricate experimental results** — synthetic validation must describe methodology, not invent numbers
 - **Respect the paper's claims** — soften overclaims rather than adding unsupported new claims

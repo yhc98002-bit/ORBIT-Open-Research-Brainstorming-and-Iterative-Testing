@@ -4,7 +4,7 @@
 
 - **Codex** 作为主执行者
 - **Claude Code** 作为审稿人
-- 用本地 `claude-review` MCP bridge 替代“第二个 Codex reviewer”
+- 直接调用 Claude Code CLI，而不是再启一个 Codex reviewer
 
 它不是新造一套完整技能包，而是叠加在上游已有的 `skills/skills-codex/` 之上。
 
@@ -40,20 +40,16 @@ cp -a skills/skills-codex/* ~/.codex/skills/
 cp -a skills/skills-codex-claude-review/* ~/.codex/skills/
 ```
 
-3. 注册本地 reviewer bridge：
+3. 确认 Claude Code CLI 可用：
 
 ```bash
-mkdir -p ~/.codex/mcp-servers/claude-review
-cp mcp-servers/claude-review/server.py ~/.codex/mcp-servers/claude-review/server.py
-codex mcp add claude-review -- python3 ~/.codex/mcp-servers/claude-review/server.py
+claude --version
 ```
 
-如果你的 Claude 依赖 `claude-aws` 之类的 shell helper，再改用 wrapper：
+覆盖层里的 skills 会按项目 `AGENTS.md` 的命令形态调用 Claude review：
 
 ```bash
-cp mcp-servers/claude-review/run_with_claude_aws.sh ~/.codex/mcp-servers/claude-review/run_with_claude_aws.sh
-chmod +x ~/.codex/mcp-servers/claude-review/run_with_claude_aws.sh
-codex mcp add claude-review -- ~/.codex/mcp-servers/claude-review/run_with_claude_aws.sh
+claude -p --dangerously-skip-permissions --output-format json --model opus --effort max "your focused review prompt"
 ```
 
 ## 为什么需要这个包
@@ -64,12 +60,9 @@ codex mcp add claude-review -- ~/.codex/mcp-servers/claude-review/run_with_claud
 
 - 执行者：Codex
 - 审稿人：Claude Code CLI
-- 传输层：`claude-review` MCP
+- 传输层：直接 `claude -p` CLI 调用
 
-对于长论文和长 review prompt，这条 reviewer 路径会改用：
+对于长论文和长 review prompt，先把完整 prompt 写入临时 prompt 文件，
+再传给同一个 CLI 命令。见 `shared-references/claude-cli-review.md`。
 
-- `review_start`
-- `review_reply_start`
-- `review_status`
-
-这样可以绕开 Codex 宿主下，本地 Claude bridge 同步等待时更容易出现的超时问题。
+这样不再依赖本地 Codex MCP bridge 来调用 Claude review。
